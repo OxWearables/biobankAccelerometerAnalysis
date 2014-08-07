@@ -1,7 +1,7 @@
 biobankActivityMonitor
 ======================
 
-Introduction
+<h1>Introduction</h1>
 This project aims to extract meaningful health information from large accelerometer datasets.
 
 Installation
