@@ -1,7 +1,7 @@
 biobankActivityMonitor
 ======================
 
-Tools to extract meaningful health information from large accelerometer datasets e.g. how much time an individual spent in sleep, sedentary behaviour, and physical activity.
+Tools to extract meaningful health information from large accelerometer datasets e.g. how much time individuals spend in sleep, sedentary behaviour, and physical activity.
 
 This software will allow non-specialists worldwide to benefit from the information currently locked within the accelerometer data of large health studies e.g. UK Biobank will have 100,000 people wear wrist-worn accelerometers for 1 week each, and then monitor their health for the rest of their lives.
 
