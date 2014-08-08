@@ -13,10 +13,11 @@ Details of installation (e.g. via pip).
 <h2>Usage</h2>
 To extract a summary of movement (average sample sumVectorMagnitude) and (non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files:
 
-
-    python biobankActivityMonitor.py [input_file.CWA] [options]
-    python biobankActivityMonitor.py p001.cwa
-    python biobankActivityMonitor.py p001.cwa
+```
+python biobankActivityMonitor.py [input_file.CWA] [options]
+python biobankActivityMonitor.py p001.cwa
+python biobankActivityMonitor.py p001.cwa
+```
 
   
 Options include:
