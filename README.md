@@ -16,7 +16,6 @@ To extract a summary of movement (average sample sumVectorMagnitude) and (non)we
 ```
 python biobankActivityMonitor.py [input_file.CWA] [options]
 python biobankActivityMonitor.py p001.cwa
-python biobankActivityMonitor.py p001.cwa
 ```
 
   
