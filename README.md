@@ -11,13 +11,13 @@ Details of installation (e.g. via pip).
 
 
 <h2>Usage</h2>
-The current python command line application processes raw GENEActiv accelerometer data from a .CWA file, and provides a summary of movement (average sample sumVectorMagnitude) and (non)wear time.
+To extract a summary of movement (average sample sumVectorMagnitude) and (non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files:
 
-The application can be run as follows:
-  python biobankActivityMonitor.py <input_file.CWA> <options>
-
-e.g.  python biobankActivityMonitor.py p001.cwa
-  python biobankActivityMonitor.py p001.cwa
+'''
+  python biobankActivityMonitor.py [input_file.CWA] [options]<br>
+  python biobankActivityMonitor.py p001.cwa<br>
+  python biobankActivityMonitor.py p001.cwa<br>
+'''
   
 Options include:
  - Folder to write epoch summaries
