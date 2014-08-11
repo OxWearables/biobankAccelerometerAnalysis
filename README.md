@@ -14,13 +14,7 @@ python biobankActivityMonitor.py [input_file.CWA] [options]
 python biobankActivityMonitor.py p001.cwa
 ```
 
-Options include:
- - Folder to write epoch summaries
- - Folder to write nonWear summaries
- - Filtering on/off
- - Autocalibration on/off + parameter settings
- - Diurnal adjustment on/off
- - Days to remove from analysis
+For customised options, please refer to our wiki.
 
 
 <h2>Installation</h2>
