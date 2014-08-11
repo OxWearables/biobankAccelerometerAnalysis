@@ -3,11 +3,7 @@ biobankActivityMonitor
 
 A tool to extract meaningful health information from large accelerometer datasets e.g. how much time individuals spend in sleep, sedentary behaviour, and physical activity.
 
-This software will allow non-specialists worldwide to benefit from the information currently locked within the accelerometer data of large health studies e.g. UK Biobank will have 100,000 people wear wrist-worn accelerometers for 1 week each, and then monitor their health for the rest of their lives.
-
-
-<h2>Installation</h2>
-Details of installation (e.g. via pip).
+This software will allow non-specialists worldwide to benefit from the information currently locked within the accelerometer data of large health studies e.g. UK Biobank are asking 100,000 people to wear wrist-worn accelerometers for 1 week each, and will then monitor their health for the rest of their lives.
 
 
 <h2>Usage</h2>
@@ -18,7 +14,6 @@ python biobankActivityMonitor.py [input_file.CWA] [options]
 python biobankActivityMonitor.py p001.cwa
 ```
 
-  
 Options include:
  - Folder to write epoch summaries
  - Folder to write nonWear summaries
@@ -28,5 +23,13 @@ Options include:
  - Days to remove from analysis
 
 
-<h2>Licence</h2>
-This project is released under an BSD Licence (see LICENCE)
+<h2>Installation</h2>
+Details of installation (e.g. via pip).
+
+
+<h2>Under the hood</h2>
+We are using a combination of published methods to extract meaningful health information from accelerometer data. For more information, please refer to our wiki.
+
+
+<h6>Licence</h6>
+This project is released under a BSD Licence (see LICENCE)
