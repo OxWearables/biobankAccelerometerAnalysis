@@ -24,7 +24,7 @@ Details of installation (e.g. via pip).
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health information from accelerometer data. For more information, please refer to our wiki.
 
-![Accelerometer data processing overview]()
+![Accelerometer data processing overview](http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverview.png)
 
 
 <h6>Licence</h6>
