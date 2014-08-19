@@ -13,7 +13,7 @@ rest of their lives.
 
 
 <h2>Usage</h2>
-To extract a summary of movement (average sample sumVectorMagnitude) and 
+To extract a summary of movement (average sample vector magnitude) and 
 (non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files:
 
 ```
