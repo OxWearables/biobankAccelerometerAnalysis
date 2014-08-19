@@ -25,7 +25,7 @@ For customised options, please refer to our wiki.
 
 
 <h2>Installation</h2>
-Details of installation (e.g. via pip).
+Details of installation (e.g. via pip)...
 
 
 <h2>Under the hood</h2>
