@@ -14,7 +14,7 @@ rest of their lives.
 
 <h2>Usage</h2>
 To extract a summary of movement (average sample vector magnitude) and 
-(non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files:
+(non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files ([click here for sample CWA file](http://users.fmrib.ox.ac.uk/~adoherty/CWA-DATA.CWA)):
 
 ```
 python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
