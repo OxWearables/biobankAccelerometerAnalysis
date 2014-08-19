@@ -1,4 +1,4 @@
-biobankActivityMonitor
+biobankAccelerometerAnalysis
 ======================
 
 A tool to extract meaningful health information from large accelerometer 
