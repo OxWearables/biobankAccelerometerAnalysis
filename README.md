@@ -25,7 +25,11 @@ For customised options, please refer to our wiki.
 
 
 <h2>Installation</h2>
-Details of installation (e.g. via pip)...
+Dependancies include numpy and pandas python libraries.
+```
+javac BandpassFilter.java
+javac AxivityAx3Epochs.java
+```
 
 
 <h2>Under the hood</h2>
