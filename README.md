@@ -1,7 +1,8 @@
 biobankActivityMonitor
 ======================
 
-A tool to extract meaningful health information from large accelerometer datasets e.g. how much time individuals spend in sleep, sedentary behaviour, and physical activity.
+A tool to extract meaningful health information from large accelerometer datasets 
+e.g. how much time individuals spend in sleep, sedentary behaviour, and physical activity.
 
 This software will allow non-specialists worldwide to benefit from the information currently locked within the accelerometer data of large health studies e.g. UK Biobank are asking 100,000 people to wear wrist-worn accelerometers for 1 week each, and will then monitor their health for the rest of their lives.
 
@@ -10,8 +11,8 @@ This software will allow non-specialists worldwide to benefit from the informati
 To extract a summary of movement (average sample sumVectorMagnitude) and (non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files:
 
 ```
-python biobankActivityMonitor.py [input_file.CWA] [options]
-python biobankActivityMonitor.py p001.cwa
+python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
+python ActivitySummaryFromEpochs.py p001.cwa
 ```
 
 For customised options, please refer to our wiki.
