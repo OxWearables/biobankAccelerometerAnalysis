@@ -59,7 +59,8 @@ mex parseDate.c; mex parseValueBlock.c;
 ```
 If this does not work for you the code can be changed to use native matlab code, which works fine but is significantly slower. In calls to AX3_readFile (in readInterpolateCalibrate.m) simply change the 'useC' flag from '1' to '0'.
 
-Why should you calibrate your data? Check the example plot in the repository: calibrationExample.png
+Why should you calibrate your data? Check this example:
+![](https://github.com/aidendoherty/biobankAcceleromerAnalysis/blob/master/calibrationExample.png)
 
 
 <h6>Licence</h6>
