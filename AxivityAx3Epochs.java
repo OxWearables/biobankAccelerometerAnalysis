@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat;
 /**
  * Calculates epoch summaries from an AX3 .CWA file.
  * Class/application can be called from the command line as follows:
- * java AxivityAx3Epochs input_file.CWA 
+ * java AxivityAx3Epochs inputFile.CWA 
  */
 public class AxivityAx3Epochs
 {
@@ -33,12 +33,11 @@ public class AxivityAx3Epochs
         BandpassFilter filter = new BandpassFilter(0.50, 15, 100);
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
-        Boolean zAxisTempCompensation = true;
         Boolean interpolateSample = true;
         if (args.length < 1) {
             String invalidInputMsg = "Invalid input, ";
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
-            invalidInputMsg += "java AX3_bin_data_to_epochs input_file.CWA";
+            invalidInputMsg += "java AxivityAx3Epochs inputFile.CWA";
             System.out.println(invalidInputMsg);
             System.exit(0);
         } else if (args.length == 1) {
@@ -72,9 +71,6 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("startEpochWholeSecond")) {
                     startEpochWholeSecond = Boolean.parseBoolean(
                             funcParam.toLowerCase());
-                } else if (funcName.equals("zAxisTempCompensation")) {
-                    zAxisTempCompensation = Boolean.parseBoolean(
-                            funcParam.toLowerCase());
                 } else if (funcName.equals("interpolateSample")) {
                     interpolateSample = Boolean.parseBoolean(
                             funcParam.toLowerCase());
@@ -84,8 +80,8 @@ public class AxivityAx3Epochs
 
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
-                startEpochWholeMinute, startEpochWholeSecond,
-                zAxisTempCompensation, interpolateSample, filter);   
+                startEpochWholeMinute, startEpochWholeSecond, interpolateSample,
+                filter);   
     }
 
     /**
@@ -99,7 +95,6 @@ public class AxivityAx3Epochs
             SimpleDateFormat timeFormat,
             Boolean startEpochWholeMinute,
             Boolean startEpochWholeSecond,
-            Boolean zAxisTempCompensation,
             Boolean interpolateSample,
             BandpassFilter filter) { 
         //file read/write objects
@@ -380,8 +375,11 @@ public class AxivityAx3Epochs
     }
     	
     private static double range(List<Double> vals) {
-        double min = 99999.9;
-        double max = -99999.9;
+        if(vals.size()==0) {
+            return Double.NaN;
+        }
+        double min = Double.MIN_VALUE;
+        double max = Double.MAX_VALUE;
         for(int c=0; c<vals.size(); c++) {
             if (vals.get(c) < min) {
                 min = vals.get(c);
@@ -393,6 +391,9 @@ public class AxivityAx3Epochs
     }    	
 
     private static double std(List<Double> vals, double mean) {
+        if(vals.size()==0) {
+            return Double.NaN;
+        }
         double var = 0; //variance
         double len = vals.size()*1.0; //length
         for(int c=0; c<vals.size(); c++) {
