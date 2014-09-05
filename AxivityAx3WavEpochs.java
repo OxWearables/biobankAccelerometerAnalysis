@@ -234,6 +234,9 @@ public class AxivityAx3WavEpochs
     }
 
     private static double sum(List<Double> vals) {
+        if(vals.size()==0) {
+            return Double.NaN;
+        }
         double sum = 0;
         for(int c=0; c<vals.size(); c++) {
             sum += vals.get(c);
@@ -242,6 +245,9 @@ public class AxivityAx3WavEpochs
     }
     
     private static double mean(List<Double> vals) {
+        if(vals.size()==0) {
+            return Double.NaN;
+        }
         return sum(vals) / (double)vals.size();
     }
     	
