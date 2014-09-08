@@ -91,7 +91,6 @@ public class AxivityAx3WavEpochs
                 timeFormat, startEpochWholeMinute, startEpochWholeSecond,
                 filter);
     }
-
     
     private static void writeWavEpochs(
             String accFile,
@@ -133,7 +132,6 @@ public class AxivityAx3WavEpochs
         double y = 0.0;
         double z = 0.0;
         int temperature = 0;
-           
             
         try {
             inputStream = AudioSystem.getAudioInputStream(new File(accFile));
