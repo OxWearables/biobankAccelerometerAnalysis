@@ -2,8 +2,9 @@ import java.io.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.InputStream.*;
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.util.ArrayList;
@@ -136,8 +137,6 @@ public class AxivityAx3WavEpochs
             
         try {
             inputStream = AudioSystem.getAudioInputStream(new File(accFile));
-            AudioFormat fmt = inputStream.getFormat();
-            System.out.println(fmt.properties());
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
             writeLine(epochFileWriter, epochHeader);
             int bytesPerFrame = inputStream.getFormat().getFrameSize();
@@ -204,22 +203,50 @@ public class AxivityAx3WavEpochs
             epochFileWriter.close();
             inputStream.close();
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             System.err.println(e);
         }
     }
 
     public static void getHeaderInfo(String wavFile){
-        try{
+        try {
             File f = new File(wavFile);
-            AudioFileFormat base = AudioSystem.getAudioFileFormat(f);
-            Map properties = base.properties();
-            String keyA = "author";
-            String author = (String)properties.get(keyA);
-            String keyT = "title";
-            String title = (String)properties.get(keyT);
-            System.out.println(author + " , " + title);
+            FileChannel file = new FileInputStream(f).getChannel();
+            //For an overview on WAV file header specifications, refer to:
+            //      https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
+            ByteBuffer buf = ByteBuffer.allocate(12); //read "RIFF" chunk
+            file.read(buf);
+            buf = ByteBuffer.allocate(24); //read "fmt" chunk
+            file.read(buf);
+
+            //confirm we can read "LIST" chunk
+            buf = ByteBuffer.allocate(8);
+            file.read(buf);
+            buf.flip();
+            buf.order(ByteOrder.BIG_ENDIAN);
+            String header = strFromBuffer(buf,4);
+            if(header.equals("LIST")) {
+                //get num bytes in "LIST" chunk
+                buf.order(ByteOrder.LITTLE_ENDIAN);
+                int listSize = buf.getInt();
+                buf = ByteBuffer.allocate(listSize);
+                file.read(buf);
+                buf.flip();
+                buf.order(ByteOrder.BIG_ENDIAN);
+
+                //read "LIST" chunk bytes in as a String
+                header = strFromBuffer(buf,listSize);
+                //for an overview on "LIST" chunk tags, please refer to:
+                //      http://wiki.audacityteam.org/wiki/WAV#Metadata
+                //warning: code below assumes title field comes before artist
+                System.out.println("deviceID: " + header.split("INAM|IART")[1]); //title
+                System.out.println("startTime: " + header.split("IART")[1]); //artist
+            } else {
+                //if no LIST chunk exists, quit as we can't get the start time
+                System.out.println("No start time information!");
+                System.exit(0);
+            }
+            file.close();
         } catch(Exception e){}
     }
 
@@ -286,6 +313,14 @@ public class AxivityAx3WavEpochs
         } catch (Exception excep) {
             System.out.println(excep.toString());
         }
+    }
+
+    private static String strFromBuffer(ByteBuffer buf, int numChars){
+        String val = "";
+        for(int c=0; c<numChars; c++) {
+            val += (char)buf.get() + "";
+        }
+        return val;
     }
 
 }
