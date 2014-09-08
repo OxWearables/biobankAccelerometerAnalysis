@@ -3,6 +3,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.InputStream.*;
 import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import java.util.ArrayList;
@@ -135,6 +136,8 @@ public class AxivityAx3WavEpochs
             
         try {
             inputStream = AudioSystem.getAudioInputStream(new File(accFile));
+            AudioFormat fmt = inputStream.getFormat();
+            System.out.println(fmt.properties());
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
             writeLine(epochFileWriter, epochHeader);
             int bytesPerFrame = inputStream.getFormat().getFrameSize();
