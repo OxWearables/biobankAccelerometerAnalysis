@@ -32,10 +32,24 @@ def main():
     #store command line arguments to local variables
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
-    epochFile = rawFile.replace(".CWA","Epoch.csv").replace(".cwa","Epoch.csv")
+    wavFile = rawFile.replace(".CWA", ".wav").replace(".cwa",".wav")
+    epochFile = wavFile.replace(".wav","Epoch.csv")
+    matlabPath = "matlab"
+    #update default values by looping through user parameters
+    for param in funcParams:
+        #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
+        if param.split(':')[0] == 'matlab':
+            matlabPath = param.split(':')[1]
     
-    #first calculate and write filtered SVM epochs from raw file
-    commandArgs = ["java", "AxivityAx3Epochs", rawFile, 'outputFile:' + epochFile, 'filter:true']
+    #interpolate and calibrate raw .CWA file, writing output to .wav file
+    commandArgs = [matlabPath, "-nosplash",
+            "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
+            + "', '" + wavFile + "');exit;"]
+    call(commandArgs)
+    
+    #calculate and write filtered SVM epochs from .wav file
+    commandArgs = ["java", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
+            epochFile, "filter:true"]
     call(commandArgs)
     
     #identify and remove nonWear episodes
