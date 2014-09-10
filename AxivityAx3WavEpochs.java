@@ -81,15 +81,11 @@ public class AxivityAx3WavEpochs
                             funcParam.toLowerCase());
                 }
             }
-        }    
+        }
 
-        getHeaderInfo(accFile);
-        //wavTest(args);
-        //System.exit(0);
-
-        Calendar epochStartTime = new GregorianCalendar();
+        Calendar fileStartTime = getHeaderInfo(accFile, timeFormat);
         //process file if input parameters are all ok
-        writeWavEpochs(accFile, outputFile, epochStartTime, epochPeriod, 100,
+        writeWavEpochs(accFile, outputFile, fileStartTime, epochPeriod, 100,
                 timeFormat, startEpochWholeMinute, startEpochWholeSecond,
                 filter);
     }
@@ -208,7 +204,10 @@ public class AxivityAx3WavEpochs
         }
     }
 
-    public static void getHeaderInfo(String wavFile){
+    public static Calendar getHeaderInfo(
+            String wavFile,
+            SimpleDateFormat timeFormat) {
+        Calendar fileStartTime = null;
         try {
             File f = new File(wavFile);
             FileChannel file = new FileInputStream(f).getChannel();
@@ -239,8 +238,13 @@ public class AxivityAx3WavEpochs
                 //for an overview on "LIST" chunk tags, please refer to:
                 //      http://wiki.audacityteam.org/wiki/WAV#Metadata
                 //warning: code below assumes title field comes before artist
-                System.out.println("deviceID: " + header.split("INAM|IART")[1]); //title
-                System.out.println("startTime: " + header.split("IART")[1]); //artist
+                String deviceID = header.split("INAM|IART")[1]; //title
+                String startTimeStr = header.split("IART")[1].trim(); //artist
+                System.out.println("deviceID: " + deviceID);
+                System.out.println("startTime: " + startTimeStr);
+                fileStartTime = new GregorianCalendar();
+                //fileStartTime.setTime(parseDateStr(header.split("IART")[1],timeFormat));
+                fileStartTime.setTime(parseDateStr(startTimeStr,timeFormat));
             } else {
                 //if no LIST chunk exists, quit as we can't get the start time
                 System.out.println("No start time information!");
@@ -248,6 +252,7 @@ public class AxivityAx3WavEpochs
             }
             file.close();
         } catch(Exception e){}
+        return fileStartTime;
     }
 
     private static double getVectorMagnitude(double x, double y, double z) {
@@ -321,6 +326,19 @@ public class AxivityAx3WavEpochs
             val += (char)buf.get() + "";
         }
         return val;
+    }
+
+    private static Date parseDateStr(String input, SimpleDateFormat timeFormat)
+    {
+        Date output = new Date();
+        try {
+            output = timeFormat.parse(input);
+        } catch (Exception excep) {
+            String errorMessage = "could not parse date (" + input + ")";
+            errorMessage += ": " + excep.toString();
+            System.out.println(errorMessage);
+        }
+        return output;
     }
 
 }
