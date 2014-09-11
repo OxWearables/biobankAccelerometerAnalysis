@@ -56,19 +56,19 @@ def main():
     identifyAndRemoveNonWearTime(epochFile, funcParams)    
     
     #print average sample score (diurnally adjusted)
-    print getAverageSvmMinute(epochFile,0,0) / 60
+    print getAverageVmMinute(epochFile,0,0)
 
 
-def getAverageSvmMinute(epochFile,headerSize,dateColumn):
+def getAverageVmMinute(epochFile,headerSize,dateColumn):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
     """
     #use python PANDAS framework to read in and store epochs
-    epochs = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
+    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
     #diurnal adjustment: construct average 1440 minute day
-    avgDay = epochs[['SVM']].groupby([epochs.index.hour]).mean()
+    avgDay = e[['SVM']].groupby([e.index.hour, e.index.minute]).mean()
     #return average minute score
     return avgDay.mean()[0]
 
@@ -144,9 +144,10 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     #print summary of each nonwear episode detected, returning sum nonwear time
     sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
                     nonWearEpisodesOutputFile, episodesList, displayOutput)
-    #calculate theoretical max wear time
-    wearTime = (((lastDay-firstDay).days*3600*24) + ((lastDay - firstDay).seconds))/60 #duration in minutes (pre Python 2.7 compatible too)
-    wearTime -= sumNonWear #total wear = theory wear - nonWear
+    #calculate max possible wear time in minutes (pre Python 2.7 compatible)
+    wearTime = ((lastDay-firstDay).days*3600*24) + ((lastDay - firstDay).seconds)
+    wearTime = wearTime / 60 #convert from seconds to minutes
+    wearTime -= sumNonWear #total wear = max possible wear - nonWear
     print wearTime, numNonWearEpisodes
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
 
