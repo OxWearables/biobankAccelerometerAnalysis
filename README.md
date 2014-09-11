@@ -34,7 +34,8 @@ Dependancies include: matlab, java, and python (numpy and pandas).
 javac *.java
 ```
 
-[Click here for detailed information on installing this software on our wiki.
+[Click here for detailed information on installing this software on our wiki.]
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/Installation)
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
