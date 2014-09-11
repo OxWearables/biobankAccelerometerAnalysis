@@ -107,15 +107,15 @@ public class AxivityAx3WavEpochs
         String header = "";        
         //epoch creation support variables
         List<Date> epochDatetimeArray = new ArrayList<Date>();
-        List<Double> epochSvmVals = new ArrayList<Double>();
+        List<Double> epochAvgVmVals = new ArrayList<Double>();
         List<Double> xVals = new ArrayList<Double>();
         List<Double> yVals = new ArrayList<Double>();
         List<Double> zVals = new ArrayList<Double>();
         String epochSummary = "";
-        String epochHeader = "Timestamp,SVM,Xmean,Ymean,Zmean,Xrange,";
+        String epochHeader = "Timestamp,AvgVm,Xmean,Ymean,Zmean,Xrange,";
         epochHeader += "Yrange,Zrange,Xstd,Ystd,Zstd,Temp,Samples";
         //epoch variables
-        double sumSvm = 0;
+        double avgVm = 0;
         double xMean = 0;
         double yMean = 0;
         double zMean = 0;
@@ -159,18 +159,18 @@ public class AxivityAx3WavEpochs
                         xVals.add(x);
                         yVals.add(y);
                         zVals.add(z);
-                        epochSvmVals.add(getVectorMagnitude(x,y,z));
+                        epochAvgVmVals.add(getVectorMagnitude(x,y,z));
                     }
                 }
                 //Now calculate epoch summary values...
-                //band-pass filter SVM-1 values
+                //band-pass filter AvgVm-1 values
                 if (filter != null) {
-                    filter.filter(epochSvmVals);
+                    filter.filter(epochAvgVmVals);
                 }
-                //take abs(SVM-1) vals which must be done after filtering
-                abs(epochSvmVals);
+                //take abs(AvgVm-1) vals which must be done after filtering
+                abs(epochAvgVmVals);
                 //calculate epoch summary values
-                sumSvm = sum(epochSvmVals);
+                avgVm = mean(epochAvgVmVals);
                 xMean = mean(xVals);
                 yMean = mean(yVals);
                 zMean = mean(zVals);
@@ -182,7 +182,7 @@ public class AxivityAx3WavEpochs
                 zStd = std(zVals, zMean);
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
-                epochSummary += "," + sumSvm;
+                epochSummary += "," + avgVm;
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
@@ -194,7 +194,7 @@ public class AxivityAx3WavEpochs
                 xVals.clear();
                 yVals.clear();
                 zVals.clear();
-                epochSvmVals.clear();
+                epochAvgVmVals.clear();
             }
             epochFileWriter.close();
             inputStream.close();
@@ -256,7 +256,6 @@ public class AxivityAx3WavEpochs
     }
 
     private static double getVectorMagnitude(double x, double y, double z) {
-        //return Math.abs(Math.sqrt(x*x + y*y + z*z)-1);
         return Math.sqrt(x*x + y*y + z*z)-1;
     }
 
