@@ -14,14 +14,15 @@ rest of their lives.
 
 <h2>Usage</h2>
 To extract a summary of movement (average sample vector magnitude) and
-(non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files 
-([click here for sample CWA file]
-(http://users.fmrib.ox.ac.uk/~adoherty/CWA-DATA.CWA)):
+(non)wear time from raw Axivity .CWA accelerometer files:
 
 ```
 python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
 python ActivitySummaryFromEpochs.py p001.cwa
 ```
+
+[Click here for a sample .CWA file.]
+(http://users.fmrib.ox.ac.uk/~adoherty/p001.cwa)
 
 [Click here for customised usage options on our wiki.]
 (https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/Usage)
@@ -33,11 +34,13 @@ Dependancies include: matlab, java, and python (numpy and pandas).
 javac *.java
 ```
 
+[Click here for detailed information on installing this software on our wiki.
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
 information from accelerometer data. [Click here for detailed information on the 
-data processing methods on our wiki]
+data processing methods on our wiki.]
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/MethodsOverview)
 
 ![Accelerometer data processing overview]
 (http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverview.png)
