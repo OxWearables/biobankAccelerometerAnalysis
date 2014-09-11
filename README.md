@@ -14,7 +14,9 @@ rest of their lives.
 
 <h2>Usage</h2>
 To extract a summary of movement (average sample vector magnitude) and
-(non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files ([click here for sample CWA file](http://users.fmrib.ox.ac.uk/~adoherty/CWA-DATA.CWA)):
+(non)wear time from raw GENEActiv/Axivity .bin/.CWA accelerometer files 
+([click here for sample CWA file]
+(http://users.fmrib.ox.ac.uk/~adoherty/CWA-DATA.CWA)):
 
 ```
 python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
@@ -25,10 +27,9 @@ For customised options, please refer to our wiki.
 
 
 <h2>Installation</h2>
-Dependancies include numpy and pandas python libraries.
+Dependancies include: matlab, java, and python (numpy and pandas).
 ```
-javac BandpassFilter.java
-javac AxivityAx3Epochs.java
+javac *.java
 ```
 
 
@@ -39,28 +40,6 @@ wiki.
 
 ![Accelerometer data processing overview]
 (http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverview.png)
-
-<h3>Matlab implementation for reading, interpolating and calibrating CWA files</h3>
-In the folder matlab you can find code for the first step in the processing pipeline (first box in image above). Most parameters are hard-coded at the moment for improved speed. On a typical cwa file this script should run within around 100 seconds, although that may depend on the speed of your machine. You can either run the code from the matlab shell or invoke MATLAB from the command line (e.g. in linux, mac os x).
-
-In MATLAB, change to the matlab directory of this repository and run:
-```
-D = readInterpolateCalibrate('/path/to/CWA-DATA.CWA','/path/to/output.wav');
-```
-From the command line you can do the same (change the paths according to your MATLAB installation):
-```
-/Applications/MATLAB_R2014a.app/bin/matlab -nosplash -nodisplay -r "readInterpolateCalibrate('/path/to/CWA-DATA.CWA','/path/to/output.wav');exit;"
-```
-Both of these commands will write an output file in .wav format that contains the calibrated accelerometer readings (you can also use .flac for compression). The first three track correspond to X,Y,Z scaled between -8 and 8 [g]. Invalid entries are zero across all tracks. The fourth track contains the temperature readings (positive entries between 0 and 100) and light readings (negative entries between 0 and 1000). The position along the track indicates when these were sampled.
-
-Reading in the cwa-files relies on some compiled c-code. There are some binaries included which should do the trick. If not, you can compile these yourself. In matlab, just change to 'matlab/lib/AX3_readFile_v0.1' and run these commands (requires a suitable build-environment, e.g. gcc):
-```
-mex parseDate.c; mex parseValueBlock.c;
-```
-If this does not work for you the code can be changed to use native matlab code, which works fine but is significantly slower. In calls to AX3_readFile (in readInterpolateCalibrate.m) simply change the 'useC' flag from '1' to '0'.
-
-Why should you calibrate your data? Check this example:
-![](https://github.com/aidendoherty/biobankAcceleromerAnalysis/blob/master/calibrationExample.png)
 
 
 <h6>Licence</h6>
