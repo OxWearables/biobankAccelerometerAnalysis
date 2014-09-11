@@ -23,7 +23,8 @@ python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
 python ActivitySummaryFromEpochs.py p001.cwa
 ```
 
-For customised options, please refer to our wiki.
+[Click here for customised usage options on our wiki.]
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/Usage)
 
 
 <h2>Installation</h2>
@@ -35,8 +36,8 @@ javac *.java
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
-information from accelerometer data. For more information, please refer to our
-wiki.
+information from accelerometer data. [Click here for detailed information on the 
+data processing methods on our wiki]
 
 ![Accelerometer data processing overview]
 (http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverview.png)
