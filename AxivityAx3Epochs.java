@@ -110,13 +110,13 @@ public class AxivityAx3Epochs
             //epoch creation support variables
             Calendar epochStartTime = null;//new GregorianCalendar();    
             List<Date> epochDatetimeArray = new ArrayList<Date>();
-            List<Double> epochSvmVals = new ArrayList<Double>();
+            List<Double> epochAvgVmVals = new ArrayList<Double>();
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
             String epochSummary = "";
-            String epochHeader = "Timestamp,SVM,Xmean,Ymean,Zmean,Xrange,";
-            epochHeader += "Yrange,Zrange,Xstd,Ystd,Zstd,Temp,Samples"; 
+            String epochHeader = "timestamp,AvgVm,xMean,yMean,zMean,xRange,";
+            epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples"; 
 
             //now read every page in CWA file
             while(rawAccReader.read(buf) != -1) {
@@ -133,7 +133,7 @@ public class AxivityAx3Epochs
                     //read each individual page block, and process epochs...
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
-                            epochPeriod, xVals, yVals, zVals, epochSvmVals,
+                            epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
                             interpolateSample, filter);                        
                 }
                 buf.clear();
@@ -168,7 +168,7 @@ public class AxivityAx3Epochs
             List<Double> xVals,
             List<Double> yVals,
             List<Double> zVals,
-            List<Double> epochSvmVals,
+            List<Double> epochAvgVmVals,
             Boolean interpolateSample,
             BandpassFilter filter) {
         //read block header items
@@ -207,7 +207,7 @@ public class AxivityAx3Epochs
 
         //epoch variables
         String epochSummary = "";
-        double sumSvm = 0;
+        double avgVm = 0;
         double xMean = 0;
         double yMean = 0;
         double zMean = 0;
@@ -257,16 +257,16 @@ public class AxivityAx3Epochs
             currentPeriod = (int) ((blockTime.getTimeInMillis() -
                     epochStartTime.getTimeInMillis())/1000);
             if (currentPeriod >= epochPeriod) { 
-                //band-pass filter SVM-1 values
+                //band-pass filter AvgVm-1 values
                 if (filter != null) {
-                    filter.filter(epochSvmVals);
+                    filter.filter(epochAvgVmVals);
                 }
 
-                //now take abs(SVM-1) vals which must be done after filtering
-                abs(epochSvmVals);
+                //now take abs(AvgVm-1) vals which must be done after filtering
+                abs(epochAvgVmVals);
 
                 //calculate epoch summary values
-                sumSvm = sum(epochSvmVals);
+                avgVm = mean(epochAvgVmVals);
                 xMean = mean(xVals);
                 yMean = mean(yVals);
                 zMean = mean(zVals);
@@ -279,13 +279,13 @@ public class AxivityAx3Epochs
 
                 //sometimes more/less samples can be recorded than expected
                 if (interpolateSample) {
-                    sumSvm = sumSvm * ((double)xVals.size() / epochPeriod);
-                    sumSvm = sumSvm / sampleFreq;
+                    avgVm = avgVm * ((double)xVals.size() / epochPeriod);
+                    avgVm = avgVm / sampleFreq;
                 }
 
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
-                epochSummary += "," + sumSvm;
+                epochSummary += "," + avgVm;
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
@@ -297,13 +297,13 @@ public class AxivityAx3Epochs
                 xVals.clear();
                 yVals.clear();
                 zVals.clear();
-                epochSvmVals.clear();
+                epochAvgVmVals.clear();
             }
             //store axes and vector magnitude values for every reading
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
-            epochSvmVals.add(getVectorMagnitude(x,y,z));
+            epochAvgVmVals.add(getVectorMagnitude(x,y,z));
             //System.out.println(timeFormat.format(blockTime.getTime()) + "," + x + "," + y + "," + z);
             blockTime.add(Calendar.MILLISECOND, (int)readingGapMs);            
         }
