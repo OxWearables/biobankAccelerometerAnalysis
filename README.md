@@ -48,4 +48,4 @@ data processing methods on our wiki.]
 
 
 <h6>Licence</h6>
-This project is released under a BSD Licence (see LICENCE)
+This project is released under a [BSD 2-Clause Licence](http://opensource.org/licenses/BSD-2-Clause) (see LICENCE file)
