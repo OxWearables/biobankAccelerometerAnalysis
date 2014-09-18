@@ -167,7 +167,7 @@ public class AxivityAx3WavEpochs
                 if (filter != null) {
                     filter.filter(epochAvgVmVals);
                 }
-                //take abs(AvgVm-1) vals which must be done after filtering
+                //take abs( filtered(AvgVm-1) ). Must be done after filtering
                 abs(epochAvgVmVals);
                 //calculate epoch summary values
                 avgVm = mean(epochAvgVmVals);
