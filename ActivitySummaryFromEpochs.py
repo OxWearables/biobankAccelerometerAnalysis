@@ -47,7 +47,7 @@ def main():
             + "', '" + wavFile + "');exit;"]
     call(commandArgs)
     
-    #calculate and write filtered SVM epochs from .wav file
+    #calculate and write filtered AvgVm epochs from .wav file
     commandArgs = ["java", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
             epochFile, "filter:true"]
     call(commandArgs)
@@ -68,7 +68,7 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
     #diurnal adjustment: construct average 1440 minute day
-    avgDay = e[['SVM']].groupby([e.index.hour, e.index.minute]).mean()
+    avgDay = e[['AvgVm']].groupby([e.index.hour, e.index.minute]).mean()
     #return average minute score
     return avgDay.mean()[0]
 
