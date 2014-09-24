@@ -80,7 +80,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     - epochFile: an epoch .csv file
     - funcParams: an array of [<name>:<value>] items, specifically:
         [nonWearEpisodesOutputFile:<name.csv>], default = <epochFile>_mvpa_bout_list.csv
-        [headerSize:<lines>], default = 60
+        [headerSize:<lines>], default = 1 
         [datetimeColumn:<int>], default = 0, index of datetime column
         [timeFormat:<python_timeFormat_string>], default = '%Y-%m-%d %H:%M:%S.%f'
         [xIndex:<int>], default = 8
