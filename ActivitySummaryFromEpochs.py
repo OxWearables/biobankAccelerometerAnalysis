@@ -1,3 +1,4 @@
+#BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 """
 This command line application calculates average daily activity from raw
 accelerometer data as follows:

@@ -1,3 +1,4 @@
+%BSD 2-Clause (c) 2014: N.Hammerla, D.Jackson (Newcastle), A.Doherty (Oxford)
 function S = getStationaryPeriodsFixedLength(D)
 %
 %   S = getStationaryPeriodsFixedLength(D)

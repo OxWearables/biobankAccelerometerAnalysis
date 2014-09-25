@@ -1,3 +1,4 @@
+#BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 """
 This python object:
     1) has attributes to represent an episode of behaviour.

@@ -1,3 +1,4 @@
+%BSD 2-Clause (c) 2014: N.Hammerla, D.Jackson (Newcastle), A.Doherty (Oxford)
 function data = AX3_readFile(filename, varargin)
     %
     %   DATA = AX3_readFile(FILENAME, [OPTIONS])

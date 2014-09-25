@@ -1,3 +1,4 @@
+//BSD 2-Clause, (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.util.List;
 
 // (This inner class should probably be in another file)
