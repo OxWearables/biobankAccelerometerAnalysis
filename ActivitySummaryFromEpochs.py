@@ -87,7 +87,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
         [xIndex:<int>], default = 8
         [yIndex:<int>], default = 9
         [zIndex:<int>], default = 10
-        [targetWearTimeDays:<int>], default = 7
+        [targetWearTimeDays:<int>], default = 28
         [behavType:<string>], default = 'nonwear'
         [minFreq:<int>], default = 60, min num epochs in episode
         [maxRange:<float>], default = 0.013, movement below this indicates nonwear
@@ -104,7 +104,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     headerSize = 1
     datetimeColumn, xIndex, yIndex, zIndex = 0, 8, 9, 10
     timeFormat = '%Y-%m-%d %H:%M:%S.%f'
-    targetWearTimeDays, behavType = 9, 'nonwear'
+    targetWearTimeDays, behavType = 28, 'nonwear'
     minFreq, maxRange, graceMaxFreq = 60, 0.013, 0
     displayOutput = False
     #update default values by looping through available user parameters
