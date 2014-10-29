@@ -49,7 +49,7 @@ def main():
     call(commandArgs)
     
     #calculate and write filtered AvgVm epochs from .wav file
-    commandArgs = ["java", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
+    commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
             epochFile, "filter:true"]
     call(commandArgs)
     
