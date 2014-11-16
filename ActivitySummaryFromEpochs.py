@@ -57,7 +57,15 @@ def main():
     identifyAndRemoveNonWearTime(epochFile, funcParams)    
     
     #print average sample score (diurnally adjusted)
-    print getAverageVmMinute(epochFile,0,0)
+    avgSampleVm = getAverageVmMinute(epochFile,0,0)
+
+    #print individual's summary score
+    outputSummary = epochFile + ',' + str(avgSampleVm)
+    f = open(epochFile.replace("Epoch.csv","OutputSummary.csv"),'w')
+    f.write(outputSummary)
+    f.close()
+    print outputSummary
+
 
 
 def getAverageVmMinute(epochFile,headerSize,dateColumn):
