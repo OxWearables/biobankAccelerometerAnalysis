@@ -15,6 +15,7 @@ e.g.
 """
 
 import sys
+import os
 import datetime
 import behaviourEpisode
 import pandas as pd
@@ -36,12 +37,15 @@ def main():
     wavFile = rawFile.replace(".CWA", ".wav").replace(".cwa",".wav")
     epochFile = wavFile.replace(".wav","Epoch.csv")
     matlabPath = "matlab"
+    deleteWav = False
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
         if param.split(':')[0] == 'matlab':
             matlabPath = param.split(':')[1]
-    
+        elif param.split(':')[0] == 'deleteWav':
+            deleteWav = param.split(':')[1] in ['true', 'True']
+
     #interpolate and calibrate raw .CWA file, writing output to .wav file
     commandArgs = [matlabPath, "-nosplash",
             "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
@@ -52,7 +56,9 @@ def main():
     commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
             epochFile, "filter:true"]
     call(commandArgs)
-    
+    if deleteWav:
+        os.remove(wavFile)
+
     #identify and remove nonWear episodes
     firstDay, lastDay, wearTime, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
