@@ -54,14 +54,17 @@ def main():
     call(commandArgs)
     
     #identify and remove nonWear episodes
-    identifyAndRemoveNonWearTime(epochFile, funcParams)    
+    firstDay, lastDay, wearTime, numNonWearEpisodes = identifyAndRemoveNonWearTime(
+            epochFile, funcParams)    
     
     #print average sample score (diurnally adjusted)
     avgSampleVm = getAverageVmMinute(epochFile,0,0)
 
-    #print individual's summary score
-    outputSummary = epochFile + ',' + str(avgSampleVm)
-    f = open(epochFile.replace("Epoch.csv","OutputSummary.csv"),'w')
+    #print processed summary variables from accelerometer file
+    outputSummary = rawFile + ',' + str(avgSampleVm) + ',' + str(firstDay) + ','
+    outputSummary += str(lastDay) + ',' + str(wearTime) + ','
+    outputSummary += str(numNonWearEpisodes)
+    f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
     f.write(outputSummary)
     f.close()
     print outputSummary
@@ -159,6 +162,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     wearTime -= sumNonWear #total wear = max possible wear - nonWear
     print wearTime, numNonWearEpisodes
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
+    return firstDay, lastDay, wearTime, numNonWearEpisodes
 
 
 def removeNonWearFromEpochFile(
