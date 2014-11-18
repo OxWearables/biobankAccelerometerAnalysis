@@ -28,7 +28,7 @@ def main():
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
         msg = "\n Invalid input, please enter at least 1 parameter, e.g."
-        msg += "\n python ActivitySummaryFromEpoch.py inputFile.CWA"
+        msg += "\n python ActivitySummaryFromEpoch.py inputFile.CWA \n"
         print msg
         sys.exit(0)
     #store command line arguments to local variables
@@ -45,6 +45,13 @@ def main():
             matlabPath = param.split(':')[1]
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
+
+    #check source cwa file exists
+    if not os.path.isfile(rawFile):
+        msg = "\n Invalid input"
+        msg += "\n File does not exist: " + rawFile + "\n"
+        print msg
+        sys.exit(0)
 
     #interpolate and calibrate raw .CWA file, writing output to .wav file
     commandArgs = [matlabPath, "-nosplash",
