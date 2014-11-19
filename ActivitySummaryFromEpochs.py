@@ -38,6 +38,7 @@ def main():
     epochFile = wavFile.replace(".wav","Epoch.csv")
     matlabPath = "matlab"
     skipMatlab = False
+    skipJava = False
     deleteWav = False
     #update default values by looping through user parameters
     for param in funcParams:
@@ -48,6 +49,8 @@ def main():
             skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'skipJava':
+            skipJava = param.split(':')[1] in ['true', 'True']
 
     #check source cwa file exists
     if not os.path.isfile(rawFile):
@@ -66,7 +69,8 @@ def main():
     #calculate and write filtered AvgVm epochs from .wav file
     commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
             epochFile, "filter:true"]
-    call(commandArgs)
+    if not skipJava:
+        call(commandArgs)
     if deleteWav:
         os.remove(wavFile)
 
