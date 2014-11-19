@@ -37,12 +37,15 @@ def main():
     wavFile = rawFile.replace(".CWA", ".wav").replace(".cwa",".wav")
     epochFile = wavFile.replace(".wav","Epoch.csv")
     matlabPath = "matlab"
+    skipMatlab = False
     deleteWav = False
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
         if param.split(':')[0] == 'matlab':
             matlabPath = param.split(':')[1]
+        elif param.split(':')[0] == 'skipMatlab':
+            skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
 
@@ -57,7 +60,8 @@ def main():
     commandArgs = [matlabPath, "-nosplash",
             "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
             + "', '" + wavFile + "');exit;"]
-    call(commandArgs)
+    if not skipMatlab:
+        call(commandArgs)
     
     #calculate and write filtered AvgVm epochs from .wav file
     commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
