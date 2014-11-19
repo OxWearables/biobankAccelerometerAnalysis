@@ -40,6 +40,7 @@ def main():
     skipMatlab = False
     skipJava = False
     deleteWav = False
+    epochPeriodStr = "epochPeriod:60"
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
@@ -51,6 +52,8 @@ def main():
             deleteWav = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'skipJava':
             skipJava = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'epochPeriod':
+            epochPeriodStr = param
 
     #check source cwa file exists
     if not os.path.isfile(rawFile):
@@ -68,7 +71,7 @@ def main():
     
     #calculate and write filtered AvgVm epochs from .wav file
     commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
-            epochFile, "filter:true"]
+            epochFile, "filter:true", epochPeriodStr]
     if not skipJava:
         call(commandArgs)
     if deleteWav:
@@ -142,7 +145,6 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     #update default values by looping through available user parameters
     for param in funcParams:
         #param will look like 'nonWearEpisodesOutputFile:aidenNonWearBouts.csv'
-        #or also like 'epochPeriod:60' (meaning 60 seconds)
         if param.split(':')[0] == 'nonWearEpisodesOutputFile':
             nonWearEpisodesOutputFile = param.split(':')[1]
         elif param.split(':')[0] == 'headerSize':
