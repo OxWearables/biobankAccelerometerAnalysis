@@ -32,7 +32,7 @@ D = AX3_readFile(filePath, 'useC', 1, 'validPackets', info.validPackets, ...
     'ignoreSessionId', 1); % SessionIds require fixing! 
 
 % pre-processing
-T = linspace(0.5,7.5,86400*100*7);  % exactly one week at 100Hz from 12:00 to 12:00
+T = linspace(10/24,7+10/24,86400*100*7);  % exactly one week at 100Hz from 10:00 to 10:00
 st = D.ACC(1,1);                            % start-time
 D.ACC(:,1)   = D.ACC(:,1)   - floor(st);    % relative timestamps to start of first day
 D.TEMP(:,1)  = D.TEMP(:,1)  - floor(st);    % relative timestamps
