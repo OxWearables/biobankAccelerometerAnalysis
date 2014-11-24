@@ -78,7 +78,7 @@ def main():
         os.remove(wavFile)
 
     #identify and remove nonWear episodes
-    firstDay, lastDay, wearTime, numNonWearEpisodes = identifyAndRemoveNonWearTime(
+    firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
     
     #print average sample score (diurnally adjusted)
@@ -87,7 +87,7 @@ def main():
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ',' + str(avgSampleVm) + ',' + str(firstDay) + ','
     outputSummary += str(lastDay) + ',' + str(wearTime) + ','
-    outputSummary += str(numNonWearEpisodes)
+    outputSummary += str(sumNonWear) + ',' + str(numNonWearEpisodes)
     f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
     f.write(outputSummary)
     f.close()
@@ -185,7 +185,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     wearTime -= sumNonWear #total wear = max possible wear - nonWear
     print wearTime, numNonWearEpisodes
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
-    return firstDay, lastDay, wearTime, numNonWearEpisodes
+    return firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes
 
 
 def removeNonWearFromEpochFile(
