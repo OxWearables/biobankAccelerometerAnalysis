@@ -110,7 +110,6 @@ else
     calStr = '';
 end
 
-
 % write file
 audiowrite(outputPath, [D.ACC(:,2:4) T], 16000, ...
     'Title', num2str(info.deviceId), 'Artist', datestr(info.start.mtime,'yyyy-mm-dd HH:MM:SS.FFF'), 'Comment', calStr, ...
