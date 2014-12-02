@@ -15,6 +15,7 @@ e.g.
 """
 
 import sys
+import os
 import datetime
 import behaviourEpisode
 import pandas as pd
@@ -27,7 +28,7 @@ def main():
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
         msg = "\n Invalid input, please enter at least 1 parameter, e.g."
-        msg += "\n python ActivitySummaryFromEpoch.py inputFile.CWA"
+        msg += "\n python ActivitySummaryFromEpoch.py inputFile.CWA \n"
         print msg
         sys.exit(0)
     #store command line arguments to local variables
@@ -36,28 +37,62 @@ def main():
     wavFile = rawFile.replace(".CWA", ".wav").replace(".cwa",".wav")
     epochFile = wavFile.replace(".wav","Epoch.csv")
     matlabPath = "matlab"
+    skipMatlab = False
+    skipJava = False
+    deleteWav = False
+    epochPeriodStr = "epochPeriod:60"
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
         if param.split(':')[0] == 'matlab':
             matlabPath = param.split(':')[1]
-    
+        elif param.split(':')[0] == 'skipMatlab':
+            skipMatlab = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'deleteWav':
+            deleteWav = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'skipJava':
+            skipJava = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'epochPeriod':
+            epochPeriodStr = param
+
+    #check source cwa file exists
+    if not os.path.isfile(rawFile):
+        msg = "\n Invalid input"
+        msg += "\n File does not exist: " + rawFile + "\n"
+        print msg
+        sys.exit(0)
+
     #interpolate and calibrate raw .CWA file, writing output to .wav file
     commandArgs = [matlabPath, "-nosplash",
             "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
             + "', '" + wavFile + "');exit;"]
-    call(commandArgs)
+    if not skipMatlab:
+        call(commandArgs)
     
     #calculate and write filtered AvgVm epochs from .wav file
-    commandArgs = ["java", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
-            epochFile, "filter:true"]
-    call(commandArgs)
-    
+    commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
+            epochFile, "filter:true", epochPeriodStr]
+    if not skipJava:
+        call(commandArgs)
+    if deleteWav:
+        os.remove(wavFile)
+
     #identify and remove nonWear episodes
-    identifyAndRemoveNonWearTime(epochFile, funcParams)    
+    firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
+            epochFile, funcParams)    
     
     #print average sample score (diurnally adjusted)
-    print getAverageVmMinute(epochFile,0,0)
+    avgSampleVm = getAverageVmMinute(epochFile,0,0)
+
+    #print processed summary variables from accelerometer file
+    outputSummary = rawFile + ',' + str(avgSampleVm) + ',' + str(firstDay) + ','
+    outputSummary += str(lastDay) + ',' + str(wearTime) + ','
+    outputSummary += str(sumNonWear) + ',' + str(numNonWearEpisodes)
+    f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
+    f.write(outputSummary)
+    f.close()
+    print outputSummary
+
 
 
 def getAverageVmMinute(epochFile,headerSize,dateColumn):
@@ -110,7 +145,6 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     #update default values by looping through available user parameters
     for param in funcParams:
         #param will look like 'nonWearEpisodesOutputFile:aidenNonWearBouts.csv'
-        #or also like 'epochPeriod:60' (meaning 60 seconds)
         if param.split(':')[0] == 'nonWearEpisodesOutputFile':
             nonWearEpisodesOutputFile = param.split(':')[1]
         elif param.split(':')[0] == 'headerSize':
@@ -151,6 +185,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     wearTime -= sumNonWear #total wear = max possible wear - nonWear
     print wearTime, numNonWearEpisodes
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
+    return firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes
 
 
 def removeNonWearFromEpochFile(

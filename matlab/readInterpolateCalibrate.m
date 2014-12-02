@@ -32,7 +32,7 @@ D = AX3_readFile(filePath, 'useC', 1, 'validPackets', info.validPackets, ...
     'ignoreSessionId', 1); % SessionIds require fixing! 
 
 % pre-processing
-T = linspace(0.5,7.5,86400*100*7);  % exactly one week at 100Hz from 12:00 to 12:00
+T = linspace(10/24,7+10/24,86400*100*7);  % exactly one week at 100Hz from 10:00 to 10:00
 st = D.ACC(1,1);                            % start-time
 D.ACC(:,1)   = D.ACC(:,1)   - floor(st);    % relative timestamps to start of first day
 D.TEMP(:,1)  = D.TEMP(:,1)  - floor(st);    % relative timestamps
@@ -104,9 +104,15 @@ T(D.TEMP(:,1)+1) = -D.LIGHT(1:length(D.TEMP),2) ./ 1000;
 % prevent overflow
 T = T(1:length(D.ACC)); 
 
+if ~isempty(D.calibration),
+    calStr = sprintf('%.8f;%.8f;%.8f', D.calibration.scale, D.calibration.offset, D.calibration.tempOffset);
+else
+    calStr = '';
+end
+
 % write file
 audiowrite(outputPath, [D.ACC(:,2:4) T], 16000, ...
-    'Title', num2str(info.deviceId), 'Artist', datestr(info.start.mtime,'yyyy-mm-dd HH:MM:SS.FFF'), 'Comment', '', ...
+    'Title', num2str(info.deviceId), 'Artist', datestr(info.start.mtime,'yyyy-mm-dd HH:MM:SS.FFF'), 'Comment', calStr, ...
     'BitsPerSample', 16);
 
 end
