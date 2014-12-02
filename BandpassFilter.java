@@ -156,10 +156,12 @@ class BandpassFilter {
 	// Apply the filter to the specified data
 	public void filter(double X[], int offset, int count) {
 		int m, i;
+		
+		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
 		for (m = offset; m < offset + count; m++) {
 			double oldXm = X[m];
 			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_ORDER; i++) {
+			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
 				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
 			}
 			X[m] = newXm;
