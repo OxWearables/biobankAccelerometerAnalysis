@@ -183,7 +183,6 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     wearTime = ((lastDay-firstDay).days*3600*24) + ((lastDay - firstDay).seconds)
     wearTime = wearTime / 60 #convert from seconds to minutes
     wearTime -= sumNonWear #total wear = max possible wear - nonWear
-    print wearTime, numNonWearEpisodes
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
     return firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes
 
