@@ -81,7 +81,7 @@ def main():
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
     
-    #print average sample score (diurnally adjusted)
+    #calculate average sample score (diurnally adjusted)
     avgSampleVm = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
