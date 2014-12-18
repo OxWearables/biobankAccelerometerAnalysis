@@ -44,7 +44,7 @@ data processing methods on our wiki.]
 (https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/MethodsOverview)
 
 ![Accelerometer data processing overview]
-(http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverview.png)
+(http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
 
 
 <h6>Licence</h6>
