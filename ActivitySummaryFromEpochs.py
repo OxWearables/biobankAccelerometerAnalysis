@@ -70,8 +70,9 @@ def main():
         call(commandArgs)
     
     #calculate and write filtered AvgVm epochs from .wav file
-    commandArgs = ["java", "-mx256m", "AxivityAx3WavEpochs", wavFile, "outputFile:" + 
-            epochFile, "filter:true", epochPeriodStr]
+    commandArgs = ["java", "-XX:ParallelGCThreads=1", "-mx64m",
+            "AxivityAx3WavEpochs", wavFile, "outputFile:" + epochFile,
+            "filter:true", epochPeriodStr]
     if not skipJava:
         call(commandArgs)
     if deleteWav:
