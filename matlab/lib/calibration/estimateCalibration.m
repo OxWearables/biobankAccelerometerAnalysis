@@ -180,8 +180,8 @@ for i=1:p.maxIter,
     
     % change current parameters
     sc = scale; % save this for convergence comparison
-    scale = scale .* gradient;  % adapt scaling
     offset = offset + off ./ (scale .* gradient);% ./ scale; % adapt offset
+    scale = scale .* gradient;  % adapt scaling
     
     if p.useTemp
         % apply temperature offset 
