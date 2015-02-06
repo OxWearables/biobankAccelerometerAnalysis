@@ -101,7 +101,8 @@ public class AxivityAx3Epochs
         //file read/write objects
         FileChannel rawAccReader = null;
         BufferedWriter epochFileWriter = null;
-        ByteBuffer buf = ByteBuffer.allocate(512);      
+        int bufSize = 512;
+        ByteBuffer buf = ByteBuffer.allocate(bufSize);      
         try {
             rawAccReader = new FileInputStream(accFile).getChannel();            
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
@@ -120,6 +121,8 @@ public class AxivityAx3Epochs
             epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples"; 
 
             //now read every page in CWA file
+            int pageCount = 0;
+            long memSizePages = rawAccReader.size()/bufSize;
             while(rawAccReader.read(buf) != -1) {
                 buf.flip();
                 buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -135,13 +138,13 @@ public class AxivityAx3Epochs
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
-                            interpolateSample, filter);                        
+                            interpolateSample, filter);
                 }
                 buf.clear();
                 //option to provide status update to user...
-                //page_count++;
-                //if(page_count % 1000 == 0)
-                    //System.out.print((page_count*100/memorySizePages) + "%\b\b\b");
+                pageCount++;
+                if(pageCount % 10000 == 0)
+                    System.out.print((pageCount*100/memSizePages) + "%\b\b\b");
             }   
             rawAccReader.close();
             epochFileWriter.close();
