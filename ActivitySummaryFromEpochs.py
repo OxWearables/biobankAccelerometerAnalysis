@@ -86,9 +86,12 @@ def main():
     avgSampleVm = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
-    outputSummary = rawFile + ',' + str(avgSampleVm) + ',' + str(firstDay) + ','
-    outputSummary += str(lastDay) + ',' + str(wearTime) + ','
-    outputSummary += str(sumNonWear) + ',' + str(numNonWearEpisodes)
+    rawFileSize = os.path.getsize(rawFile)
+    outputSummary = rawFile + ',' + str(rawFileSize) + ','
+    outputSummary += str(avgSampleVm) + ','
+    outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
+    outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
+    outputSummary += str(numNonWearEpisodes)
     f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
     f.write(outputSummary)
     f.close()
