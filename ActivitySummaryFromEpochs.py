@@ -68,11 +68,10 @@ def main():
             + "', '" + wavFile + "');exit;"]
     if not skipMatlab:
         call(commandArgs)
-    
+   
     #calculate and write filtered AvgVm epochs from .wav file
-    commandArgs = ["java", "-XX:ParallelGCThreads=1", "-mx64m",
-            "AxivityAx3WavEpochs", wavFile, "outputFile:" + epochFile,
-            "filter:true", epochPeriodStr]
+    commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3WavEpochs",
+            wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
     if not skipJava:
         call(commandArgs)
     if deleteWav:
