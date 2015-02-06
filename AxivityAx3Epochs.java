@@ -263,7 +263,7 @@ public class AxivityAx3Epochs
                     filter.filter(epochAvgVmVals);
                 }
 
-                //now take abs(AvgVm-1) vals which must be done after filtering
+                //take abs(filtered(AvgVm-1)) vals. Must be done after filtering
                 abs(epochAvgVmVals);
 
                 //calculate epoch summary values
@@ -353,7 +353,6 @@ public class AxivityAx3Epochs
     }            
       
     private static double getVectorMagnitude(double x, double y, double z) {
-        //return Math.abs(Math.sqrt(x*x + y*y + z*z)-1);
         return Math.sqrt(x*x + y*y + z*z)-1;
     }
 
