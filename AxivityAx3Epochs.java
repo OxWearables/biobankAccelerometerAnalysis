@@ -237,15 +237,25 @@ public class AxivityAx3Epochs
         int currentPeriod;
         for (int i = 0; i<sampleCount; i++) {
             if (bytesPerSample == 4) {
-                value = getUnsignedInt(buf, 30 +4*i);
+                try {
+                    value = getUnsignedInt(buf, 30 +4*i);
+                } catch (Exception excep) {
+                    System.err.println("xyz reading err: " + excep.toString());
+                    break; //rest of block/page could be corrupted
+                }
                 // Sign-extend 10-bit values, adjust for exponents
                 xRaw = (short)((short)(0xffffffc0 & (value <<  6)) >> (6 - ((byte)(value >> 30))));
                 yRaw = (short)((short)(0xffffffc0 & (value >>  4)) >> (6 - ((byte)(value >> 30))));
                 zRaw = (short)((short)(0xffffffc0 & (value >> 14)) >> (6 - ((byte)(value >> 30))));
             } else if (bytesPerSample == 6) {
+                try {
                 xRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 0);
                 yRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 2);
-                zRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 4);                          
+                zRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 4);
+                } catch (Exception excep) {
+                    System.err.println("xyz reading err: " + excep.toString());
+                    break; //rest of block/page could be corrupted
+                }
             } else {
                 xRaw = 0;
                 yRaw = 0;
