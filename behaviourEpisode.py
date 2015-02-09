@@ -151,7 +151,6 @@ def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
         except:
             sys.stderr.write('insufficient epoch data to identify episodes\n')
             break
-        lineParts = next(epochReader).split(',') #read next from file
         epochTime = datetime.datetime.strptime(lineParts[timeCol],timeFormat)
         if epochTime >= firstDay and epochTime <= lastDay:
             xStd = float(lineParts[xIndex])
