@@ -19,6 +19,8 @@ import os
 import datetime
 import behaviourEpisode
 import pandas as pd
+import numpy as np
+import statsmodels.api as sm
 from subprocess import call, Popen
 
 def main():
@@ -34,10 +36,13 @@ def main():
     #store command line arguments to local variables
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
-    wavFile = rawFile.replace(".CWA", ".wav").replace(".cwa",".wav")
+    rawFile = rawFile.replace(".CWA", ".cwa")
+    wavFile = rawFile.replace(".cwa",".wav")
+    stationaryFile = rawFile.replace(".cwa","Stationary.csv")
     epochFile = wavFile.replace(".wav","Epoch.csv")
     matlabPath = "matlab"
     skipMatlab = False
+    skipCalibration = False
     skipJava = False
     deleteWav = False
     epochPeriodStr = "epochPeriod:60"
@@ -48,9 +53,11 @@ def main():
             matlabPath = param.split(':')[1]
         elif param.split(':')[0] == 'skipMatlab':
             skipMatlab = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'skipCalibration':
+            skipCalibration = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'skipJava':
+        if param.split(':')[0] == 'skipJava':
             skipJava = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriodStr = param
@@ -68,10 +75,31 @@ def main():
             + "', '" + wavFile + "');exit;"]
     if not skipMatlab:
         call(commandArgs)
+    
+    #calibrate axes scale/offset values
+    if not skipCalibration:
+        #identify 10sec stationary epochs
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+                wavFile, "outputFile:" + stationaryFile, "filter:true",
+                "getStationaryBouts:true", "epochPeriod:10",
+                "stationaryStd:0.013"]
+        call(commandArgs)
+        #get calibrated axes scale/offset/temperature vals
+        calOff, calSlope, calTemp, meanTemp, calErr, unCalErr = getCalibrationCoefs(stationaryFile)
+        print calOff, calSlope, calTemp, meanTemp, calErr, unCalErr
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+                wavFile, "outputFile:" + epochFile, "filter:true", 
+                "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
+                "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
+                "ySlope:" + str(calSlope[1]), "zSlope:" + str(calSlope[2]),
+                "xTemp:" + str(calTemp[0]), "yTemp:" + str(calTemp[1]),
+                "zTemp:" + str(calTemp[2]), "meanTemp:" + str(meanTemp),
+                epochPeriodStr]
+    else: 
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+                wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
    
     #calculate and write filtered AvgVm epochs from .wav file
-    commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3WavEpochs",
-            wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
     if not skipJava:
         call(commandArgs)
     if deleteWav:
@@ -225,6 +253,79 @@ def removeNonWearFromEpochFile(
                     episodeCounter < len(nonWearEpisodes)-1 ):
                 episodeCounter += 1
         f.close()
+
+
+def getCalibrationCoefs(staticBoutsFile):
+    """
+    Get axes offset/gain/temp calibration coefficients through linear regression
+    of stationary episodes
+    """
+    #learning/research parameters
+    maxIter = 1000
+    minIterImprovement = -0.0002
+    #use python NUMPY framework to store stationary episodes from epoch file
+    stationaryPoints = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(2,3,4,11))
+    axesVals = stationaryPoints[:,[0,1,2]]
+    tempVals = stationaryPoints[:,[3]]
+    meanTemp = np.mean(tempVals)
+    tempVals = np.copy(tempVals-meanTemp)
+    #initialise intercept/slope variables to assume no error initially present
+    intercept = np.array([0, 0, 0])
+    slope = np.array([1, 1, 1])
+    tempCoef = np.array([0, 0, 0])
+    weights = np.zeros(len(axesVals)) + 1
+    #variables to support model fitting
+    unCalError = float("inf")
+    prevError = float("inf")
+    bestError = float("inf")
+    bestIntercept = np.copy(intercept)
+    bestSlope = np.copy(slope)
+    bestTemp = np.copy(tempCoef)
+    #iterate through linear model fitting
+    for i in range(1, maxIter):
+        curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+        target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
+        if i ==1:
+            unCalError = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
+        interceptTemp = np.array([0.0, 0.0, 0.0])
+        slopeTemp = np.array([1.0, 1.0, 1.0])
+        tempTemp = np.array([0.0, 0.0, 0.0])
+        #iterate through each axis, refitting its intercept/slope vals
+        for a in range(0,3):
+            #gain, off, r, p, se = stats.linregress(curr[:,a], target[:,a])
+            #off, gain = P.polyfit(curr[:,a], target[:,a], 1, w=weights)
+            xAcc = curr[:,[a]]
+            x = np.concatenate([xAcc, tempVals], axis=1)
+            y = target[:,a]
+            #model needs intercept, so add column of 1's
+            x = sm.add_constant(x, prepend=False)
+            #resOls = sm.OLS(y,x).fit()
+            resOls = sm.WLS(y,x,weights=weights).fit()
+            interceptTemp[a] = resOls.params[2]
+            slopeTemp[a] = resOls.params[0]
+            tempTemp[a] = resOls.params[1]
+        #update intercept/slope values based on latest iteration
+        intercept = intercept + (interceptTemp * (slope*slopeTemp))
+        slope = (slope*slopeTemp)
+        tempCoef = tempCoef + (tempTemp * (slope*slopeTemp))
+        #update weights for linear regression
+        weights = 1/np.sqrt(np.sum(np.square(curr-target),axis=1))
+        weights[weights>100] = 100
+        #calculate error improvement rate
+        #errorTarget = np.sum(np.abs(curr-target)) / np.sum(np.abs(target))
+        #errorGravity = np.sum(np.abs(np.sqrt((np.sum(np.square(curr),axis=1)))-1))
+        rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
+        improvement = (bestError-rms)/bestError
+        prevError=rms
+        if rms < bestError:
+            bestIntercept = np.copy(intercept)
+            bestSlope = np.copy(slope)
+            bestTemp = np.copy(tempCoef)
+            bestError = rms
+        elif improvement < minIterImprovement:
+            break #break if largely disimproving i.e. prob not in local minima 
+    return bestIntercept, bestSlope, bestTemp, meanTemp, bestError, unCalError
+
 
 """
 Standard boilerplate to call the main() function to begin the program.
