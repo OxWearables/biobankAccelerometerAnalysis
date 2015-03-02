@@ -37,11 +37,12 @@ def main():
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
     rawFile = rawFile.replace(".CWA", ".cwa")
-    wavFile = rawFile.replace(".cwa",".wav")
+    wavFile = rawFile
     stationaryFile = rawFile.replace(".cwa","Stationary.csv")
-    epochFile = wavFile.replace(".wav","Epoch.csv")
+    epochFile = rawFile.replace(".cwa","Epoch.csv")
     matlabPath = "matlab"
-    skipMatlab = False
+    javaEpochProcess = "AxivityAx3Epochs"
+    skipMatlab = True
     skipCalibration = False
     skipJava = False
     deleteWav = False
@@ -69,17 +70,19 @@ def main():
         print msg
         sys.exit(0)
 
-    #interpolate and calibrate raw .CWA file, writing output to .wav file
-    commandArgs = [matlabPath, "-nosplash",
-            "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
-            + "', '" + wavFile + "');exit;"]
     if not skipMatlab:
+        wavFile = rawFile.replace(".cwa",".wav")
+        #interpolate and calibrate raw .CWA file, writing output to .wav file
+        commandArgs = [matlabPath, "-nosplash",
+                "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
+                + "', '" + wavFile + "');exit;"]
         call(commandArgs)
+        javaEpochProcess = "AxivityAx3WavEpochs"
     
     #calibrate axes scale/offset values
     if not skipCalibration:
         #identify 10sec stationary epochs
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + stationaryFile, "filter:true",
                 "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:0.013"]
@@ -87,7 +90,7 @@ def main():
         #get calibrated axes scale/offset/temperature vals
         calOff, calSlope, calTemp, meanTemp, calErr, unCalErr = getCalibrationCoefs(stationaryFile)
         print calOff, calSlope, calTemp, meanTemp, calErr, unCalErr
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", 
                 "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
                 "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
@@ -96,9 +99,9 @@ def main():
                 "zTemp:" + str(calTemp[2]), "meanTemp:" + str(meanTemp),
                 epochPeriodStr]
     else: 
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", "AxivityAx3Epochs",
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
-   
+  
     #calculate and write filtered AvgVm epochs from .wav file
     if not skipJava:
         call(commandArgs)
