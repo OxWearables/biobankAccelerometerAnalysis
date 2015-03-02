@@ -31,7 +31,7 @@ public class AxivityAx3Epochs
         String outputFile = "";
         int epochPeriod = 60;
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-        BandpassFilter filter = new BandpassFilter(0.50, 15, 100);
+        BandpassFilter filter = new BandpassFilter(0.20, 20, 100);
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
         Boolean interpolateSample = true;
