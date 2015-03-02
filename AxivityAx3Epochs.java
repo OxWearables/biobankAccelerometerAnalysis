@@ -35,6 +35,8 @@ public class AxivityAx3Epochs
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
         Boolean interpolateSample = true;
+        Boolean getStationaryBouts = false;
+        double stationaryStd = 0.013;
         double[] swIntercept = new double[]{0.0, 0.0, 0.0};
         double[] swSlope = new double[]{1.0, 1.0, 1.0};
         double[] tempCoef = new double[]{0.0, 0.0, 0.0};
@@ -79,6 +81,12 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("interpolateSample")) {
                     interpolateSample = Boolean.parseBoolean(
                             funcParam.toLowerCase());
+                } else if (funcName.equals("getStationaryBouts")) {
+                    getStationaryBouts = Boolean.parseBoolean(
+                            funcParam.toLowerCase());
+                    epochPeriod = 10;
+                } else if (funcName.equals("stationaryStd")) {
+                    stationaryStd = Double.parseDouble(funcParam);
                 } else if (funcName.equals("xIntercept")) {
                     swIntercept[0] = Double.parseDouble(funcParam);
                 } else if (funcName.equals("yIntercept")) {
@@ -106,7 +114,8 @@ public class AxivityAx3Epochs
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
                 startEpochWholeMinute, startEpochWholeSecond, swIntercept,
-                swSlope, tempCoef, meanTemp, interpolateSample, filter);   
+                swSlope, tempCoef, meanTemp, interpolateSample,
+                getStationaryBouts, stationaryStd, filter);   
     }
 
     /**
@@ -125,6 +134,8 @@ public class AxivityAx3Epochs
             double[] tempCoef,
             double meanTemp,
             Boolean interpolateSample,
+            Boolean getStationaryBouts,
+            double staticStd,
             BandpassFilter filter) { 
         //file read/write objects
         FileChannel rawAccReader = null;
@@ -167,7 +178,8 @@ public class AxivityAx3Epochs
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
                             swIntercept, swSlope, tempCoef, meanTemp,
-                            interpolateSample, filter);
+                            interpolateSample, getStationaryBouts, staticStd,
+                            filter);
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -194,7 +206,7 @@ public class AxivityAx3Epochs
      */
     private static Calendar processDataBlockIdentifyEpochs(
             ByteBuffer buf,
-            BufferedWriter epochFileWriter,
+            BufferedWriter epochWriter,
             SimpleDateFormat timeFormat,
             Calendar epochStartTime,
             int epochPeriod,
@@ -207,6 +219,8 @@ public class AxivityAx3Epochs
             double[] tempCoef,
             double meanTemp,
             Boolean interpolateSample,
+            Boolean getStationaryBouts,
+            double staticStd,
             BandpassFilter filter) {
         //read block header items
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
@@ -343,7 +357,10 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
                 epochSummary += "," + temperature + "," + xVals.size();
-                writeLine(epochFileWriter, epochSummary); 
+                if(!getStationaryBouts || 
+                        (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
+                    writeLine(epochWriter, epochSummary);        
+                }
                        
                 //reset target start time and reset arrays for next epoch
                 epochStartTime.add(Calendar.SECOND, epochPeriod);
