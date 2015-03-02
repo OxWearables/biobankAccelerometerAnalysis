@@ -35,6 +35,10 @@ public class AxivityAx3Epochs
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
         Boolean interpolateSample = true;
+        double[] swIntercept = new double[]{0.0, 0.0, 0.0};
+        double[] swSlope = new double[]{1.0, 1.0, 1.0};
+        double[] tempCoef = new double[]{0.0, 0.0, 0.0};
+        double meanTemp = 0.0;
         if (args.length < 1) {
             String invalidInputMsg = "Invalid input, ";
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
@@ -75,14 +79,34 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("interpolateSample")) {
                     interpolateSample = Boolean.parseBoolean(
                             funcParam.toLowerCase());
+                } else if (funcName.equals("xIntercept")) {
+                    swIntercept[0] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("yIntercept")) {
+                    swIntercept[1] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("zIntercept")) {
+                    swIntercept[2] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("xSlope")) {
+                    swSlope[0] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("ySlope")) {
+                    swSlope[1] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("zSlope")) {
+                    swSlope[2] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("xTemp")) {
+                    tempCoef[0] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("yTemp")) {
+                    tempCoef[1] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("zTemp")) {
+                    tempCoef[2] = Double.parseDouble(funcParam);
+                } else if (funcName.equals("meanTemp")) {
+                    meanTemp = Double.parseDouble(funcParam);
                 }
             }
         }    
 
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
-                startEpochWholeMinute, startEpochWholeSecond, interpolateSample,
-                filter);   
+                startEpochWholeMinute, startEpochWholeSecond, swIntercept,
+                swSlope, tempCoef, meanTemp, interpolateSample, filter);   
     }
 
     /**
@@ -96,6 +120,10 @@ public class AxivityAx3Epochs
             SimpleDateFormat timeFormat,
             Boolean startEpochWholeMinute,
             Boolean startEpochWholeSecond,
+            double[] swIntercept,
+            double[] swSlope,
+            double[] tempCoef,
+            double meanTemp,
             Boolean interpolateSample,
             BandpassFilter filter) { 
         //file read/write objects
@@ -138,6 +166,7 @@ public class AxivityAx3Epochs
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
+                            swIntercept, swSlope, tempCoef, meanTemp,
                             interpolateSample, filter);
                 }
                 buf.clear();
@@ -173,6 +202,10 @@ public class AxivityAx3Epochs
             List<Double> yVals,
             List<Double> zVals,
             List<Double> epochAvgVmVals,
+            double[] swIntercept,
+            double[] swSlope,
+            double[] tempCoef,
+            double meanTemp,
             Boolean interpolateSample,
             BandpassFilter filter) {
         //read block header items
@@ -230,6 +263,7 @@ public class AxivityAx3Epochs
         double x = 0.0;
         double y = 0.0;
         double z = 0.0;
+        double mcTemp = temperature-meanTemp; //mean centred temperature
         
         //loop through each line in data block & check if it is last in epoch
         //then write epoch summary to file
@@ -264,7 +298,12 @@ public class AxivityAx3Epochs
             x = xRaw / 256.0;
             y = yRaw / 256.0;
             z = zRaw / 256.0;
-
+            //update values to software calibrated values
+            x = swIntercept[0] + x*swSlope[0] + mcTemp*tempCoef[0];
+            y = swIntercept[1] + y*swSlope[1] + mcTemp*tempCoef[1];
+            z = swIntercept[2] + z*swSlope[2] + mcTemp*tempCoef[2];
+            
+            
             //check we have collected enough values to form an epoch
             //todo would I be better simply calculating an epoch end-time here?
             //Rather than constantly calculating page_time - epochStartTime ???
