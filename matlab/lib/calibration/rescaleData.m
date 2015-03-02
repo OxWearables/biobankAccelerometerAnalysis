@@ -87,5 +87,7 @@ T = T - e.referenceTemperature; % latter may be zero, but then e.tempOffset is z
 % apply estimates
 D.ACC(:,2:4) = (repmat(e.offset,[N,1]) + D.ACC(:,2:4)) .* repmat(e.scale,[N,1]) ...
                  + repmat(T,[1,3]) .* repmat(e.tempOffset,[N,1]);
+%D.ACC(:,2:4) = repmat(e.offset,[N,1]) + (D.ACC(:,2:4) .* repmat(e.scale,[N,1])) ...
+%                 + (repmat(T,[1,3]) .* repmat(e.tempOffset,[N,1]));
 
 end

@@ -152,6 +152,7 @@ for i=1:p.maxIter,
     
     % model: (offset + D_in) * scale + T * tempOffset)
     D  = (repmat(offset,N,1) + D_in) .* repmat(scale,N,1) + repmat(temp,1,3) .* repmat(tempOffset,N,1);
+    %D  = repmat(offset,N,1) + (D_in .* repmat(scale,N,1)) + (repmat(temp,1,3) .* repmat(tempOffset,N,1));
     
     % targets: points on unit sphere
     target = D ./ repmat(sqrt(sum(D.^2,2)),1,size(D,2));
