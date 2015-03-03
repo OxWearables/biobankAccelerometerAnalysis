@@ -88,8 +88,8 @@ def main():
                 "stationaryStd:0.013"]
         call(commandArgs)
         #get calibrated axes scale/offset/temperature vals
-        calOff, calSlope, calTemp, meanTemp, calErr, unCalErr = getCalibrationCoefs(stationaryFile)
-        print calOff, calSlope, calTemp, meanTemp, calErr, unCalErr
+        calOff, calSlope, calTemp, meanTemp, newErr, initErr = getCalibrationCoefs(stationaryFile)
+        print calOff, calSlope, calTemp, meanTemp, newErr, initErr
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", 
                 "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
@@ -295,6 +295,8 @@ def getCalibrationCoefs(staticBoutsFile):
             x = sm.add_constant(x, prepend=True) #add bias/intercept term
             y = target[:,a]
             newI, newS, newT = sm.OLS(y,x).fit().params
+            #update values as part of iterative closest point fitting process
+            #refer to wiki as there is quite a bit of math behind next 3 lines
             intercept[a] = newI + (intercept[a] * newS)
             slope[a] = newS * slope[a]
             tempCoef[a] = newT + (tempCoef[a] * newS)
