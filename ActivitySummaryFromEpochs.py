@@ -276,7 +276,6 @@ def getCalibrationCoefs(staticBoutsFile):
     intercept = np.array([0.0, 0.0, 0.0])
     slope = np.array([1.0, 1.0, 1.0])
     tempCoef = np.array([0.0, 0.0, 0.0])
-    weights = np.zeros(len(axesVals)) + 1
     #variables to support model fitting
     initError = float("inf")
     prevError = float("inf")
@@ -293,11 +292,9 @@ def getCalibrationCoefs(staticBoutsFile):
         #iterate through each axis, refitting its intercept/slope vals
         for a in range(0,3):
             x = np.concatenate([curr[:,[a]], tempVals], axis=1)
-            x = sm.add_constant(x, prepend=True)
+            x = sm.add_constant(x, prepend=True) #add bias/intercept term
             y = target[:,a]
-            #model needs intercept, so add column of 1's
-            #resOls = sm.OLS(y,x).fit()
-            newI, newS, newT = sm.WLS(y,x,weights=weights).fit().params
+            newI, newS, newT = sm.OLS(y,x).fit().params
             intercept[a] = newI + (intercept[a] * newS)
             slope[a] = newS * slope[a]
             tempCoef[a] = newT + (tempCoef[a] * newS)
@@ -305,9 +302,6 @@ def getCalibrationCoefs(staticBoutsFile):
         curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
         target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
         rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
-        #update weights for linear regression
-        weights = 1/np.sqrt(np.sum(np.square(curr-target),axis=1))
-        weights[weights>100] = 100
         #assess iterative error convergence
         improvement = (bestError-rms)/bestError
         prevError=rms
