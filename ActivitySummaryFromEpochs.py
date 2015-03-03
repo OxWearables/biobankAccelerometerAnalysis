@@ -265,7 +265,7 @@ def getCalibrationCoefs(staticBoutsFile):
     """
     #learning/research parameters
     maxIter = 1000
-    minIterImprovement = -0.0002
+    minIterImprovement = 0.0001 #0.1mg
     #use python NUMPY framework to store stationary episodes from epoch file
     stationaryPoints = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(2,3,4,11))
     axesVals = stationaryPoints[:,[0,1,2]]
@@ -273,51 +273,42 @@ def getCalibrationCoefs(staticBoutsFile):
     meanTemp = np.mean(tempVals)
     tempVals = np.copy(tempVals-meanTemp)
     #initialise intercept/slope variables to assume no error initially present
-    intercept = np.array([0, 0, 0])
-    slope = np.array([1, 1, 1])
-    tempCoef = np.array([0, 0, 0])
+    intercept = np.array([0.0, 0.0, 0.0])
+    slope = np.array([1.0, 1.0, 1.0])
+    tempCoef = np.array([0.0, 0.0, 0.0])
     weights = np.zeros(len(axesVals)) + 1
     #variables to support model fitting
-    unCalError = float("inf")
+    initError = float("inf")
     prevError = float("inf")
     bestError = float("inf")
     bestIntercept = np.copy(intercept)
     bestSlope = np.copy(slope)
     bestTemp = np.copy(tempCoef)
+    #record initial uncalibrated error
+    curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+    target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
+    initError = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
     #iterate through linear model fitting
     for i in range(1, maxIter):
-        curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
-        target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
-        if i ==1:
-            unCalError = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
-        interceptTemp = np.array([0.0, 0.0, 0.0])
-        slopeTemp = np.array([1.0, 1.0, 1.0])
-        tempTemp = np.array([0.0, 0.0, 0.0])
         #iterate through each axis, refitting its intercept/slope vals
         for a in range(0,3):
-            #gain, off, r, p, se = stats.linregress(curr[:,a], target[:,a])
-            #off, gain = P.polyfit(curr[:,a], target[:,a], 1, w=weights)
-            xAcc = curr[:,[a]]
-            x = np.concatenate([xAcc, tempVals], axis=1)
+            x = np.concatenate([curr[:,[a]], tempVals], axis=1)
+            x = sm.add_constant(x, prepend=True)
             y = target[:,a]
             #model needs intercept, so add column of 1's
-            x = sm.add_constant(x, prepend=False)
             #resOls = sm.OLS(y,x).fit()
-            resOls = sm.WLS(y,x,weights=weights).fit()
-            interceptTemp[a] = resOls.params[2]
-            slopeTemp[a] = resOls.params[0]
-            tempTemp[a] = resOls.params[1]
-        #update intercept/slope values based on latest iteration
-        intercept = intercept + (interceptTemp * (slope*slopeTemp))
-        slope = (slope*slopeTemp)
-        tempCoef = tempCoef + (tempTemp * (slope*slopeTemp))
+            newI, newS, newT = sm.WLS(y,x,weights=weights).fit().params
+            intercept[a] = newI + (intercept[a] * newS)
+            slope[a] = newS * slope[a]
+            tempCoef[a] = newT + (tempCoef[a] * newS)
+        #update vals (and targed) based on new intercept/slope/temp coeffs
+        curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+        target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
+        rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
         #update weights for linear regression
         weights = 1/np.sqrt(np.sum(np.square(curr-target),axis=1))
         weights[weights>100] = 100
-        #calculate error improvement rate
-        #errorTarget = np.sum(np.abs(curr-target)) / np.sum(np.abs(target))
-        #errorGravity = np.sum(np.abs(np.sqrt((np.sum(np.square(curr),axis=1)))-1))
-        rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
+        #assess iterative error convergence
         improvement = (bestError-rms)/bestError
         prevError=rms
         if rms < bestError:
@@ -325,9 +316,9 @@ def getCalibrationCoefs(staticBoutsFile):
             bestSlope = np.copy(slope)
             bestTemp = np.copy(tempCoef)
             bestError = rms
-        elif improvement < minIterImprovement:
-            break #break if largely disimproving i.e. prob not in local minima 
-    return bestIntercept, bestSlope, bestTemp, meanTemp, bestError, unCalError
+        if improvement < minIterImprovement:
+            break #break if not largely converged
+    return bestIntercept, bestSlope, bestTemp, meanTemp, bestError, initError
 
 
 """
