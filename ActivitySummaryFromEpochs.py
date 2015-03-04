@@ -112,13 +112,15 @@ def main():
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
     
-    #calculate average sample score (diurnally adjusted)
-    avgSampleVm = getAverageVmMinute(epochFile,0,0)
+    #calculate average, median, stdev, and count of sample score
+    #for a 1440 min diurnally adjusted day
+    avgSampleVm, medianVm, stdevVm, countVm = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
     rawFileSize = os.path.getsize(rawFile)
     outputSummary = rawFile + ',' + str(rawFileSize) + ','
-    outputSummary += str(avgSampleVm) + ','
+    outputSummary += str(avgSampleVm) + ',' + str(medianVm) + ','
+    outputSummary += str(stdevVm) + ',' + str(countVm) + ','
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
     outputSummary += str(numNonWearEpisodes)
@@ -140,7 +142,7 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     #diurnal adjustment: construct average 1440 minute day
     avgDay = e[['AvgVm']].groupby([e.index.hour, e.index.minute]).mean()
     #return average minute score
-    return avgDay.mean()[0]
+    return avgDay.mean()[0], avgDay.median()[0], avgDay.std()[0], avgDay.count()[0]
 
 
 def identifyAndRemoveNonWearTime(epochFile, funcParams):
