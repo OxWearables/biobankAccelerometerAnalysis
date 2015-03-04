@@ -112,9 +112,11 @@ def main():
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
     
-    #calculate average, median, stdev, and count of sample score
-    #for a 1440 min diurnally adjusted day
-    avgSampleVm, medianVm, stdevVm, countVm = getAverageVmMinute(epochFile,0,0)
+    #calculate average, median, stdev, and count of sample score for a 1440 min
+    #diurnally adjusted day. Also get overall wear time minutes across week
+    #in quadrants (0-6h, 6-12, 12-18, 18-24)
+    avgSampleVm, medianVm, stdevVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear = getAverageVmMinute(
+            epochFile,0,0)
 
     #print processed summary variables from accelerometer file
     rawFileSize = os.path.getsize(rawFile)
@@ -123,7 +125,8 @@ def main():
     outputSummary += str(stdevVm) + ',' + str(countVm) + ','
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
-    outputSummary += str(numNonWearEpisodes)
+    outputSummary += str(numNonWearEpisodes) + ',' + str(q1Wear) + ','
+    outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear)
     f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
     f.write(outputSummary)
     f.close()
@@ -140,9 +143,15 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
     #diurnal adjustment: construct average 1440 minute day
-    avgDay = e[['AvgVm']].groupby([e.index.hour, e.index.minute]).mean()
+    avgDay = e['AvgVm'].groupby([e.index.hour, e.index.minute]).mean()
+    #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
+    q1Wear = e['AvgVm'][e.index.hour<6].count()
+    q2Wear = e['AvgVm'][(e.index.hour>=6) & (e.index.hour<12)].count()
+    q3Wear = e['AvgVm'][(e.index.hour>=12) & (e.index.hour<18)].count()
+    q4Wear = e['AvgVm'][e.index.hour>=18].count()
+
     #return average minute score
-    return avgDay.mean()[0], avgDay.median()[0], avgDay.std()[0], avgDay.count()[0]
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear
 
 
 def identifyAndRemoveNonWearTime(epochFile, funcParams):
