@@ -225,7 +225,7 @@ public class AxivityAx3Epochs
         //read block header items
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
         int light = getUnsignedShort(buf,18);// buf.getShort(18);      
-        int temperature = getUnsignedShort(buf,20);// buf.getShort(20);
+        double temperature = (getUnsignedShort(buf,20)*150.0 - 20500) / 1000;
         byte rateCode = buf.get(24);
         byte numAxesBPS = buf.get(25);
         short timestampOffset = buf.getShort(26);
