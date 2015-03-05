@@ -112,21 +112,23 @@ def main():
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, funcParams)    
     
-    #calculate average, median, stdev, and count of sample score for a 1440 min
-    #diurnally adjusted day. Also get overall wear time minutes across week
-    #in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear = getAverageVmMinute(
-            epochFile,0,0)
+    #calculate average, median, stdev, min, max, count, & ecdf of sample score in
+    #1440 min diurnally adjusted day. Also get overall wear time minutes across
+    #week in quadrants (0-6h, 6-12, 12-18, 18-24)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
     rawFileSize = os.path.getsize(rawFile)
     outputSummary = rawFile + ',' + str(rawFileSize) + ','
     outputSummary += str(avgSampleVm) + ',' + str(medianVm) + ','
-    outputSummary += str(stdevVm) + ',' + str(countVm) + ','
+    outputSummary += str(stdevVm) + ',' + str(minVm) +',' + str(maxVm) + ','
+    outputSummary += str(countVm) + ','
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
     outputSummary += str(numNonWearEpisodes) + ',' + str(q1Wear) + ','
     outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear)
+    outputSummary += str(ecdfStart) + ',' + str(ecdfEnd) + ','
+    outputSummary += str(ecdfStep) + ',' + ','.join(map(str,ecdfY))
     f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
     f.write(outputSummary)
     f.close()
@@ -149,9 +151,16 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     q2Wear = e['AvgVm'][(e.index.hour>=6) & (e.index.hour<12)].count()
     q3Wear = e['AvgVm'][(e.index.hour>=12) & (e.index.hour<18)].count()
     q4Wear = e['AvgVm'][e.index.hour>=18].count()
-
+    #calculate empirical cumulative distribution function of vector magnitudes
+    ecdf = sm.distributions.ECDF(avgDay)
+    numBins = 200
+    startBin = 0
+    endBin = 0.200
+    x, step = np.linspace(startBin, endBin, numBins+1, retstep=True)
+    y = ecdf(x)
+    print step, y*avgDay.count()
     #return average minute score
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, startBin, endBin, step, y
 
 
 def identifyAndRemoveNonWearTime(epochFile, funcParams):
