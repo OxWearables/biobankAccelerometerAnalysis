@@ -37,9 +37,11 @@ def main():
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
     rawFile = rawFile.replace(".CWA", ".cwa")
+    summaryFile = rawFile.replace(".cwa","OutputSummary.csv")
     wavFile = rawFile
     stationaryFile = rawFile.replace(".cwa","Stationary.csv")
     epochFile = rawFile.replace(".cwa","Epoch.csv")
+    nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
     matlabPath = "matlab"
     javaEpochProcess = "AxivityAx3Epochs"
     skipMatlab = True
@@ -50,8 +52,18 @@ def main():
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
-        if param.split(':')[0] == 'matlab':
+        if param.split(':')[0] == 'matlabPath':
             matlabPath = param.split(':')[1]
+        elif param.split(':')[0] == 'summaryFolder':
+            summaryFile = param.split(':')[1] + summaryFile.split('/')[-1]
+        elif param.split(':')[0] == 'wavFolder':
+            wavFile = param.split(':')[1] + wavFile.split('/')[-1]
+        elif param.split(':')[0] == 'epochFolder':
+            epochFile = param.split(':')[1] + epochFile.split('/')[-1]
+        elif param.split(':')[0] == 'nonWearFolder':
+            nonWearFile = param.split(':')[1] + nonWearFile.split('/')[-1]
+        elif param.split(':')[0] == 'stationaryFolder':
+            stationaryFile = param.split(':')[1] + stationaryFile.split('/')[-1]
         elif param.split(':')[0] == 'skipMatlab':
             skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'skipCalibration':
@@ -110,7 +122,7 @@ def main():
 
     #identify and remove nonWear episodes
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
-            epochFile, funcParams)    
+            epochFile, nonWearFile, funcParams)    
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
@@ -129,7 +141,7 @@ def main():
     outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear)
     outputSummary += str(ecdfStart) + ',' + str(ecdfEnd) + ','
     outputSummary += str(ecdfStep) + ',' + ','.join(map(str,ecdfY))
-    f = open(rawFile.replace(".cwa","OutputSummary.csv"),'w')
+    f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
     print outputSummary
@@ -158,16 +170,16 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     endBin = 0.200
     x, step = np.linspace(startBin, endBin, numBins+1, retstep=True)
     y = ecdf(x)
-    print step, y*avgDay.count()
     #return average minute score
     return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, startBin, endBin, step, y
 
 
-def identifyAndRemoveNonWearTime(epochFile, funcParams):
+def identifyAndRemoveNonWearTime(epochFile, nonWearEpisodesFile, funcParams):
     """
     Identify and remove nonWear episodes from an epoch CSV file
     Inputs:
     - epochFile: an epoch .csv file
+    - nonWearEpisodesFile: path to write nonWearBouts.csv file to
     - funcParams: an array of [<name>:<value>] items, specifically:
         [nonWearEpisodesOutputFile:<name.csv>], default = <epochFile>_mvpa_bout_list.csv
         [headerSize:<lines>], default = 1 
@@ -189,7 +201,6 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     Firstly determine parameters to influence the calculation of epochs
     '''
     #variables to store default parameter options
-    nonWearEpisodesOutputFile = epochFile.split('.')[0] + 'NonWearBouts.csv'
     headerSize = 1
     datetimeColumn, xIndex, yIndex, zIndex = 0, 8, 9, 10
     timeFormat = '%Y-%m-%d %H:%M:%S.%f'
@@ -199,7 +210,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
     #update default values by looping through available user parameters
     for param in funcParams:
         #param will look like 'nonWearEpisodesOutputFile:aidenNonWearBouts.csv'
-        if param.split(':')[0] == 'nonWearEpisodesOutputFile':
+        if param.split(':')[0] == 'nonWearEpisodesFile':
             nonWearEpisodesOutputFile = param.split(':')[1]
         elif param.split(':')[0] == 'headerSize':
             headerSize = int(param.split(':')[1])
@@ -232,7 +243,7 @@ def identifyAndRemoveNonWearTime(epochFile, funcParams):
                     graceMaxFreq)
     #print summary of each nonwear episode detected, returning sum nonwear time
     sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
-                    nonWearEpisodesOutputFile, episodesList, displayOutput)
+                    nonWearEpisodesFile, episodesList, displayOutput)
     #calculate max possible wear time in minutes (pre Python 2.7 compatible)
     wearTime = ((lastDay-firstDay).days*3600*24) + ((lastDay - firstDay).seconds)
     wearTime = wearTime / 60 #convert from seconds to minutes
