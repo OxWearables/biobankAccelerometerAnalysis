@@ -90,7 +90,7 @@ def main():
     if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
-        print msg
+        sys.stderr.write(msg)
         sys.exit(0)
 
     if not skipMatlab:
