@@ -41,6 +41,7 @@ def main():
     summaryFile = rawFile.replace(".cwa","OutputSummary.csv")
     wavFile = rawFile
     stationaryFile = rawFile.replace(".cwa","Stationary.csv")
+    calibrationFile = rawFile.replace(".cwa","Calibration.csv")
     epochFile = rawFile.replace(".cwa","Epoch.csv")
     nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
     matlabPath = "matlab"
@@ -66,6 +67,8 @@ def main():
             nonWearFile = param.split(':')[1] + nonWearFile.split('/')[-1]
         elif param.split(':')[0] == 'stationaryFolder':
             stationaryFile = param.split(':')[1] + stationaryFile.split('/')[-1]
+        elif param.split(':')[0] == 'calibrationFolder':
+            calibrationFile = param.split(':')[1] + calibrationFile.split('/')[-1]
         elif param.split(':')[0] == 'skipRaw':
             skipRaw = param.split(':')[1] in ['true', 'True']
             if skipRaw:
@@ -103,12 +106,21 @@ def main():
     if not skipCalibration:
         #identify 10sec stationary epochs
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                wavFile, "outputFile:" + stationaryFile, "filter:true",
+                rawFile, "outputFile:" + stationaryFile, "filter:true",
                 "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:0.013"]
         call(commandArgs)
-        #get calibrated axes scale/offset/temperature vals
+        #record calibrated axes scale/offset/temperature vals
         calOff, calSlope, calTemp, meanTemp, newErr, initErr = getCalibrationCoefs(stationaryFile)
+        deviceId = getDeviceId(rawFile)
+        calSummary = rawFile + ',' + str(deviceId) + ','
+        calSummary += str(calOff[0]) + ',' + str(calOff[1]) + ',' + str(calOff[2]) + ','
+        calSummary += str(calSlope[0]) + ',' + str(calSlope[1]) + ',' + str(calSlope[2]) + ','
+        calSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ',' + str(calTemp[2]) + ','
+        calSummary += str(newErr) + ',' + str(initErr)
+        f = open(calibrationFile,'w')
+        f.write(calSummary)
+        f.close()
         print calOff, calSlope, calTemp, meanTemp, newErr, initErr
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", 
