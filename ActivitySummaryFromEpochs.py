@@ -22,6 +22,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 from subprocess import call, Popen
+import struct
 
 def main():
     """
@@ -130,8 +131,8 @@ def main():
     avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
-    rawFileSize = os.path.getsize(rawFile)
-    outputSummary = rawFile + ',' + str(rawFileSize) + ','
+    outputSummary = rawFile + ',' + str(os.path.getsize(rawFile)) + ','
+    outputSummary += str(getDeviceId(rawFile)) + ','
     outputSummary += str(avgSampleVm) + ',' + str(medianVm) + ','
     outputSummary += str(stdevVm) + ',' + str(minVm) +',' + str(maxVm) + ','
     outputSummary += str(countVm) + ','
@@ -144,6 +145,7 @@ def main():
     f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
+    print summaryFile
     print outputSummary
 
 
@@ -346,6 +348,17 @@ def getCalibrationCoefs(staticBoutsFile):
         if improvement < minIterImprovement:
             break #break if not largely converged
     return bestIntercept, bestSlope, bestTemp, meanTemp, bestError, initError
+
+
+def getDeviceId(cwaFile):
+    f = open(cwaFile, 'rb')
+    header = f.read(2)
+    if header == 'MD':
+        blockSize = struct.unpack('H', f.read(2))[0]
+        performClear = struct.unpack('B', f.read(1))[0]
+        deviceId = struct.unpack('H', f.read(2))[0]
+    f.close()
+    return deviceId
 
 
 """
