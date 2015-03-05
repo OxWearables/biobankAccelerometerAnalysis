@@ -45,6 +45,7 @@ def main():
     nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
     matlabPath = "matlab"
     javaEpochProcess = "AxivityAx3Epochs"
+    skipRaw = False
     skipMatlab = True
     skipCalibration = False
     skipJava = False
@@ -65,6 +66,12 @@ def main():
             nonWearFile = param.split(':')[1] + nonWearFile.split('/')[-1]
         elif param.split(':')[0] == 'stationaryFolder':
             stationaryFile = param.split(':')[1] + stationaryFile.split('/')[-1]
+        elif param.split(':')[0] == 'skipRaw':
+            skipRaw = param.split(':')[1] in ['true', 'True']
+            if skipRaw:
+                skipMatlab = True
+                skipCalibration = True
+                skipJava = True
         elif param.split(':')[0] == 'skipMatlab':
             skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'skipCalibration':
@@ -77,7 +84,7 @@ def main():
             epochPeriodStr = param
 
     #check source cwa file exists
-    if not os.path.isfile(rawFile):
+    if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
         print msg
@@ -131,8 +138,11 @@ def main():
     avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
-    outputSummary = rawFile + ',' + str(os.path.getsize(rawFile)) + ','
-    outputSummary += str(getDeviceId(rawFile)) + ','
+    outputSummary = rawFile + ','
+    try:
+        outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
+    except:
+        outputSummary += '-1,-1,'
     outputSummary += str(avgSampleVm) + ',' + str(medianVm) + ','
     outputSummary += str(stdevVm) + ',' + str(minVm) +',' + str(maxVm) + ','
     outputSummary += str(countVm) + ','
