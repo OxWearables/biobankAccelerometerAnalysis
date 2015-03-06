@@ -161,7 +161,7 @@ def main():
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
     outputSummary += str(numNonWearEpisodes) + ',' + str(q1Wear) + ','
-    outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear)
+    outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear) + ','
     outputSummary += str(ecdfStart) + ',' + str(ecdfEnd) + ','
     outputSummary += str(ecdfStep) + ',' + ','.join(map(str,ecdfY))
     f = open(summaryFile,'w')
