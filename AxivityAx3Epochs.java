@@ -41,6 +41,7 @@ public class AxivityAx3Epochs
         double[] swSlope = new double[]{1.0, 1.0, 1.0};
         double[] tempCoef = new double[]{0.0, 0.0, 0.0};
         double meanTemp = 0.0;
+        int range = 8;
         if (args.length < 1) {
             String invalidInputMsg = "Invalid input, ";
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
@@ -107,13 +108,15 @@ public class AxivityAx3Epochs
                     tempCoef[2] = Double.parseDouble(funcParam);
                 } else if (funcName.equals("meanTemp")) {
                     meanTemp = Double.parseDouble(funcParam);
+                } else if (funcName.equals("range")) {
+                    range = Integer.parseInt(funcParam);
                 }
             }
         }    
 
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
-                startEpochWholeMinute, startEpochWholeSecond, swIntercept,
+                startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
                 swSlope, tempCoef, meanTemp, interpolateSample,
                 getStationaryBouts, stationaryStd, filter);   
     }
@@ -129,6 +132,7 @@ public class AxivityAx3Epochs
             SimpleDateFormat timeFormat,
             Boolean startEpochWholeMinute,
             Boolean startEpochWholeSecond,
+            int range,
             double[] swIntercept,
             double[] swSlope,
             double[] tempCoef,
@@ -155,9 +159,12 @@ public class AxivityAx3Epochs
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
+            int clipsPreCalibr = 0;
+            int clipsPostCalibr = 0;
             String epochSummary = "";
             String epochHeader = "timestamp,AvgVm,xMean,yMean,zMean,xRange,";
-            epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples"; 
+            epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples,"; 
+            epochHeader += "clipsBeforeCalibr,clipsAfterCalibr";
 
             //now read every page in CWA file
             int pageCount = 0;
@@ -177,9 +184,9 @@ public class AxivityAx3Epochs
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
-                            swIntercept, swSlope, tempCoef, meanTemp,
-                            interpolateSample, getStationaryBouts, staticStd,
-                            filter);
+                            range, clipsPreCalibr, clipsPostCalibr, swIntercept,
+                            swSlope, tempCoef, meanTemp, interpolateSample,
+                            getStationaryBouts, staticStd, filter);
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -214,6 +221,9 @@ public class AxivityAx3Epochs
             List<Double> yVals,
             List<Double> zVals,
             List<Double> epochAvgVmVals,
+            int range,
+            int clipsPreCalibr,
+            int clipsPostCalibr,
             double[] swIntercept,
             double[] swSlope,
             double[] tempCoef,
@@ -312,11 +322,19 @@ public class AxivityAx3Epochs
             x = xRaw / 256.0;
             y = yRaw / 256.0;
             z = zRaw / 256.0;
+            //check if any clipping present
+            if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
+                clipsPreCalibr += 1;
+            }
+
             //update values to software calibrated values
             x = swIntercept[0] + x*swSlope[0] + mcTemp*tempCoef[0];
             y = swIntercept[1] + y*swSlope[1] + mcTemp*tempCoef[1];
             z = swIntercept[2] + z*swSlope[2] + mcTemp*tempCoef[2];
-            
+            //check if any new clipping has happened
+            if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
+                clipsPostCalibr += 1;
+            }
             
             //check we have collected enough values to form an epoch
             //todo would I be better simply calculating an epoch end-time here?
@@ -357,6 +375,7 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
                 epochSummary += "," + temperature + "," + xVals.size();
+                epochSummary += "," + clipsPreCalibr + "," + clipsPostCalibr;
                 if(!getStationaryBouts || 
                         (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
                     writeLine(epochWriter, epochSummary);        
@@ -368,6 +387,8 @@ public class AxivityAx3Epochs
                 yVals.clear();
                 zVals.clear();
                 epochAvgVmVals.clear();
+                clipsPreCalibr = 0;
+                clipsPostCalibr = 0;
             }
             //store axes and vector magnitude values for every reading
             xVals.add(x);
