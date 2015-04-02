@@ -162,7 +162,7 @@ public class AxivityAx3Epochs
             int clipsPreCalibr = 0;
             int clipsPostCalibr = 0;
             String epochSummary = "";
-            String epochHeader = "timestamp,AvgVm,xMean,yMean,zMean,xRange,";
+            String epochHeader = "timestamp,avgVm,xMean,yMean,zMean,xRange,";
             epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples,"; 
             epochHeader += "clipsBeforeCalibr,clipsAfterCalibr";
 

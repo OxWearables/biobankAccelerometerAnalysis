@@ -134,7 +134,7 @@ def main():
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
   
-    #calculate and write filtered AvgVm epochs from .wav file
+    #calculate and write filtered avgVm epochs from .wav file
     if not skipJava:
         call(commandArgs)
     if deleteWav:
@@ -181,12 +181,12 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
     #diurnal adjustment: construct average 1440 minute day
-    avgDay = e['AvgVm'].groupby([e.index.hour, e.index.minute]).mean()
+    avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
     #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
-    q1Wear = e['AvgVm'][e.index.hour<6].count()
-    q2Wear = e['AvgVm'][(e.index.hour>=6) & (e.index.hour<12)].count()
-    q3Wear = e['AvgVm'][(e.index.hour>=12) & (e.index.hour<18)].count()
-    q4Wear = e['AvgVm'][e.index.hour>=18].count()
+    q1Wear = e['avgVm'][e.index.hour<6].count()
+    q2Wear = e['avgVm'][(e.index.hour>=6) & (e.index.hour<12)].count()
+    q3Wear = e['avgVm'][(e.index.hour>=12) & (e.index.hour<18)].count()
+    q4Wear = e['avgVm'][e.index.hour>=18].count()
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(avgDay)
     numBins = 200
