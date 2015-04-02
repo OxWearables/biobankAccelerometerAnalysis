@@ -293,6 +293,7 @@ public class AxivityAx3Epochs
         //then write epoch summary to file
         //an epoch will have a start+end time, and be of fixed duration            
         int currentPeriod;
+        Boolean isClipped = false;
         for (int i = 0; i<sampleCount; i++) {
             if (bytesPerSample == 4) {
                 try {
@@ -325,6 +326,7 @@ public class AxivityAx3Epochs
             //check if any clipping present
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
                 clipsPreCalibr += 1;
+                isClipped = true;
             }
 
             //update values to software calibrated values
@@ -333,7 +335,8 @@ public class AxivityAx3Epochs
             z = swIntercept[2] + z*swSlope[2] + mcTemp*tempCoef[2];
             //check if any new clipping has happened
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
-                clipsPostCalibr += 1;
+                if(!isClipped)
+                    clipsPostCalibr += 1;
             }
             
             //check we have collected enough values to form an epoch
@@ -395,6 +398,7 @@ public class AxivityAx3Epochs
             yVals.add(y);
             zVals.add(z);
             epochAvgVmVals.add(getVectorMagnitude(x,y,z));
+            isClipped = false;
             //System.out.println(timeFormat.format(blockTime.getTime()) + "," + x + "," + y + "," + z);
             blockTime.add(Calendar.MILLISECOND, (int)readingGapMs);            
         }
