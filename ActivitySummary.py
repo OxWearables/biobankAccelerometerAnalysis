@@ -8,10 +8,10 @@ accelerometer data as follows:
     4) Get overall average movement per second from step 3
 === === === ===
 The application can be run as follows:
-    python ActivitySummaryFromEpochs.py <input_file.CWA> <options>
+    python ActivitySummary.py <input_file.CWA> <options>
 e.g.
-    python ActivitySummaryFromEpochs.py p001.CWA 
-    python ActivitySummaryFromEpochs.py p001.CWA min_freq:10 
+    python ActivitySummary.py p001.CWA 
+    python ActivitySummary.py p001.CWA min_freq:10 
 """
 
 import sys
@@ -31,7 +31,7 @@ def main():
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
         msg = "\n Invalid input, please enter at least 1 parameter, e.g."
-        msg += "\n python ActivitySummaryFromEpoch.py inputFile.CWA \n"
+        msg += "\n python ActivitySummary.py inputFile.CWA \n"
         print msg
         sys.exit(0)
     #store command line arguments to local variables
