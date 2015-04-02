@@ -422,7 +422,7 @@ public class AxivityAx3Epochs
     }            
       
     private static double getVectorMagnitude(double x, double y, double z) {
-        return Math.sqrt(x*x + y*y + z*z)-1;
+        return Math.sqrt(x*x + y*y + z*z);
     }
 
     private static void abs(List<Double> vals) {
