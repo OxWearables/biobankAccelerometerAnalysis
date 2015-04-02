@@ -17,8 +17,8 @@ To extract a summary of movement (average sample vector magnitude) and
 (non)wear time from raw Axivity .CWA accelerometer files:
 
 ```
-python ActivitySummaryFromEpochs.py [input_file.CWA] [options]
-python ActivitySummaryFromEpochs.py p001.cwa
+python ActivitySummary.py [input_file.CWA] [options]
+python ActivitySummary.py p001.cwa
 ```
 
 [Click here for a sample .CWA file.]
