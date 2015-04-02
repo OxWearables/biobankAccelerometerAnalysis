@@ -147,7 +147,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #week in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, clipsPreCalibr, clipsPostCalibr, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -162,6 +162,7 @@ def main():
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
     outputSummary += str(numNonWearEpisodes) + ',' + str(q1Wear) + ','
     outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear) + ','
+    outputSummary += str(clipsPreCalibr) + ',' + str(clipsPostCalibr) + ','
     outputSummary += str(ecdfStart) + ',' + str(ecdfEnd) + ','
     outputSummary += str(ecdfStep) + ',' + ','.join(map(str,ecdfY))
     f = open(summaryFile,'w')
@@ -180,6 +181,9 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
+    #record number of clipped values
+    clipsPreCalibr = e['clipsBeforeCalibr'].sum()
+    clipsPostCalibr = e['clipsAfterCalibr'].sum()
     #diurnal adjustment: construct average 1440 minute day
     avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
     #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
@@ -195,7 +199,7 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     x, step = np.linspace(startBin, endBin, numBins+1, retstep=True)
     y = ecdf(x)
     #return average minute score
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, startBin, endBin, step, y
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, clipsPreCalibr, clipsPostCalibr, startBin, endBin, step, y
 
 
 def identifyAndRemoveNonWearTime(epochFile, nonWearEpisodesFile, funcParams):
