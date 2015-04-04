@@ -28,6 +28,7 @@ def main():
     """
     Application entry point responsible for parsing command line requests
     """
+    print sys.argv
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
         msg = "\n Invalid input, please enter at least 1 parameter, e.g."
