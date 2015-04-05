@@ -321,8 +321,8 @@ public class AxivityAx3Epochs
             x = xRaw / 256.0;
             y = yRaw / 256.0;
             z = zRaw / 256.0;
-            //check if any clipping present
-            if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
+            //check if any clipping present, use ==range as it's clipped here
+            if(x<=-range || x>=range || y<=-range || y>=range || z<=-range || z>=range){
                 clipsCounter[0] += 1;
                 isClipped = true;
             }
@@ -332,9 +332,23 @@ public class AxivityAx3Epochs
             y = swIntercept[1] + y*swSlope[1] + mcTemp*tempCoef[1];
             z = swIntercept[2] + z*swSlope[2] + mcTemp*tempCoef[2];
             //check if any new clipping has happened
+            //find crossing of range threshold so use < rather than ==
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
-                if(!isClipped)
+                if (!isClipped)
                     clipsCounter[1] += 1;
+                //drag post calibration clipped values back to range limit
+                if (x<-range)
+                    x = -range;
+                else if (x>range)
+                    x = range;
+                if (y<-range)
+                    y = -range;
+                else if (y>range)
+                    y = range;
+                if (z<-range)
+                    z = -range;
+                else if (z>range)
+                    z = range;
             }
             
             //check we have collected enough values to form an epoch
