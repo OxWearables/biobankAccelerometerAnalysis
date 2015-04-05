@@ -159,8 +159,7 @@ public class AxivityAx3Epochs
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
-            int clipsPreCalibr = 0;
-            int clipsPostCalibr = 0;
+            int[] clipsCounter = new int[]{0, 0}; //before, after
             String epochSummary = "";
             String epochHeader = "timestamp,avgVm,xMean,yMean,zMean,xRange,";
             epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples,"; 
@@ -184,7 +183,7 @@ public class AxivityAx3Epochs
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
-                            range, clipsPreCalibr, clipsPostCalibr, swIntercept,
+                            range, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, interpolateSample,
                             getStationaryBouts, staticStd, filter);
                 }
@@ -222,8 +221,7 @@ public class AxivityAx3Epochs
             List<Double> zVals,
             List<Double> epochAvgVmVals,
             int range,
-            int clipsPreCalibr,
-            int clipsPostCalibr,
+            int[] clipsCounter,
             double[] swIntercept,
             double[] swSlope,
             double[] tempCoef,
@@ -325,7 +323,7 @@ public class AxivityAx3Epochs
             z = zRaw / 256.0;
             //check if any clipping present
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
-                clipsPreCalibr += 1;
+                clipsCounter[0] += 1;
                 isClipped = true;
             }
 
@@ -336,7 +334,7 @@ public class AxivityAx3Epochs
             //check if any new clipping has happened
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
                 if(!isClipped)
-                    clipsPostCalibr += 1;
+                    clipsCounter[1] += 1;
             }
             
             //check we have collected enough values to form an epoch
@@ -378,7 +376,7 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
                 epochSummary += "," + temperature + "," + xVals.size();
-                epochSummary += "," + clipsPreCalibr + "," + clipsPostCalibr;
+                epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
                 if(!getStationaryBouts || 
                         (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
                     writeLine(epochWriter, epochSummary);        
@@ -390,8 +388,8 @@ public class AxivityAx3Epochs
                 yVals.clear();
                 zVals.clear();
                 epochAvgVmVals.clear();
-                clipsPreCalibr = 0;
-                clipsPostCalibr = 0;
+                clipsCounter[0] = 0;
+                clipsCounter[1] = 0;
             }
             //store axes and vector magnitude values for every reading
             xVals.add(x);
