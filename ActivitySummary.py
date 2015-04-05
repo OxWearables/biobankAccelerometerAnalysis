@@ -52,7 +52,8 @@ def main():
     skipCalibration = False
     skipJava = False
     deleteWav = False
-    epochPeriodStr = "epochPeriod:60"
+    epochSec = 5
+    epochPeriodStr = "epochPeriod:" + str(epochSec)
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
@@ -143,12 +144,12 @@ def main():
 
     #identify and remove nonWear episodes
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
-            epochFile, nonWearFile, funcParams)    
+            epochFile, nonWearFile, funcParams, epochSec)    
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #week in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, clipsPreCalibr, clipsPostCalibr, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile,0,0)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, clipsPreCalibr, clipsPostCalibr, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile, 0, 0, epochSec)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -173,8 +174,7 @@ def main():
     print outputSummary
 
 
-
-def getAverageVmMinute(epochFile,headerSize,dateColumn):
+def getAverageVmMinute(epochFile, headerSize, dateColumn, epochSec):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -188,10 +188,11 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     #diurnal adjustment: construct average 1440 minute day
     avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
     #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
-    q1Wear = e['avgVm'][e.index.hour<6].count()
-    q2Wear = e['avgVm'][(e.index.hour>=6) & (e.index.hour<12)].count()
-    q3Wear = e['avgVm'][(e.index.hour>=12) & (e.index.hour<18)].count()
-    q4Wear = e['avgVm'][e.index.hour>=18].count()
+    epochsInMin = 60 / epochSec
+    q1Wear = e['avgVm'][e.index.hour<6].count() / epochsInMin
+    q2Wear = e['avgVm'][(e.index.hour>=6) & (e.index.hour<12)].count() / epochsInMin
+    q3Wear = e['avgVm'][(e.index.hour>=12) & (e.index.hour<18)].count() / epochsInMin
+    q4Wear = e['avgVm'][e.index.hour>=18].count() / epochsInMin
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(avgDay)
     numBins = 200
@@ -203,7 +204,11 @@ def getAverageVmMinute(epochFile,headerSize,dateColumn):
     return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, clipsPreCalibr, clipsPostCalibr, startBin, endBin, step, y
 
 
-def identifyAndRemoveNonWearTime(epochFile, nonWearEpisodesFile, funcParams):
+def identifyAndRemoveNonWearTime(
+            epochFile,
+            nonWearEpisodesFile,
+            funcParams,
+            epochSec):
     """
     Identify and remove nonWear episodes from an epoch CSV file
     Inputs:
@@ -234,7 +239,8 @@ def identifyAndRemoveNonWearTime(epochFile, nonWearEpisodesFile, funcParams):
     datetimeColumn, xIndex, yIndex, zIndex = 0, 8, 9, 10
     timeFormat = '%Y-%m-%d %H:%M:%S.%f'
     targetWearTimeDays, behavType = 28, 'nonwear'
-    minFreq, maxRange, graceMaxFreq = 60, 0.013, 0
+    minFreq = 3600 / epochSec
+    maxRange, graceMaxFreq = 0.013, 0
     displayOutput = False
     #update default values by looping through available user parameters
     for param in funcParams:
