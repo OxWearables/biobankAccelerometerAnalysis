@@ -192,7 +192,7 @@ def getAverageVmMinute(epochFile, headerSize, dateColumn, epochSec):
     q3Wear = e['avgVm'][(e.index.hour>=12) & (e.index.hour<18)].count() / epochsInMin
     q4Wear = e['avgVm'][e.index.hour>=18].count() / epochsInMin
     #calculate empirical cumulative distribution function of vector magnitudes
-    ecdf = sm.distributions.ECDF(avgDay)
+    ecdf = sm.distributions.ECDF(e['avgVm'])
     numBins = 200
     startBin = 0
     endBin = 0.200
