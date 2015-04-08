@@ -202,7 +202,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):
         wear24.append( e['avgVm'][e.index.hour == i].count() / epochsInMin )
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(e['avgVm'])
-    #1mg categories from 0-100mg
+    #1mg categories from 1-100mg
     x, step = np.linspace(0.001, .100, 100, retstep=True)
     ecdfLow = ecdf(x)
     #10mg categories from 110mg to 1g 
