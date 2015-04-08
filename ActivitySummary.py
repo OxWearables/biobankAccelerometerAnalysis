@@ -149,7 +149,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #week in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getAverageVmMinute(epochFile, 0, 0, epochSec)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfStart, ecdfEnd, ecdfStep, ecdfY = getEpochSummary(epochFile, 0, 0, epochSec)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -168,6 +168,9 @@ def main():
         outputSummary += str(wear24[i]) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
+    outputSummary += str(samplesSum) + ',' + str(samplesMean) + ','
+    outputSummary += str(samplesStd) + ','
+    outputSummary += str(tempMean) + ',' + str(tempStd) + ','
     outputSummary += str(ecdfStart) + ',' + str(ecdfEnd) + ','
     outputSummary += str(ecdfStep) + ',' + ','.join(map(str,ecdfY))
     f = open(summaryFile,'w')
@@ -177,7 +180,7 @@ def main():
     print outputSummary
 
 
-def getAverageVmMinute(epochFile, headerSize, dateColumn, epochSec):
+def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -204,7 +207,7 @@ def getAverageVmMinute(epochFile, headerSize, dateColumn, epochSec):
     x, step = np.linspace(startBin, endBin, numBins+1, retstep=True)
     y = ecdf(x)
     #return average minute score
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), startBin, endBin, step, y
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), startBin, endBin, step, y
 
 
 def identifyAndRemoveNonWearTime(
