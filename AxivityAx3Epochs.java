@@ -29,7 +29,7 @@ public class AxivityAx3Epochs
         String accFile = "";
         String[] functionParameters = new String[0];
         String outputFile = "";
-        int epochPeriod = 60;
+        int epochPeriod = 5;
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
         BandpassFilter filter = new BandpassFilter(0.20, 20, 100);
         Boolean startEpochWholeMinute = false;
