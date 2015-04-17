@@ -295,9 +295,9 @@ public class AxivityAx3Epochs
                     break; //rest of block/page could be corrupted
                 }
                 // Sign-extend 10-bit values, adjust for exponents
-                xRaw = (short)((short)(0xffffffc0 & (value <<  6)) >> (6 - ((byte)(value >> 30))));
-                yRaw = (short)((short)(0xffffffc0 & (value >>  4)) >> (6 - ((byte)(value >> 30))));
-                zRaw = (short)((short)(0xffffffc0 & (value >> 14)) >> (6 - ((byte)(value >> 30))));
+                xRaw = (short)((short)(0xffffffc0 & (value <<  6)) >> (6 - ((value >> 30) & 0x03)));
+                yRaw = (short)((short)(0xffffffc0 & (value >>  4)) >> (6 - ((value >> 30) & 0x03)));
+                zRaw = (short)((short)(0xffffffc0 & (value >>  14)) >> (6 - ((value >> 30) & 0x03)));
             } else if (bytesPerSample == 6) {
                 try {
                 xRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 0);
