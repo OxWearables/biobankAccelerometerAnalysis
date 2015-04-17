@@ -228,8 +228,8 @@ public class AxivityAx3Epochs
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
         int light = getUnsignedShort(buf,18);// buf.getShort(18);      
         double temperature = (getUnsignedShort(buf,20)*150.0 - 20500) / 1000;
-        byte rateCode = buf.get(24);
-        byte numAxesBPS = buf.get(25);
+        short rateCode = (short)(buf.get(24) & 0xff);
+        short numAxesBPS = (short)(buf.get(25) & 0xff);
         short timestampOffset = buf.getShort(26);
         int sampleCount = getUnsignedShort(buf, 28);// buf.getShort(28);
         //determine sample frequency        
