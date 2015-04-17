@@ -130,6 +130,9 @@ def main():
     if deleteWav:
         os.remove(wavFile)
 
+    #get stats on interrupts observed in epoch file (done before nonWear removal)
+    numInterrupts, interruptMins = getInterruptsSummary(epochFile, 0, 0, epochSec)
+
     #identify and remove nonWear episodes
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
             epochFile, nonWearFile, funcParams, epochSec)    
@@ -160,6 +163,7 @@ def main():
     outputSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
     outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
     outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
+    outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
     outputSummary += str(samplesSum) + ',' + str(samplesMean) + ','
@@ -207,6 +211,21 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):
     ecdfHigh = ecdf(x)
     #return average minute score
     return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
+
+
+def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
+    """
+    Summaryise any interrupts in epoch file before nonWear episodes are removed
+    """
+    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
+                header=headerSize)
+    epochNs = epochSec * np.timedelta64(1,'s')
+    interrupts = np.where(np.diff(e.index) > epochNs)[0]
+    #get duration of each interrupt in minutes
+    dur = []
+    for i in interrupts:
+        dur.append(np.diff(e[i:i+2].index) / np.timedelta64(1,'m'))
+    return len(interrupts), np.sum(dur)
 
 
 def identifyAndRemoveNonWearTime(
