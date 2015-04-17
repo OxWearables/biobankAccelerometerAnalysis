@@ -131,7 +131,7 @@ def main():
         os.remove(wavFile)
 
     #get stats on interrupts observed in epoch file (done before nonWear removal)
-    numInterrupts, interruptMins = getInterruptsSummary(epochFile, 0, 0, epochSec)
+    numInterrupts, interruptMins, numDataErrs = getInterruptsSummary(epochFile, 0, 0, epochSec)
 
     #identify and remove nonWear episodes
     firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
@@ -164,6 +164,7 @@ def main():
     outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
     outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
     outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
+    outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
     outputSummary += str(samplesSum) + ',' + str(samplesMean) + ','
@@ -225,7 +226,7 @@ def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
     dur = []
     for i in interrupts:
         dur.append(np.diff(e[i:i+2].index) / np.timedelta64(1,'m'))
-    return len(interrupts), np.sum(dur)
+    return len(interrupts), np.sum(dur), e['dataErrors'].sum()
 
 
 def identifyAndRemoveNonWearTime(

@@ -154,11 +154,12 @@ public class AxivityAx3Epochs
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
-            int[] clipsCounter = new int[]{0, 0}; //before, after
+            int[] errCounter = new int[]{0}; //store val if updated in other method
+            int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
             String epochSummary = "";
             String epochHeader = "timestamp,avgVm,xMean,yMean,zMean,xRange,";
             epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples,"; 
-            epochHeader += "clipsBeforeCalibr,clipsAfterCalibr";
+            epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr";
 
             //now read every page in CWA file
             int pageCount = 0;
@@ -178,7 +179,7 @@ public class AxivityAx3Epochs
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
-                            range, clipsCounter, swIntercept,
+                            range, errCounter, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
                             staticStd, filter);
                 }
@@ -216,6 +217,7 @@ public class AxivityAx3Epochs
             List<Double> zVals,
             List<Double> epochAvgVmVals,
             int range,
+            int[] errCounter,
             int[] clipsCounter,
             double[] swIntercept,
             double[] swSlope,
@@ -291,6 +293,7 @@ public class AxivityAx3Epochs
                 try {
                     value = getUnsignedInt(buf, 30 +4*i);
                 } catch (Exception excep) {
+                    errCounter[0] += 1;
                     System.err.println("xyz reading err: " + excep.toString());
                     break; //rest of block/page could be corrupted
                 }
@@ -300,9 +303,10 @@ public class AxivityAx3Epochs
                 zRaw = (short)((short)(0xffffffc0 & (value >>  14)) >> (6 - ((value >> 30) & 0x03)));
             } else if (bytesPerSample == 6) {
                 try {
-                xRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 0);
-                yRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 2);
-                zRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 4);
+                    errCounter[0] += 1;
+                    xRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 0);
+                    yRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 2);
+                    zRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 4);
                 } catch (Exception excep) {
                     System.err.println("xyz reading err: " + excep.toString());
                     break; //rest of block/page could be corrupted
@@ -378,6 +382,7 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
                 epochSummary += "," + temperature + "," + xVals.size();
+                epochSummary += "," + errCounter[0];
                 epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
                 if(!getStationaryBouts || 
                         (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
@@ -390,6 +395,7 @@ public class AxivityAx3Epochs
                 yVals.clear();
                 zVals.clear();
                 epochAvgVmVals.clear();
+                errCounter[0] = 0;
                 clipsCounter[0] = 0;
                 clipsCounter[1] = 0;
             }
