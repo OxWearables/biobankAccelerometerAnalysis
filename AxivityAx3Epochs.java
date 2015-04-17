@@ -34,7 +34,6 @@ public class AxivityAx3Epochs
         BandpassFilter filter = new BandpassFilter(0.20, 20, 100);
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
-        Boolean interpolateSample = true;
         Boolean getStationaryBouts = false;
         double stationaryStd = 0.013;
         double[] swIntercept = new double[]{0.0, 0.0, 0.0};
@@ -79,9 +78,6 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("startEpochWholeSecond")) {
                     startEpochWholeSecond = Boolean.parseBoolean(
                             funcParam.toLowerCase());
-                } else if (funcName.equals("interpolateSample")) {
-                    interpolateSample = Boolean.parseBoolean(
-                            funcParam.toLowerCase());
                 } else if (funcName.equals("getStationaryBouts")) {
                     getStationaryBouts = Boolean.parseBoolean(
                             funcParam.toLowerCase());
@@ -117,8 +113,8 @@ public class AxivityAx3Epochs
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
                 startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
-                swSlope, tempCoef, meanTemp, interpolateSample,
-                getStationaryBouts, stationaryStd, filter);   
+                swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
+                filter);   
     }
 
     /**
@@ -137,7 +133,6 @@ public class AxivityAx3Epochs
             double[] swSlope,
             double[] tempCoef,
             double meanTemp,
-            Boolean interpolateSample,
             Boolean getStationaryBouts,
             double staticStd,
             BandpassFilter filter) { 
@@ -184,8 +179,8 @@ public class AxivityAx3Epochs
                             epochFileWriter, timeFormat, epochStartTime,
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
                             range, clipsCounter, swIntercept,
-                            swSlope, tempCoef, meanTemp, interpolateSample,
-                            getStationaryBouts, staticStd, filter);
+                            swSlope, tempCoef, meanTemp, getStationaryBouts,
+                            staticStd, filter);
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -226,7 +221,6 @@ public class AxivityAx3Epochs
             double[] swSlope,
             double[] tempCoef,
             double meanTemp,
-            Boolean interpolateSample,
             Boolean getStationaryBouts,
             double staticStd,
             BandpassFilter filter) {
@@ -376,12 +370,6 @@ public class AxivityAx3Epochs
                 xStd = std(xVals, xMean);
                 yStd = std(yVals, yMean);
                 zStd = std(zVals, zMean);
-
-                //sometimes more/less samples can be recorded than expected
-                if (interpolateSample) {
-                    avgVm = avgVm * ((double)xVals.size() / epochPeriod);
-                    avgVm = avgVm / sampleFreq;
-                }
 
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
