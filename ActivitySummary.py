@@ -221,11 +221,11 @@ def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
     epochNs = epochSec * np.timedelta64(1,'s')
-    interrupts = np.where(np.diff(e.index) > epochNs)[0]
+    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
     #get duration of each interrupt in minutes
     dur = []
     for i in interrupts:
-        dur.append(np.diff(e[i:i+2].index) / np.timedelta64(1,'m'))
+        dur.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
     return len(interrupts), np.sum(dur), e['dataErrors'].sum()
 
 
