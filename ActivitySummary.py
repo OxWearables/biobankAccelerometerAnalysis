@@ -109,9 +109,9 @@ def main():
                 "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:0.013"]
         call(commandArgs)
-        #record calibrated axes scale/offset/temperature vals
-        calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal = getCalibrationCoefs(stationaryFile)
-        print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal
+        #record calibrated axes scale/offset/temperature vals + static point stats
+        calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax = getCalibrationCoefs(stationaryFile)
+        print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 wavFile, "outputFile:" + epochFile, "filter:true", 
                 "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
@@ -163,6 +163,8 @@ def main():
     outputSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
     outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
     outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
+    outputSummary += str(xMin) + ',' + str(xMax) + ',' + str(yMin) + ','
+    outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
     outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
     outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
@@ -363,6 +365,13 @@ def getCalibrationCoefs(staticBoutsFile):
     tempVals = stationaryPoints[:,[3]]
     meanTemp = np.mean(tempVals)
     tempVals = np.copy(tempVals-meanTemp)
+    #store information on spread of stationary points
+    xMin = np.min(axesVals[0])
+    xMax = np.max(axesVals[0])
+    yMin = np.min(axesVals[1])
+    yMax = np.max(axesVals[1])
+    zMin = np.min(axesVals[2])
+    zMax = np.max(axesVals[2])
     #initialise intercept/slope variables to assume no error initially present
     intercept = np.array([0.0, 0.0, 0.0])
     slope = np.array([1.0, 1.0, 1.0])
@@ -405,8 +414,7 @@ def getCalibrationCoefs(staticBoutsFile):
             bestError = rms
         if improvement < minIterImprovement:
             break #break if not largely converged
-    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError
-
+    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin, zMax
 
 def getDeviceId(cwaFile):
     f = open(cwaFile, 'rb')
