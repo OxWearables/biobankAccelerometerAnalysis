@@ -51,6 +51,7 @@ def main():
     skipCalibration = False
     skipJava = False
     deleteWav = False
+    verbose = True
     epochSec = 5
     epochPeriodStr = "epochPeriod:" + str(epochSec)
     #update default values by looping through user parameters
@@ -78,6 +79,8 @@ def main():
             skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'skipCalibration':
             skipCalibration = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'verbose':
+            verbose = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
         if param.split(':')[0] == 'skipJava':
@@ -105,15 +108,16 @@ def main():
     if not skipCalibration:
         #identify 10sec stationary epochs
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                rawFile, "outputFile:" + stationaryFile, "filter:true",
-                "getStationaryBouts:true", "epochPeriod:10",
+                rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
+                "filter:true", "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:0.013"]
         call(commandArgs)
         #record calibrated axes scale/offset/temperature vals + static point stats
         calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax = getCalibrationCoefs(stationaryFile)
-        print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax
+        if verbose:
+            print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                wavFile, "outputFile:" + epochFile, "filter:true", 
+                wavFile, "outputFile:" + epochFile, "verbose:" + str(verbose), "filter:true", 
                 "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
                 "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
                 "ySlope:" + str(calSlope[1]), "zSlope:" + str(calSlope[2]),
@@ -122,7 +126,8 @@ def main():
                 epochPeriodStr]
     else: 
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                wavFile, "outputFile:" + epochFile, "filter:true", epochPeriodStr]
+                wavFile, "outputFile:" + epochFile, "verbose:" + str(verbose), 
+                "filter:true", epochPeriodStr]
   
     #calculate and write filtered avgVm epochs from .wav file
     if not skipJava:
@@ -181,8 +186,9 @@ def main():
     f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
-    print summaryFile
-    print outputSummary
+    if verbose:
+        print summaryFile
+        print outputSummary
 
 
 def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):

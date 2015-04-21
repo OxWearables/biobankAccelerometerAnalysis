@@ -29,6 +29,7 @@ public class AxivityAx3Epochs
         String accFile = "";
         String[] functionParameters = new String[0];
         String outputFile = "";
+        Boolean verbose = true;
         int epochPeriod = 5;
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
         BandpassFilter filter = new BandpassFilter(0.20, 20, 100);
@@ -64,6 +65,8 @@ public class AxivityAx3Epochs
                 String funcParam = individualParam.split(":")[1];
                 if (funcName.equals("outputFile")) {
                     outputFile = funcParam;
+                } else if (funcName.equals("verbose")) {
+                    verbose = Boolean.parseBoolean(funcParam.toLowerCase());
                 } else if (funcName.equals("epochPeriod")) {
                     epochPeriod = Integer.parseInt(funcParam);
                 } else if (funcName.equals("timeFormat")) {
@@ -111,7 +114,7 @@ public class AxivityAx3Epochs
         }    
 
         //process file if input parameters are all ok
-        writeCwaEpochs(accFile, outputFile, epochPeriod, timeFormat,
+        writeCwaEpochs(accFile, outputFile, verbose, epochPeriod, timeFormat,
                 startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
                 swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
                 filter);   
@@ -124,6 +127,7 @@ public class AxivityAx3Epochs
     private static void writeCwaEpochs(
             String accFile,
             String outputFile,
+            Boolean verbose,
             int epochPeriod,
             SimpleDateFormat timeFormat,
             Boolean startEpochWholeMinute,
@@ -186,7 +190,7 @@ public class AxivityAx3Epochs
                 buf.clear();
                 //option to provide status update to user...
                 pageCount++;
-                if(pageCount % 10000 == 0)
+                if(verbose && pageCount % 10000 == 0)
                     System.out.print((pageCount*100/memSizePages) + "%\b\b\b");
             }   
             rawAccReader.close();
