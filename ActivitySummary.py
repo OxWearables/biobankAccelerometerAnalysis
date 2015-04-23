@@ -52,6 +52,7 @@ def main():
     skipCalibration = False
     skipJava = False
     deleteWav = False
+    deleteHelperFiles = True
     verbose = True
     epochSec = 5
     epochPeriodStr = "epochPeriod:" + str(epochSec)
@@ -84,6 +85,8 @@ def main():
             verbose = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteWav':
             deleteWav = param.split(':')[1] in ['true', 'True']
+        elif param.split(':')[0] == 'deleteHelperFiles':
+            deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         if param.split(':')[0] == 'skipJava':
             skipJava = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
@@ -187,6 +190,9 @@ def main():
     f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
+    if deleteHelperFiles:
+        os.remove(stationaryFile)
+        os.remove(epochFile)
     if verbose:
         print summaryFile
         print outputSummary
