@@ -380,7 +380,7 @@ public class AxivityAx3Epochs
                 zStd = std(zVals, zMean);
 
                 //see if values have been abnormally stuck this epoch
-                stuckVal = 1.5;
+                double stuckVal = 1.5;
                 if (xStd==0 && (xMean<-stuckVal || xMean>stuckVal))
                     errCounter[0] += 1;
                 if (yStd==0 && (yMean<-stuckVal || yMean>stuckVal))
@@ -497,8 +497,8 @@ public class AxivityAx3Epochs
         if(vals.size()==0) {
             return Double.NaN;
         }
-        double min = Double.MIN_VALUE;
-        double max = Double.MAX_VALUE;
+        double min = Double.MAX_VALUE;
+        double max = Double.MIN_VALUE;
         for(int c=0; c<vals.size(); c++) {
             if (vals.get(c) < min) {
                 min = vals.get(c);
