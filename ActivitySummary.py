@@ -71,6 +71,8 @@ def main():
             nonWearFile = param.split(':')[1] + nonWearFile.split('/')[-1]
         elif param.split(':')[0] == 'stationaryFolder':
             stationaryFile = param.split(':')[1] + stationaryFile.split('/')[-1]
+        elif param.split(':')[0] == 'timeSeriesFolder':
+            tsFile = param.split(':')[1] + tsFile.split('/')[-1]
         elif param.split(':')[0] == 'skipRaw':
             skipRaw = param.split(':')[1] in ['true', 'True']
             if skipRaw:
