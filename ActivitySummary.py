@@ -44,6 +44,7 @@ def main():
     stationaryFile = rawFile.replace(".cwa","Stationary.csv")
     epochFile = rawFile.replace(".cwa","Epoch.csv")
     nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
+    tsFile = rawFile.replace(".cwa","AccTimeSeries.csv")
     matlabPath = "matlab"
     javaEpochProcess = "AxivityAx3Epochs"
     skipRaw = False
@@ -145,7 +146,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #week in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -191,7 +192,7 @@ def main():
         print outputSummary
 
 
-def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):
+def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -221,7 +222,11 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec):
     #100mg categories from 1g to 3g
     x, step = np.linspace(1.1, 3.0, 20, retstep=True)
     ecdfHigh = ecdf(x)
-    #return average minute score
+    #write time series file
+    e['acc']=e['avgVm']*1000
+    e['acc'].to_csv(tsFile, date_format="%Y-%m-%d %H:%M:%S", 
+            float_format='%.1f',header=True)
+    #return physical activity summary
     return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
 
 
