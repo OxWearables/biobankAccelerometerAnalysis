@@ -339,17 +339,17 @@ public class AxivityAx3Epochs
                 if (!isClipped)
                     clipsCounter[1] += 1;
                 //drag post calibration clipped values back to range limit
-                if (x<-range)
+                if (x<-range || (isClipped && x<0))
                     x = -range;
-                else if (x>range)
+                else if (x>range || (isClipped && x>0))
                     x = range;
-                if (y<-range)
+                if (y<-range || (isClipped && y<0))
                     y = -range;
-                else if (y>range)
+                else if (y>range || (isClipped && y>0))
                     y = range;
-                if (z<-range)
+                if (z<-range || (isClipped && z<0))
                     z = -range;
-                else if (z>range)
+                else if (z>range || (isClipped && z>0))
                     z = range;
             }
             
