@@ -223,9 +223,12 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     x, step = np.linspace(1.1, 3.0, 20, retstep=True)
     ecdfHigh = ecdf(x)
     #write time series file
+    tsHead = 'acceleration (mg) - '
+    tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
     e['acc']=e['avgVm']*1000
-    e['acc'].to_csv(tsFile, date_format="%Y-%m-%d %H:%M:%S", 
-            float_format='%.1f',header=True)
+    e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
     #return physical activity summary
     return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
 
