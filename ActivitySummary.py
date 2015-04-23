@@ -148,8 +148,8 @@ def main():
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
-    #week in quadrants (0-6h, 6-12, 12-18, 18-24)
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, q1Wear, q2Wear, q3Wear, q4Wear, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    #each hour
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -162,8 +162,7 @@ def main():
     outputSummary += str(countVm) + ','
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
-    outputSummary += str(numNonWearEpisodes) + ',' + str(q1Wear) + ','
-    outputSummary += str(q2Wear) + ',' + str(q3Wear) + ',' + str(q4Wear) + ','
+    outputSummary += str(numNonWearEpisodes) + ','
     for i in range(0,24):
         outputSummary += str(wear24[i]) + ','
     try:
@@ -210,10 +209,6 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
     #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
     epochsInMin = 60 / epochSec
-    q1Wear = e['avgVm'][e.index.hour<6].count() / epochsInMin
-    q2Wear = e['avgVm'][(e.index.hour>=6) & (e.index.hour<12)].count() / epochsInMin
-    q3Wear = e['avgVm'][(e.index.hour>=12) & (e.index.hour<18)].count() / epochsInMin
-    q4Wear = e['avgVm'][e.index.hour>=18].count() / epochsInMin
     wear24 = []
     for i in range(0,24):
         wear24.append( e['avgVm'][e.index.hour == i].count() / epochsInMin )
@@ -236,7 +231,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     e['acc']=e['avgVm']*1000
     e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
     #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), q1Wear, q2Wear, q3Wear, q4Wear, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
