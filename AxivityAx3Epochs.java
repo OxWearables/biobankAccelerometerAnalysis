@@ -380,11 +380,12 @@ public class AxivityAx3Epochs
                 zStd = std(zVals, zMean);
 
                 //see if values have been abnormally stuck this epoch
-                if (xStd==0 && (xMean<-1.5 || xMean>1.5))
+                stuckVal = 1.5;
+                if (xStd==0 && (xMean<-stuckVal || xMean>stuckVal))
                     errCounter[0] += 1;
-                if (yStd==0 && (yMean<-1.5 || yMean>1.5))
+                if (yStd==0 && (yMean<-stuckVal || yMean>stuckVal))
                     errCounter[0] += 1;
-                if (zStd==0 && (zMean<-1.5 || zMean>1.5))
+                if (zStd==0 && (zMean<-stuckVal || zMean>stuckVal))
                     errCounter[0] += 1;
                 
                 //write summary values to file
