@@ -375,12 +375,8 @@ def getCalibrationCoefs(staticBoutsFile):
     meanTemp = np.mean(tempVals)
     tempVals = np.copy(tempVals-meanTemp)
     #store information on spread of stationary points
-    xMin = np.min(axesVals[0])
-    xMax = np.max(axesVals[0])
-    yMin = np.min(axesVals[1])
-    yMax = np.max(axesVals[1])
-    zMin = np.min(axesVals[2])
-    zMax = np.max(axesVals[2])
+    xMin, yMin, zMin = np.amin(axesVals, axis=0)
+    xMax, yMax, zMax = np.amax(axesVals, axis=0)
     #initialise intercept/slope variables to assume no error initially present
     intercept = np.array([0.0, 0.0, 0.0])
     slope = np.array([1.0, 1.0, 1.0])
