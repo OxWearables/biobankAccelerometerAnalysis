@@ -379,6 +379,14 @@ public class AxivityAx3Epochs
                 yStd = std(yVals, yMean);
                 zStd = std(zVals, zMean);
 
+                //see if values have been abnormally stuck this epoch
+                if (xStd==0 && (xMean<-1.5 || xMean>1.5))
+                    errCounter[0] += 1;
+                if (yStd==0 && (yMean<-1.5 || yMean>1.5))
+                    errCounter[0] += 1;
+                if (zStd==0 && (zMean<-1.5 || zMean>1.5))
+                    errCounter[0] += 1;
+                
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
                 epochSummary += "," + avgVm;
