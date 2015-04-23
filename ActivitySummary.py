@@ -377,7 +377,8 @@ def getCalibrationCoefs(staticBoutsFile):
     maxIter = 1000
     minIterImprovement = 0.0001 #0.1mg
     #use python NUMPY framework to store stationary episodes from epoch file
-    stationaryPoints = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(2,3,4,11))
+    d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(2,3,4,11,13))
+    stationaryPoints = d[d[:,4] == 0] #don't consider episodes with data errors
     axesVals = stationaryPoints[:,[0,1,2]]
     tempVals = stationaryPoints[:,[3]]
     meanTemp = np.mean(tempVals)
