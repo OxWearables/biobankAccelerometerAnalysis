@@ -357,6 +357,7 @@ def removeNonWearFromEpochFile(
             f.write(headerLine)
         
         #rewrite all epochs that are periods of wear
+        nans = ',,,,,,,,,,,,,,,\n'
         episodeCounter = 0
         for epoch in epochs[headerSize:]:
             epochTime = datetime.datetime.strptime(epoch.split(',')[0],timeFormat)
@@ -367,6 +368,9 @@ def removeNonWearFromEpochFile(
                     (epochTime > nonWearEpisodes[episodeCounter].endTime and 
                     episodeCounter == len(nonWearEpisodes)-1 ) ):
                 f.write(epoch)
+            elif ( epochTime >= nonWearEpisodes[episodeCounter].startTime and 
+                    epochTime <= nonWearEpisodes[episodeCounter].endTime ):
+                f.write(epochTime.strftime(timeFormat) + nans)
             #move counter to next nonWear episode if at end of current episode
             elif ( epochTime == nonWearEpisodes[episodeCounter].endTime and 
                     episodeCounter < len(nonWearEpisodes)-1 ):
