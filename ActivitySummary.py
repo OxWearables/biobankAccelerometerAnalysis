@@ -119,7 +119,7 @@ def main():
                 "stationaryStd:0.013"]
         call(commandArgs)
         #record calibrated axes scale/offset/temperature vals + static point stats
-        calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax = getCalibrationCoefs(stationaryFile)
+        calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
         if verbose:
             print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
@@ -176,8 +176,9 @@ def main():
         outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
         outputSummary += str(xMin) + ',' + str(xMax) + ',' + str(yMin) + ','
         outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
+        outputSummary += str(nStatic) + ','
     except:
-        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,'
     outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
     outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
@@ -436,7 +437,7 @@ def getCalibrationCoefs(staticBoutsFile):
             bestError = rms
         if improvement < minIterImprovement:
             break #break if not largely converged
-    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin, zMax
+    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
 
 def getDeviceId(cwaFile):
     f = open(cwaFile, 'rb')
