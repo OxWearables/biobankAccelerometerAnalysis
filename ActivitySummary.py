@@ -40,18 +40,13 @@ def main():
     funcParams = sys.argv[2:]
     rawFile = rawFile.replace(".CWA", ".cwa")
     summaryFile = rawFile.replace(".cwa","OutputSummary.csv")
-    wavFile = rawFile
-    stationaryFile = rawFile.replace(".cwa","Stationary.csv")
-    epochFile = rawFile.replace(".cwa","Epoch.csv")
-    nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
     tsFile = rawFile.replace(".cwa","AccTimeSeries.csv")
-    matlabPath = "matlab"
+    nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
+    epochFile = rawFile.replace(".cwa","Epoch.csv")
+    stationaryFile = rawFile.replace(".cwa","Stationary.csv")
     javaEpochProcess = "AxivityAx3Epochs"
     skipRaw = False
-    skipMatlab = True
     skipCalibration = False
-    skipJava = False
-    deleteWav = False
     deleteHelperFiles = True
     verbose = True
     epochSec = 5
@@ -59,12 +54,8 @@ def main():
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
-        if param.split(':')[0] == 'matlabPath':
-            matlabPath = param.split(':')[1]
-        elif param.split(':')[0] == 'summaryFolder':
+        if param.split(':')[0] == 'summaryFolder':
             summaryFile = param.split(':')[1] + summaryFile.split('/')[-1]
-        elif param.split(':')[0] == 'wavFolder':
-            wavFile = param.split(':')[1] + wavFile.split('/')[-1]
         elif param.split(':')[0] == 'epochFolder':
             epochFile = param.split(':')[1] + epochFile.split('/')[-1]
         elif param.split(':')[0] == 'nonWearFolder':
@@ -75,22 +66,12 @@ def main():
             tsFile = param.split(':')[1] + tsFile.split('/')[-1]
         elif param.split(':')[0] == 'skipRaw':
             skipRaw = param.split(':')[1] in ['true', 'True']
-            if skipRaw:
-                skipMatlab = True
-                skipCalibration = True
-                skipJava = True
-        elif param.split(':')[0] == 'skipMatlab':
-            skipMatlab = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'skipCalibration':
             skipCalibration = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'verbose':
             verbose = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'deleteWav':
-            deleteWav = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'deleteHelperFiles':
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
-        if param.split(':')[0] == 'skipJava':
-            skipJava = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriodStr = param
 
@@ -101,94 +82,83 @@ def main():
         sys.stderr.write(msg)
         sys.exit(0)
 
-    if not skipMatlab:
-        wavFile = rawFile.replace(".cwa",".wav")
-        #interpolate and calibrate raw .CWA file, writing output to .wav file
-        commandArgs = [matlabPath, "-nosplash",
-                "-nodisplay", "-r", "cd matlab;readInterpolateCalibrate('" + rawFile
-                + "', '" + wavFile + "');exit;"]
+    if not skipRaw:
+        #calibrate axes scale/offset values
+        if not skipCalibration:
+            #identify 10sec stationary epochs
+            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                    rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
+                    "filter:true", "getStationaryBouts:true", "epochPeriod:10",
+                    "stationaryStd:0.013"]
+            call(commandArgs)
+            #record calibrated axes scale/offset/temperature vals + static point stats
+            calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
+            if verbose:
+                print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
+            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                    rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
+                    "filter:true", "xIntercept:" + str(calOff[0]),
+                    "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
+                    "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
+                    "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
+                    "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
+                    "meanTemp:" + str(meanTemp), epochPeriodStr]
+        else: 
+            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                    rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose), 
+                    "filter:true", epochPeriodStr]
+      
+        #calculate and write filtered avgVm epochs from raw file
         call(commandArgs)
-        javaEpochProcess = "AxivityAx3WavEpochs"
-    
-    #calibrate axes scale/offset values
-    if not skipCalibration:
-        #identify 10sec stationary epochs
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
-                "filter:true", "getStationaryBouts:true", "epochPeriod:10",
-                "stationaryStd:0.013"]
-        call(commandArgs)
-        #record calibrated axes scale/offset/temperature vals + static point stats
-        calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
-        if verbose:
-            print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                wavFile, "outputFile:" + epochFile, "verbose:" + str(verbose), "filter:true", 
-                "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
-                "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
-                "ySlope:" + str(calSlope[1]), "zSlope:" + str(calSlope[2]),
-                "xTemp:" + str(calTemp[0]), "yTemp:" + str(calTemp[1]),
-                "zTemp:" + str(calTemp[2]), "meanTemp:" + str(meanTemp),
-                epochPeriodStr]
-    else: 
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                wavFile, "outputFile:" + epochFile, "verbose:" + str(verbose), 
-                "filter:true", epochPeriodStr]
-  
-    #calculate and write filtered avgVm epochs from .wav file
-    if not skipJava:
-        call(commandArgs)
-    if deleteWav:
-        os.remove(wavFile)
 
-    #get stats on interrupts observed in epoch file (done before nonWear removal)
-    numInterrupts, interruptMins, numDataErrs = getInterruptsSummary(epochFile, 0, 0, epochSec)
+        #get stats on interrupts observed in epoch file (done before nonWear removal)
+        numInterrupts, interruptMins, numDataErrs = getInterruptsSummary(epochFile, 0, 0, epochSec)
 
-    #identify and remove nonWear episodes
-    numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
-            funcParams, epochSec)    
+        #identify and remove nonWear episodes
+        numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
+                funcParams, epochSec)    
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, wearTime, sumNonWear, firstDay, lastDay, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
-
+    vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, tempMean, tempStd, vmSamplesSum, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
-    try:
-        outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
-    except:
-        outputSummary += '-1,-1,'
-    outputSummary += str(avgSampleVm) + ',' + str(medianVm) + ','
-    outputSummary += str(stdevVm) + ',' + str(minVm) +',' + str(maxVm) + ','
-    outputSummary += str(countVm) + ','
-    outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
-    outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
-    try:
-        outputSummary += str(numNonWearEpisodes) + ','
-    except:
-        outputSummary += '-1,'
+    #physical activity output variable
+    outputSummary += str(vmAvg) + ',' + str(vmMedian) + ','
+    outputSummary += str(vmStd) + ','
+    #wear time characteristics
+    outputSummary += str(startTime)[:-3] + ',' + str(endTime)[:-3] + ','
+    outputSummary += str(wearTimeMins) + ',' + str(nonWearTimeMins) + ','
     for i in range(0,24):
         outputSummary += str(wear24[i]) + ','
+    outputSummary += str(avgDayMins) + ','
     try:
+        outputSummary += str(numNonWearEpisodes) + ','
+        #calibration metrics 
         outputSummary += str(errPreCal) + ',' + str(errPostCal) + ','
         outputSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
         outputSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
         outputSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
         outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
         outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
+        outputSummary += str(nStatic) + ','
         outputSummary += str(xMin) + ',' + str(xMax) + ',' + str(yMin) + ','
         outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
-        outputSummary += str(nStatic) + ','
+        #raw file data quality indicators
+        outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
+        outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
+        outputSummary += str(numDataErrs) + ','
     except:
-        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
-    outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
-    outputSummary += str(numDataErrs) + ','
+        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-    outputSummary += str(samplesSum) + ',' + str(samplesMean) + ','
-    outputSummary += str(samplesStd) + ','
     outputSummary += str(tempMean) + ',' + str(tempStd) + ','
+    #epoch data statistics
+    outputSummary += str(vmSamplesSum) + ',' + str(vmSamplesAvg) + ','
+    outputSummary += str(vmSamplesStd) + ',' + str(vmSamplesMin) +','
+    outputSummary += str(vmSamplesMax) + ','
     outputSummary += ','.join(map(str,ecdfLow)) + ','
     outputSummary += ','.join(map(str,ecdfMid)) + ','
     outputSummary += ','.join(map(str,ecdfHigh))
@@ -211,6 +181,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
+    
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
@@ -218,14 +189,16 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     nonWearSamples = len(e[np.isnan(e['avgVm'])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
-    print wearTimeMin, nonWearTimeMin, str(startTime), str(endTime)
-    #diurnal adjustment: construct average 1440 minute day
-    avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
+    
     #get wear time in each of 24 hours across week
     epochsInMin = 60 / epochSec
     wear24 = []
     for i in range(0,24):
         wear24.append( e['avgVm'][e.index.hour == i].count() / epochsInMin )
+    
+    #diurnal adjustment: construct average 1440 minute day
+    avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
+    
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(e['avgVm'])
     #1mg categories from 1-100mg
@@ -237,6 +210,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #100mg categories from 1g to 3g
     x, step = np.linspace(1.1, 3.0, 20, retstep=True)
     ecdfHigh = ecdf(x)
+    
     #write time series file
     tsHead = 'acceleration (mg) - '
     tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
@@ -244,8 +218,9 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
     e['acc']=e['avgVm']*1000
     e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
+    
     #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), wearTimeMin, nonWearTimeMin, startTime, endTime, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
+    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['temp'].mean(), e['temp'].std(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
