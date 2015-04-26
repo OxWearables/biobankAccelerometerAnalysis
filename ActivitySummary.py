@@ -121,7 +121,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, tempMean, tempStd, vmSamplesSum, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
     
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -154,11 +154,13 @@ def main():
         outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
+    outputSummary += str(epochSamplesN) + ',' + str(epochSamplesAvg) + ','
+    outputSummary += str(epochSamplesStd) + ',' + str(epochSamplesMin) + ','
+    outputSummary += str(epochSamplesMax) + ','
     outputSummary += str(tempMean) + ',' + str(tempStd) + ','
     #epoch data statistics
-    outputSummary += str(vmSamplesSum) + ',' + str(vmSamplesAvg) + ','
-    outputSummary += str(vmSamplesStd) + ',' + str(vmSamplesMin) +','
-    outputSummary += str(vmSamplesMax) + ','
+    outputSummary += str(vmSamplesAvg) + ',' + str(vmSamplesStd) + ','
+    outputSummary += str(vmSamplesMin) + ',' + str(vmSamplesMax) +','
     outputSummary += ','.join(map(str,ecdfLow)) + ','
     outputSummary += ','.join(map(str,ecdfMid)) + ','
     outputSummary += ','.join(map(str,ecdfHigh))
@@ -220,7 +222,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
     
     #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['temp'].mean(), e['temp'].std(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), ecdfLow, ecdfMid, ecdfHigh
+    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e['avgVm'].mean(), e['avgVm'].std(), e['avgVm'].min(), e['avgVm'].max(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
