@@ -111,9 +111,6 @@ def main():
         #calculate and write filtered avgVm epochs from raw file
         call(commandArgs)
 
-        #get stats on interrupts observed in epoch file (done before nonWear removal)
-        numInterrupts, interruptMins, numDataErrs = getInterruptsSummary(epochFile, 0, 0, epochSec)
-
         #identify and remove nonWear episodes
         numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
                 funcParams, epochSec)    
@@ -121,7 +118,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
     
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -148,10 +145,10 @@ def main():
         outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
         #raw file data quality indicators
         outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
-        outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
-        outputSummary += str(numDataErrs) + ','
     except:
-        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+    outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
+    outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
     outputSummary += str(epochSamplesN) + ',' + str(epochSamplesAvg) + ','
@@ -220,24 +217,18 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
     e['acc']=e['avgVm']*1000
     e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
-    
-    #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e['avgVm'].mean(), e['avgVm'].std(), e['avgVm'].min(), e['avgVm'].max(), ecdfLow, ecdfMid, ecdfHigh
-
-
-def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
-    """
-    Summaryise any interrupts in epoch file before nonWear episodes are removed
-    """
-    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
-                header=headerSize)
+   
+    #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
     interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
     #get duration of each interrupt in minutes
-    dur = []
+    interruptMins = []
     for i in interrupts:
-        dur.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
-    return len(interrupts), np.sum(dur), e['dataErrors'].sum()
+        interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
+    print interrupts, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum()
+
+    #return physical activity summary
+    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e['avgVm'].mean(), e['avgVm'].std(), e['avgVm'].min(), e['avgVm'].max(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def identifyAndRemoveNonWearTime(
@@ -351,10 +342,10 @@ def removeNonWearFromEpochFile(
                     episodeCounter == len(nonWearEpisodes)-1 ) ):
                 f.write(epoch)
             elif ( epochTime >= nonWearEpisodes[episodeCounter].startTime and 
-                    epochTime < nonWearEpisodes[episodeCounter].endTime ):
+                    epochTime <= nonWearEpisodes[episodeCounter].endTime ):
                 f.write(epochTime.strftime(timeFormat) + nans)
             #move counter to next nonWear episode if at end of current episode
-            elif ( epochTime == nonWearEpisodes[episodeCounter].endTime and 
+            if ( epochTime == nonWearEpisodes[episodeCounter].endTime and 
                     episodeCounter < len(nonWearEpisodes)-1 ):
                 f.write(epochTime.strftime(timeFormat) + nans)
                 episodeCounter += 1
