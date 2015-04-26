@@ -122,12 +122,15 @@ def main():
     
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
-    #physical activity output variable
-    outputSummary += str(vmAvg) + ',' + str(vmMedian) + ','
-    outputSummary += str(vmStd) + ','
+    #physical activity output variable (mg)
+    f = '{:.2f}'
+    outputSummary += f.format(vmAvg*1000) + ',' + f.format(vmMedian*1000) + ','
+    outputSummary += f.format(vmStd*1000) + ','
     #wear time characteristics
-    outputSummary += str(startTime)[:-3] + ',' + str(endTime)[:-3] + ','
-    outputSummary += str(wearTimeMins) + ',' + str(nonWearTimeMins) + ','
+    f = '%Y-%m-%d %H:%M:%S'
+    outputSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
+    f = '{:.0f}'
+    outputSummary += f.format(wearTimeMins) + ',' + f.format(nonWearTimeMins) + ','
     for i in range(0,24):
         outputSummary += str(wear24[i]) + ','
     outputSummary += str(avgDayMins) + ','
@@ -141,8 +144,10 @@ def main():
         outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
         outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
         outputSummary += str(nStatic) + ','
-        outputSummary += str(xMin) + ',' + str(xMax) + ',' + str(yMin) + ','
-        outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
+        f = '{:.2f}'
+        outputSummary += f.format(xMin) + ',' + f.format(xMax) + ','
+        outputSummary += f.format(yMin) + ',' + f.format(yMax) + ','
+        outputSummary += f.format(zMin) + ',' + f.format(zMax) + ','
         #raw file data quality indicators
         outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
     except:
@@ -151,16 +156,21 @@ def main():
     outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-    outputSummary += str(epochSamplesN) + ',' + str(epochSamplesAvg) + ','
-    outputSummary += str(epochSamplesStd) + ',' + str(epochSamplesMin) + ','
+    f = '{:.1f}'
+    outputSummary += str(epochSamplesN) + ',' + f.format(epochSamplesAvg) + ','
+    outputSummary += f.format(epochSamplesStd) + ',' + str(epochSamplesMin) + ','
     outputSummary += str(epochSamplesMax) + ','
-    outputSummary += str(tempMean) + ',' + str(tempStd) + ','
+    outputSummary += f.format(tempMean) + ',' + f.format(tempStd) + ','
     #epoch data statistics
-    outputSummary += str(vmSamplesAvg) + ',' + str(vmSamplesStd) + ','
-    outputSummary += str(vmSamplesMin) + ',' + str(vmSamplesMax) +','
-    outputSummary += ','.join(map(str,ecdfLow)) + ','
-    outputSummary += ','.join(map(str,ecdfMid)) + ','
-    outputSummary += ','.join(map(str,ecdfHigh))
+    f = '{:.2f}'
+    outputSummary += f.format(vmSamplesAvg*1000) + ','
+    outputSummary += f.format(vmSamplesStd*1000) + ','
+    outputSummary += f.format(vmSamplesMin*1000) + ','
+    outputSummary += f.format(vmSamplesMax*1000) +','
+    f = '{:.3f}'
+    outputSummary += ','.join(map(f.format,ecdfLow)) + ','
+    outputSummary += ','.join(map(f.format,ecdfMid)) + ','
+    outputSummary += ','.join(map(f.format,ecdfHigh))
     f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
@@ -225,7 +235,6 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     interruptMins = []
     for i in interrupts:
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
-    print interrupts, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum()
 
     #return physical activity summary
     return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e['avgVm'].mean(), e['avgVm'].std(), e['avgVm'].min(), e['avgVm'].max(), ecdfLow, ecdfMid, ecdfHigh
