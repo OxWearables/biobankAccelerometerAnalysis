@@ -145,13 +145,13 @@ def main():
     numInterrupts, interruptMins, numDataErrs = getInterruptsSummary(epochFile, 0, 0, epochSec)
 
     #identify and remove nonWear episodes
-    firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes = identifyAndRemoveNonWearTime(
-            epochFile, nonWearFile, funcParams, epochSec)    
+    numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
+            funcParams, epochSec)    
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    avgSampleVm, medianVm, stdevVm, minVm, maxVm, countVm, wearTime, sumNonWear, firstDay, lastDay, wear24, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, samplesSum, samplesMean, samplesStd, tempMean, tempStd, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
 
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
@@ -164,7 +164,10 @@ def main():
     outputSummary += str(countVm) + ','
     outputSummary += str(firstDay)[:-3] + ',' + str(lastDay)[:-3] + ','
     outputSummary += str(wearTime) + ',' + str(sumNonWear) + ','
-    outputSummary += str(numNonWearEpisodes) + ','
+    try:
+        outputSummary += str(numNonWearEpisodes) + ','
+    except:
+        outputSummary += '-1,'
     for i in range(0,24):
         outputSummary += str(wear24[i]) + ','
     try:
@@ -208,9 +211,17 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
+    #get start & end times, plus wear & nonWear minutes
+    startTime = pd.to_datetime(e.index.values[0])
+    endTime = pd.to_datetime(e.index.values[-1])
+    wearSamples = e['avgVm'].count()
+    nonWearSamples = len(e[np.isnan(e['avgVm'])].index.values)
+    wearTimeMin = wearSamples * epochSec / 60.0
+    nonWearTimeMin = nonWearSamples * epochSec / 60.0
+    print wearTimeMin, nonWearTimeMin, str(startTime), str(endTime)
     #diurnal adjustment: construct average 1440 minute day
     avgDay = e['avgVm'].groupby([e.index.hour, e.index.minute]).mean()
-    #get wear time in each daily quadrant (0-6h,6-12,12-18,18-24) across week
+    #get wear time in each of 24 hours across week
     epochsInMin = 60 / epochSec
     wear24 = []
     for i in range(0,24):
@@ -234,7 +245,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     e['acc']=e['avgVm']*1000
     e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
     #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
+    return avgDay.mean(), avgDay.median(), avgDay.std(), avgDay.min(), avgDay.max(), avgDay.count(), wearTimeMin, nonWearTimeMin, startTime, endTime, wear24, e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['temp'].mean(), e['temp'].std(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def getInterruptsSummary(epochFile, headerSize, dateColumn, epochSec):
@@ -327,12 +338,8 @@ def identifyAndRemoveNonWearTime(
     #print summary of each nonwear episode detected, returning sum nonwear time
     sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
                     nonWearEpisodesFile, episodesList, displayOutput)
-    #calculate max possible wear time in minutes (pre Python 2.7 compatible)
-    wearTime = ((lastDay-firstDay).days*3600*24) + ((lastDay - firstDay).seconds)
-    wearTime = wearTime / 60 #convert from seconds to minutes
-    wearTime -= sumNonWear #total wear = max possible wear - nonWear
     removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
-    return firstDay, lastDay, wearTime, sumNonWear, numNonWearEpisodes
+    return numNonWearEpisodes
 
 
 def removeNonWearFromEpochFile(
@@ -341,7 +348,7 @@ def removeNonWearFromEpochFile(
             headerSize,
             timeFormat):
     """
-    Remove any nonWear episodes from the epochFile
+    Replace any nonWear episodes in the epochFile with null values
     """
     #only run if there is nonWear data to remove
     if len(nonWearEpisodes) > 0:
