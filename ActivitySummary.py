@@ -178,7 +178,7 @@ def main():
         outputSummary += str(yMax) + ',' + str(zMin) + ',' + str(zMax) + ','
         outputSummary += str(nStatic) + ','
     except:
-        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,1,'
+        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
     outputSummary += str(numInterrupts) + ',' + str(interruptMins) + ','
     outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
