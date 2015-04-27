@@ -48,7 +48,7 @@ def main():
     skipRaw = False
     skipCalibration = False
     deleteHelperFiles = True
-    verbose = True
+    verbose = False
     epochSec = 5
     epochPeriodStr = "epochPeriod:" + str(epochSec)
     #update default values by looping through user parameters
@@ -121,68 +121,73 @@ def main():
     vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
     
     #print processed summary variables from accelerometer file
-    outputSummary = rawFile + ','
+    fSummary = rawFile + ','
+    cmdSummary = rawFile + ', '
     #physical activity output variable (mg)
     f = '%.2f'
-    outputSummary += f % (vmAvg*1000) + ',' + f % (vmMedian*1000) + ','
-    outputSummary += f % (vmStd*1000) + ','
+    fSummary += f % (vmAvg*1000) + ',' + f % (vmMedian*1000) + ','
+    fSummary += f % (vmStd*1000) + ','
+    cmdSummary += f % (vmAvg*1000) + ' mg, '
     #wear time characteristics
     f = '%Y-%m-%d %H:%M:%S'
-    outputSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
+    fSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
+    cmdSummary += startTime.strftime(f) + ' - ' + endTime.strftime(f) + ', '
     f = '%.0f'
-    outputSummary += f % wearTimeMins + ',' + f % nonWearTimeMins + ','
+    fSummary += f % wearTimeMins + ', ' + f % nonWearTimeMins + ', '
+    cmdSummary += f % wearTimeMins + ' mins wear, '
+    cmdSummary += f % nonWearTimeMins + ' mins nonWear'
     for i in range(0,24):
-        outputSummary += str(wear24[i]) + ','
-    outputSummary += str(avgDayMins) + ','
+        fSummary += str(wear24[i]) + ','
+    fSummary += str(avgDayMins) + ','
     try:
-        outputSummary += str(numNonWearEpisodes) + ','
+        fSummary += str(numNonWearEpisodes) + ','
         #calibration metrics 
-        outputSummary += str(errPreCal) + ',' + str(errPostCal) + ','
-        outputSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
-        outputSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
-        outputSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
-        outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
-        outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
-        outputSummary += str(nStatic) + ','
+        fSummary += str(errPreCal) + ',' + str(errPostCal) + ','
+        fSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
+        fSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
+        fSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
+        fSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
+        fSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
+        fSummary += str(nStatic) + ','
         f = '%.2f'
-        outputSummary += f % xMin + ',' + f % xMax + ','
-        outputSummary += f % yMin + ',' + f % yMax + ','
-        outputSummary += f % zMin + ',' + f % zMax + ','
+        fSummary += f % xMin + ',' + f % xMax + ','
+        fSummary += f % yMin + ',' + f % yMax + ','
+        fSummary += f % zMin + ',' + f % zMax + ','
         #raw file data quality indicators
-        outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
+        fSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
     except:
-        outputSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+        fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
     f = '%.1f'
-    outputSummary += str(numInterrupts) + ',' + f % interruptMins + ','
-    outputSummary += str(numDataErrs) + ','
-    outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
-    outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-    outputSummary += str(epochSamplesN) + ',' + f % epochSamplesAvg + ','
-    outputSummary += f % epochSamplesStd + ',' + str(epochSamplesMin) + ','
-    outputSummary += str(epochSamplesMax) + ','
-    outputSummary += f % tempMean + ',' + f % tempStd + ','
+    fSummary += str(numInterrupts) + ',' + f % interruptMins + ','
+    fSummary += str(numDataErrs) + ','
+    fSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
+    fSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
+    fSummary += str(epochSamplesN) + ',' + f % epochSamplesAvg + ','
+    fSummary += f % epochSamplesStd + ',' + str(epochSamplesMin) + ','
+    fSummary += str(epochSamplesMax) + ','
+    fSummary += f % tempMean + ',' + f % tempStd + ','
     #epoch data statistics
     f = '%.2f'
-    outputSummary += f % (vmSamplesAvg*1000) + ','
-    outputSummary += f % (vmSamplesStd*1000) + ','
-    outputSummary += f % (vmSamplesMin*1000) + ','
-    outputSummary += f % (vmSamplesMax*1000) +','
+    fSummary += f % (vmSamplesAvg*1000) + ','
+    fSummary += f % (vmSamplesStd*1000) + ','
+    fSummary += f % (vmSamplesMin*1000) + ','
+    fSummary += f % (vmSamplesMax*1000) +','
     f = '%.3f'
-    outputSummary += ','.join([f % v for v in ecdfLow]) + ','
-    outputSummary += ','.join([f % v for v in ecdfMid]) + ','
-    outputSummary += ','.join([f % v for v in ecdfHigh])
-    #outputSummary += ','.join(map(f % ,ecdfLow)) + ','
-    #outputSummary += ','.join(map(f % ,ecdfMid)) + ','
-    #outputSummary += ','.join(map(f % ,ecdfHigh))
+    fSummary += ','.join([f % v for v in ecdfLow]) + ','
+    fSummary += ','.join([f % v for v in ecdfMid]) + ','
+    fSummary += ','.join([f % v for v in ecdfHigh])
+    #print basic output
+    print cmdSummary
+    #write detailed output to file
     f = open(summaryFile,'w')
-    f.write(outputSummary)
+    f.write(fSummary)
     f.close()
     if deleteHelperFiles:
         os.remove(stationaryFile)
         os.remove(epochFile)
     if verbose:
         print summaryFile
-        print outputSummary
+        print fSummary
 
 
 def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
