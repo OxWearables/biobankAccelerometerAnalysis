@@ -123,14 +123,14 @@ def main():
     #print processed summary variables from accelerometer file
     outputSummary = rawFile + ','
     #physical activity output variable (mg)
-    f = '{:.2f}'
-    outputSummary += f.format(vmAvg*1000) + ',' + f.format(vmMedian*1000) + ','
-    outputSummary += f.format(vmStd*1000) + ','
+    f = '%.2f'
+    outputSummary += f % (vmAvg*1000) + ',' + f % (vmMedian*1000) + ','
+    outputSummary += f % (vmStd*1000) + ','
     #wear time characteristics
     f = '%Y-%m-%d %H:%M:%S'
     outputSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
-    f = '{:.0f}'
-    outputSummary += f.format(wearTimeMins) + ',' + f.format(nonWearTimeMins) + ','
+    f = '%.0f'
+    outputSummary += f % (wearTimeMins) + ',' + f % (nonWearTimeMins) + ','
     for i in range(0,24):
         outputSummary += str(wear24[i]) + ','
     outputSummary += str(avgDayMins) + ','
@@ -144,10 +144,10 @@ def main():
         outputSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
         outputSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
         outputSummary += str(nStatic) + ','
-        f = '{:.2f}'
-        outputSummary += f.format(xMin) + ',' + f.format(xMax) + ','
-        outputSummary += f.format(yMin) + ',' + f.format(yMax) + ','
-        outputSummary += f.format(zMin) + ',' + f.format(zMax) + ','
+        f = '%.2f'
+        outputSummary += f % (xMin) + ',' + f % (xMax) + ','
+        outputSummary += f % (yMin) + ',' + f % (yMax) + ','
+        outputSummary += f % (zMin) + ',' + f % (zMax) + ','
         #raw file data quality indicators
         outputSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
     except:
@@ -156,21 +156,24 @@ def main():
     outputSummary += str(numDataErrs) + ','
     outputSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
     outputSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-    f = '{:.1f}'
-    outputSummary += str(epochSamplesN) + ',' + f.format(epochSamplesAvg) + ','
-    outputSummary += f.format(epochSamplesStd) + ',' + str(epochSamplesMin) + ','
+    f = '%.1f'
+    outputSummary += str(epochSamplesN) + ',' + f % (epochSamplesAvg) + ','
+    outputSummary += f % (epochSamplesStd) + ',' + str(epochSamplesMin) + ','
     outputSummary += str(epochSamplesMax) + ','
-    outputSummary += f.format(tempMean) + ',' + f.format(tempStd) + ','
+    outputSummary += f % (tempMean) + ',' + f % (tempStd) + ','
     #epoch data statistics
-    f = '{:.2f}'
-    outputSummary += f.format(vmSamplesAvg*1000) + ','
-    outputSummary += f.format(vmSamplesStd*1000) + ','
-    outputSummary += f.format(vmSamplesMin*1000) + ','
-    outputSummary += f.format(vmSamplesMax*1000) +','
-    f = '{:.3f}'
-    outputSummary += ','.join(map(f.format,ecdfLow)) + ','
-    outputSummary += ','.join(map(f.format,ecdfMid)) + ','
-    outputSummary += ','.join(map(f.format,ecdfHigh))
+    f = '%.2f'
+    outputSummary += f % (vmSamplesAvg*1000) + ','
+    outputSummary += f % (vmSamplesStd*1000) + ','
+    outputSummary += f % (vmSamplesMin*1000) + ','
+    outputSummary += f % (vmSamplesMax*1000) +','
+    f = '%.3f'
+    outputSummary += ','.join([f % v for v in ecdfLow]) + ','
+    outputSummary += ','.join([f % v for v in ecdfMid]) + ','
+    outputSummary += ','.join([f % v for v in ecdfHigh])
+    #outputSummary += ','.join(map(f % ,ecdfLow)) + ','
+    #outputSummary += ','.join(map(f % ,ecdfMid)) + ','
+    #outputSummary += ','.join(map(f % ,ecdfHigh))
     f = open(summaryFile,'w')
     f.write(outputSummary)
     f.close()
