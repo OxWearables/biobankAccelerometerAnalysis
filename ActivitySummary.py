@@ -228,7 +228,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
     ts = e.join(e.groupby(('hour','minute'))['avgVm'].mean(), on=['hour','minute'], rsuffix='_imputed')
-    ts['vm'] = ts['avgVm'].fillna(tst['avgVm_imputed'])
+    ts['vm'] = ts['avgVm'].fillna(ts['avgVm_imputed'])
     #convert 'vm' to mg units, and highlight any imputed values
     ts['vmFinal'] = ts['vm'] * 1000
     ts['imputed'] = np.isnan(ts['avgVm']).replace({True:'1',False:''})

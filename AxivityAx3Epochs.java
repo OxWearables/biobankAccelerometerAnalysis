@@ -146,7 +146,7 @@ public class AxivityAx3Epochs
         int bufSize = 512;
         ByteBuffer buf = ByteBuffer.allocate(bufSize);      
         try {
-            rawAccReader = new FileInputStream(accFile).getChannel();            
+            rawAccReader = new FileInputStream(accFile).getChannel();
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
             
             //data block support variables
