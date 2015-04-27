@@ -227,17 +227,17 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #replace nan avgVm vals with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    tst = e.join(e.groupby(('hour','minute'))['avgVm'].mean(), on=['hour','minute'], rsuffix='_imputed')
-    tst['vm'] = tst['avgVm'].fillna(tst['avgVm_imputed'])
+    ts = e.join(e.groupby(('hour','minute'))['avgVm'].mean(), on=['hour','minute'], rsuffix='_imputed')
+    ts['vm'] = ts['avgVm'].fillna(tst['avgVm_imputed'])
     #convert 'vm' to mg units, and highlight any imputed values
-    tst['vmFinal'] = tst['vm'] * 1000
-    tst['imputed'] = np.isnan(tst['avgVm']).replace({True:'1',False:''})
+    ts['vmFinal'] = ts['vm'] * 1000
+    ts['imputed'] = np.isnan(ts['avgVm']).replace({True:'1',False:''})
     #prepare time series header
     tsHead = 'acceleration (mg) - '
-    tsHead += tst.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
-    tsHead += tst.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += ts.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += ts.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-    tst[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
+    ts[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
    
     #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
