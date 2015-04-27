@@ -354,8 +354,6 @@ public class AxivityAx3Epochs
             }
             
             //check we have collected enough values to form an epoch
-            //todo would I be better simply calculating an epoch end-time here?
-            //Rather than constantly calculating page_time - epochStartTime ???
             currentPeriod = (int) ((blockTime.getTimeInMillis() -
                     epochStartTime.getTimeInMillis())/1000);
             if (currentPeriod >= epochPeriod) { 
