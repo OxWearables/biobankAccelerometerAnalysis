@@ -224,12 +224,20 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     ecdfHigh = ecdf(x)
     
     #write time series file
+    #replace nan avgVm vals with mean avgVm from same time in other days
+    e['hour'] = e.index.hour
+    e['minute'] = e.index.minute
+    tst = e.join(e.groupby(('hour','minute'))['avgVm'].mean(), on=['hour','minute'], rsuffix='_imputed')
+    tst['vm'] = tst['avgVm'].fillna(tst['avgVm_imputed'])
+    #convert 'vm' to mg units, and highlight any imputed values
+    tst['vmFinal'] = tst['vm'] * 1000
+    tst['imputed'] = np.isnan(tst['avgVm']).replace({True:'1',False:''})
+    #prepare time series header
     tsHead = 'acceleration (mg) - '
-    tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
-    tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += tst.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+    tsHead += tst.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-    e['acc']=e['avgVm']*1000
-    e['acc'].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead])
+    tst[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
    
     #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
