@@ -264,19 +264,6 @@ public class AxivityAx3Epochs
             epochStartTime.add(Calendar.MILLISECOND, (int)(offsetStart*1000));
         }
 
-        //epoch variables
-        String epochSummary = "";
-        double avgVm = 0;
-        double xMean = 0;
-        double yMean = 0;
-        double zMean = 0;
-        double xRange = 0;
-        double yRange = 0;
-        double zRange = 0;
-        double xStd = 0;
-        double yStd = 0;
-        double zStd = 0;     
-
         //raw reading values
         long value = 0; // x/y/z vals
         short xRaw = 0;
@@ -357,16 +344,20 @@ public class AxivityAx3Epochs
             currentPeriod = (int) ((blockTime.getTimeInMillis() -
                     epochStartTime.getTimeInMillis())/1000);
             if (currentPeriod >= epochPeriod) { 
-                //band-pass filter AvgVm-1 values
-                if (filter != null) {
-                    filter.filter(epochAvgVmVals);
-                }
+                //epoch variables
+                String epochSummary = "";
+                double avgVm = 0;
+                double xMean = 0;
+                double yMean = 0;
+                double zMean = 0;
+                double xRange = 0;
+                double yRange = 0;
+                double zRange = 0;
+                double xStd = 0;
+                double yStd = 0;
+                double zStd = 0;     
 
-                //take abs(filtered(AvgVm-1)) vals. Must be done after filtering
-                abs(epochAvgVmVals);
-
-                //calculate epoch summary values
-                avgVm = mean(epochAvgVmVals);
+                //calculate raw x/y/z summary values
                 xMean = mean(xVals);
                 yMean = mean(yVals);
                 zMean = mean(zVals);
@@ -385,6 +376,29 @@ public class AxivityAx3Epochs
                     errCounter[0] += 1;
                 if (zStd==0 && (zMean<-stuckVal || zMean>stuckVal))
                     errCounter[0] += 1;
+               
+                //calculate summary vector magnitude based metrics
+                List<Double> enVals = new ArrayList<Double>();
+                //List<Double> enmoAbsVals = new ArrayList<Double>();
+                //List<Double> enmoTruncVals = new ArrayList<Double>();
+                for(int c=0; c<xVals.size(); c++){
+                    x = xVals.get(c);
+                    y = yVals.get(c);
+                    z = zVals.get(c);
+                    double vm = getVectorMagnitude(x,y,z);
+                    enVals.add(vm);
+                    //enmoAbsVals.add(vm-1);
+                    //enmoTruncVals.add(vm-1);
+                }
+
+                //filter AvgVm-1 values
+                if (filter != null) {
+                    filter.filter(enVals);
+                }
+
+                //take abs(filtered(AvgVm-1)) vals. Must be done after filtering
+                abs(enVals);
+                avgVm = mean(enVals);
                 
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
@@ -414,7 +428,7 @@ public class AxivityAx3Epochs
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
-            epochAvgVmVals.add(getVectorMagnitude(x,y,z));
+            //epochAvgVmVals.add(getVectorMagnitude(x,y,z));
             isClipped = false;
             //System.out.println(timeFormat.format(blockTime.getTime()) + "," + x + "," + y + "," + z);
             blockTime.add(Calendar.MILLISECOND, (int)readingGapMs);            
@@ -470,6 +484,17 @@ public class AxivityAx3Epochs
     private static void abs(List<Double> vals) {
         for(int c=0; c<vals.size(); c++) {
             vals.set(c, Math.abs(vals.get(c)));
+        }
+    }
+    
+    private static void trunc(List<Double> vals) {
+        double tmp;
+        for(int c=0; c<vals.size(); c++) {
+            tmp = vals.get(c);
+            if(tmp < 0){
+                tmp = 0;
+            }
+            vals.set(c, tmp);
         }
     }
 
