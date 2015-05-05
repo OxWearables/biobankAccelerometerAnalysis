@@ -86,6 +86,7 @@ def main():
         #calibrate axes scale/offset values
         if not skipCalibration:
             #identify 10sec stationary epochs
+            print 'calibrating'
             commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                     rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
                     "filter:true", "getStationaryBouts:true", "epochPeriod:10",
@@ -109,15 +110,18 @@ def main():
                     "filter:true", epochPeriodStr]
       
         #calculate and write filtered avgVm epochs from raw file
+        print 'epoch generation'
         call(commandArgs)
 
         #identify and remove nonWear episodes
+        print 'nonwear identification'
         numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
                 funcParams, epochSec)    
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
+    print 'summary stats generation'
     vmAvg, vmMedian, vmStd, startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, vmSamplesAvg, vmSamplesStd, vmSamplesMin, vmSamplesMax, ecdfLow, ecdfMid, ecdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
     
     #print processed summary variables from accelerometer file
