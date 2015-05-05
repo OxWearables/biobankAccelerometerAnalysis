@@ -32,12 +32,11 @@ public class AxivityAx3Epochs
         Boolean verbose = true;
         int epochPeriod = 5;
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-        BandpassFilter bpEn = new BandpassFilter(0.20, 20, 100);
-        BandpassFilter bpEnmoAbs = new BandpassFilter(0.20, 20, 100);
-        BandpassFilter bpEnmoTrunc = new BandpassFilter(0.20, 20, 100);
-        LowpassFilter lpEn = new LowpassFilter(20, 100);
-        LowpassFilter lpEnmoAbs = new LowpassFilter(20, 100);
-        LowpassFilter lpEnmoTrunc = new LowpassFilter(20, 100);
+        double lowPassCut = 20;
+        double highPassCut = 0.2;
+        int sampleRate = 100;
+        int numLowPassFilters = 3;
+        int numBandPassFilters = 1;
         Boolean startEpochWholeMinute = false;
         Boolean startEpochWholeSecond = false;
         Boolean getStationaryBouts = false;
@@ -47,6 +46,13 @@ public class AxivityAx3Epochs
         double[] tempCoef = new double[]{0.0, 0.0, 0.0};
         double meanTemp = 0.0;
         int range = 8;
+        //create Filters necessary for later data processing
+        LowpassFilter[] fLowPass = new LowpassFilter[numLowPassFilters];
+        BandpassFilter[] fBandPass = new BandpassFilter[numBandPassFilters];
+        for(int c=0; c<fLowPass.length; c++)
+            fLowPass[c] = new LowpassFilter(lowPassCut, sampleRate);
+        for(int c=0; c<fBandPass.length; c++)
+            fBandPass[c] = new BandpassFilter(highPassCut, lowPassCut, sampleRate);
         if (args.length < 1) {
             String invalidInputMsg = "Invalid input, ";
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
@@ -78,12 +84,8 @@ public class AxivityAx3Epochs
                     timeFormat = new SimpleDateFormat(funcParam);
                 } else if (funcName.equals("filter")) {
                     if (!Boolean.parseBoolean(funcParam.toLowerCase())) {
-                            bpEn = null;
-                            bpEnmoAbs = null;
-                            bpEnmoTrunc = null;
-                            lpEn = null;
-                            lpEnmoAbs = null;
-                            lpEnmoTrunc = null;
+                            fLowPass = null;    
+                            fBandPass = null;
                         }
                 } else if (funcName.equals("startEpochWholeMinute")) {
                     startEpochWholeMinute = Boolean.parseBoolean(
@@ -127,7 +129,7 @@ public class AxivityAx3Epochs
         writeCwaEpochs(accFile, outputFile, verbose, epochPeriod, timeFormat,
                 startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
                 swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
-                bpEn, bpEnmoAbs, bpEnmoTrunc, lpEn, lpEnmoAbs, lpEnmoTrunc);   
+                fLowPass, fBandPass);   
     }
 
     /**
@@ -149,12 +151,8 @@ public class AxivityAx3Epochs
             double meanTemp,
             Boolean getStationaryBouts,
             double staticStd,
-            BandpassFilter bpEn,
-            BandpassFilter bpEnmoAbs,
-            BandpassFilter bpEnmoTrunc,
-            LowpassFilter lpEn,
-            LowpassFilter lpEnmoAbs,
-            LowpassFilter lpEnmoTrunc) { 
+            LowpassFilter[] fLowPass,
+            BandpassFilter[] fBandPass) {
         //file read/write objects
         FileChannel rawAccReader = null;
         BufferedWriter epochFileWriter = null;
@@ -201,8 +199,7 @@ public class AxivityAx3Epochs
                             epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
                             range, errCounter, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
-                            staticStd, bpEn, bpEnmoAbs, bpEnmoTrunc, lpEn,
-                            lpEnmoAbs, lpEnmoTrunc);
+                            staticStd, fLowPass, fBandPass);
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -246,12 +243,8 @@ public class AxivityAx3Epochs
             double meanTemp,
             Boolean getStationaryBouts,
             double staticStd,
-            BandpassFilter bpEn,
-            BandpassFilter bpEnmoAbs,
-            BandpassFilter bpEnmoTrunc,
-            LowpassFilter lpEn,
-            LowpassFilter lpEnmoAbs,
-            LowpassFilter lpEnmoTrunc) { 
+            LowpassFilter[] fLowPass,
+            BandpassFilter[] fBandPass) {
         //read block header items
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
         int light = getUnsignedShort(buf,18);// buf.getShort(18);      
@@ -405,47 +398,38 @@ public class AxivityAx3Epochs
                     errCounter[0] += 1;
                
                 //calculate summary vector magnitude based metrics
-                List<Double> enValsFbp = new ArrayList<Double>();
-                List<Double> enmoAbsValsFbp = new ArrayList<Double>();
-                List<Double> enmoTruncValsFbp = new ArrayList<Double>();
                 List<Double> enValsFlp = new ArrayList<Double>();
                 List<Double> enmoAbsValsFlp = new ArrayList<Double>();
                 List<Double> enmoTruncValsFlp = new ArrayList<Double>();
+                List<Double> enmoAbsValsFbp = new ArrayList<Double>();
                 for(int c=0; c<xVals.size(); c++){
                     x = xVals.get(c);
                     y = yVals.get(c);
                     z = zVals.get(c);
                     double vm = getVectorMagnitude(x,y,z);
-                    enValsFbp.add(vm);
-                    enmoAbsValsFbp.add(vm-1);
-                    enmoTruncValsFbp.add(vm-1);
                     enValsFlp.add(vm);
                     enmoAbsValsFlp.add(vm-1);
                     enmoTruncValsFlp.add(vm-1);
+                    enmoAbsValsFbp.add(vm);
                 }
 
                 //filter AvgVm-1 values
-                if (bpEn != null) {
-                    bpEn.filter(enValsFbp);
-                    bpEnmoAbs.filter(enmoAbsValsFbp);
-                    bpEnmoTrunc.filter(enmoTruncValsFbp);
-                    lpEn.filter(enValsFlp);
-                    lpEnmoAbs.filter(enmoAbsValsFlp);
-                    lpEnmoTrunc.filter(enmoTruncValsFlp);
+                if (fLowPass != null) {
+                    fLowPass[0].filter(enValsFlp);
+                    fLowPass[1].filter(enmoAbsValsFlp);
+                    fLowPass[2].filter(enmoTruncValsFlp);
+                    fBandPass[0].filter(enmoAbsValsFbp);
                 }
 
                 //take abs(filtered(AvgVm-1)) vals. Must be done after filtering
                 abs(enmoAbsValsFbp);
                 abs(enmoAbsValsFlp);
-                trunc(enmoTruncValsFbp);
                 trunc(enmoTruncValsFlp);
                 
-                enFbp = mean(enValsFbp);
-                enmoAbsFbp = mean(enmoAbsValsFbp);
-                enmoTruncFbp = mean(enmoTruncValsFbp);
                 enFlp = mean(enValsFlp);
                 enmoAbsFlp = mean(enmoAbsValsFlp);
                 enmoTruncFlp = mean(enmoTruncValsFlp);
+                enmoAbsFbp = mean(enmoAbsValsFbp);
                 
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
