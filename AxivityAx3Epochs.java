@@ -167,17 +167,16 @@ public class AxivityAx3Epochs
             //epoch creation support variables
             Calendar epochStartTime = null;//new GregorianCalendar();    
             List<Date> epochDatetimeArray = new ArrayList<Date>();
-            List<Double> epochAvgVmVals = new ArrayList<Double>();
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
             int[] errCounter = new int[]{0}; //store val if updated in other method
             int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
             String epochSummary = "";
-            String epochHeader = "timestamp,enFbp,enmoAbsFbp,enmoTruncFbp,enFlp,";
-            epochHeader += "enmoAbsFlp,enmoTruncFlp,xMean,yMean,zMean,xRange,";
-            epochHeader += "yRange,zRange,xStd,yStd,zStd,temp,samples,"; 
-            epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr";
+            String epochHeader = "timestamp,en,enmoAbs,enmoTrunc,enmoAbsBP,";
+            epochHeader += "xMean,yMean,zMean,xRange,yRange,zRange,";
+            epochHeader += "xStd,yStd,zStd,temp,samples,dataErrors,";
+            epochHeader += "clipsBeforeCalibr,clipsAfterCalibr";
 
             //now read every page in CWA file
             int pageCount = 0;
@@ -196,7 +195,7 @@ public class AxivityAx3Epochs
                     //read each individual page block, and process epochs...
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
-                            epochPeriod, xVals, yVals, zVals, epochAvgVmVals,
+                            epochPeriod, xVals, yVals, zVals,
                             range, errCounter, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
                             staticStd, fLowPass, fBandPass);
@@ -233,7 +232,6 @@ public class AxivityAx3Epochs
             List<Double> xVals,
             List<Double> yVals,
             List<Double> zVals,
-            List<Double> epochAvgVmVals,
             int range,
             int[] errCounter,
             int[] clipsCounter,
@@ -271,7 +269,6 @@ public class AxivityAx3Epochs
         Calendar blockTime = getCwaTimestamp((int)blockTimestamp);        
         float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
         blockTime.add(Calendar.MILLISECOND, (int)(offsetStart*1000));
-        
         
         //set target epoch start time of very first block
         if(epochStartTime==null) {
@@ -361,12 +358,10 @@ public class AxivityAx3Epochs
             if (currentPeriod >= epochPeriod) { 
                 //epoch variables
                 String epochSummary = "";
-                double enFbp = 0;
-                double enmoAbsFbp = 0;
-                double enmoTruncFbp = 0;
-                double enFlp = 0;
-                double enmoAbsFlp = 0;
-                double enmoTruncFlp = 0;
+                double en = 0;
+                double enmoAbs = 0;
+                double enmoTrunc = 0;
+                double enmoAbsBP = 0;
                 double xMean = 0;
                 double yMean = 0;
                 double zMean = 0;
@@ -398,43 +393,45 @@ public class AxivityAx3Epochs
                     errCounter[0] += 1;
                
                 //calculate summary vector magnitude based metrics
-                List<Double> enValsFlp = new ArrayList<Double>();
-                List<Double> enmoAbsValsFlp = new ArrayList<Double>();
-                List<Double> enmoTruncValsFlp = new ArrayList<Double>();
-                List<Double> enmoAbsValsFbp = new ArrayList<Double>();
-                for(int c=0; c<xVals.size(); c++){
-                    x = xVals.get(c);
-                    y = yVals.get(c);
-                    z = zVals.get(c);
-                    double vm = getVectorMagnitude(x,y,z);
-                    enValsFlp.add(vm);
-                    enmoAbsValsFlp.add(vm-1);
-                    enmoTruncValsFlp.add(vm-1);
-                    enmoAbsValsFbp.add(vm);
-                }
+                List<Double> enVals = new ArrayList<Double>();
+                List<Double> enmoAbsVals = new ArrayList<Double>();
+                List<Double> enmoTruncVals = new ArrayList<Double>();
+                List<Double> enmoAbsValsBP = new ArrayList<Double>();
+                if(!getStationaryBouts) {
+                    for(int c=0; c<xVals.size(); c++){
+                        x = xVals.get(c);
+                        y = yVals.get(c);
+                        z = zVals.get(c);
+                        double vm = getVectorMagnitude(x,y,z);
+                        enVals.add(vm);
+                        enmoAbsVals.add(vm-1);
+                        enmoTruncVals.add(vm-1);
+                        enmoAbsValsBP.add(vm);
+                    }
 
-                //filter AvgVm-1 values
-                if (fLowPass != null) {
-                    fLowPass[0].filter(enValsFlp);
-                    fLowPass[1].filter(enmoAbsValsFlp);
-                    fLowPass[2].filter(enmoTruncValsFlp);
-                    fBandPass[0].filter(enmoAbsValsFbp);
-                }
+                    //filter AvgVm-1 values
+                    if (fLowPass != null) {
+                        fLowPass[0].filter(enVals);
+                        fLowPass[1].filter(enmoAbsVals);
+                        fLowPass[2].filter(enmoTruncVals);
+                        fBandPass[0].filter(enmoAbsValsBP);
+                    }
 
-                //take abs(filtered(AvgVm-1)) vals. Must be done after filtering
-                abs(enmoAbsValsFbp);
-                abs(enmoAbsValsFlp);
-                trunc(enmoTruncValsFlp);
-                
-                enFlp = mean(enValsFlp);
-                enmoAbsFlp = mean(enmoAbsValsFlp);
-                enmoTruncFlp = mean(enmoTruncValsFlp);
-                enmoAbsFbp = mean(enmoAbsValsFbp);
-                
+                    //run abs() or trunc() on summary variables after filtering
+                    abs(enmoAbsVals);
+                    trunc(enmoTruncVals);
+                    abs(enmoAbsValsBP);
+                   
+                    //calculate mean values for each outcome metric 
+                    en = mean(enVals);
+                    enmoAbs = mean(enmoAbsVals);
+                    enmoTrunc = mean(enmoTruncVals);
+                    enmoAbsBP = mean(enmoAbsValsBP);
+                }
                 //write summary values to file
                 epochSummary = timeFormat.format(epochStartTime.getTime());
-                epochSummary += "," + enFbp + "," + enmoAbsFbp + "," + enmoTruncFbp;
-                epochSummary += "," + enFlp + "," + enmoAbsFlp + "," + enmoTruncFlp;
+                epochSummary += "," + en + "," + enmoAbs + "," + enmoTrunc;
+                epochSummary += "," + enmoAbsBP;
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
@@ -451,7 +448,6 @@ public class AxivityAx3Epochs
                 xVals.clear();
                 yVals.clear();
                 zVals.clear();
-                //epochAvgVmVals.clear();
                 errCounter[0] = 0;
                 clipsCounter[0] = 0;
                 clipsCounter[1] = 0;
@@ -460,7 +456,6 @@ public class AxivityAx3Epochs
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
-            //epochAvgVmVals.add(getVectorMagnitude(x,y,z));
             isClipped = false;
             //System.out.println(timeFormat.format(blockTime.getTime()) + "," + x + "," + y + "," + z);
             blockTime.add(Calendar.MILLISECOND, (int)readingGapMs);            
