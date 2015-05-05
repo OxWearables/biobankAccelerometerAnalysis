@@ -222,14 +222,14 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(e['en'])
-    #1mg categories from 1-100mg
-    x, step = np.linspace(0.001, .100, 100, retstep=True)
+    #100mg categories from 0-800mg
+    x, step = np.linspace(0.000, .800, 9, retstep=True)
     ecdfLow = ecdf(x)
-    #10mg categories from 110mg to 1g 
-    x, step = np.linspace(.110, 1.0, 90, retstep=True)
+    #10mg categories from 800mg to 1600mg 
+    x, step = np.linspace(.810, 1.6, 80, retstep=True)
     ecdfMid = ecdf(x)
-    #100mg categories from 1g to 3g
-    x, step = np.linspace(1.1, 3.0, 20, retstep=True)
+    #100mg categories from 1700mg to 3000g
+    x, step = np.linspace(1.7, 3.0, 14, retstep=True)
     ecdfHigh = ecdf(x)
     
     #write time series file
