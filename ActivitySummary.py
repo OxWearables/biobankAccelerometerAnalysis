@@ -223,7 +223,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdf = sm.distributions.ECDF(e['en'])
     #100mg categories from 0-800mg
-    x, step = np.linspace(0.000, .800, 9, retstep=True)
+    x, step = np.linspace(0.100, .800, 8, retstep=True)
     ecdfLow = ecdf(x)
     #10mg categories from 800mg to 1600mg 
     x, step = np.linspace(.810, 1.6, 80, retstep=True)
