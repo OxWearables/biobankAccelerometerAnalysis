@@ -202,12 +202,13 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
-    
+   
+    primeMetric = 'enmoTrunc'
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
-    wearSamples = e['en'].count()
-    nonWearSamples = len(e[np.isnan(e['en'])].index.values)
+    wearSamples = e[primeMetric].count()
+    nonWearSamples = len(e[np.isnan(e[primeMetric])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
     
@@ -215,13 +216,13 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     epochsInMin = 60 / epochSec
     wear24 = []
     for i in range(0,24):
-        wear24.append( e['en'][e.index.hour == i].count() / epochsInMin )
+        wear24.append( e[primeMetric][e.index.hour == i].count() / epochsInMin )
     
     #diurnal adjustment: construct average 1440 minute day
-    avgDay = e['en'].groupby([e.index.hour, e.index.minute]).mean()
+    avgDay = e[primeMetric].groupby([e.index.hour, e.index.minute]).mean()
     
     #calculate empirical cumulative distribution function of vector magnitudes
-    ecdf = sm.distributions.ECDF(e['en'])
+    ecdf = sm.distributions.ECDF(e[primeMetric])
     #100mg categories from 0-800mg
     x, step = np.linspace(0.100, .800, 8, retstep=True)
     ecdfLow = ecdf(x)
@@ -236,11 +237,11 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #replace nan avgVm vals with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    ts = e.join(e.groupby(('hour','minute'))['en'].mean(), on=['hour','minute'], rsuffix='_imputed')
-    ts['vm'] = ts['en'].fillna(ts['en_imputed'])
+    ts = e.join(e.groupby(('hour','minute'))[primeMetric].mean(), on=['hour','minute'], rsuffix='_imputed')
+    ts['vm'] = ts[primeMetric].fillna(ts[primeMetric + '_imputed'])
     #convert 'vm' to mg units, and highlight any imputed values
     ts['vmFinal'] = ts['vm'] * 1000
-    ts['imputed'] = np.isnan(ts['en']).replace({True:'1',False:''})
+    ts['imputed'] = np.isnan(ts[primeMetric]).replace({True:'1',False:''})
     #prepare time series header
     tsHead = 'acceleration (mg) - '
     tsHead += ts.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
@@ -257,7 +258,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e['en'].mean(), e['en'].std(), e['en'].min(), e['en'].max(), ecdfLow, ecdfMid, ecdfHigh
+    return avgDay.mean(), avgDay.median(), avgDay.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, avgDay.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e[primeMetric].mean(), e[primeMetric].std(), e[primeMetric].min(), e[primeMetric].max(), ecdfLow, ecdfMid, ecdfHigh
 
 
 def identifyAndRemoveNonWearTime(
@@ -390,7 +391,7 @@ def getCalibrationCoefs(staticBoutsFile):
     maxIter = 1000
     minIterImprovement = 0.0001 #0.1mg
     #use python NUMPY framework to store stationary episodes from epoch file
-    d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(5,7,7,14,16))
+    d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(5,6,7,14,16))
     stationaryPoints = d[d[:,4] == 0] #don't consider episodes with data errors
     axesVals = stationaryPoints[:,[0,1,2]]
     tempVals = stationaryPoints[:,[3]]
