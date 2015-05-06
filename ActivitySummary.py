@@ -206,13 +206,16 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
-   
-    primeMetric = 'enmoAbs'
+    #define PA metrics
+    pa1 = 'enmoAbs'
+    pa2 = 'en'
+    pa3 = 'enmoTrunc'
+    pa4 = 'enmoAbsBP'
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
-    wearSamples = e[primeMetric].count()
-    nonWearSamples = len(e[np.isnan(e[primeMetric])].index.values)
+    wearSamples = e[pa1].count()
+    nonWearSamples = len(e[np.isnan(e[pa1])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
     
@@ -220,16 +223,16 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     epochsInMin = 60 / epochSec
     wear24 = []
     for i in range(0,24):
-        wear24.append( e[primeMetric][e.index.hour == i].count() / epochsInMin )
+        wear24.append( e[pa1][e.index.hour == i].count() / epochsInMin )
     
     #diurnal adjustment: construct average 1440 minute day
-    enWeight = e[primeMetric].groupby([e.index.hour, e.index.minute]).mean()
-    enmoAbsWeight = e['en'].groupby([e.index.hour, e.index.minute]).mean()
-    enmoTruncWeight = e['enmoTrunc'].groupby([e.index.hour, e.index.minute]).mean()
-    enmoAbsBPWeight = e['enmoAbsBP'].groupby([e.index.hour, e.index.minute]).mean()
+    pa1W = e[pa1].groupby([e.index.hour, e.index.minute]).mean()
+    pa2W = e[pa2].groupby([e.index.hour, e.index.minute]).mean()
+    pa3W = e[pa3].groupby([e.index.hour, e.index.minute]).mean()
+    pa4W = e[pa4].groupby([e.index.hour, e.index.minute]).mean()
 
     #calculate empirical cumulative distribution function of vector magnitudes
-    ecdf = sm.distributions.ECDF(e[primeMetric])
+    ecdf = sm.distributions.ECDF(e[pa1])
     #100mg categories from 0-800mg
     x, step = np.linspace(0.100, .800, 8, retstep=True)
     ecdfLow = ecdf(x)
@@ -244,11 +247,11 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #replace nan avgVm vals with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    ts = e.join(e.groupby(('hour','minute'))[primeMetric].mean(), on=['hour','minute'], rsuffix='_imputed')
-    ts['vm'] = ts[primeMetric].fillna(ts[primeMetric + '_imputed'])
+    ts = e.join(e.groupby(('hour','minute'))[pa1].mean(), on=['hour','minute'], rsuffix='_imputed')
+    ts['vm'] = ts[pa1].fillna(ts[pa1 + '_imputed'])
     #convert 'vm' to mg units, and highlight any imputed values
     ts['vmFinal'] = ts['vm'] * 1000
-    ts['imputed'] = np.isnan(ts[primeMetric]).replace({True:'1',False:''})
+    ts['imputed'] = np.isnan(ts[pa1]).replace({True:'1',False:''})
     #prepare time series header
     tsHead = 'acceleration (mg) - '
     tsHead += ts.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
@@ -265,7 +268,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return enWeight.mean(), enWeight.median(), enWeight.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, enWeight.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e[primeMetric].mean(), e[primeMetric].std(), e[primeMetric].min(), e[primeMetric].max(), ecdfLow, ecdfMid, ecdfHigh, enmoAbsWeight.mean(), e['enmoAbs'].mean(), enmoTruncWeight.mean(), e['enmoTrunc'].mean(), enmoAbsBPWeight.mean(), e['enmoAbsBP'].mean()
+    return pa1W.mean(), pa1W.median(), pa1W.std(), startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, pa1W.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), e[pa1].mean(), e[pa1].std(), e[pa1].min(), e[pa1].max(), ecdfLow, ecdfMid, ecdfHigh, pa2W.mean(), e[pa2].mean(), pa3W.mean(), e[pa3].mean(), pa4W.mean(), e[pa4].mean()
 
 
 def identifyAndRemoveNonWearTime(
