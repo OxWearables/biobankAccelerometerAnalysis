@@ -187,7 +187,7 @@ def main():
         fSummary += ','.join([f % v for v in paEcdfLow[m]]) + ','
         fSummary += ','.join([f % v for v in paEcdfMid[m]]) + ','
         fSummary += ','.join([f % v for v in paEcdfHigh[m]]) + ','
-    fSummary = fSummary[:-1] #remove final comma
+    fSummary = fSummary[:-1] #remove trailing comma
     #print basic output
     print cmdSummary
     #write detailed output to file
