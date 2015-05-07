@@ -259,7 +259,7 @@ def getEpochSummary(epochFile,
         paEcdfLow.append(ecdf(x))
         x, step = np.linspace(.110, 0.5, 40, retstep=True) #10mg bins from 110-500mg
         paEcdfMid.append(ecdf(x))
-        x, step = np.linspace(0.5, 3.0, 26, retstep=True) #100mg bins from 500-3000mg
+        x, step = np.linspace(0.6, 3.0, 25, retstep=True) #100mg bins from 500-3000mg
         paEcdfHigh.append(ecdf(x))
     
     #write time series file
