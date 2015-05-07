@@ -254,11 +254,11 @@ def getEpochSummary(epochFile,
 
         #calculate empirical cumulative distribution function of vector magnitudes
         ecdf = sm.distributions.ECDF(pa)
-        x, step = np.linspace(0.100, .800, 8, retstep=True) #100mg bins from 0-800mg
+        x, step = np.linspace(0.005, .100, 20, retstep=True) #5mg bins from 5-100mg
         paEcdfLow.append(ecdf(x))
-        x, step = np.linspace(.810, 1.6, 80, retstep=True) #10mg bins from 800-1600mg
+        x, step = np.linspace(.110, 0.5, 40, retstep=True) #10mg bins from 110-500mg
         paEcdfMid.append(ecdf(x))
-        x, step = np.linspace(1.7, 3.0, 14, retstep=True) #100mg bins from 1700-3000mg
+        x, step = np.linspace(0.5, 3.0, 26, retstep=True) #100mg bins from 500-3000mg
         paEcdfHigh.append(ecdf(x))
     
     #write time series file
