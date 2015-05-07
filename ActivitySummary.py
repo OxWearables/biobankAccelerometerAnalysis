@@ -118,20 +118,23 @@ def main():
         numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
                 funcParams, epochSec)    
     
+    #define PA metrics i.e. column names from java epoch process
+    paMetrics = ['en', 'enmoAbs', 'enmoTrunc', 'enmoAbsBP']
+    
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
     print 'summary stats generation'
-    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, enWAvg, enWStd, enAvg, enStd, enMedian, enMin, enMax, enEcdfLow, enEcdfMid, enEcdfHigh, enmoAbsWAvg, enmoAbsWStd, enmoAbsAvg, enmoAbsStd, enmoAbsMedian, enmoAbsMin, enmoAbsMax, enmoAbsEcdfLow, enmoAbsEcdfMid, enmoAbsEcdfHigh, enmoTruncWAvg, enmoTruncWStd, enmoTruncAvg, enmoTruncStd, enmoTruncMedian, enmoTruncMin, enmoTruncMax, enmoTruncEcdfLow, enmoTruncEcdfMid, enmoTruncEcdfHigh, enmoAbsBPWAvg, enmoAbsBPWStd, enmoAbsBPAvg, enmoAbsBPStd, enmoAbsBPMedian, enmoAbsBPMin, enmoAbsBPMax, enmoAbsBPEcdfLow, enmoAbsBPEcdfMid, enmoAbsBPEcdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdfLow, paEcdfMid, paEcdfHigh = getEpochSummary(epochFile, 0, 0, epochSec, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
     cmdSummary = rawFile + ', '
     #physical activity output variable (mg)
     f = '%.2f'
-    fSummary += f % (enWAvg*1000) + ','
-    fSummary += f % (enWStd*1000) + ','
-    cmdSummary += f % (enWAvg*1000) + ' mg, '
+    fSummary += f % (paWAvg[0]*1000) + ','
+    fSummary += f % (paWStd[0]*1000) + ','
+    cmdSummary += f % (paWAvg[0]*1000) + ' mg, '
     #wear time characteristics
     f = '%Y-%m-%d %H:%M:%S'
     fSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
@@ -171,54 +174,19 @@ def main():
     fSummary += str(epochSamplesMax) + ','
     fSummary += f % tempMean + ',' + f % tempStd + ','
     #PA variable stats
-    f = '%.2f'
-    fSummary += f % (enWAvg*1000) + ','
-    fSummary += f % (enWStd*1000) + ','
-    fSummary += f % (enAvg*1000) + ','
-    fSummary += f % (enStd*1000) + ','
-    fSummary += f % (enMedian*1000) + ','
-    fSummary += f % (enMin*1000) + ','
-    fSummary += f % (enMax*1000) + ','
-    f = '%.3f'
-    fSummary += ','.join([f % v for v in enEcdfLow]) + ','
-    fSummary += ','.join([f % v for v in enEcdfMid]) + ','
-    fSummary += ','.join([f % v for v in enEcdfHigh]) + ','
-    f = '%.2f'
-    fSummary += f % (enmoAbsWAvg*1000) + ','
-    fSummary += f % (enmoAbsWStd*1000) + ','
-    fSummary += f % (enmoAbsAvg*1000) + ','
-    fSummary += f % (enmoAbsStd*1000) + ','
-    fSummary += f % (enmoAbsMedian*1000) + ','
-    fSummary += f % (enmoAbsMin*1000) + ','
-    fSummary += f % (enmoAbsMax*1000) + ','
-    f = '%.3f'
-    fSummary += ','.join([f % v for v in enmoAbsEcdfLow]) + ','
-    fSummary += ','.join([f % v for v in enmoAbsEcdfMid]) + ','
-    fSummary += ','.join([f % v for v in enmoAbsEcdfHigh]) + ','
-    f = '%.2f'
-    fSummary += f % (enmoTruncWAvg*1000) + ','
-    fSummary += f % (enmoTruncWStd*1000) + ','
-    fSummary += f % (enmoTruncAvg*1000) + ','
-    fSummary += f % (enmoTruncStd*1000) + ','
-    fSummary += f % (enmoTruncMedian*1000) + ','
-    fSummary += f % (enmoTruncMin*1000) + ','
-    fSummary += f % (enmoTruncMax*1000) + ','
-    f = '%.3f'
-    fSummary += ','.join([f % v for v in enmoTruncEcdfLow]) + ','
-    fSummary += ','.join([f % v for v in enmoTruncEcdfMid]) + ','
-    fSummary += ','.join([f % v for v in enmoTruncEcdfHigh]) + ','
-    f = '%.2f'
-    fSummary += f % (enmoAbsBPWAvg*1000) + ','
-    fSummary += f % (enmoAbsBPWStd*1000) + ','
-    fSummary += f % (enmoAbsBPAvg*1000) + ','
-    fSummary += f % (enmoAbsBPStd*1000) + ','
-    fSummary += f % (enmoAbsBPMedian*1000) + ','
-    fSummary += f % (enmoAbsBPMin*1000) + ','
-    fSummary += f % (enmoAbsBPMax*1000) + ','
-    f = '%.3f'
-    fSummary += ','.join([f % v for v in enmoAbsBPEcdfLow]) + ','
-    fSummary += ','.join([f % v for v in enmoAbsBPEcdfMid]) + ','
-    fSummary += ','.join([f % v for v in enmoAbsBPEcdfHigh])
+    for m in range(0,len(paWAvg)): # 'm' for (physical activity) metric
+        f = '%.2f'
+        fSummary += f % (paWAvg[m]*1000) + ','
+        fSummary += f % (paWStd[m]*1000) + ','
+        fSummary += f % (paAvg[m]*1000) + ','
+        fSummary += f % (paStd[m]*1000) + ','
+        fSummary += f % (paMedian[m]*1000) + ','
+        fSummary += f % (paMin[m]*1000) + ','
+        fSummary += f % (paMax[m]*1000) + ','
+        f = '%.3f'
+        fSummary += ','.join([f % v for v in paEcdfLow[m]]) + ','
+        fSummary += ','.join([f % v for v in paEcdfMid[m]]) + ','
+        fSummary += ','.join([f % v for v in paEcdfHigh[m]]) + ','
     #print basic output
     print cmdSummary
     #write detailed output to file
@@ -233,7 +201,12 @@ def main():
         print fSummary
 
 
-def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
+def getEpochSummary(epochFile,
+        headerSize,
+        dateColumn,
+        epochSec,
+        tsFile,
+        paMetrics):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -241,16 +214,11 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
                 header=headerSize)
-    #define PA metrics
-    pa1 = 'enmoAbs'
-    pa2 = 'en'
-    pa3 = 'enmoTrunc'
-    pa4 = 'enmoAbsBP'
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
-    wearSamples = e[pa1].count()
-    nonWearSamples = len(e[np.isnan(e[pa1])].index.values)
+    wearSamples = e[paMetrics[0]].count()
+    nonWearSamples = len(e[np.isnan(e[paMetrics[0]])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
     
@@ -258,59 +226,51 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
     epochsInMin = 60 / epochSec
     wear24 = []
     for i in range(0,24):
-        wear24.append( e[pa1][e.index.hour == i].count() / epochsInMin )
+        wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
     
-    #diurnal adjustment: construct average 1440 minute day
-    pa1W = e[pa1].groupby([e.index.hour, e.index.minute]).mean()
-    pa2W = e[pa2].groupby([e.index.hour, e.index.minute]).mean()
-    pa3W = e[pa3].groupby([e.index.hour, e.index.minute]).mean()
-    pa4W = e[pa4].groupby([e.index.hour, e.index.minute]).mean()
+    #create arrays to store summary values for various physical activity metrics
+    paWAvg = []
+    paWStd = []
+    paAvg = []
+    paStd = []
+    paMedian = []
+    paMin = []
+    paMax = []
+    paEcdfLow = []
+    paEcdfMid = []
+    paEcdfHigh = []
+    for m in paMetrics: # 'm' for (physical activity) metric
+        pa = e[m] #raw data
+        paW = pa.groupby([e.index.hour, e.index.minute]).mean() #weartime weighted data
+      
+        #calculate stat summaries
+        paWAvg.append(paW.mean())
+        paWStd.append(paW.std())
+        paAvg.append(pa.mean())
+        paStd.append(pa.std())
+        paMedian.append(pa.median())
+        paMin.append(pa.min())
+        paMax.append(pa.max())
 
-    #calculate empirical cumulative distribution function of vector magnitudes
-    ecdf = sm.distributions.ECDF(e[pa1])
-    #100mg categories from 0-800mg
-    x, step = np.linspace(0.100, .800, 8, retstep=True)
-    ecdf1Low = ecdf(x)
-    #10mg categories from 800mg to 1600mg 
-    x, step = np.linspace(.810, 1.6, 80, retstep=True)
-    ecdf1Mid = ecdf(x)
-    #100mg categories from 1700mg to 3000g
-    x, step = np.linspace(1.7, 3.0, 14, retstep=True)
-    ecdf1High = ecdf(x)
-    #now repeat for enmoAbs 
-    ecdf = sm.distributions.ECDF(e[pa2])
-    x, step = np.linspace(0.005, .100, 20, retstep=True)
-    ecdf2Low = ecdf(x)
-    x, step = np.linspace(.110, .500, 40, retstep=True)
-    ecdf2Mid = ecdf(x)
-    x, step = np.linspace(0.6, 3.0, 25, retstep=True)
-    ecdf2High = ecdf(x)
-    #repeat for enmoTrunc
-    ecdf = sm.distributions.ECDF(e[pa2])
-    x, step = np.linspace(0.005, .100, 20, retstep=True)
-    ecdf3Low = ecdf(x)
-    x, step = np.linspace(.110, 0.500, 40, retstep=True)
-    ecdf3Mid = ecdf(x)
-    x, step = np.linspace(0.6, 3.0, 25, retstep=True)
-    ecdf3High = ecdf(x)
-    #repeat for enmoAbsBP
-    ecdf4 = sm.distributions.ECDF(e[pa2])
-    x, step = np.linspace(0.005, .100, 20, retstep=True)
-    ecdf4Low = ecdf(x)
-    x, step = np.linspace(.110, 0.500, 40, retstep=True)
-    ecdf4Mid = ecdf(x)
-    x, step = np.linspace(0.6, 3.0, 25, retstep=True)
-    ecdf4High = ecdf(x)
+        #calculate empirical cumulative distribution function of vector magnitudes
+        ecdf = sm.distributions.ECDF(pa)
+        x, step = np.linspace(0.100, .800, 8, retstep=True) #100mg bins from 0-800mg
+        paEcdfLow.append(ecdf(x))
+        x, step = np.linspace(.810, 1.6, 80, retstep=True) #10mg bins from 800-1600mg
+        paEcdfMid.append(ecdf(x))
+        x, step = np.linspace(1.7, 3.0, 14, retstep=True) #100mg bins from 1700-3000mg
+        paEcdfHigh.append(ecdf(x))
     
     #write time series file
     #replace nan avgVm vals with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    ts = e.join(e.groupby(('hour','minute'))[pa1].mean(), on=['hour','minute'], rsuffix='_imputed')
-    ts['vm'] = ts[pa1].fillna(ts[pa1 + '_imputed'])
+    pa = paMetrics[0]
+    ts = e.join(e.groupby(('hour','minute'))[pa].mean(), on=['hour','minute'], rsuffix='_imputed')
+    ts['vm'] = ts[pa].fillna(ts[pa + '_imputed'])
     #convert 'vm' to mg units, and highlight any imputed values
     ts['vmFinal'] = ts['vm'] * 1000
-    ts['imputed'] = np.isnan(ts[pa1]).replace({True:'1',False:''})
+    ts['imputed'] = np.isnan(ts[pa]).replace({True:'1',False:''})
     #prepare time series header
     tsHead = 'acceleration (mg) - '
     tsHead += ts.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
@@ -327,7 +287,7 @@ def getEpochSummary(epochFile, headerSize, dateColumn, epochSec, tsFile):
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, pa1W.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), pa1W.mean(), pa1W.std(), e[pa1].mean(), e[pa1].std(), e[pa1].median(), e[pa1].min(), e[pa1].max(), ecdf1Low, ecdf1Mid, ecdf1High, pa2W.mean(), pa2W.std(), e[pa2].mean(), e[pa2].std(), e[pa2].median(), e[pa2].min(), e[pa2].max(), ecdf2Low, ecdf2Mid, ecdf2High, pa3W.mean(), pa3W.std(), e[pa3].mean(), e[pa3].std(), e[pa3].median(), e[pa3].min(), e[pa3].max(), ecdf3Low, ecdf3Mid, ecdf3High, pa4W.mean(), pa4W.std(), e[pa4].mean(), e[pa4].std(), e[pa4].median(), e[pa4].min(), e[pa4].max(), ecdf4Low, ecdf4Mid, ecdf4High
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, paW[0].count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdfLow, paEcdfMid, paEcdfHigh
 
 
 def identifyAndRemoveNonWearTime(
