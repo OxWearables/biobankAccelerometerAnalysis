@@ -323,7 +323,7 @@ def identifyAndRemoveNonWearTime(
     '''
     #variables to store default parameter options
     headerSize = 1
-    datetimeColumn, xIndex, yIndex, zIndex = 0, 8, 9, 10
+    datetimeColumn, xIndex, yIndex, zIndex = 0, 11, 12, 13
     timeFormat = '%Y-%m-%d %H:%M:%S.%f'
     targetWearTimeDays, behavType = 28, 'nonwear'
     minFreq = 3600 / epochSec
