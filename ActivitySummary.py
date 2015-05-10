@@ -119,7 +119,7 @@ def main():
                 funcParams, epochSec)    
     
     #define PA metrics i.e. column names from java epoch process
-    paMetrics = ['en', 'enmoAbs', 'enmoTrunc', 'enmoAbsBP']
+    paMetrics = ['enmoTrunc', 'enmoAbs', 'en', 'enmoAbsBP']
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
