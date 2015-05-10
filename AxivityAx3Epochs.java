@@ -423,11 +423,13 @@ public class AxivityAx3Epochs
                         x = xResampled[c];
                         y = yResampled[c];
                         z = zResampled[c];
-                        double vm = getVectorMagnitude(x,y,z);
-                        enVals.add(vm);
-                        enmoAbsVals.add(vm-1);
-                        enmoTruncVals.add(vm-1);
-                        enmoAbsValsBP.add(vm);
+                        if(!Double.isNaN(x)) {
+                            double vm = getVectorMagnitude(x,y,z);
+                            enVals.add(vm);
+                            enmoAbsVals.add(vm-1);
+                            enmoTruncVals.add(vm-1);
+                            enmoAbsValsBP.add(vm);
+                        }
                     }
 
                     //filter AvgVm-1 values
@@ -554,7 +556,9 @@ public class AxivityAx3Epochs
         }
         double sum = 0;
         for(int c=0; c<vals.length; c++) {
-            sum += vals[c];
+            if(!Double.isNaN(vals[c])) {
+                sum += vals[c];
+            }
         }
         return sum;
     }
@@ -607,7 +611,9 @@ public class AxivityAx3Epochs
         double var = 0; //variance
         double len = vals.length*1.0; //length
         for(int c=0; c<vals.length; c++) {
-            var += ((vals[c] - mean) * (vals[c] - mean)) / len;
+            if(!Double.isNaN(vals[c])) {
+                var += ((vals[c] - mean) * (vals[c] - mean)) / len;
+            }
         }
         return Math.sqrt(var);
     }
