@@ -6,6 +6,8 @@ import java.util.List;
 class Resample{
 
     //inspired by http://www.java2s.com/Code/Java/Collections-Data-Structure/LinearInterpolation.htm
+    //in small tests this method has matched python scipy.interpolate.interp1d
+    //http://docs.scipy.org/doc/scipy/reference/tutorial/interpolate.html
     public static final void interpLinear(
             List<Long> time, //time in milliseconds
             List<Double> x,
