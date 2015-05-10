@@ -7,14 +7,14 @@ class Resample{
 
     //inspired by http://www.java2s.com/Code/Java/Collections-Data-Structure/LinearInterpolation.htm
     public static final void interpLinear(
-            List<Long> time,
+            List<Long> time, //time in milliseconds
             List<Double> x,
             List<Double> y,
             List<Double> z,
-            long[] timeI,
-            double[] xi,
-            double[] yi,
-            double[] zi) throws IllegalArgumentException {
+            long[] timeI, //time in milliseconds
+            double[] xNew,
+            double[] yNew,
+            double[] zNew) throws IllegalArgumentException {
         if (time.size() != x.size()) {
             throw new IllegalArgumentException("time and x must be the same length");
         }
@@ -45,30 +45,30 @@ class Resample{
             xSlope[i] = dx[i] / dtime[i];
             ySlope[i] = dy[i] / dtime[i];
             zSlope[i] = dz[i] / dtime[i];
-            //should the line below not be PLUS???
             xIntercept[i] = x.get(i) - time.get(i) * xSlope[i];
             yIntercept[i] = y.get(i) - time.get(i) * ySlope[i];
             zIntercept[i] = z.get(i) - time.get(i) * zSlope[i];
         }
+        
         // Perform the interpolation here
         for (int i = 0; i < timeI.length; i++) {
             if ((timeI[i] > time.get(time.size() - 1)) || (timeI[i] < time.get(0))) {
-                xi[i] = Double.NaN;
-                yi[i] = Double.NaN;
-                zi[i] = Double.NaN;
+                xNew[i] = Double.NaN;
+                yNew[i] = Double.NaN;
+                zNew[i] = Double.NaN;
             }
             else {
                 int loc = Collections.binarySearch(time, timeI[i]);
                 if (loc < -1) {
                     loc = -loc - 2;
-                    xi[i] = xSlope[loc] * timeI[i] + xIntercept[loc];
-                    yi[i] = ySlope[loc] * timeI[i] + yIntercept[loc];
-                    zi[i] = zSlope[loc] * timeI[i] + zIntercept[loc];
+                    xNew[i] = xSlope[loc] * timeI[i] + xIntercept[loc];
+                    yNew[i] = ySlope[loc] * timeI[i] + yIntercept[loc];
+                    zNew[i] = zSlope[loc] * timeI[i] + zIntercept[loc];
                 }
                 else {
-                    xi[i] = x.get(loc);
-                    yi[i] = y.get(loc);
-                    zi[i] = z.get(loc);
+                    xNew[i] = x.get(loc);
+                    yNew[i] = y.get(loc);
+                    zNew[i] = z.get(loc);
                 }
             }
         }
