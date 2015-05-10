@@ -166,7 +166,7 @@ public class AxivityAx3Epochs
             String header = "";        
             //epoch creation support variables
             Calendar epochStartTime = null;//new GregorianCalendar();    
-            List<Date> epochDatetimeArray = new ArrayList<Date>();
+            List<Long> timeVals = new ArrayList<Long>();
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
             List<Double> zVals = new ArrayList<Double>();
@@ -195,7 +195,7 @@ public class AxivityAx3Epochs
                     //read each individual page block, and process epochs...
                     epochStartTime = processDataBlockIdentifyEpochs(buf,
                             epochFileWriter, timeFormat, epochStartTime,
-                            epochPeriod, xVals, yVals, zVals,
+                            epochPeriod, timeVals, xVals, yVals, zVals,
                             range, errCounter, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
                             staticStd, fLowPass, fBandPass);
@@ -229,6 +229,7 @@ public class AxivityAx3Epochs
             SimpleDateFormat timeFormat,
             Calendar epochStartTime,
             int epochPeriod,
+            List<Long> timeVals,
             List<Double> xVals,
             List<Double> yVals,
             List<Double> zVals,
@@ -352,10 +353,30 @@ public class AxivityAx3Epochs
                     z = range;
             }
             
-            //check we have collected enough values to form an epoch
             currentPeriod = (int) ((blockTime.getTimeInMillis() -
                     epochStartTime.getTimeInMillis())/1000);
-            if (currentPeriod >= epochPeriod) { 
+            //check for an interrupt, i.e. where break in values > 2 * epochPeriod
+            if (currentPeriod >= epochPeriod*2) {
+                int epochDiff = currentPeriod/epochPeriod;
+                epochStartTime.add(Calendar.SECOND, epochPeriod*epochDiff);
+                //and update how far we are into the new epoch...
+                currentPeriod = (int) ((blockTime.getTimeInMillis() -
+                        epochStartTime.getTimeInMillis())/1000);
+            }
+            
+            //check we have collected enough values to form an epoch
+            if (currentPeriod >= epochPeriod){
+                //resample values to epochSec * (intended) sampleRate
+                long[] timeResampled = new long[epochPeriod * (int)sampleFreq];
+                for(int c=0; c<timeResampled.length; c++){
+                    timeResampled[c] = timeVals.get(0) + (10*c);
+                }
+                double[] xResampled = new double[timeResampled.length];
+                double[] yResampled = new double[timeResampled.length];
+                double[] zResampled = new double[timeResampled.length];
+                Resample.interpLinear(timeVals, xVals, yVals, zVals,
+                        timeResampled, xResampled, yResampled, zResampled);
+                
                 //epoch variables
                 String epochSummary = "";
                 double en = 0;
@@ -373,15 +394,15 @@ public class AxivityAx3Epochs
                 double zStd = 0;     
 
                 //calculate raw x/y/z summary values
-                xMean = mean(xVals);
-                yMean = mean(yVals);
-                zMean = mean(zVals);
-                xRange = range(xVals);
-                yRange = range(yVals);
-                zRange = range(zVals);
-                xStd = std(xVals, xMean);
-                yStd = std(yVals, yMean);
-                zStd = std(zVals, zMean);
+                xMean = mean(xResampled);
+                yMean = mean(yResampled);
+                zMean = mean(zResampled);
+                xRange = range(xResampled);
+                yRange = range(yResampled);
+                zRange = range(zResampled);
+                xStd = std(xResampled, xMean);
+                yStd = std(yResampled, yMean);
+                zStd = std(zResampled, zMean);
 
                 //see if values have been abnormally stuck this epoch
                 double stuckVal = 1.5;
@@ -398,10 +419,10 @@ public class AxivityAx3Epochs
                 List<Double> enmoTruncVals = new ArrayList<Double>();
                 List<Double> enmoAbsValsBP = new ArrayList<Double>();
                 if(!getStationaryBouts) {
-                    for(int c=0; c<xVals.size(); c++){
-                        x = xVals.get(c);
-                        y = yVals.get(c);
-                        z = zVals.get(c);
+                    for(int c=0; c<xResampled.length; c++){
+                        x = xResampled[c];
+                        y = yResampled[c];
+                        z = zResampled[c];
                         double vm = getVectorMagnitude(x,y,z);
                         enVals.add(vm);
                         enmoAbsVals.add(vm-1);
@@ -435,7 +456,7 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
-                epochSummary += "," + temperature + "," + xVals.size();
+                epochSummary += "," + temperature + "," + xResampled.length;
                 epochSummary += "," + errCounter[0];
                 epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
                 if(!getStationaryBouts || 
@@ -445,6 +466,7 @@ public class AxivityAx3Epochs
                        
                 //reset target start time and reset arrays for next epoch
                 epochStartTime.add(Calendar.SECOND, epochPeriod);
+                timeVals.clear();
                 xVals.clear();
                 yVals.clear();
                 zVals.clear();
@@ -453,6 +475,7 @@ public class AxivityAx3Epochs
                 clipsCounter[1] = 0;
             }
             //store axes and vector magnitude values for every reading
+            timeVals.add(blockTime.getTimeInMillis());
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
@@ -525,6 +548,31 @@ public class AxivityAx3Epochs
         }
     }
 
+    private static double sum(double[] vals) {
+        if(vals.length==0) {
+            return Double.NaN;
+        }
+        double sum = 0;
+        for(int c=0; c<vals.length; c++) {
+            sum += vals[c];
+        }
+        return sum;
+    }
+    
+    private static double mean(double[] vals) {
+        if(vals.length==0) {
+            return Double.NaN;
+        }
+        return sum(vals) / (double)vals.length;
+    }
+    
+    private static double mean(List<Double> vals) {
+        if(vals.size()==0) {
+            return Double.NaN;
+        }
+        return sum(vals) / (double)vals.size();
+    }
+    
     private static double sum(List<Double> vals) {
         if(vals.size()==0) {
             return Double.NaN;
@@ -535,38 +583,31 @@ public class AxivityAx3Epochs
         }
         return sum;
     }
-    
-    private static double mean(List<Double> vals) {
-        if(vals.size()==0) {
-            return Double.NaN;
-        }
-        return sum(vals) / (double)vals.size();
-    }
     	
-    private static double range(List<Double> vals) {
-        if(vals.size()==0) {
+    private static double range(double[] vals) {
+        if(vals.length==0) {
             return Double.NaN;
         }
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
-        for(int c=0; c<vals.size(); c++) {
-            if (vals.get(c) < min) {
-                min = vals.get(c);
-            } else if (vals.get(c) > max) {
-                max = vals.get(c);
+        for(int c=0; c<vals.length; c++) {
+            if (vals[c] < min) {
+                min = vals[c];
+            } else if (vals[c] > max) {
+                max = vals[c];
             }
         }
         return max - min;
     }    	
 
-    private static double std(List<Double> vals, double mean) {
-        if(vals.size()==0) {
+    private static double std(double[] vals, double mean) {
+        if(vals.length==0) {
             return Double.NaN;
         }
         double var = 0; //variance
-        double len = vals.size()*1.0; //length
-        for(int c=0; c<vals.size(); c++) {
-            var += ((vals.get(c) - mean) * (vals.get(c) - mean)) / len;
+        double len = vals.length*1.0; //length
+        for(int c=0; c<vals.length; c++) {
+            var += ((vals[c] - mean) * (vals[c] - mean)) / len;
         }
         return Math.sqrt(var);
     }
