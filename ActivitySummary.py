@@ -45,6 +45,7 @@ def main():
     epochFile = rawFile.replace(".cwa","Epoch.csv")
     stationaryFile = rawFile.replace(".cwa","Stationary.csv")
     javaEpochProcess = "AxivityAx3Epochs"
+    javaHeapSpace = ""
     skipRaw = False
     skipCalibration = False
     deleteHelperFiles = True
@@ -74,6 +75,8 @@ def main():
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriodStr = param
+        elif param.split(':')[0] == 'javaHeapSpace':
+            javaHeapSpace = param.split(':')[1]
 
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
@@ -91,6 +94,8 @@ def main():
                     rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
                     "filter:true", "getStationaryBouts:true", "epochPeriod:10",
                     "stationaryStd:0.013"]
+            if len(javaHeapSpace) > 1:
+                commandArgs.insert(1,javaHeapSpace);
             call(commandArgs)
             #record calibrated axes scale/offset/temperature vals + static point stats
             calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
@@ -111,6 +116,8 @@ def main():
       
         #calculate and write filtered avgVm epochs from raw file
         print 'epoch generation'
+        if len(javaHeapSpace) > 1:
+            commandArgs.insert(1,javaHeapSpace);
         call(commandArgs)
 
         #identify and remove nonWear episodes
