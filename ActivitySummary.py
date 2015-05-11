@@ -474,7 +474,13 @@ def getCalibrationCoefs(staticBoutsFile):
             x = np.concatenate([curr[:,[a]], tempVals], axis=1)
             x = sm.add_constant(x, prepend=True) #add bias/intercept term
             y = target[:,a]
-            newI, newS, newT = sm.OLS(y,x).fit().params
+            try:
+                newI, newS, newT = sm.OLS(y,x).fit().params
+            except:
+                #highlight problem with regression, and exit
+                xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
+                xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
+                break
             #update values as part of iterative closest point fitting process
             #refer to wiki as there is quite a bit of math behind next 3 lines
             intercept[a] = newI + (intercept[a] * newS)
