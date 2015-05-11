@@ -468,39 +468,38 @@ def getCalibrationCoefs(staticBoutsFile):
     target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
     initError = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
     #iterate through linear model fitting
-    for i in range(1, maxIter):
-        #iterate through each axis, refitting its intercept/slope vals
-        for a in range(0,3):
-            x = np.concatenate([curr[:,[a]], tempVals], axis=1)
-            x = sm.add_constant(x, prepend=True) #add bias/intercept term
-            y = target[:,a]
-            try:
+    try:
+        for i in range(1, maxIter):
+            #iterate through each axis, refitting its intercept/slope vals
+            for a in range(0,3):
+                x = np.concatenate([curr[:,[a]], tempVals], axis=1)
+                x = sm.add_constant(x, prepend=True) #add bias/intercept term
+                y = target[:,a]
                 newI, newS, newT = sm.OLS(y,x).fit().params
-            except:
-                #highlight problem with regression, and exit
-                xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
-                xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
-                sys.stderr.write('WARNING: calibration error')
-                break
-            #update values as part of iterative closest point fitting process
-            #refer to wiki as there is quite a bit of math behind next 3 lines
-            intercept[a] = newI + (intercept[a] * newS)
-            slope[a] = newS * slope[a]
-            tempCoef[a] = newT + (tempCoef[a] * newS)
-        #update vals (and targed) based on new intercept/slope/temp coeffs
-        curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
-        target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
-        rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
-        #assess iterative error convergence
-        improvement = (bestError-rms)/bestError
-        prevError=rms
-        if rms < bestError:
-            bestIntercept = np.copy(intercept)
-            bestSlope = np.copy(slope)
-            bestTemp = np.copy(tempCoef)
-            bestError = rms
-        if improvement < minIterImprovement:
-            break #break if not largely converged
+                #update values as part of iterative closest point fitting process
+                #refer to wiki as there is quite a bit of math behind next 3 lines
+                intercept[a] = newI + (intercept[a] * newS)
+                slope[a] = newS * slope[a]
+                tempCoef[a] = newT + (tempCoef[a] * newS)
+            #update vals (and targed) based on new intercept/slope/temp coeffs
+            curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+            target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
+            rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
+            #assess iterative error convergence
+            improvement = (bestError-rms)/bestError
+            prevError=rms
+            if rms < bestError:
+                bestIntercept = np.copy(intercept)
+                bestSlope = np.copy(slope)
+                bestTemp = np.copy(tempCoef)
+                bestError = rms
+            if improvement < minIterImprovement:
+                break #break if not largely converged
+    except:
+        #highlight problem with regression, and exit
+        xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
+        xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
+        sys.stderr.write('WARNING: calibration error\n')
     return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
 
 def getDeviceId(cwaFile):
