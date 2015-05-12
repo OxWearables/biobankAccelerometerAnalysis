@@ -82,14 +82,14 @@ def main():
     if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
-        sys.stderr.write(msg)
+        sys.stderr.write(toScreen(msg))
         sys.exit(0)
 
     if not skipRaw:
         #calibrate axes scale/offset values
         if not skipCalibration:
             #identify 10sec stationary epochs
-            print 'calibrating'
+            print toScreen('calibrating')
             commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
                     rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
                     "filter:true", "getStationaryBouts:true", "epochPeriod:10",
@@ -115,13 +115,13 @@ def main():
                     "filter:true", epochPeriodStr]
       
         #calculate and write filtered avgVm epochs from raw file
-        print 'epoch generation'
+        print toScreen('epoch generation')
         if len(javaHeapSpace) > 1:
             commandArgs.insert(1,javaHeapSpace);
         call(commandArgs)
 
         #identify and remove nonWear episodes
-        print 'nonwear identification'
+        print toScreen('nonwear identification')
         numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
                 funcParams, epochSec)    
     
@@ -131,7 +131,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    print 'summary stats generation'
+    print toScreen('summary stats generation')
     startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochSec, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
@@ -197,7 +197,7 @@ def main():
         fSummary += ','.join([f % v for v in paEcdf4[m]]) + ','
     fSummary = fSummary[:-1] #remove trailing comma
     #print basic output
-    print cmdSummary
+    print toScreen(cmdSummary)
     #write detailed output to file
     f = open(summaryFile,'w')
     f.write(fSummary)
@@ -206,8 +206,8 @@ def main():
         os.remove(stationaryFile)
         os.remove(epochFile)
     if verbose:
-        print summaryFile
-        print fSummary
+        print toScreen(summaryFile)
+        print toScreen(fSummary)
 
 
 def getEpochSummary(epochFile,
@@ -512,6 +512,9 @@ def getDeviceId(cwaFile):
     f.close()
     return deviceId
 
+def toScreen(msg):
+    timeFormat = '%Y-%m-%d %H:%M:%S'
+    return datetime.datetime.now().strftime(timeFormat) +  ' ' + msg
 
 """
 Standard boilerplate to call the main() function to begin the program.
