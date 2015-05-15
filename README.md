@@ -18,14 +18,19 @@ To extract a summary of movement (average sample vector magnitude) and
 
 ```
 python ActivitySummary.py [input_file.CWA] [options]
-python ActivitySummary.py p001.cwa
+python ActivitySummary.py sample.cwa
 ```
 
 [Click here for a sample .CWA file.]
-(http://users.fmrib.ox.ac.uk/~adoherty/p001.cwa)
+(http://users.fmrib.ox.ac.uk/~adoherty/sample.cwa)
 
+The output will look like:
+```
+timestamp [input_file.CWA], [summary physical activity score], [start time] - [end time], [wear time], [non wear time]
+2015-05-15 09:45:27 sample.cwa, 33.44 mg, 2014-05-07 13:29:50 - 2014-05-13 09:50:25, 8357 mins wear, 62     mins nonWear
+```
 [Click here for customised usage options on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/Usage)
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/1. Usage)
 
 
 <h2>Installation</h2>
@@ -35,13 +40,13 @@ javac *.java
 ```
 
 [Click here for detailed information on installing this software on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/Installation)
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/2. Installation)
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
 information from accelerometer data. [Click here for detailed information on the 
 data processing methods on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/MethodsOverview)
+(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/3. MethodsOverview)
 
 ![Accelerometer data processing overview]
 (http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
