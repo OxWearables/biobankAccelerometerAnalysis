@@ -50,8 +50,11 @@ def main():
     skipCalibration = False
     deleteHelperFiles = True
     verbose = False
-    epochSec = 5
-    epochPeriodStr = "epochPeriod:" + str(epochSec)
+    epochPeriod = 5
+    calOff = [0.0, 0.0, 0.0]
+    calSlope = [1.0, 1.0, 1.0]
+    calTemp = [0.0, 0.0, 0.0]
+    meanTemp = 20
     #update default values by looping through user parameters
     for param in funcParams:
         #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
@@ -74,9 +77,21 @@ def main():
         elif param.split(':')[0] == 'deleteHelperFiles':
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
-            epochPeriodStr = param
+            epochPeriod = int(float(param.split(':')[1]))
         elif param.split(':')[0] == 'javaHeapSpace':
             javaHeapSpace = param.split(':')[1]
+        elif param.split(':')[0] == 'calOff':
+            calOff = param.split(':')[1].split(',')
+            skipCalibration = True
+        elif param.split(':')[0] == 'calSlope':
+            calSlope = param.split(':')[1].split(',')
+            skipCalibration = True
+        elif param.split(':')[0] == 'calTemp':
+            calTemp = param.split(':')[1].split(',')
+            skipCalibration = True
+        elif param.split(':')[0] == 'calMeanTemp':
+            meanTemp = param.split(':')[1]
+            skipCalibration = True
 
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
@@ -101,20 +116,16 @@ def main():
             calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
             if verbose:
                 print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
-            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                    rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
-                    "filter:true", "xIntercept:" + str(calOff[0]),
-                    "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
-                    "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
-                    "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
-                    "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
-                    "meanTemp:" + str(meanTemp), epochPeriodStr]
-        else: 
-            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                    rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose), 
-                    "filter:true", epochPeriodStr]
       
         #calculate and write filtered avgVm epochs from raw file
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
+                "filter:true", "xIntercept:" + str(calOff[0]),
+                "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
+                "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
+                "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
+                "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
+                "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
         print toScreen('epoch generation')
         if len(javaHeapSpace) > 1:
             commandArgs.insert(1,javaHeapSpace);
@@ -123,7 +134,7 @@ def main():
         #identify and remove nonWear episodes
         print toScreen('nonwear identification')
         numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
-                funcParams, epochSec)    
+                funcParams, epochPeriod)    
     
     #define PA metrics i.e. column names from java epoch process
     paMetrics = ['enmoTrunc', 'enmoAbs', 'en', 'enmoAbsBP']
@@ -132,7 +143,7 @@ def main():
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
     print toScreen('summary stats generation')
-    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochSec, tsFile, paMetrics)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -203,8 +214,11 @@ def main():
     f.write(fSummary)
     f.close()
     if deleteHelperFiles:
-        os.remove(stationaryFile)
-        os.remove(epochFile)
+        try:
+            os.remove(stationaryFile)
+            os.remove(epochFile)
+        except:
+            print 'could not delete helper file' 
     if verbose:
         print toScreen(summaryFile)
         print toScreen(fSummary)
