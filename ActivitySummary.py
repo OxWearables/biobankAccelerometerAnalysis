@@ -80,13 +80,13 @@ def main():
             epochPeriod = int(float(param.split(':')[1]))
         elif param.split(':')[0] == 'javaHeapSpace':
             javaHeapSpace = param.split(':')[1]
-        elif param.split(':')[0] == 'calOff':
+        elif param.split(':')[0] == 'calOff' and len(param.split(':')[1].split(','))==3:
             calOff = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calSlope':
+        elif param.split(':')[0] == 'calSlope' and len(param.split(':')[1].split(','))==3:
             calSlope = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calTemp':
+        elif param.split(':')[0] == 'calTemp' and len(param.split(':')[1].split(','))==3:
             calTemp = param.split(':')[1].split(',')
             skipCalibration = True
         elif param.split(':')[0] == 'calMeanTemp':
