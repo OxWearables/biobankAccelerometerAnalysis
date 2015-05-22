@@ -89,7 +89,7 @@ def main():
         elif param.split(':')[0] == 'calTemp' and len(param.split(':')[1].split(','))==3:
             calTemp = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calMeanTemp':
+        elif param.split(':')[0] == 'calMeanTemp' and len(param.split(':')[1])>=1:
             meanTemp = param.split(':')[1]
             skipCalibration = True
 
