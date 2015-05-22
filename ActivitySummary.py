@@ -277,8 +277,8 @@ def getEpochSummary(epochFile,
     paEcdf3 = []
     paEcdf4 = []
     for m in paMetrics: # 'm' for (physical activity) metric
-        #calculate stat summaries
         pa = e[m] #raw data
+        #calculate stat summaries
         paAvg.append(pa.mean())
         paStd.append(pa.std())
         paMedian.append(pa.median())
@@ -292,6 +292,7 @@ def getEpochSummary(epochFile,
         paWStd.append(pa.std())
 
         #calculate empirical cumulative distribution function of vector magnitudes
+        pa = pa[~np.isnan(pa)] #remove NaNs (necessary for statsmodels.api)
         if m == 'en':
             ecdf = sm.distributions.ECDF(pa)
             x, step = np.linspace(0.905, 0.990, 18, retstep=True) #5mg bins from 901-990mg
