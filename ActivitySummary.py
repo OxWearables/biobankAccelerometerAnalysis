@@ -257,7 +257,8 @@ def getEpochSummary(epochFile,
     for i in range(0,24):
         wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
     
-    #replace nan avgVm vals with mean avgVm from same time in other days
+    #calculate imputation values to replace nan PA metric valus
+    #i.e. replace with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
     e = e.join(e.groupby(('hour','minute'))[paMetrics].mean(), on=['hour','minute'], rsuffix='_imputed')
@@ -275,18 +276,20 @@ def getEpochSummary(epochFile,
     paEcdf3 = []
     paEcdf4 = []
     for m in paMetrics: # 'm' for (physical activity) metric
-        e[m+'Adjusted'] = e[m].fillna(e[m + '_imputed'])
-        pa = e[m+'Adjusted'] #raw data
-        paW = pa.groupby([e.index.hour, e.index.minute]).mean() #weartime weighted data
-      
         #calculate stat summaries
-        paWAvg.append(paW.mean())
-        paWStd.append(paW.std())
+        pa = e[m] #raw data
         paAvg.append(pa.mean())
         paStd.append(pa.std())
         paMedian.append(pa.median())
         paMin.append(pa.min())
         paMax.append(pa.max())
+        
+        #now wearTime weight values
+        e[m+'Adjusted'] = e[m].fillna(e[m + '_imputed'])
+        pa = e[m+'Adjusted'] #weartime weighted data
+        paW = pa.groupby([e.index.hour, e.index.minute]).mean() #weartime weighted data
+        paWAvg.append(pa.mean())
+        paWStd.append(pa.std())
 
         #calculate empirical cumulative distribution function of vector magnitudes
         if m == 'en':
