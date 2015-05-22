@@ -78,7 +78,7 @@ def main():
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriod = int(float(param.split(':')[1]))
-        elif param.split(':')[0] == 'javaHeapSpace' and len(param.split(':')[1].split(','))>1:
+        elif param.split(':')[0] == 'javaHeapSpace' and len(param.split(':')[1])>1:
             javaHeapSpace = param.split(':')[1]
         elif param.split(':')[0] == 'calOff' and len(param.split(':')[1].split(','))==3:
             calOff = param.split(':')[1].split(',')
