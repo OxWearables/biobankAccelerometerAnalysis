@@ -257,11 +257,12 @@ def getEpochSummary(epochFile,
     for i in range(0,24):
         wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
     
-    #calculate imputation values to replace nan PA metric valus
+    #calculate imputation values to replace nan PA metric values
     #i.e. replace with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    e = e.join(e.groupby(('hour','minute'))[paMetrics].mean(), on=['hour','minute'], rsuffix='_imputed')
+    wearTimeWeights = e.groupby(['hour', 'minute'])[paMetrics].mean() #weartime weighted data
+    e = e.join(wearTimeWeights, on=['hour','minute'], rsuffix='_imputed')
     
     #create arrays to store summary values for various physical activity metrics
     paWAvg = []
@@ -287,7 +288,6 @@ def getEpochSummary(epochFile,
         #now wearTime weight values
         e[m+'Adjusted'] = e[m].fillna(e[m + '_imputed'])
         pa = e[m+'Adjusted'] #weartime weighted data
-        paW = pa.groupby([e.index.hour, e.index.minute]).mean() #weartime weighted data
         paWAvg.append(pa.mean())
         paWStd.append(pa.std())
 
@@ -334,7 +334,7 @@ def getEpochSummary(epochFile,
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, paW.count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, wearTimeWeights[paMetrics[0]].count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4
 
 
 def identifyAndRemoveNonWearTime(
