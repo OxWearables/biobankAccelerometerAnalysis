@@ -78,7 +78,7 @@ def main():
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriod = int(float(param.split(':')[1]))
-        elif param.split(':')[0] == 'javaHeapSpace':
+        elif param.split(':')[0] == 'javaHeapSpace' and len(param.split(':')[1].split(','))>1:
             javaHeapSpace = param.split(':')[1]
         elif param.split(':')[0] == 'calOff' and len(param.split(':')[1].split(','))==3:
             calOff = param.split(':')[1].split(',')
@@ -166,6 +166,9 @@ def main():
     fSummary += str(avgDayMins) + ','
     try:
         fSummary += str(numNonWearEpisodes) + ','
+    except:
+        fSummary += '-1,'
+    try:
         #calibration metrics 
         fSummary += str(errPreCal) + ',' + str(errPostCal) + ','
         fSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
@@ -178,10 +181,13 @@ def main():
         fSummary += f % xMin + ',' + f % xMax + ','
         fSummary += f % yMin + ',' + f % yMax + ','
         fSummary += f % zMin + ',' + f % zMax + ','
+    except:
+        fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+    try:
         #raw file data quality indicators
         fSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
     except:
-        fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+        fSummary += '-1,-1,'
     f = '%.1f'
     fSummary += str(numInterrupts) + ',' + f % interruptMins + ','
     fSummary += str(numDataErrs) + ','
