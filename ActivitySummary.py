@@ -257,6 +257,11 @@ def getEpochSummary(epochFile,
     for i in range(0,24):
         wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
     
+    #replace nan avgVm vals with mean avgVm from same time in other days
+    e['hour'] = e.index.hour
+    e['minute'] = e.index.minute
+    e = e.join(e.groupby(('hour','minute'))[paMetrics].mean(), on=['hour','minute'], rsuffix='_imputed')
+    
     #create arrays to store summary values for various physical activity metrics
     paWAvg = []
     paWStd = []
@@ -270,7 +275,8 @@ def getEpochSummary(epochFile,
     paEcdf3 = []
     paEcdf4 = []
     for m in paMetrics: # 'm' for (physical activity) metric
-        pa = e[m] #raw data
+        e[m+'Adjusted'] = e[m].fillna(e[m + '_imputed'])
+        pa = e[m+'Adjusted'] #raw data
         paW = pa.groupby([e.index.hour, e.index.minute]).mean() #weartime weighted data
       
         #calculate stat summaries
@@ -304,22 +310,17 @@ def getEpochSummary(epochFile,
             x, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
             paEcdf4.append(ecdf(x))
 
-    #write time series file
-    #replace nan avgVm vals with mean avgVm from same time in other days
-    e['hour'] = e.index.hour
-    e['minute'] = e.index.minute
-    pa = paMetrics[0]
-    ts = e.join(e.groupby(('hour','minute'))[pa].mean(), on=['hour','minute'], rsuffix='_imputed')
-    ts['vm'] = ts[pa].fillna(ts[pa + '_imputed'])
-    #convert 'vm' to mg units, and highlight any imputed values
-    ts['vmFinal'] = ts['vm'] * 1000
-    ts['imputed'] = np.isnan(ts[pa]).replace({True:'1',False:''})
-    #prepare time series header
-    tsHead = 'acceleration (mg) - '
-    tsHead += ts.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
-    tsHead += ts.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
-    tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-    ts[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
+        if m == paMetrics[0]: 
+            #write time series file
+            #convert 'vm' to mg units, and highlight any imputed values
+            e['vmFinal'] = e[m+'Adjusted'] * 1000
+            e['imputed'] = np.isnan(e[m]).replace({True:'1',False:''})
+            #prepare time series header
+            tsHead = 'acceleration (mg) - '
+            tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+            tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
+            tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
+            e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
    
     #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
