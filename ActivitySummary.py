@@ -142,8 +142,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    print toScreen('summary stats generation')
-    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, avgDayMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -207,6 +206,16 @@ def main():
         fSummary += f % (paMedian[m]*1000) + ','
         fSummary += f % (paMin[m]*1000) + ','
         fSummary += f % (paMax[m]*1000) + ','
+        for i in range(0,7):
+            try:
+                fSummary += f % (paDays[m].get_group(i).mean()*1000) + ','
+            except:
+                fSummary += ','
+        for i in range(0,24):
+            try:
+                fSummary += f % (paHours[m].get_group(i).mean()*1000) + ','
+            except:
+                fSummary += ','
         f = '%.3f'
         fSummary += ','.join([f % v for v in paEcdf1[m]]) + ','
         fSummary += ','.join([f % v for v in paEcdf2[m]]) + ','
@@ -256,7 +265,7 @@ def getEpochSummary(epochFile,
     wear24 = []
     for i in range(0,24):
         wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
-    
+
     #calculate imputation values to replace nan PA metric values
     #i.e. replace with mean avgVm from same time in other days
     e['hour'] = e.index.hour
@@ -272,6 +281,8 @@ def getEpochSummary(epochFile,
     paMedian = []
     paMin = []
     paMax = []
+    paDays = []
+    paHours = []
     paEcdf1 = []
     paEcdf2 = []
     paEcdf3 = []
@@ -290,6 +301,8 @@ def getEpochSummary(epochFile,
         pa = e[m+'Adjusted'] #weartime weighted data
         paWAvg.append(pa.mean())
         paWStd.append(pa.std())
+        paDays.append(pa.groupby(pa.index.weekday))
+        paHours.append(pa.groupby(pa.index.hour))
 
         #calculate empirical cumulative distribution function of vector magnitudes
         pa = pa[~np.isnan(pa)] #remove NaNs (necessary for statsmodels.api)
@@ -313,7 +326,7 @@ def getEpochSummary(epochFile,
             paEcdf3.append(ecdf(x))
             x, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
             paEcdf4.append(ecdf(x))
-
+        
         if m == paMetrics[0]: 
             #write time series file
             #convert 'vm' to mg units, and highlight any imputed values
@@ -335,7 +348,7 @@ def getEpochSummary(epochFile,
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, wearTimeWeights[paMetrics[0]].count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, wearTimeWeights[paMetrics[0]].count(), len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
 
 
 def identifyAndRemoveNonWearTime(
