@@ -182,7 +182,7 @@ def main():
     cmdSummary += f % (wearTimeMins/1440.0) + ' days wear, '
     cmdSummary += f % (nonWearTimeMins/1440.0) + ' days nonWear'
     for i in range(0,7):
-        fSummary += f % (wearDay[i]/1440.0) + ','
+        fSummary += f % (wearDay[i]/60.0) + ','
     for i in range(0,24):
         fSummary += f % (wear24[i]/60.0) + ','
     fSummary += str(diurnalHrs) + ',' + str(diurnalMins) + ','
