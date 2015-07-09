@@ -49,7 +49,7 @@ Static methods to identify behaviours of interest from epoch csv data
 
 def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
                         timeFormat, xIndex, yIndex, zIndex, targetWeartimeDays,
-                        behavType, minFreq, maxStd, graceMaxFreq):
+                        behavType, minFreq, maxStd, minNumAxes, graceMaxFreq):
     """
     This method reads through <epochFile.csv> and identifies episodes of <behavType>
     as being a bout/episode of at least <minFreq> minutes with all 2/3 axes
@@ -61,11 +61,11 @@ def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
     ===
     To identify episodes when reading each line/epoch of CSV, consider:
         1. Is this epoch a potential episode start point (need to see x items ahead)?
-            a) i.e. is the value std, for at least two out of three axes, < maxStd
+            a) i.e. is the value std, for at least <minNumAxes> out of three axes, < maxStd
             b) if so create a new 'behaviourEpisode'
         -----
         2. Is this epoch a potential episode ending point?
-            a) i.e. is the value std, for at least two out of three axes, > maxStd
+            a) i.e. is the value std, for at least <minNumAxes> out of three axes, > maxStd
             b) if so complete info for 'behaviourEpisode' (see 1b) and store it
         -----
         3. Is this epoch part of an existing episode?
@@ -82,6 +82,7 @@ def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
         behavType, string, label episodes found e.g. 'MVPA'
         minFreq, int, how many consecutive instances each bout/episode should be e.g. 10
         maxStd, int, upper bound axis std e.g. 0.05 (50mg)
+        minNumAxes, int
         graceMaxFreq, int, how many grace occurrences can be outside lower/upper bound e.g. 2
     Output:
         array of identified episodes, of type 'behaviourEpisode'
@@ -188,9 +189,9 @@ def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
                 nonWearStart.append(isNonWearStart(xQ, maxStd, graceMaxFreq))
                 nonWearStart.append(isNonWearStart(yQ, maxStd, graceMaxFreq))
                 nonWearStart.append(isNonWearStart(zQ, maxStd, graceMaxFreq))
-                #it's a new nonwear episode if >=2/3 axes satisfy start episode criteria
+                #it's a new nonwear episode if >=minNumAxes axes satisfy start episode criteria
                 # and also if the proposed start time occurs after prev episode end-time
-                if sum(nonWearStart) >=2 and (len(episodeList) == 0 or timesQ[0] > episodeList[-1].endTime):
+                if sum(nonWearStart) >=minNumAxes and (len(episodeList) == 0 or timesQ[0] > episodeList[-1].endTime):
                     newEpisode = behaviourEpisode(behavType)
                     newEpisode.startTime = timesQ[0]
                     del xVals[:] #reset value arrays
@@ -210,8 +211,8 @@ def identifyNonWearEpisodes(epochFile, headerSize, timeCol,
                 nonWearEnd.append(isNonWearEnd(xStd, False, xQ, maxStd, graceMaxFreq))
                 nonWearEnd.append(isNonWearEnd(xStd, False, xQ, maxStd, graceMaxFreq))
                 nonWearEnd.append(isNonWearEnd(xStd, False, xQ, maxStd, graceMaxFreq))
-                #it's end of nonwear episode if >=2/3 axis satisfies end episode criteria
-                if sum(nonWearEnd) >=2:
+                #it's end of nonwear episode if minNumAxes satisfies end episode criteria
+                if sum(nonWearEnd) >=minNumAxes:
                     seekingNewEpisode = True #overall loop: look for nonWear start again
                     #determine if any grace values at list end
                     numEndValsToTrim = numOutliersAtListEnd(xVals, 0, maxStd)

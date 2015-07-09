@@ -380,9 +380,9 @@ def identifyAndRemoveNonWearTime(
         [headerSize:<lines>], default = 1 
         [datetimeColumn:<int>], default = 0, index of datetime column
         [timeFormat:<python_timeFormat_string>], default = '%Y-%m-%d %H:%M:%S.%f'
-        [xIndex:<int>], default = 8
-        [yIndex:<int>], default = 9
-        [zIndex:<int>], default = 10
+        [xIndex:<int>], default = 11
+        [yIndex:<int>], default = 12
+        [zIndex:<int>], default = 13
         [targetWearTimeDays:<int>], default = 28
         [behavType:<string>], default = 'nonwear'
         [minFreq:<int>], default = 60, min num epochs in episode
@@ -399,9 +399,12 @@ def identifyAndRemoveNonWearTime(
     headerSize = 1
     datetimeColumn, xIndex, yIndex, zIndex = 0, 11, 12, 13
     timeFormat = '%Y-%m-%d %H:%M:%S.%f'
-    targetWearTimeDays, behavType = 28, 'nonwear'
+    targetWearTimeDays = 28
+    behavType = 'nonwear'
     minFreq = 3600 / epochSec
-    maxRange, graceMaxFreq = 0.013, 0
+    maxStd = 0.013
+    numAxes = 2
+    graceMaxFreq = 0
     displayOutput = False
     #update default values by looping through available user parameters
     for param in funcParams:
@@ -426,8 +429,8 @@ def identifyAndRemoveNonWearTime(
             behavType = param.split(':')[1]
         elif param.split(':')[0] == 'minFreq':
             minFreq = int(param.split(':')[1])
-        elif param.split(':')[0] == 'maxRange':
-            maxRange = float(param.split(':')[1])
+        elif param.split(':')[0] == 'maxStd':
+            maxStd = float(param.split(':')[1])
         elif param.split(':')[0] == 'graceMaxFreq':
             graceMaxFreq = int(param.split(':')[1])
         elif param.split(':')[0] == 'displayOutput':
@@ -435,8 +438,8 @@ def identifyAndRemoveNonWearTime(
     #now calculate nonwear episodes and store to list
     episodesList, firstDay, lastDay = behaviourEpisode.identifyNonWearEpisodes(
                     epochFile, headerSize, datetimeColumn, timeFormat, xIndex, yIndex,
-                    zIndex, targetWearTimeDays, behavType, minFreq, maxRange, 
-                    graceMaxFreq)
+                    zIndex, targetWearTimeDays, behavType, minFreq, maxStd, 
+                    numAxes, graceMaxFreq)
     #print summary of each nonwear episode detected, returning sum nonwear time
     sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
                     nonWearEpisodesFile, episodesList, displayOutput)
