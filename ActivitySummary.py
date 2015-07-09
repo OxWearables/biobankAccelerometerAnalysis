@@ -207,6 +207,11 @@ def main():
         fSummary += f % (paMin[m]*1000) + ','
         fSummary += f % (paMax[m]*1000) + ','
         for i in range(0,7):
+            fSummary += f % (paDays[m][i]*1000) + ','
+        for i in range(0,24):
+            fSummary += f % (paHours[m][i]*1000) + ','
+        '''
+        for i in range(0,7):
             try:
                 fSummary += f % (paDays[m].get_group(i).mean()*1000) + ','
             except:
@@ -216,6 +221,7 @@ def main():
                 fSummary += f % (paHours[m].get_group(i).mean()*1000) + ','
             except:
                 fSummary += ','
+        '''
         f = '%.3f'
         fSummary += ','.join([f % v for v in paEcdf1[m]]) + ','
         fSummary += ','.join([f % v for v in paEcdf2[m]]) + ','
@@ -303,8 +309,14 @@ def getEpochSummary(epochFile,
         pa = e[m+'Adjusted'] #weartime weighted data
         paWAvg.append(pa.mean())
         paWStd.append(pa.std())
-        paDays.append(pa.groupby(pa.index.weekday))
-        paHours.append(pa.groupby(pa.index.hour))
+        days = []
+        for i in range(0,7):
+            days.append(pa[pa.index.weekday == i].mean())
+        paDays.append(days)
+        hrs = []
+        for i in range(0,24):
+            hrs.append(pa[pa.index.hour == i].mean())
+        paHours.append(hrs)
 
         #calculate empirical cumulative distribution function of vector magnitudes
         pa = pa[~np.isnan(pa)] #remove NaNs (necessary for statsmodels.api)
