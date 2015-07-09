@@ -147,86 +147,110 @@ def main():
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
     cmdSummary = rawFile + ', '
+    f = '%Y-%m-%d %H:%M:%S'
+    fSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
+    cmdSummary += startTime.strftime(f) + ' - ' + endTime.strftime(f) + ', '
     #physical activity output variable (mg)
     f = '%.2f'
     fSummary += f % (paWAvg[0]*1000) + ','
     fSummary += f % (paWStd[0]*1000) + ','
     cmdSummary += f % (paWAvg[0]*1000) + ' mg, '
-    #wear time characteristics
-    f = '%Y-%m-%d %H:%M:%S'
-    fSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
-    cmdSummary += startTime.strftime(f) + ' - ' + endTime.strftime(f) + ', '
-    f = '%.0f'
-    fSummary += f % wearTimeMins + ',' + f % nonWearTimeMins + ','
-    cmdSummary += f % wearTimeMins + ' mins wear, '
-    cmdSummary += f % nonWearTimeMins + ' mins nonWear'
+    #data integrity outputs
+    maxErrorRate = 0.001
+    norm = epochSamplesN*1.0
+    if (clipsPreCalibrSum/norm >= maxErrorRate) and (clipsPostCalibrSum/norm >= maxErrorRate) and (numDataErrs/norm >= maxErrorRate):
+        fSummary += '0,'
+    else:
+        fSummary += '1,'
+    if diurnalHrs>=24 and wearTimeMins/1440.0>5:
+        fSummary += '1,'
+    else:
+        fSummary += '0,'
+    if not skipCalibration:
+        fSummary += '1,'
+    else:
+        fSummary += '0,'
+    #physical activity variation by day / hour
+    for i in range(0,7):
+        fSummary += f % (paDays[0][i]*1000) + ','
+    fSummary += str(startTime.weekday()) + ','
     for i in range(0,24):
-        fSummary += str(wear24[i]) + ','
+        fSummary += f % (paHours[0][i]*1000) + ','
+    #wear time characteristics (days)
+    fSummary += f % (wearTimeMins/1440.0) + ','
+    fSummary += f % (nonWearTimeMins/1440.0) + ','
+    cmdSummary += f % (wearTimeMins/1440.0) + ' days wear, '
+    cmdSummary += f % (nonWearTimeMins/1440.0) + ' days nonWear'
+    for i in range(0,24):
+        fSummary += f % (wear24[i]/60.0) + ','
     fSummary += str(diurnalHrs) + ',' + str(diurnalMins) + ','
     try:
         fSummary += str(numNonWearEpisodes) + ','
     except:
         fSummary += '-1,'
-    try:
-        #calibration metrics 
-        fSummary += str(errPreCal) + ',' + str(errPostCal) + ','
-        fSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
-        fSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
-        fSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
-        fSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
-        fSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
-        fSummary += str(nStatic) + ','
-        f = '%.2f'
-        fSummary += f % xMin + ',' + f % xMax + ','
-        fSummary += f % yMin + ',' + f % yMax + ','
-        fSummary += f % zMin + ',' + f % zMax + ','
-    except:
-        fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
-    try:
-        #raw file data quality indicators
-        fSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
-    except:
-        fSummary += '-1,-1,'
-    f = '%.1f'
-    fSummary += str(numInterrupts) + ',' + f % interruptMins + ','
-    fSummary += str(numDataErrs) + ','
-    fSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
-    fSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-    fSummary += str(epochSamplesN) + ',' + f % epochSamplesAvg + ','
-    fSummary += f % epochSamplesStd + ',' + str(epochSamplesMin) + ','
-    fSummary += str(epochSamplesMax) + ','
-    fSummary += f % tempMean + ',' + f % tempStd + ','
-    #PA variable stats
-    for m in range(0,len(paWAvg)): # 'm' for (physical activity) metric
-        f = '%.2f'
-        fSummary += f % (paWAvg[m]*1000) + ','
-        fSummary += f % (paWStd[m]*1000) + ','
-        fSummary += f % (paAvg[m]*1000) + ','
-        fSummary += f % (paStd[m]*1000) + ','
-        fSummary += f % (paMedian[m]*1000) + ','
-        fSummary += f % (paMin[m]*1000) + ','
-        fSummary += f % (paMax[m]*1000) + ','
-        for i in range(0,7):
-            fSummary += f % (paDays[m][i]*1000) + ','
-        for i in range(0,24):
-            fSummary += f % (paHours[m][i]*1000) + ','
-        '''
-        for i in range(0,7):
-            try:
-                fSummary += f % (paDays[m].get_group(i).mean()*1000) + ','
-            except:
-                fSummary += ','
-        for i in range(0,24):
-            try:
-                fSummary += f % (paHours[m].get_group(i).mean()*1000) + ','
-            except:
-                fSummary += ','
-        '''
-        f = '%.3f'
-        fSummary += ','.join([f % v for v in paEcdf1[m]]) + ','
-        fSummary += ','.join([f % v for v in paEcdf2[m]]) + ','
-        fSummary += ','.join([f % v for v in paEcdf3[m]]) + ','
-        fSummary += ','.join([f % v for v in paEcdf4[m]]) + ','
+    #physical activity stats and intensity distribution
+    m = 0
+    fSummary += f % (paAvg[m]*1000) + ','
+    fSummary += f % (paStd[m]*1000) + ','
+    fSummary += f % (paMedian[m]*1000) + ','
+    fSummary += f % (paMin[m]*1000) + ','
+    fSummary += f % (paMax[m]*1000) + ','
+    f = '%.3f'
+    fSummary += ','.join([f % v for v in paEcdf1[m]]) + ','
+    fSummary += ','.join([f % v for v in paEcdf2[m]]) + ','
+    fSummary += ','.join([f % v for v in paEcdf3[m]]) + ','
+    fSummary += ','.join([f % v for v in paEcdf4[m]]) + ','
+    
+    if verbose:
+        try:
+            #calibration metrics 
+            fSummary += str(errPreCal) + ',' + str(errPostCal) + ','
+            fSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
+            fSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
+            fSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
+            fSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
+            fSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
+            fSummary += str(nStatic) + ','
+            f = '%.2f'
+            fSummary += f % xMin + ',' + f % xMax + ','
+            fSummary += f % yMin + ',' + f % yMax + ','
+            fSummary += f % zMin + ',' + f % zMax + ','
+        except:
+            fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+        try:
+            #raw file data quality indicators
+            fSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
+        except:
+            fSummary += '-1,-1,'
+        f = '%.1f'
+        fSummary += str(numInterrupts) + ',' + f % interruptMins + ','
+        fSummary += str(numDataErrs) + ','
+        fSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
+        fSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
+        fSummary += str(epochSamplesN) + ',' + f % epochSamplesAvg + ','
+        fSummary += f % epochSamplesStd + ',' + str(epochSamplesMin) + ','
+        fSummary += str(epochSamplesMax) + ','
+        fSummary += f % tempMean + ',' + f % tempStd + ','
+        #other PA variable stats
+        for m in range(1,len(paWAvg)): # 'm' for (physical activity) metric
+            f = '%.2f'
+            fSummary += f % (paWAvg[m]*1000) + ','
+            fSummary += f % (paWStd[m]*1000) + ','
+            fSummary += f % (paAvg[m]*1000) + ','
+            fSummary += f % (paStd[m]*1000) + ','
+            fSummary += f % (paMedian[m]*1000) + ','
+            fSummary += f % (paMin[m]*1000) + ','
+            fSummary += f % (paMax[m]*1000) + ','
+            for i in range(0,7):
+                fSummary += f % (paDays[m][i]*1000) + ','
+            for i in range(0,24):
+                fSummary += f % (paHours[m][i]*1000) + ','
+            f = '%.3f'
+            fSummary += ','.join([f % v for v in paEcdf1[m]]) + ','
+            fSummary += ','.join([f % v for v in paEcdf2[m]]) + ','
+            fSummary += ','.join([f % v for v in paEcdf3[m]]) + ','
+            fSummary += ','.join([f % v for v in paEcdf4[m]]) + ','
+    
     fSummary = fSummary[:-1] #remove trailing comma
     #print basic output
     print toScreen(cmdSummary)
