@@ -40,7 +40,7 @@ javac *.java
 We are using a combination of published methods to extract meaningful health
 information from accelerometer data. [Click here for detailed information on the 
 data processing methods on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/3. MethodsOverview)
+(https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview)
 
 ![Accelerometer data processing overview]
 (http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
