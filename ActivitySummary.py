@@ -432,7 +432,7 @@ def identifyAndRemoveNonWearTime(
     behavType = 'nonwear'
     minFreq = 3600 / epochSec
     maxStd = 0.013
-    numAxes = 2
+    numAxes = 3
     graceMaxFreq = 0
     displayOutput = False
     #update default values by looping through available user parameters
