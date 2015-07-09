@@ -142,7 +142,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    startTime, endTime, wearTimeMins, nonWearTimeMins, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -181,6 +181,8 @@ def main():
     fSummary += f % (nonWearTimeMins/1440.0) + ','
     cmdSummary += f % (wearTimeMins/1440.0) + ' days wear, '
     cmdSummary += f % (nonWearTimeMins/1440.0) + ' days nonWear'
+    for i in range(0,7):
+        fSummary += f % (wearDay[i]/1440.0) + ','
     for i in range(0,24):
         fSummary += f % (wear24[i]/60.0) + ','
     fSummary += str(diurnalHrs) + ',' + str(diurnalMins) + ','
@@ -292,6 +294,9 @@ def getEpochSummary(epochFile,
     
     #get wear time in each of 24 hours across week
     epochsInMin = 60 / epochSec
+    wearDay = []
+    for i in range(0,7):
+        wearDay.append( e[paMetrics[0]][e.index.weekday == i].count() / epochsInMin )
     wear24 = []
     for i in range(0,24):
         wear24.append( e[paMetrics[0]][e.index.hour == i].count() / epochsInMin )
@@ -386,7 +391,7 @@ def getEpochSummary(epochFile,
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
 
 
 def identifyAndRemoveNonWearTime(
