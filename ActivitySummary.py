@@ -432,7 +432,6 @@ def identifyAndRemoveNonWearTime(
     behavType = 'nonwear'
     minFreq = 3600 / epochSec
     maxStd = 0.013
-    numAxes = 3
     graceMaxFreq = 0
     displayOutput = False
     #update default values by looping through available user parameters
@@ -468,7 +467,7 @@ def identifyAndRemoveNonWearTime(
     episodesList, firstDay, lastDay = behaviourEpisode.identifyNonWearEpisodes(
                     epochFile, headerSize, datetimeColumn, timeFormat, xIndex, yIndex,
                     zIndex, targetWearTimeDays, behavType, minFreq, maxStd, 
-                    numAxes, graceMaxFreq)
+                    graceMaxFreq)
     #print summary of each nonwear episode detected, returning sum nonwear time
     sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
                     nonWearEpisodesFile, episodesList, displayOutput)
