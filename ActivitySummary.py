@@ -137,7 +137,8 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
+    print toScreen('generate summary variables from epochs')
+    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, nonWearFile, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -270,6 +271,7 @@ def getEpochSummary(epochFile,
         headerSize,
         dateColumn,
         epochSec,
+        nonWearFile,
         tsFile,
         paMetrics):
     """
@@ -284,14 +286,27 @@ def getEpochSummary(epochFile,
     endTime = pd.to_datetime(e.index.values[-1])
 
     #calculate nonWear time
-    print toScreen('nonwear identification')
-    e['stationary'] = np.where((e['xStd']<0.013) & (e['yStd']<0.013) & (e['zStd']<0.013),1,0)
+    minDuration = 60 #minutes
+    maxStd = 0.013
+    e['stationary'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) & (e['zStd']<maxStd),1,0)
     fstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(1).fillna(False)==False)]
     lstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(-1).fillna(False)==False)]
-    nonWearEpisodes = [(start, end) for start, end in zip(fstNonWearBound, lstNonWearBound) if end > start + pd.Timedelta(minutes=60)]# + 12*60]
+    nonWearEpisodes = [(start, end) for start, end in zip(fstNonWearBound, lstNonWearBound) if end > start + pd.Timedelta(minutes=minDuration)]
+    #set nonWear data to nan and record to nonWearBouts file
+    f = open(nonWearFile,'w')
+    f.write('start,end,xStdMax,yStdMax,zStdMax\n')
+    timeFormat = '%Y-%m-%d %H:%M:%S'
     for episode in nonWearEpisodes:
-        print episode[0], episode[1]
+        tmp = e[['xStd','yStd','zStd']][episode[0]:episode[1]]
+        summary = episode[0].strftime(timeFormat) + ','
+        summary += episode[1].strftime(timeFormat) + ','
+        summary += str(tmp['xStd'].mean()) + ','
+        summary += str(tmp['yStd'].mean()) + ','
+        summary += str(tmp['zStd'].mean())
+        f.write(summary + '\n')
+        #set main dataframe values to nan
         e[episode[0]:episode[1]] = np.nan
+    f.close()
 
     wearSamples = e[paMetrics[0]].count()
     nonWearSamples = len(e[np.isnan(e[paMetrics[0]])].index.values)
