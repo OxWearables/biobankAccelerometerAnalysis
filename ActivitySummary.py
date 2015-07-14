@@ -17,7 +17,6 @@ e.g.
 import sys
 import os
 import datetime
-import behaviourEpisode
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
@@ -413,129 +412,6 @@ def getEpochSummary(epochFile,
 
     #return physical activity summary
     return startTime, endTime, wearTimeMin, nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
-
-
-def identifyAndRemoveNonWearTime(
-            epochFile,
-            nonWearEpisodesFile,
-            funcParams,
-            epochSec):
-    """
-    Identify and remove nonWear episodes from an epoch CSV file
-    Inputs:
-    - epochFile: an epoch .csv file
-    - nonWearEpisodesFile: path to write nonWearBouts.csv file to
-    - funcParams: an array of [<name>:<value>] items, specifically:
-        [nonWearEpisodesOutputFile:<name.csv>], default = <epochFile>_mvpa_bout_list.csv
-        [headerSize:<lines>], default = 1 
-        [datetimeColumn:<int>], default = 0, index of datetime column
-        [timeFormat:<python_timeFormat_string>], default = '%Y-%m-%d %H:%M:%S.%f'
-        [xIndex:<int>], default = 11
-        [yIndex:<int>], default = 12
-        [zIndex:<int>], default = 13
-        [targetWearTimeDays:<int>], default = 28
-        [behavType:<string>], default = 'nonwear'
-        [minFreq:<int>], default = 60, min num epochs in episode
-        [maxRange:<float>], default = 0.013, movement below this indicates nonwear
-        [graceMaxFreq:<int>], default = 0, max num "grace" epochs in episode outside <maxRange> thresholds
-        [displayOutput:<bool>], default = False
-    Output:
-    - new file created (funcParams 'nonWearEpisodesOutputFile')
-    """
-    '''
-    Firstly determine parameters to influence the calculation of epochs
-    '''
-    #variables to store default parameter options
-    headerSize = 1
-    datetimeColumn, xIndex, yIndex, zIndex = 0, 11, 12, 13
-    timeFormat = '%Y-%m-%d %H:%M:%S.%f'
-    targetWearTimeDays = 28
-    behavType = 'nonwear'
-    minFreq = 3600 / epochSec
-    maxStd = 0.013
-    graceMaxFreq = 0
-    displayOutput = False
-    #update default values by looping through available user parameters
-    for param in funcParams:
-        #param will look like 'nonWearEpisodesOutputFile:aidenNonWearBouts.csv'
-        if param.split(':')[0] == 'nonWearEpisodesFile':
-            nonWearEpisodesOutputFile = param.split(':')[1]
-        elif param.split(':')[0] == 'headerSize':
-            headerSize = int(param.split(':')[1])
-        elif param.split(':')[0] == 'datetimeColumn':
-            datetimeColumn = int(param.split(':')[1])
-        elif param.split(':')[0] == 'timeFormat':
-            timeFormat = param.replace('timeFormat:','')
-        elif param.split(':')[0] == 'xIndex':
-            xIndex = int(param.split(':')[1])
-        elif param.split(':')[0] == 'yIndex':
-            yIndex = int(param.split(':')[1])
-        elif param.split(':')[0] == 'zIndex':
-            zIndex = int(param.split(':')[1])
-        elif param.split(':')[0] == 'targetWearTimeDays':
-            targetWearTimeDays = int(param.split(':')[1])
-        elif param.split(':')[0] == 'behavType':
-            behavType = param.split(':')[1]
-        elif param.split(':')[0] == 'minFreq':
-            minFreq = int(param.split(':')[1])
-        elif param.split(':')[0] == 'maxStd':
-            maxStd = float(param.split(':')[1])
-        elif param.split(':')[0] == 'graceMaxFreq':
-            graceMaxFreq = int(param.split(':')[1])
-        elif param.split(':')[0] == 'displayOutput':
-            displayOutput = param.split(':')[1] in ['true', 'True']
-    #now calculate nonwear episodes and store to list
-    episodesList, firstDay, lastDay = behaviourEpisode.identifyNonWearEpisodes(
-                    epochFile, headerSize, datetimeColumn, timeFormat, xIndex, yIndex,
-                    zIndex, targetWearTimeDays, behavType, minFreq, maxStd, 
-                    graceMaxFreq)
-    #print summary of each nonwear episode detected, returning sum nonwear time
-    sumNonWear, numNonWearEpisodes = behaviourEpisode.writeSummaryOfEpisodes(
-                    nonWearEpisodesFile, episodesList, displayOutput)
-    removeNonWearFromEpochFile(epochFile,episodesList,headerSize,timeFormat)
-    return numNonWearEpisodes
-
-
-def removeNonWearFromEpochFile(
-            epochFile,
-            nonWearEpisodes,
-            headerSize,
-            timeFormat):
-    """
-    Replace any nonWear episodes in the epochFile with null values
-    """
-    #only run if there is nonWear data to remove
-    if len(nonWearEpisodes) > 0:
-        f = open(epochFile,'rU')
-        epochs = f.readlines() #read file into memory
-        f.close()
-        f = open(epochFile,'w')
-        
-        #rewrite header lines
-        for headerLine in epochs[:headerSize]:
-            f.write(headerLine)
-        
-        #rewrite all epochs that are periods of wear
-        nans = ',,,,,,,,,,,,,,,,,,\n'
-        episodeCounter = 0
-        for epoch in epochs[headerSize:]:
-            epochTime = datetime.datetime.strptime(epoch.split(',')[0],timeFormat)
-            #write epoch if it is a period of wear i.e. it is not after the
-            #   startTime of next nonWear episode, or it is after endTime of
-            #   last nonWear episode
-            if ( epochTime < nonWearEpisodes[episodeCounter].startTime or
-                    (epochTime > nonWearEpisodes[episodeCounter].endTime and 
-                    episodeCounter == len(nonWearEpisodes)-1 ) ):
-                f.write(epoch)
-            elif ( epochTime >= nonWearEpisodes[episodeCounter].startTime and 
-                    epochTime <= nonWearEpisodes[episodeCounter].endTime ):
-                f.write(epochTime.strftime(timeFormat) + nans)
-            #move counter to next nonWear episode if at end of current episode
-            if ( epochTime == nonWearEpisodes[episodeCounter].endTime and 
-                    episodeCounter < len(nonWearEpisodes)-1 ):
-                f.write(epochTime.strftime(timeFormat) + nans)
-                episodeCounter += 1
-        f.close()
 
 
 def getCalibrationCoefs(staticBoutsFile):
