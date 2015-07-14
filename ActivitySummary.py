@@ -290,7 +290,7 @@ def getEpochSummary(epochFile,
     e['stationary'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) & (e['zStd']<maxStd),1,0)
     fstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(1).fillna(False)==False)]
     lstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(-1).fillna(False)==False)]
-    nonWearEpisodes = [(start, end) for start, end in zip(fstNonWearBound, lstNonWearBound) if end > start + pd.Timedelta(minutes=minDuration)]
+    nonWearEpisodes = [(start, end) for start, end in zip(fstNonWearBound, lstNonWearBound) if end > start + np.timedelta64(minDuration,'m')]
     #set nonWear data to nan and record to nonWearBouts file
     f = open(nonWearFile,'w')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n')
