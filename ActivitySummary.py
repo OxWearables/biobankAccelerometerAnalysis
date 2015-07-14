@@ -130,11 +130,6 @@ def main():
         if len(javaHeapSpace) > 1:
             commandArgs.insert(1,javaHeapSpace);
         call(commandArgs)
-
-        #identify and remove nonWear episodes
-        print toScreen('nonwear identification')
-        numNonWearEpisodes = identifyAndRemoveNonWearTime(epochFile, nonWearFile,
-                funcParams, epochPeriod)    
     
     #define PA metrics i.e. column names from java epoch process
     paMetrics = ['enmoTrunc', 'enmoAbs', 'en', 'enmoAbsBP']
@@ -142,7 +137,7 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
-    startTime, endTime, wearTimeMins, nonWearTimeMins, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -287,6 +282,17 @@ def getEpochSummary(epochFile,
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
+
+    #calculate nonWear time
+    print toScreen('nonwear identification')
+    e['stationary'] = np.where((e['xStd']<0.013) & (e['yStd']<0.013) & (e['zStd']<0.013),1,0)
+    fstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(1).fillna(False)==False)]
+    lstNonWearBound = e.index[(e['stationary']==True) & (e['stationary'].shift(-1).fillna(False)==False)]
+    nonWearEpisodes = [(start, end) for start, end in zip(fstNonWearBound, lstNonWearBound) if end > start + pd.Timedelta(minutes=60)]# + 12*60]
+    for episode in nonWearEpisodes:
+        print episode[0], episode[1]
+        e[episode[0]:episode[1]] = np.nan
+
     wearSamples = e[paMetrics[0]].count()
     nonWearSamples = len(e[np.isnan(e[paMetrics[0]])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
@@ -391,7 +397,7 @@ def getEpochSummary(epochFile,
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
 
 
 def identifyAndRemoveNonWearTime(
