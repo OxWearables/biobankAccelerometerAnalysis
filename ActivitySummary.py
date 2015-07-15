@@ -77,18 +77,23 @@ def main():
             deleteHelperFiles = param.split(':')[1] in ['true', 'True']
         elif param.split(':')[0] == 'epochPeriod':
             epochPeriod = int(float(param.split(':')[1]))
-        elif param.split(':')[0] == 'javaHeapSpace' and len(param.split(':')[1])>1:
+        elif ( param.split(':')[0] == 'javaHeapSpace' and
+                len(param.split(':')[1])>1 ):
             javaHeapSpace = param.split(':')[1]
-        elif param.split(':')[0] == 'calOff' and len(param.split(':')[1].split(','))==3:
+        elif ( param.split(':')[0] == 'calOff' and
+                len(param.split(':')[1].split(','))==3 ):
             calOff = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calSlope' and len(param.split(':')[1].split(','))==3:
+        elif ( param.split(':')[0] == 'calSlope' and 
+                len(param.split(':')[1].split(','))==3 ):
             calSlope = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calTemp' and len(param.split(':')[1].split(','))==3:
+        elif ( param.split(':')[0] == 'calTemp' and 
+                len(param.split(':')[1].split(','))==3 ):
             calTemp = param.split(':')[1].split(',')
             skipCalibration = True
-        elif param.split(':')[0] == 'calMeanTemp' and len(param.split(':')[1])>=1:
+        elif ( param.split(':')[0] == 'calMeanTemp' and 
+                len(param.split(':')[1])>=1 ):
             meanTemp = param.split(':')[1]
             skipCalibration = True
 
@@ -105,8 +110,9 @@ def main():
             #identify 10sec stationary epochs
             print toScreen('calibrating')
             commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                    rawFile, "outputFile:" + stationaryFile, "verbose:" + str(verbose),
-                    "filter:true", "getStationaryBouts:true", "epochPeriod:10",
+                    rawFile, "outputFile:" + stationaryFile,
+                    "verbose:" + str(verbose), "filter:true",
+                    "getStationaryBouts:true", "epochPeriod:10",
                     "stationaryStd:0.013"]
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1,javaHeapSpace);
@@ -153,7 +159,9 @@ def main():
     #data integrity outputs
     maxErrorRate = 0.001
     norm = epochSamplesN*1.0
-    if (clipsPreCalibrSum/norm >= maxErrorRate) or (clipsPostCalibrSum/norm >= maxErrorRate) or (numDataErrs/norm >= maxErrorRate):
+    if ( clipsPreCalibrSum/norm >= maxErrorRate or 
+            clipsPostCalibrSum/norm >= maxErrorRate or 
+            numDataErrs/norm >= maxErrorRate ):
         fSummary += '0,'
     else:
         fSummary += '1,'
@@ -402,7 +410,8 @@ def getEpochSummary(epochFile,
             tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
             tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
             tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-            e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',index=False,header=[tsHead,'imputed'])
+            e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
+                    index=False,header=[tsHead,'imputed'])
    
     #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
@@ -410,7 +419,8 @@ def getEpochSummary(epochFile,
     #get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
-        interruptMins.append(np.diff(np.array(e[i:i+2].index)) / np.timedelta64(1,'m'))
+        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
+                np.timedelta64(1,'m') )
 
     #return physical activity summary
     return startTime, endTime, wearTimeMin, nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
@@ -425,7 +435,8 @@ def getCalibrationCoefs(staticBoutsFile):
     maxIter = 1000
     minIterImprovement = 0.0001 #0.1mg
     #use python NUMPY framework to store stationary episodes from epoch file
-    d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,usecols=(5,6,7,14,16))
+    d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,
+            usecols=(5,6,7,14,16))
     stationaryPoints = d[d[:,4] == 0] #don't consider episodes with data errors
     axesVals = stationaryPoints[:,[0,1,2]]
     tempVals = stationaryPoints[:,[3]]
