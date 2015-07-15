@@ -118,9 +118,12 @@ def main():
                 commandArgs.insert(1,javaHeapSpace);
             call(commandArgs)
             #record calibrated axes scale/offset/temperature vals + static point stats
-            calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic = getCalibrationCoefs(stationaryFile)
+            calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
+                    xMax, yMin, yMax, zMin, zMax, \
+                    nStatic = getCalibrationCoefs(stationaryFile)
             if verbose:
-                print calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
+                print calOff, calSlope, calTemp, meanTemp, errPreCal, \
+                        errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
       
         #calculate and write filtered avgVm epochs from raw file
         commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
@@ -143,7 +146,15 @@ def main():
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
     print toScreen('generate summary variables from epochs')
-    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, nonWearFile, tsFile, paMetrics)
+    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, \
+            wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, \
+            interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, \
+            clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, \
+            epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, \
+            tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
+            paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
+            paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
+                    nonWearFile, tsFile, paMetrics)
     
     #print processed summary variables from accelerometer file
     fSummary = rawFile + ','
@@ -423,7 +434,15 @@ def getEpochSummary(epochFile,
                 np.timedelta64(1,'m') )
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), e['samples'].sum(), e['samples'].mean(), e['samples'].std(), e['samples'].min(), e['samples'].max(), e['temp'].mean(), e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, wearTimeMin, nonWearTimeMin, \
+            len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, \
+            len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), \
+            e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), \
+            e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), \
+            e['samples'].sum(), e['samples'].mean(), e['samples'].std(), \
+            e['samples'].min(), e['samples'].max(), e['temp'].mean(), \
+            e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
+            paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
 
 
 def getCalibrationCoefs(staticBoutsFile):
@@ -493,7 +512,8 @@ def getCalibrationCoefs(staticBoutsFile):
         xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
         xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
         sys.stderr.write('WARNING: calibration error\n')
-    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
+    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, \
+            xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
 
 def getDeviceId(cwaFile):
     f = open(cwaFile, 'rb')
