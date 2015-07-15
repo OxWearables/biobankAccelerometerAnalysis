@@ -153,7 +153,7 @@ def main():
     #data integrity outputs
     maxErrorRate = 0.001
     norm = epochSamplesN*1.0
-    if (clipsPreCalibrSum/norm >= maxErrorRate) and (clipsPostCalibrSum/norm >= maxErrorRate) and (numDataErrs/norm >= maxErrorRate):
+    if (clipsPreCalibrSum/norm >= maxErrorRate) or (clipsPostCalibrSum/norm >= maxErrorRate) or (numDataErrs/norm >= maxErrorRate):
         fSummary += '0,'
     else:
         fSummary += '1,'
