@@ -157,7 +157,7 @@ def main():
         fSummary += '0,'
     else:
         fSummary += '1,'
-    if diurnalHrs>=24 and wearTimeMins/1440.0>5:
+    if diurnalHrs>=24 and wearTimeMins/1440.0>=5:
         fSummary += '1,'
     else:
         fSummary += '0,'
