@@ -298,7 +298,7 @@ def getEpochSummary(epochFile,
     """
     #use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
-                header=headerSize)
+                header=headerSize).sort_index()
     #get start & end times, plus wear & nonWear minutes
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
