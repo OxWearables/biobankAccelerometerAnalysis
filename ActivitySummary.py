@@ -332,7 +332,7 @@ def getEpochSummary(epochFile,
     nonWearSamples = len(e[np.isnan(e[paMetrics[0]])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
-    
+   
     #get wear time in each of 24 hours across week
     epochsInMin = 60 / epochSec
     wearDay = []
@@ -390,39 +390,58 @@ def getEpochSummary(epochFile,
 
         #calculate empirical cumulative distribution function of vector magnitudes
         pa = pa[~np.isnan(pa)] #remove NaNs (necessary for statsmodels.api)
+            
         if m == 'en':
-            ecdf = sm.distributions.ECDF(pa)
-            x, step = np.linspace(0.905, 0.990, 18, retstep=True) #5mg bins from 901-990mg
-            paEcdf1.append(ecdf(x))
-            x, step = np.linspace(0.991, 1.010, 20, retstep=True) #1mg bins from 991-1010mg
-            paEcdf2.append(ecdf(x))
-            x, step = np.linspace(1.015, 1.100, 18, retstep=True) #5mg bins from 1015-1100mg
-            paEcdf3.append(ecdf(x))
-            x, step = np.linspace(1.2, 3.0, 19, retstep=True) #100mg bins from 1200-3000mg
-            paEcdf4.append(ecdf(x))
+            if len(pa) > 0:
+                ecdf = sm.distributions.ECDF(pa)
+                x, step = np.linspace(0.905, 0.990, 18, retstep=True) #5mg bins from 901-990mg
+                paEcdf1.append(ecdf(x))
+                x, step = np.linspace(0.991, 1.010, 20, retstep=True) #1mg bins from 991-1010mg
+                paEcdf2.append(ecdf(x))
+                x, step = np.linspace(1.015, 1.100, 18, retstep=True) #5mg bins from 1015-1100mg
+                paEcdf3.append(ecdf(x))
+                x, step = np.linspace(1.2, 3.0, 19, retstep=True) #100mg bins from 1200-3000mg
+                paEcdf4.append(ecdf(x))
+            else:
+                paEcdf1.append(np.empty(18))
+                paEcdf2.append(np.empty(20))
+                paEcdf3.append(np.empty(18))
+                paEcdf4.append(np.empty(19))
         else:
-            ecdf = sm.distributions.ECDF(pa)
-            x, step = np.linspace(0.001, 0.020, 20, retstep=True) #1mg bins from 1-20mg
-            paEcdf1.append(ecdf(x))
-            x, step = np.linspace(0.025, 0.100, 16, retstep=True) #5mg bins from 25-100mg
-            paEcdf2.append(ecdf(x))
-            x, step = np.linspace(0.125, 0.500, 16, retstep=True) #25mg bins from 125-500mg
-            paEcdf3.append(ecdf(x))
-            x, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
-            paEcdf4.append(ecdf(x))
+            if len(pa) > 0:
+                ecdf = sm.distributions.ECDF(pa)
+                x, step = np.linspace(0.001, 0.020, 20, retstep=True) #1mg bins from 1-20mg
+                paEcdf1.append(ecdf(x))
+                x, step = np.linspace(0.025, 0.100, 16, retstep=True) #5mg bins from 25-100mg
+                paEcdf2.append(ecdf(x))
+                x, step = np.linspace(0.125, 0.500, 16, retstep=True) #25mg bins from 125-500mg
+                paEcdf3.append(ecdf(x))
+                x, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
+                paEcdf4.append(ecdf(x))
+            else:
+                paEcdf1.append(np.empty(20))
+                paEcdf2.append(np.empty(16))
+                paEcdf3.append(np.empty(16))
+                paEcdf4.append(np.empty(15))
         
-        if m == paMetrics[0]: 
-            #write time series file
-            #convert 'vm' to mg units, and highlight any imputed values
-            e['vmFinal'] = e[m+'Adjusted'] * 1000
-            e['imputed'] = np.isnan(e[m]).replace({True:'1',False:''})
+        if m == paMetrics[0]:
             #prepare time series header
             tsHead = 'acceleration (mg) - '
             tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
             tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
             tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-            e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
-                    index=False,header=[tsHead,'imputed'])
+            if len(pa) > 0:
+                #write time series file
+                #convert 'vm' to mg units, and highlight any imputed values
+                e['vmFinal'] = e[m+'Adjusted'] * 1000
+                e['imputed'] = np.isnan(e[m]).replace({True:'1',False:''})
+                e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
+                        index=False,header=[tsHead,'imputed'])
+            else:
+                f = open(tsFile,'w')
+                f.write(tsHead + '\n')
+                f.write('no wearTime data,1')
+                f.close()
    
     #get interrupt and data error summary vals
     epochNs = epochSec * np.timedelta64(1,'s')
