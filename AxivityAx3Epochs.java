@@ -417,7 +417,7 @@ public class AxivityAx3Epochs
                     }
 
                     //run abs() or trunc() on summary variables after filtering
-                    abs(paVals); //abs(paVals)
+                    trunc(paVals); //abs(paVals)
                    
                     //calculate mean values for each outcome metric 
                     accPA = mean(paVals);
