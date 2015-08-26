@@ -428,7 +428,7 @@ public class AxivityAx3Epochs
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
-                epochSummary += "," + temperature + "," + xResampled.length;
+                epochSummary += "," + temperature + "," + timeVals.size();
                 epochSummary += "," + errCounter[0];
                 epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
                 if(!getStationaryBouts || 
