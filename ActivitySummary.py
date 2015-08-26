@@ -14,14 +14,16 @@ e.g.
     python ActivitySummary.py p001.CWA min_freq:10 
 """
 
-import sys
-import os
+import collections
 import datetime
+import json
+import os
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 from subprocess import call, Popen
 import struct
+import sys
 
 def main():
     """
@@ -38,7 +40,7 @@ def main():
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
     rawFile = rawFile.replace(".CWA", ".cwa")
-    summaryFile = rawFile.replace(".cwa","OutputSummary.csv")
+    summaryFile = rawFile.replace(".cwa","OutputSummary.json")
     tsFile = rawFile.replace(".cwa","AccTimeSeries.csv")
     nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
     epochFile = rawFile.replace(".cwa","Epoch.csv")
@@ -153,103 +155,159 @@ def main():
             paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
                     nonWearFile, tsFile)
     
-    #print processed summary variables from accelerometer file
-    fSummary = rawFile + ','
-    cmdSummary = rawFile + ', '
-    f = '%Y-%m-%d %H:%M:%S'
-    fSummary += startTime.strftime(f) + ',' + endTime.strftime(f) + ','
-    cmdSummary += startTime.strftime(f) + ' - ' + endTime.strftime(f) + ', '
-    #physical activity output variable (mg)
-    f = '%.2f'
-    fSummary += f % (paWAvg*1000) + ','
-    fSummary += f % (paWStd*1000) + ','
-    cmdSummary += f % (paWAvg*1000) + ' mg, '
     #data integrity outputs
     maxErrorRate = 0.001
+    lowErrorRate = 1
     norm = epochSamplesN*1.0
     if ( clipsPreCalibrSum/norm >= maxErrorRate or 
             clipsPostCalibrSum/norm >= maxErrorRate or 
             numDataErrs/norm >= maxErrorRate ):
-        fSummary += '0,'
-    else:
-        fSummary += '1,'
-    if diurnalHrs>=24 and wearTimeMins/1440.0>=5:
-        fSummary += '1,'
-    else:
-        fSummary += '0,'
-    if not skipCalibration:
-        fSummary += '1,'
-    else:
-        fSummary += '0,'
+        lowErrorRate = 0
+    #min wear time
+    minDiurnalHrs = 24
+    minWearDays = 5
+    goodWearTime = 1
+    if diurnalHrs < minDiurnalHrs or wearTimeMins/1440.0 < minWearDays:
+        goodWearTime = 0
+    #good calibration
+    calibratedOnOwnData = 1
+    if skipCalibration:
+        calibratedOnOwnData = 0
+    
+    #store variables to dictionary
+    result = collections.OrderedDict()
+    result['file'] = rawFile
+    f = '%Y-%m-%d %H:%M:%S'
+    result['startTime'] = startTime.strftime(f)
+    result['endTime'] = endTime.strftime(f)
+    #physical activity output variable (mg)
+    f = '%.2f'
+    result['accPAAvg(mg)'] = f % (paWAvg*1000)
+    result['accPAStd(mg)'] = f % (paWStd*1000)
+    #data integrity outputs
+    result['lowErrorRate'] = lowErrorRate
+    result['goodWearTime'] = goodWearTime
+    result['calibratedOnOwnData'] = calibratedOnOwnData
     #physical activity variation by day / hour
-    for i in range(0,7):
-        fSummary += f % (paDays[i]*1000) + ','
-    fSummary += str(startTime.weekday()) + ','
+    result['Monday(mg)'] = f % (paDays[0]*1000)
+    result['Tuesday(mg)'] = f % (paDays[1]*1000)
+    result['Wednesday(mg)'] = f % (paDays[2]*1000)
+    result['Thursday(mg)'] = f % (paDays[3]*1000)
+    result['Friday(mg)'] = f % (paDays[4]*1000)
+    result['Saturday(mg)'] = f % (paDays[5]*1000)
+    result['Sunday(mg)'] = f % (paDays[6]*1000)
+    result['firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        fSummary += f % (paHours[i]*1000) + ','
-    #wear time characteristics (days)
-    fSummary += f % (wearTimeMins/1440.0) + ','
-    fSummary += f % (nonWearTimeMins/1440.0) + ','
-    cmdSummary += f % (wearTimeMins/1440.0) + ' days wear, '
-    cmdSummary += f % (nonWearTimeMins/1440.0) + ' days nonWear'
-    for i in range(0,7):
-        fSummary += f % (wearDay[i]/60.0) + ','
+        result['hr' + str(i) + 'Avg'] = f % (paHours[i]*1000)
+    #wear time characteristics
+    result['wearTime(days)'] = f % (wearTimeMins/1440.0)
+    result['nonWearTime(days)'] = f % (nonWearTimeMins/1440.0)
+    result['monWear(hrs)'] = f % (wearDay[0]/60.0)
+    result['tueWear(hrs)'] = f % (wearDay[1]/60.0)
+    result['wedWear(hrs)'] = f % (wearDay[2]/60.0)
+    result['thurWear(hrs)'] = f % (wearDay[3]/60.0)
+    result['friWear(hrs)'] = f % (wearDay[4]/60.0)
+    result['satWear(hrs)'] = f % (wearDay[5]/60.0)
+    result['sunWear(hrs)'] = f % (wearDay[6]/60.0)
     for i in range(0,24):
-        fSummary += f % (wear24[i]/60.0) + ','
-    fSummary += str(diurnalHrs) + ',' + str(diurnalMins) + ','
+        result['wearHr' + str(i) + '(days)'] = f % (wear24[i]/60.0)
+    result['diurnalHrs'] = diurnalHrs
+    result['dirunalMins'] = diurnalMins
     try:
-        fSummary += str(numNonWearEpisodes) + ','
+        result['numNonWearEpisodes'] = numNonWearEpisodes
     except:
-        fSummary += '-1,'
-    #physical activity stats and intensity distribution
-    fSummary += f % (paAvg*1000) + ','
-    fSummary += f % (paStd*1000) + ','
-    fSummary += f % (paMedian*1000) + ','
-    fSummary += f % (paMin*1000) + ','
-    fSummary += f % (paMax*1000) + ','
+        result['numNonWearEpisodes'] = -1
+    #physical activity stats and intensity distribution (minus diurnalWeights)
+    result['crudePAAvg(mg)'] = f % (paAvg*1000)
+    result['crudePAStd(mg)'] = f % (paStd*1000)
+    result['crudePAMedian(mg)'] = f % (paMedian*1000)
+    result['crudePAMin(mg)'] = f % (paMin*1000)
+    result['crudePAMax(mg)'] = f % (paMax*1000)
     f = '%.3f'
-    fSummary += ','.join([f % v for v in paEcdf1]) + ','
-    fSummary += ','.join([f % v for v in paEcdf2]) + ','
-    fSummary += ','.join([f % v for v in paEcdf3]) + ','
-    fSummary += ','.join([f % v for v in paEcdf4]) + ','
+    for i in range(1,21): #1mg categories from 1-20mg
+        result['ecdf-' + str(i) + 'mg'] = f % paEcdf1[i-1]
+    for i in range(1,17): #5mg categories from 25-100mg
+        result['ecdf-' + str(20+i*5) + 'mg'] = f % paEcdf2[i-1]
+    for i in range(1,17): #25mg categories from 125-500mg
+        result['ecdf-' + str(100+i*25) + 'mg'] = f % paEcdf3[i-1]
+    for i in range(1,16): #100mg categories from 500-2000mg
+        result['ecdf-' + str(500+i*100) + 'mg'] = f % paEcdf4[i-1]
     
     if verbose:
         try:
             #calibration metrics 
-            fSummary += str(errPreCal) + ',' + str(errPostCal) + ','
-            fSummary += str(calOff[0]) + ',' + str(calOff[1]) + ','
-            fSummary += str(calOff[2]) + ',' + str(calSlope[0]) + ','
-            fSummary += str(calSlope[1]) + ',' + str(calSlope[2]) + ','
-            fSummary += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
-            fSummary += str(calTemp[2]) + ',' + str(meanTemp) + ','
-            fSummary += str(nStatic) + ','
+            result['errorsBeforeCalibration'] = errPreCal
+            result['errorsAfterCalibration'] = errPreCal
+            result['calOffX'] = calOff[0]
+            result['calOffY'] = calOff[1]
+            result['calOffZ'] = calOff[2]
+            result['calSlopeX'] = calSlope[0]
+            result['calSlopeY'] = calSlope[1]
+            result['calSlopeZ'] = calSlope[2]
+            result['calTempX'] = calSlope[0]
+            result['calTempY'] = calSlope[1]
+            result['calTempZ'] = calSlope[2]
+            result['calMeanTemp'] = meanTemp
+            result['staticCalibrationPoints'] = nStatic
             f = '%.2f'
-            fSummary += f % xMin + ',' + f % xMax + ','
-            fSummary += f % yMin + ',' + f % yMax + ','
-            fSummary += f % zMin + ',' + f % zMax + ','
+            result['calXmin'] = f % xMin
+            result['calXmax'] = f % xMax
+            result['calYmin'] = f % yMin
+            result['calYmax'] = f % yMax
+            result['calZmin'] = f % zMin
+            result['calZmax'] = f % zMax
         except:
-            fSummary += '-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,'
+            result['errorsBeforeCalibration'] = -1
+            result['errorsAfterCalibration'] = -1
+            result['calOffX'] = -1
+            result['calOffY'] = -1
+            result['calOffZ'] = -1
+            result['calSlopeX'] = -1
+            result['calSlopeY'] = -1
+            result['calSlopeZ'] = -1
+            result['calTempX'] = -1
+            result['calTempY'] = -1
+            result['calTempZ'] = -1
+            result['calMeanTemp'] = -1
+            result['staticCalibrationPoints'] = -1
+            result['calXmin'] = -1
+            result['calXmax'] = -1
+            result['calYmin'] = -1
+            result['calYmax'] = -1
+            result['calZmin'] = -1
+            result['calZmax'] = -1
         try:
             #raw file data quality indicators
-            fSummary += str(os.path.getsize(rawFile)) + ',' + str(getDeviceId(rawFile)) + ','
+            result['fileSize'] = os.path.getsize(rawFile)
+            result['deviceID'] = getDeviceId(rawFile)
         except:
-            fSummary += '-1,-1,'
+            result['fileSize'] = -1
+            result['deviceID'] = -1
         f = '%.1f'
-        fSummary += str(numInterrupts) + ',' + f % interruptMins + ','
-        fSummary += str(numDataErrs) + ','
-        fSummary += str(clipsPreCalibrSum) + ',' + str(clipsPreCalibrMax) + ','
-        fSummary += str(clipsPostCalibrSum) + ',' + str(clipsPostCalibrMax) + ','
-        fSummary += str(epochSamplesN) + ',' + f % epochSamplesAvg + ','
-        fSummary += f % epochSamplesStd + ',' + str(epochSamplesMin) + ','
-        fSummary += str(epochSamplesMax) + ','
-        fSummary += f % tempMean + ',' + f % tempStd + ','
+        #other housekeeping variables
+        result['numInterrupts'] = numInterrupts
+        result['interruptMins'] = f % interruptMins
+        result['numDataErrs'] = numDataErrs
+        result['clipsBeforeCalibrationSum'] = clipsPreCalibrSum
+        result['clipsBeforeCalibrationMax'] = clipsPreCalibrMax
+        result['clipsAfterCalibrationSum'] = clipsPostCalibrSum
+        result['clipsAfterCalibrationMax'] = clipsPostCalibrMax
+        result['epochSamplesN'] = epochSamplesN
+        result['epochSamplesAvg'] = f % epochSamplesAvg
+        result['epochSamplesStd'] = f % epochSamplesStd
+        result['epochSamplesMin'] = epochSamplesMin
+        result['epochSamplesMax'] = epochSamplesMax
+        result['tempMean'] = f % tempMean
+        result['tempStd'] = f % tempStd
     
-    fSummary = fSummary[:-1] #remove trailing comma
     #print basic output
-    print toScreen(cmdSummary)
+    summaryVals = ['file', 'startTime', 'endTime', 'accPAAvg(mg)','wearTime(days)','nonWearTime(days)']
+    summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
+    print toScreen(json.dumps(summaryDict, indent=4))
+    
     #write detailed output to file
     f = open(summaryFile,'w')
-    f.write(fSummary)
+    json.dump(result, f, indent=4)
     f.close()
     if deleteHelperFiles:
         try:
@@ -258,8 +316,7 @@ def main():
         except:
             print 'could not delete helper file' 
     if verbose:
-        print toScreen(summaryFile)
-        print toScreen(fSummary)
+        print toScreen('see all variables at: ' + summaryFile)
 
 
 def getEpochSummary(epochFile,
@@ -474,6 +531,7 @@ def getCalibrationCoefs(staticBoutsFile):
         sys.stderr.write('WARNING: calibration error\n')
     return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, \
             xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
+
 
 def getDeviceId(cwaFile):
     f = open(cwaFile, 'rb')
