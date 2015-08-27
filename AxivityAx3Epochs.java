@@ -77,7 +77,9 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("timeFormat")) {
                     timeFormat = new SimpleDateFormat(funcParam);
                 } else if (funcName.equals("filter")) {
-                    filter = null;    
+                    if (!Boolean.parseBoolean(funcParam.toLowerCase())) {
+                        filter = null;
+                    }
                 } else if (funcName.equals("startEpochWholeMinute")) {
                     startEpochWholeMinute = Boolean.parseBoolean(
                             funcParam.toLowerCase());
