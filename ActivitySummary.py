@@ -172,7 +172,8 @@ def main():
     #good calibration
     goodCalibration = 1
     s = 0.3 #sphere criteria
-    if xMin>-s or xMax<s or yMin>-s or yMax<s or zMin>-s or zMax<s:
+    if xMin>-s or xMax<s or yMin>-s or yMax<s or zMin>-s or zMax<s or \
+            np.isnan(xMin) or np.isnan(yMin) or np.isnan(zMin):
         goodCalibration = 0
     #calibrated on own data
     calibratedOnOwnData = 1
