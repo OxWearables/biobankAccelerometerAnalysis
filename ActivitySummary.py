@@ -170,6 +170,11 @@ def main():
     if diurnalHrs < minDiurnalHrs or wearTimeMins/1440.0 < minWearDays:
         goodWearTime = 0
     #good calibration
+    goodCalibration = 1
+    s = 0.3 #sphere criteria
+    if xMin>-s or xMax<s or yMin>-s or yMax<s or zMin>-s or zMax<s:
+        goodCalibration = 0
+    #calibrated on own data
     calibratedOnOwnData = 1
     if skipCalibration:
         calibratedOnOwnData = 0
@@ -187,6 +192,7 @@ def main():
     #data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
+    result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     #physical activity variation by day / hour
     result['pa-Monday-avg(mg)'] = f % (paDays[0]*1000)
