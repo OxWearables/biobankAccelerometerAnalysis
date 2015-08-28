@@ -240,72 +240,71 @@ def main():
     for i in range(1,16): #100mg categories from 500-2000mg
         result['pa-ecdf-' + str(500+i*100) + 'mg'] = f % paEcdf4[i-1]
     
-    if verbose:
-        try:
-            #calibration metrics 
-            result['calibration-errorsBefore'] = errPreCal
-            result['calibration-errorsAfter'] = errPreCal
-            result['calibration-xOffset'] = calOff[0]
-            result['calibration-yOffset'] = calOff[1]
-            result['calibration-zOffset'] = calOff[2]
-            result['calibration-xSlope'] = calSlope[0]
-            result['calibration-ySlope'] = calSlope[1]
-            result['calibration-zSlope'] = calSlope[2]
-            result['calibration-xTemp'] = calSlope[0]
-            result['calibration-yTemp'] = calSlope[1]
-            result['calibration-zTemp'] = calSlope[2]
-            result['calibration-MeanTemp'] = meanTemp
-            result['calibration-numStaticPoints'] = nStatic
-            f = '%.2f'
-            result['calibration-staticXmin'] = f % xMin
-            result['calibration-staticXmax'] = f % xMax
-            result['calibration-staticYmin'] = f % yMin
-            result['calibration-staticYmax'] = f % yMax
-            result['calibration-staticZmin'] = f % zMin
-            result['calibration-staticZmax'] = f % zMax
-        except:
-            result['calibration-errorsBefore'] = -1
-            result['calibration-errorsAfter'] = -1
-            result['calibration-xOffset'] = -1
-            result['calibration-yOffset'] = -1
-            result['calibration-zOffset'] = -1
-            result['calibration-xSlope'] = -1
-            result['calibration-ySlope'] = -1
-            result['calibration-zSlope'] = -1
-            result['calibration-xTemp'] = -1
-            result['calibration-yTemp'] = -1
-            result['calibration-zTemp'] = -1
-            result['calibration-MeanTemp'] = -1
-            result['calibration-numStaticPoints'] = -1
-            result['calibration-staticXmin'] = -1
-            result['calibration-staticXmax'] = -1
-            result['calibration-staticYmin'] = -1
-            result['calibration-staticYmax'] = -1
-            result['calibration-staticZmin'] = -1
-            result['calibration-staticZmax'] = -1
-        try:
-            #raw file data quality indicators
-            result['file-size'] = os.path.getsize(rawFile)
-            result['file-deviceID'] = getDeviceId(rawFile)
-        except:
-            result['file-size'] = -1
-            result['file-deviceID'] = -1
-        f = '%.1f'
-        #other housekeeping variables
-        result['errors-interrupts-sum'] = numInterrupts
-        result['errors-interrupt-mins'] = f % interruptMins
-        result['errors-data-sum'] = numDataErrs
-        result['clips-beforeCalibration-sum'] = clipsPreCalibrSum
-        result['clips-beforeCalibration-max'] = clipsPreCalibrMax
-        result['clips-afterCalibration-sum'] = clipsPostCalibrSum
-        result['clips-afterCalibration-max'] = clipsPostCalibrMax
-        result['epochSamples-sum'] = epochSamplesN
-        result['epochSamples-avg'] = f % epochSamplesAvg
-        result['epochSamples-std'] = f % epochSamplesStd
-        result['epochSamples-min'] = epochSamplesMin
-        result['epochSamples-max'] = epochSamplesMax
-        result['temp-mean'] = f % tempMean
-        result['temp-std'] = f % tempStd
+    try:
+        #calibration metrics 
+        result['calibration-errorsBefore'] = errPreCal
+        result['calibration-errorsAfter'] = errPreCal
+        result['calibration-xOffset'] = calOff[0]
+        result['calibration-yOffset'] = calOff[1]
+        result['calibration-zOffset'] = calOff[2]
+        result['calibration-xSlope'] = calSlope[0]
+        result['calibration-ySlope'] = calSlope[1]
+        result['calibration-zSlope'] = calSlope[2]
+        result['calibration-xTemp'] = calSlope[0]
+        result['calibration-yTemp'] = calSlope[1]
+        result['calibration-zTemp'] = calSlope[2]
+        result['calibration-MeanTemp'] = meanTemp
+        result['calibration-numStaticPoints'] = nStatic
+        f = '%.2f'
+        result['calibration-staticXmin'] = f % xMin
+        result['calibration-staticXmax'] = f % xMax
+        result['calibration-staticYmin'] = f % yMin
+        result['calibration-staticYmax'] = f % yMax
+        result['calibration-staticZmin'] = f % zMin
+        result['calibration-staticZmax'] = f % zMax
+    except:
+        result['calibration-errorsBefore'] = -1
+        result['calibration-errorsAfter'] = -1
+        result['calibration-xOffset'] = -1
+        result['calibration-yOffset'] = -1
+        result['calibration-zOffset'] = -1
+        result['calibration-xSlope'] = -1
+        result['calibration-ySlope'] = -1
+        result['calibration-zSlope'] = -1
+        result['calibration-xTemp'] = -1
+        result['calibration-yTemp'] = -1
+        result['calibration-zTemp'] = -1
+        result['calibration-MeanTemp'] = -1
+        result['calibration-numStaticPoints'] = -1
+        result['calibration-staticXmin'] = -1
+        result['calibration-staticXmax'] = -1
+        result['calibration-staticYmin'] = -1
+        result['calibration-staticYmax'] = -1
+        result['calibration-staticZmin'] = -1
+        result['calibration-staticZmax'] = -1
+    try:
+        #raw file data quality indicators
+        result['file-size'] = os.path.getsize(rawFile)
+        result['file-deviceID'] = getDeviceId(rawFile)
+    except:
+        result['file-size'] = -1
+        result['file-deviceID'] = -1
+    f = '%.1f'
+    #other housekeeping variables
+    result['errors-interrupts-sum'] = numInterrupts
+    result['errors-interrupt-mins'] = f % interruptMins
+    result['errors-data-sum'] = numDataErrs
+    result['clips-beforeCalibration-sum'] = clipsPreCalibrSum
+    result['clips-beforeCalibration-max'] = clipsPreCalibrMax
+    result['clips-afterCalibration-sum'] = clipsPostCalibrSum
+    result['clips-afterCalibration-max'] = clipsPostCalibrMax
+    result['epochSamples-sum'] = epochSamplesN
+    result['epochSamples-avg'] = f % epochSamplesAvg
+    result['epochSamples-std'] = f % epochSamplesStd
+    result['epochSamples-min'] = epochSamplesMin
+    result['epochSamples-max'] = epochSamplesMax
+    result['temp-mean'] = f % tempMean
+    result['temp-std'] = f % tempStd
     
     #print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'pa-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
