@@ -39,16 +39,13 @@ def main():
     #store command line arguments to local variables
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
-    rawFile = rawFile.replace(".CWA", ".cwa")
-    rawFile = rawFile.replace(".BIN", ".bin") #alternative raw file
-    summaryFileEnd = "OutputSummary.json"
-    summaryFile = rawFile.replace(".cwa", summaryFileEnd)
-    summaryFile = rawFile.replace(".bin", summaryFileEnd) #alternative raw file
-    tsFile = summaryFile.replace(summaryFileEnd,"AccTimeSeries.csv")
-    nonWearFile = summaryFile.replace(summaryFileEnd,"NonWearBouts.csv")
-    epochFile = summaryFile.replace(summaryFileEnd,"Epoch.csv")
-    stationaryFile = summaryFile.replace(summaryFileEnd,"Stationary.csv")
-    javaEpochProcess = "AxivityAx3Epochs" #process for alternative raw file
+    rawFileEnd = rawFile.split('.')[-1]
+    summaryFile = rawFile.replace(rawFileEnd, "OutputSummary.json")
+    tsFile = rawFile.replace(rawFileEnd,"AccTimeSeries.csv")
+    nonWearFile = rawFile.replace(rawFileEnd,"NonWearBouts.csv")
+    epochFile = rawFile.replace(rawFileEnd,"Epoch.csv")
+    stationaryFile = rawFile.replace(rawFileEnd,"Stationary.csv")
+    javaEpochProcess = "AxivityAx3Epochs"
     javaHeapSpace = ""
     skipRaw = False
     skipCalibration = False
