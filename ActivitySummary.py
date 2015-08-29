@@ -39,7 +39,7 @@ def main():
     #store command line arguments to local variables
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
-    rawFileEnd = rawFile.split('.')[-1]
+    rawFileEnd = '.' + rawFile.split('.')[-1]
     summaryFile = rawFile.replace(rawFileEnd, "OutputSummary.json")
     tsFile = rawFile.replace(rawFileEnd,"AccTimeSeries.csv")
     nonWearFile = rawFile.replace(rawFileEnd,"NonWearBouts.csv")
