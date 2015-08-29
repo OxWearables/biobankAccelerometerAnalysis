@@ -40,12 +40,15 @@ def main():
     rawFile = sys.argv[1]      
     funcParams = sys.argv[2:]
     rawFile = rawFile.replace(".CWA", ".cwa")
-    summaryFile = rawFile.replace(".cwa","OutputSummary.json")
-    tsFile = rawFile.replace(".cwa","AccTimeSeries.csv")
-    nonWearFile = rawFile.replace(".cwa","NonWearBouts.csv")
-    epochFile = rawFile.replace(".cwa","Epoch.csv")
-    stationaryFile = rawFile.replace(".cwa","Stationary.csv")
-    javaEpochProcess = "AxivityAx3Epochs"
+    rawFile = rawFile.replace(".BIN", ".bin") #alternative raw file
+    summaryFileEnd = "OutputSummary.json"
+    summaryFile = rawFile.replace(".cwa", summaryFileEnd)
+    summaryFile = rawFile.replace(".bin", summaryFileEnd) #alternative raw file
+    tsFile = summaryFile.replace(summaryFileEnd,"AccTimeSeries.csv")
+    nonWearFile = summaryFile.replace(summaryFileEnd,"NonWearBouts.csv")
+    epochFile = summaryFile.replace(summaryFileEnd,"Epoch.csv")
+    stationaryFile = summaryFile.replace(summaryFileEnd,"Stationary.csv")
+    javaEpochProcess = "AxivityAx3Epochs" #process for alternative raw file
     javaHeapSpace = ""
     skipRaw = False
     skipCalibration = False
@@ -82,6 +85,9 @@ def main():
         elif ( param.split(':')[0] == 'javaHeapSpace' and
                 len(param.split(':')[1])>1 ):
             javaHeapSpace = param.split(':')[1]
+        elif ( param.split(':')[0] == 'javaEpochProcess' and
+                len(param.split(':')[1])>1 ):
+            javaEpochProcess = param.split(':')[1]
         elif ( param.split(':')[0] == 'calOff' and
                 len(param.split(':')[1].split(','))==3 ):
             calOff = param.split(':')[1].split(',')
