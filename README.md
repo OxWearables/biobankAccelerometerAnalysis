@@ -34,7 +34,7 @@ The output will look like:
 
 
 <h2>Installation</h2>
-Dependancies include: matlab, java, and python (numpy and pandas).
+Dependancies include: java and python (numpy and pandas).
 ```
 javac *.java
 ```
