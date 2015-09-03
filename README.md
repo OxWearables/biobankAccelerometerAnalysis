@@ -20,8 +20,14 @@ python ActivitySummary.py sample.cwa
 
 The output will look like:
 ```
-timestamp [input_file.CWA], [summary physical activity score], [start time] - [end time], [wear time], [non wear time]
-2015-05-15 09:45:27 sample.cwa, 33.44 mg, 2014-05-07 13:29:50 - 2014-05-13 09:50:25, 8357 mins wear, 62     mins nonWear
+{
+    "file-name": "sample.cwa", 
+    "file-startTime": "2014-05-07 13:29:50", 
+    "file-endTime": "2014-05-13 09:50:25", 
+    "pa-overall-avg(mg)": "34.19", 
+    "wearTime-overall(days)": "5.80", 
+    "nonWearTime-overall(days)": "0.04"
+}
 ```
 [Click here for customised usage options on our wiki.]
 (https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/1. Usage)
