@@ -191,36 +191,36 @@ def main():
     result['file-endTime'] = endTime.strftime(f)
     #physical activity output variable (mg)
     f = '%.2f'
-    result['acc-overall-avg(mg)'] = f % (paWAvg*1000)
-    result['acc-overall-std(mg)'] = f % (paWStd*1000)
+    result['acc-overall-avg(mg)'] = formatNum(paWAvg*1000, f)
+    result['acc-overall-std(mg)'] = formatNum(paWStd*1000, f)
     #data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     #physical activity variation by day / hour
-    result['acc-mon-avg(mg)'] = f % (paDays[0]*1000)
-    result['acc-tue-avg(mg)'] = f % (paDays[1]*1000)
-    result['acc-wed-avg(mg)'] = f % (paDays[2]*1000)
-    result['acc-thur-avg(mg)'] = f % (paDays[3]*1000)
-    result['acc-fri-avg(mg)'] = f % (paDays[4]*1000)
-    result['acc-sat-avg(mg)'] = f % (paDays[5]*1000)
-    result['acc-sun-avg(mg)'] = f % (paDays[6]*1000)
+    result['acc-mon-avg(mg)'] = formatNum(paDays[0]*1000, f)
+    result['acc-tue-avg(mg)'] = formatNum(paDays[1]*1000, f)
+    result['acc-wed-avg(mg)'] = formatNum(paDays[2]*1000, f)
+    result['acc-thur-avg(mg)'] = formatNum(paDays[3]*1000, f)
+    result['acc-fri-avg(mg)'] = formatNum(paDays[4]*1000, f)
+    result['acc-sat-avg(mg)'] = formatNum(paDays[5]*1000, f)
+    result['acc-sun-avg(mg)'] = formatNum(paDays[6]*1000, f)
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        result['acc-hr' + str(i) + '-avg(mg)'] = f % (paHours[i]*1000)
+        result['acc-hr' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, f)
     #wear time characteristics
-    result['wearTime-overall(days)'] = f % (wearTimeMins/1440.0)
-    result['nonWearTime-overall(days)'] = f % (nonWearTimeMins/1440.0)
-    result['wearTime-mon(hrs)'] = f % (wearDay[0]/60.0)
-    result['wearTime-tue(hrs)'] = f % (wearDay[1]/60.0)
-    result['wearTime-wed(hrs)'] = f % (wearDay[2]/60.0)
-    result['wearTime-thur(hrs)'] = f % (wearDay[3]/60.0)
-    result['wearTime-fri(hrs)'] = f % (wearDay[4]/60.0)
-    result['wearTime-sat(hrs)'] = f % (wearDay[5]/60.0)
-    result['wearTime-sun(hrs)'] = f % (wearDay[6]/60.0)
+    result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, f)
+    result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, f)
+    result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, f)
+    result['wearTime-tue(hrs)'] = formatNum(wearDay[1]/60.0, f)
+    result['wearTime-wed(hrs)'] = formatNum(wearDay[2]/60.0, f)
+    result['wearTime-thur(hrs)'] = formatNum(wearDay[3]/60.0, f)
+    result['wearTime-fri(hrs)'] = formatNum(wearDay[4]/60.0, f)
+    result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, f)
+    result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, f)
     for i in range(0,24):
-        result['wearTime-hr' + str(i) + '-(hrs)'] = f % (wear24[i]/60.0)
+        result['wearTime-hr' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, f)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
     try:
@@ -228,20 +228,20 @@ def main():
     except:
         result['wearTime-numNonWearEpisodes(>1hr)'] = -1
     #physical activity stats and intensity distribution (minus diurnalWeights)
-    result['acc-noDiurnalAdjust-avg(mg)'] = f % (paAvg*1000)
-    result['acc-noDiurnalAdjust-std(mg)'] = f % (paStd*1000)
-    result['acc-noDiurnalAdjust-median(mg)'] = f % (paMedian*1000)
-    result['acc-noDiurnalAdjust-min(mg)'] = f % (paMin*1000)
-    result['acc-noDiurnalAdjust-max(mg)'] = f % (paMax*1000)
+    result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(paAvg*1000, f)
+    result['acc-noDiurnalAdjust-std(mg)'] = formatNum(paStd*1000, f)
+    result['acc-noDiurnalAdjust-median(mg)'] = formatNum(paMedian*1000, f)
+    result['acc-noDiurnalAdjust-min(mg)'] = formatNum(paMin*1000, f)
+    result['acc-noDiurnalAdjust-max(mg)'] = formatNum(paMax*1000, f)
     f = '%.3f'
     for i in range(1,21): #1mg categories from 1-20mg
-        result['acc-ecdf-' + str(i) + 'mg'] = f % paEcdf1[i-1]
+        result['acc-ecdf-' + str(i) + 'mg'] = formatNum(paEcdf1[i-1], f)
     for i in range(1,17): #5mg categories from 25-100mg
-        result['acc-ecdf-' + str(20+i*5) + 'mg'] = f % paEcdf2[i-1]
+        result['acc-ecdf-' + str(20+i*5) + 'mg'] = formatNum(paEcdf2[i-1], f)
     for i in range(1,17): #25mg categories from 125-500mg
-        result['acc-ecdf-' + str(100+i*25) + 'mg'] = f % paEcdf3[i-1]
+        result['acc-ecdf-' + str(100+i*25) + 'mg'] = formatNum(paEcdf3[i-1], f)
     for i in range(1,16): #100mg categories from 500-2000mg
-        result['acc-ecdf-' + str(500+i*100) + 'mg'] = f % paEcdf4[i-1]
+        result['acc-ecdf-' + str(500+i*100) + 'mg'] = formatNum(paEcdf4[i-1], f)
     
     try:
         #calibration metrics 
@@ -259,12 +259,12 @@ def main():
         result['calibration-meanDeviceTemp'] = meanTemp
         result['calibration-numStaticPoints'] = nStatic
         f = '%.2f'
-        result['calibration-staticXmin'] = f % xMin
-        result['calibration-staticXmax'] = f % xMax
-        result['calibration-staticYmin'] = f % yMin
-        result['calibration-staticYmax'] = f % yMax
-        result['calibration-staticZmin'] = f % zMin
-        result['calibration-staticZmax'] = f % zMax
+        result['calibration-staticXmin'] = formatNum(xMin, f)
+        result['calibration-staticXmax'] = formatNum(xMax, f)
+        result['calibration-staticYmin'] = formatNum(yMin, f)
+        result['calibration-staticYmax'] = formatNum(yMax, f)
+        result['calibration-staticZmin'] = formatNum(zMin, f)
+        result['calibration-staticZmax'] = formatNum(zMax, f)
     except:
         result['calibration-errsBefore'] = -1
         result['calibration-errsAfter'] = -1
@@ -295,21 +295,21 @@ def main():
     f = '%.1f'
     #other housekeeping variables
     result['errs-interrupts-num'] = numInterrupts
-    result['errs-interrupt-mins'] = f % interruptMins
+    result['errs-interrupt-mins'] = formatNum(interruptMins, f)
     result['errs-data-num'] = numDataErrs
     result['clips-beforeCalibration-num'] = clipsPreCalibrSum
     result['clips-beforeCalibration-max(perEpoch)'] = clipsPreCalibrMax
     result['clips-afterCalibration-num'] = clipsPostCalibrSum
     result['clips-afterCalibration-max(perEpoch)'] = clipsPostCalibrMax
     result['samples-num'] = epochSamplesN
-    result['samples-avg(Hz)'] = f % (epochSamplesAvg / epochPeriod)
-    result['samples-std(Hz)'] = f % (epochSamplesStd / epochPeriod)
-    result['samples-min(Hz)'] = f % (epochSamplesMin / epochPeriod)
-    result['samples-max(Hz)'] = f % (epochSamplesMax / epochPeriod)
-    result['deviceTemp-mean'] = f % tempMean
-    result['deviceTemp-std'] = f % tempStd
-    result['deviceTemp-min'] = f % tempMin
-    result['deviceTemp-max'] = f % tempMax
+    result['samples-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, f)
+    result['samples-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, f)
+    result['samples-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, f)
+    result['samples-max(Hz)'] = formatNum(epochSamplesMax / epochPeriod, f)
+    result['deviceTemp-mean'] = formatNum(tempMean, f)
+    result['deviceTemp-std'] = formatNum(tempStd, f)
+    result['deviceTemp-min'] = formatNum(tempMin, f)
+    result['deviceTemp-max'] = formatNum(tempMax, f)
     
     #print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'acc-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
@@ -470,7 +470,7 @@ def getEpochSummary(epochFile,
             e['samples'].sum(), e['samples'].mean(), e['samples'].std(), \
             e['samples'].min(), e['samples'].max(), e['temp'].mean(), \
             e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
-            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \ 
+            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \
             paEcdf2, paEcdf3, paEcdf4
 
 
@@ -557,6 +557,9 @@ def getDeviceId(cwaFile):
         deviceId = struct.unpack('H', f.read(2))[0]
     f.close()
     return deviceId
+
+def formatNum(num, fmt):
+    return float(fmt % num)
 
 def toScreen(msg):
     timeFormat = '%Y-%m-%d %H:%M:%S'
