@@ -208,7 +208,7 @@ def main():
     result['acc-sun-avg(mg)'] = formatNum(paDays[6]*1000, f)
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        result['acc-hr' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, f)
+        result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, f)
     #wear time characteristics
     result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, f)
     result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, f)
@@ -220,7 +220,7 @@ def main():
     result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, f)
     result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, f)
     for i in range(0,24):
-        result['wearTime-hr' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, f)
+        result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, f)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
     try:
