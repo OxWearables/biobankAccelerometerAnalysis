@@ -153,7 +153,7 @@ def main():
             interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, \
             clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, \
             epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, \
-            tempMean, tempStd, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
+            tempMean, tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
             paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
             paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
                     nonWearFile, tsFile)
@@ -191,72 +191,72 @@ def main():
     result['file-endTime'] = endTime.strftime(f)
     #physical activity output variable (mg)
     f = '%.2f'
-    result['pa-overall-avg(mg)'] = f % (paWAvg*1000)
-    result['pa-overall-std(mg)'] = f % (paWStd*1000)
+    result['acc-overall-avg(mg)'] = f % (paWAvg*1000)
+    result['acc-overall-std(mg)'] = f % (paWStd*1000)
     #data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     #physical activity variation by day / hour
-    result['pa-Monday-avg(mg)'] = f % (paDays[0]*1000)
-    result['pa-Tuesday-avg(mg)'] = f % (paDays[1]*1000)
-    result['pa-Wednesday-avg(mg)'] = f % (paDays[2]*1000)
-    result['pa-Thursday-avg(mg)'] = f % (paDays[3]*1000)
-    result['pa-Friday-avg(mg)'] = f % (paDays[4]*1000)
-    result['pa-Saturday-avg(mg)'] = f % (paDays[5]*1000)
-    result['pa-Sunday-avg(mg)'] = f % (paDays[6]*1000)
+    result['acc-mon-avg(mg)'] = f % (paDays[0]*1000)
+    result['acc-tue-avg(mg)'] = f % (paDays[1]*1000)
+    result['acc-wed-avg(mg)'] = f % (paDays[2]*1000)
+    result['acc-thur-avg(mg)'] = f % (paDays[3]*1000)
+    result['acc-fri-avg(mg)'] = f % (paDays[4]*1000)
+    result['acc-sat-avg(mg)'] = f % (paDays[5]*1000)
+    result['acc-sun-avg(mg)'] = f % (paDays[6]*1000)
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        result['pa-hour' + str(i) + '-avg(mg)'] = f % (paHours[i]*1000)
+        result['acc-hr' + str(i) + '-avg(mg)'] = f % (paHours[i]*1000)
     #wear time characteristics
     result['wearTime-overall(days)'] = f % (wearTimeMins/1440.0)
     result['nonWearTime-overall(days)'] = f % (nonWearTimeMins/1440.0)
-    result['wearTime-Monday(hrs)'] = f % (wearDay[0]/60.0)
-    result['wearTime-Tuesday(hrs)'] = f % (wearDay[1]/60.0)
-    result['wearTime-Wednesday(hrs)'] = f % (wearDay[2]/60.0)
-    result['wearTime-Thursday(hrs)'] = f % (wearDay[3]/60.0)
-    result['wearTime-Friday(hrs)'] = f % (wearDay[4]/60.0)
-    result['wearTime-Saturday(hrs)'] = f % (wearDay[5]/60.0)
-    result['wearTime-Sunday(hrs)'] = f % (wearDay[6]/60.0)
+    result['wearTime-mon(hrs)'] = f % (wearDay[0]/60.0)
+    result['wearTime-tue(hrs)'] = f % (wearDay[1]/60.0)
+    result['wearTime-wed(hrs)'] = f % (wearDay[2]/60.0)
+    result['wearTime-thur(hrs)'] = f % (wearDay[3]/60.0)
+    result['wearTime-fri(hrs)'] = f % (wearDay[4]/60.0)
+    result['wearTime-sat(hrs)'] = f % (wearDay[5]/60.0)
+    result['wearTime-sun(hrs)'] = f % (wearDay[6]/60.0)
     for i in range(0,24):
-        result['wearTime-Hr' + str(i) + '-(days)'] = f % (wear24[i]/60.0)
+        result['wearTime-hr' + str(i) + '-(hrs)'] = f % (wear24[i]/60.0)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
     try:
-        result['wearTime-numNonWearEpisodes'] = numNonWearEpisodes
+        result['wearTime-numNonWearEpisodes(>1hr)'] = numNonWearEpisodes
     except:
-        result['wearTime-numNonWearEpisodes'] = -1
+        result['wearTime-numNonWearEpisodes(>1hr)'] = -1
     #physical activity stats and intensity distribution (minus diurnalWeights)
-    result['pa-crude-avg(mg)'] = f % (paAvg*1000)
-    result['pa-crude-std(mg)'] = f % (paStd*1000)
-    result['pa-crude-median(mg)'] = f % (paMedian*1000)
-    result['pa-crude-min(mg)'] = f % (paMin*1000)
-    result['pa-crude-max(mg)'] = f % (paMax*1000)
+    result['acc-noDiurnalAdjust-avg(mg)'] = f % (paAvg*1000)
+    result['acc-noDiurnalAdjust-std(mg)'] = f % (paStd*1000)
+    result['acc-noDiurnalAdjust-median(mg)'] = f % (paMedian*1000)
+    result['acc-noDiurnalAdjust-min(mg)'] = f % (paMin*1000)
+    result['acc-noDiurnalAdjust-max(mg)'] = f % (paMax*1000)
     f = '%.3f'
     for i in range(1,21): #1mg categories from 1-20mg
-        result['pa-ecdf-' + str(i) + 'mg'] = f % paEcdf1[i-1]
+        result['acc-ecdf-' + str(i) + 'mg'] = f % paEcdf1[i-1]
     for i in range(1,17): #5mg categories from 25-100mg
-        result['pa-ecdf-' + str(20+i*5) + 'mg'] = f % paEcdf2[i-1]
+        result['acc-ecdf-' + str(20+i*5) + 'mg'] = f % paEcdf2[i-1]
     for i in range(1,17): #25mg categories from 125-500mg
-        result['pa-ecdf-' + str(100+i*25) + 'mg'] = f % paEcdf3[i-1]
+        result['acc-ecdf-' + str(100+i*25) + 'mg'] = f % paEcdf3[i-1]
     for i in range(1,16): #100mg categories from 500-2000mg
-        result['pa-ecdf-' + str(500+i*100) + 'mg'] = f % paEcdf4[i-1]
+        result['acc-ecdf-' + str(500+i*100) + 'mg'] = f % paEcdf4[i-1]
     
     try:
         #calibration metrics 
-        result['calibration-errorsBefore'] = errPreCal
-        result['calibration-errorsAfter'] = errPreCal
+        result['calibration-errsBefore'] = errPreCal
+        result['calibration-errsAfter'] = errPostCal
         result['calibration-xOffset'] = calOff[0]
         result['calibration-yOffset'] = calOff[1]
         result['calibration-zOffset'] = calOff[2]
         result['calibration-xSlope'] = calSlope[0]
         result['calibration-ySlope'] = calSlope[1]
         result['calibration-zSlope'] = calSlope[2]
-        result['calibration-xTemp'] = calSlope[0]
-        result['calibration-yTemp'] = calSlope[1]
-        result['calibration-zTemp'] = calSlope[2]
-        result['calibration-MeanTemp'] = meanTemp
+        result['calibration-xTemp'] = calTemp[0]
+        result['calibration-yTemp'] = calTemp[1]
+        result['calibration-zTemp'] = calTemp[2]
+        result['calibration-meanDeviceTemp'] = meanTemp
         result['calibration-numStaticPoints'] = nStatic
         f = '%.2f'
         result['calibration-staticXmin'] = f % xMin
@@ -266,8 +266,8 @@ def main():
         result['calibration-staticZmin'] = f % zMin
         result['calibration-staticZmax'] = f % zMax
     except:
-        result['calibration-errorsBefore'] = -1
-        result['calibration-errorsAfter'] = -1
+        result['calibration-errsBefore'] = -1
+        result['calibration-errsAfter'] = -1
         result['calibration-xOffset'] = -1
         result['calibration-yOffset'] = -1
         result['calibration-zOffset'] = -1
@@ -277,7 +277,7 @@ def main():
         result['calibration-xTemp'] = -1
         result['calibration-yTemp'] = -1
         result['calibration-zTemp'] = -1
-        result['calibration-MeanTemp'] = -1
+        result['calibration-meanDeviceTemp'] = -1
         result['calibration-numStaticPoints'] = -1
         result['calibration-staticXmin'] = -1
         result['calibration-staticXmax'] = -1
@@ -294,23 +294,25 @@ def main():
         result['file-deviceID'] = -1
     f = '%.1f'
     #other housekeeping variables
-    result['errors-interrupts-sum'] = numInterrupts
-    result['errors-interrupt-mins'] = f % interruptMins
-    result['errors-data-sum'] = numDataErrs
-    result['clips-beforeCalibration-sum'] = clipsPreCalibrSum
-    result['clips-beforeCalibration-max'] = clipsPreCalibrMax
-    result['clips-afterCalibration-sum'] = clipsPostCalibrSum
-    result['clips-afterCalibration-max'] = clipsPostCalibrMax
-    result['epochSamples-sum'] = epochSamplesN
-    result['epochSamples-avg'] = f % epochSamplesAvg
-    result['epochSamples-std'] = f % epochSamplesStd
-    result['epochSamples-min'] = epochSamplesMin
-    result['epochSamples-max'] = epochSamplesMax
-    result['temp-mean'] = f % tempMean
-    result['temp-std'] = f % tempStd
+    result['errs-interrupts-num'] = numInterrupts
+    result['errs-interrupt-mins'] = f % interruptMins
+    result['errs-data-num'] = numDataErrs
+    result['clips-beforeCalibration-num'] = clipsPreCalibrSum
+    result['clips-beforeCalibration-max(perEpoch)'] = clipsPreCalibrMax
+    result['clips-afterCalibration-num'] = clipsPostCalibrSum
+    result['clips-afterCalibration-max(perEpoch)'] = clipsPostCalibrMax
+    result['samples-num'] = epochSamplesN
+    result['samples-avg(Hz)'] = f % (epochSamplesAvg / epochPeriod)
+    result['samples-std(Hz)'] = f % (epochSamplesStd / epochPeriod)
+    result['samples-min(Hz)'] = f % (epochSamplesMin / epochPeriod)
+    result['samples-max(Hz)'] = f % (epochSamplesMax / epochPeriod)
+    result['deviceTemp-mean'] = f % tempMean
+    result['deviceTemp-std'] = f % tempStd
+    result['deviceTemp-min'] = f % tempMin
+    result['deviceTemp-max'] = f % tempMax
     
     #print basic output
-    summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'pa-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
+    summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'acc-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
     summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
     print toScreen(json.dumps(summaryDict, indent=4))
     
@@ -467,8 +469,9 @@ def getEpochSummary(epochFile,
             e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), \
             e['samples'].sum(), e['samples'].mean(), e['samples'].std(), \
             e['samples'].min(), e['samples'].max(), e['temp'].mean(), \
-            e['temp'].std(), paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
-            paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, paEcdf4
+            e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
+            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \ 
+            paEcdf2, paEcdf3, paEcdf4
 
 
 def getCalibrationCoefs(staticBoutsFile):
