@@ -301,11 +301,11 @@ def main():
     result['clips-beforeCalibration-max(perEpoch)'] = clipsPreCalibrMax
     result['clips-afterCalibration-num'] = clipsPostCalibrSum
     result['clips-afterCalibration-max(perEpoch)'] = clipsPostCalibrMax
-    result['samples-num'] = epochSamplesN
-    result['samples-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, f)
-    result['samples-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, f)
-    result['samples-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, f)
-    result['samples-max(Hz)'] = formatNum(epochSamplesMax / epochPeriod, f)
+    result['totalSamples'] = epochSamplesN
+    result['sampleRate-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, f)
+    result['sampleRate-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, f)
+    result['sampleRate-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, f)
+    result['sampleRate-max(Hz)'] = formatNum(epochSamplesMax / epochPeriod, f)
     result['deviceTemp-mean'] = formatNum(tempMean, f)
     result['deviceTemp-std'] = formatNum(tempStd, f)
     result['deviceTemp-min'] = formatNum(tempMin, f)
