@@ -114,7 +114,7 @@ def main():
         if not skipCalibration:
             #identify 10sec stationary epochs
             print toScreen('calibrating')
-            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+            commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1", javaEpochProcess,
                     rawFile, "outputFile:" + stationaryFile,
                     "verbose:" + str(verbose), "filter:true",
                     "getStationaryBouts:true", "epochPeriod:10",
@@ -131,7 +131,7 @@ def main():
                         errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
       
         #calculate and write filtered avgVm epochs from raw file
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+        commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1", javaEpochProcess,
                 rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
                 "filter:true", "xIntercept:" + str(calOff[0]),
                 "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
