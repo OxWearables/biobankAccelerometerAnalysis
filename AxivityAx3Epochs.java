@@ -7,10 +7,10 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
 import java.text.SimpleDateFormat;
 
 /**
@@ -31,7 +31,7 @@ public class AxivityAx3Epochs
         String outputFile = "";
         Boolean verbose = true;
         int epochPeriod = 5;
-        SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
         double lowPassCut = 20;
         double highPassCut = 0.2;
         int sampleRate = 100;
@@ -75,7 +75,7 @@ public class AxivityAx3Epochs
                 } else if (funcName.equals("epochPeriod")) {
                     epochPeriod = Integer.parseInt(funcParam);
                 } else if (funcName.equals("timeFormat")) {
-                    timeFormat = new SimpleDateFormat(funcParam);
+                    timeFormat = DateTimeFormatter.ofPattern(funcParam);
                 } else if (funcName.equals("filter")) {
                     if (!Boolean.parseBoolean(funcParam.toLowerCase())) {
                         filter = null;
@@ -134,7 +134,7 @@ public class AxivityAx3Epochs
             String outputFile,
             Boolean verbose,
             int epochPeriod,
-            SimpleDateFormat timeFormat,
+            DateTimeFormatter timeFormat,
             Boolean startEpochWholeMinute,
             Boolean startEpochWholeSecond,
             int range,
@@ -157,7 +157,7 @@ public class AxivityAx3Epochs
             //data block support variables
             String header = "";        
             //epoch creation support variables
-            Calendar epochStartTime = null;//new GregorianCalendar();    
+            LocalDateTime epochStartTime = null;
             List<Long> timeVals = new ArrayList<Long>();
             List<Double> xVals = new ArrayList<Double>();
             List<Double> yVals = new ArrayList<Double>();
@@ -214,11 +214,11 @@ public class AxivityAx3Epochs
      * CWA format is described at:
      * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
      */
-    private static Calendar processDataBlockIdentifyEpochs(
+    private static LocalDateTime processDataBlockIdentifyEpochs(
             ByteBuffer buf,
             BufferedWriter epochWriter,
-            SimpleDateFormat timeFormat,
-            Calendar epochStartTime,
+            DateTimeFormatter timeFormat,
+            LocalDateTime epochStartTime,
             int epochPeriod,
             List<Long> timeVals,
             List<Double> xVals,
@@ -257,14 +257,15 @@ public class AxivityAx3Epochs
             bytesPerSample = 4; // 3*10-bit + 2
         }
         //determine block start time
-        Calendar blockTime = getCwaTimestamp((int)blockTimestamp);        
+        LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp);        
         float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
-        blockTime.add(Calendar.MILLISECOND, (int)(offsetStart*1000));
+        int milli2nano = 1000000;
+        blockTime = blockTime.plusNanos((int)(offsetStart*1000)*milli2nano);
         
         //set target epoch start time of very first block
         if(epochStartTime==null) {
             epochStartTime=getCwaTimestamp((int)blockTimestamp);
-            epochStartTime.add(Calendar.MILLISECOND, (int)(offsetStart*1000));
+            epochStartTime = epochStartTime.plusNanos((int)(offsetStart*1000)*milli2nano);
         }
 
         //raw reading values
@@ -343,15 +344,14 @@ public class AxivityAx3Epochs
                     z = range;
             }
             
-            currentPeriod = (int) ((blockTime.getTimeInMillis() -
-                    epochStartTime.getTimeInMillis())/1000);
+            currentPeriod = (int)java.time.Duration.between(epochStartTime,blockTime).getSeconds();
             //check for an interrupt, i.e. where break in values > 2 * epochPeriod
             if (currentPeriod >= epochPeriod*2) {
                 int epochDiff = currentPeriod/epochPeriod;
-                epochStartTime.add(Calendar.SECOND, epochPeriod*epochDiff);
+                epochStartTime = epochStartTime.plusSeconds(epochPeriod*epochDiff);
                 //and update how far we are into the new epoch...
-                currentPeriod = (int) ((blockTime.getTimeInMillis() -
-                        epochStartTime.getTimeInMillis())/1000);
+                currentPeriod = (int) ((blockTime.get(ChronoField.MILLI_OF_SECOND) -
+                        epochStartTime.get(ChronoField.MILLI_OF_SECOND))/1000);
             }
             
             //check we have collected enough values to form an epoch
@@ -425,7 +425,7 @@ public class AxivityAx3Epochs
                     accPA = mean(paVals);
                 }
                 //write summary values to file
-                epochSummary = timeFormat.format(epochStartTime.getTime());
+                epochSummary = epochStartTime.format(timeFormat);
                 epochSummary += "," + accPA;
                 epochSummary += "," + xMean + "," + yMean + "," + zMean;
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
@@ -439,7 +439,7 @@ public class AxivityAx3Epochs
                 }
                        
                 //reset target start time and reset arrays for next epoch
-                epochStartTime.add(Calendar.SECOND, epochPeriod);
+                epochStartTime = epochStartTime.plusSeconds(epochPeriod);
                 timeVals.clear();
                 xVals.clear();
                 yVals.clear();
@@ -449,13 +449,13 @@ public class AxivityAx3Epochs
                 clipsCounter[1] = 0;
             }
             //store axes and vector magnitude values for every reading
-            timeVals.add(blockTime.getTimeInMillis());
+            timeVals.add(java.time.Duration.between(epochStartTime, blockTime).toMillis());
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
-            //System.out.println(timeFormat.format(blockTime.getTime()) + "," + x + "," + y + "," + z);
-            blockTime.add(Calendar.MILLISECOND, (int)readingGapMs);            
+            //System.out.println(blockTime.format(timeFormat)) + "," + x + "," + y + "," + z);
+            blockTime = blockTime.plusNanos((int)readingGapMs*milli2nano);
         }
         return epochStartTime;
     }
@@ -465,7 +465,7 @@ public class AxivityAx3Epochs
      * CWA format is described at:
      * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
      */
-    private static Calendar parseHeader(
+    private static LocalDateTime parseHeader(
             ByteBuffer buf,
             BufferedWriter epochWriter) {
         //todo ideally return estimate of file size...        
@@ -488,16 +488,15 @@ public class AxivityAx3Epochs
         return (bb.getShort(position) & 0xffff);
     }
 
-    private static Calendar getCwaTimestamp(int cwaTimestamp) {
-        Calendar tStamp = new GregorianCalendar();
+    private static LocalDateTime getCwaTimestamp(int cwaTimestamp) {
+        LocalDateTime tStamp;
         int year = (int)((cwaTimestamp >> 26) & 0x3f) + 2000;
         int month = (int)((cwaTimestamp >> 22) & 0x0f);
         int day = (int)((cwaTimestamp >> 17) & 0x1f);
         int hours = (int)((cwaTimestamp >> 12) & 0x1f);
         int mins = (int)((cwaTimestamp >>  6) & 0x3f);
         int secs = (int)((cwaTimestamp      ) & 0x3f);
-        tStamp.setTimeInMillis(0); //Otherwise milliseconds is undefined(!)
-        tStamp.set(year, month - 1, day, hours, mins, secs); //Month has 0-index
+        tStamp = LocalDateTime.of(year, month, day, hours, mins, secs);
         return tStamp;
     }            
       
