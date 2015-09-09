@@ -114,8 +114,8 @@ def main():
         if not skipCalibration:
             #identify 10sec stationary epochs
             print toScreen('calibrating')
-            commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                    rawFile, "outputFile:" + stationaryFile,
+            commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1",
+                    javaEpochProcess, rawFile, "outputFile:" + stationaryFile,
                     "verbose:" + str(verbose), "filter:true",
                     "getStationaryBouts:true", "epochPeriod:10",
                     "stationaryStd:0.013"]
@@ -131,14 +131,15 @@ def main():
                         errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
       
         #calculate and write filtered avgVm epochs from raw file
-        commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
-                "filter:true", "xIntercept:" + str(calOff[0]),
-                "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
-                "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
-                "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
-                "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
-                "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
+        commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1",
+                javaEpochProcess, rawFile, "outputFile:" + epochFile,
+                "verbose:" + str(verbose), "filter:true",
+                "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
+                "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
+                "ySlope:" + str(calSlope[1]), "zSlope:" + str(calSlope[2]),
+                "xTemp:" + str(calTemp[0]), "yTemp:" + str(calTemp[1]),
+                "zTemp:" + str(calTemp[2]), "meanTemp:" + str(meanTemp),
+                "epochPeriod:" + str(epochPeriod)]
         print toScreen('epoch generation')
         if len(javaHeapSpace) > 1:
             commandArgs.insert(1,javaHeapSpace);
@@ -153,8 +154,8 @@ def main():
             interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, \
             clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, \
             epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, \
-            tempMean, tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, paMedian, paMin, \
-            paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
+            tempMean, tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, \
+            paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
             paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
                     nonWearFile, tsFile)
     
@@ -190,37 +191,36 @@ def main():
     result['file-startTime'] = startTime.strftime(f)
     result['file-endTime'] = endTime.strftime(f)
     #physical activity output variable (mg)
-    f = '%.2f'
-    result['acc-overall-avg(mg)'] = formatNum(paWAvg*1000, f)
-    result['acc-overall-std(mg)'] = formatNum(paWStd*1000, f)
+    result['acc-overall-avg(mg)'] = formatNum(paWAvg*1000, 2)
+    result['acc-overall-std(mg)'] = formatNum(paWStd*1000, 2)
     #data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     #physical activity variation by day / hour
-    result['acc-mon-avg(mg)'] = formatNum(paDays[0]*1000, f)
-    result['acc-tue-avg(mg)'] = formatNum(paDays[1]*1000, f)
-    result['acc-wed-avg(mg)'] = formatNum(paDays[2]*1000, f)
-    result['acc-thur-avg(mg)'] = formatNum(paDays[3]*1000, f)
-    result['acc-fri-avg(mg)'] = formatNum(paDays[4]*1000, f)
-    result['acc-sat-avg(mg)'] = formatNum(paDays[5]*1000, f)
-    result['acc-sun-avg(mg)'] = formatNum(paDays[6]*1000, f)
+    result['acc-mon-avg(mg)'] = formatNum(paDays[0]*1000, 2)
+    result['acc-tue-avg(mg)'] = formatNum(paDays[1]*1000, 2)
+    result['acc-wed-avg(mg)'] = formatNum(paDays[2]*1000, 2)
+    result['acc-thur-avg(mg)'] = formatNum(paDays[3]*1000, 2)
+    result['acc-fri-avg(mg)'] = formatNum(paDays[4]*1000, 2)
+    result['acc-sat-avg(mg)'] = formatNum(paDays[5]*1000, 2)
+    result['acc-sun-avg(mg)'] = formatNum(paDays[6]*1000, 2)
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, f)
+        result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, 2)
     #wear time characteristics
-    result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, f)
-    result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, f)
-    result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, f)
-    result['wearTime-tue(hrs)'] = formatNum(wearDay[1]/60.0, f)
-    result['wearTime-wed(hrs)'] = formatNum(wearDay[2]/60.0, f)
-    result['wearTime-thur(hrs)'] = formatNum(wearDay[3]/60.0, f)
-    result['wearTime-fri(hrs)'] = formatNum(wearDay[4]/60.0, f)
-    result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, f)
-    result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, f)
+    result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, 2)
+    result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, 2)
+    result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, 2)
+    result['wearTime-tue(hrs)'] = formatNum(wearDay[1]/60.0, 2)
+    result['wearTime-wed(hrs)'] = formatNum(wearDay[2]/60.0, 2)
+    result['wearTime-thur(hrs)'] = formatNum(wearDay[3]/60.0, 2)
+    result['wearTime-fri(hrs)'] = formatNum(wearDay[4]/60.0, 2)
+    result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, 2)
+    result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, 2)
     for i in range(0,24):
-        result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, f)
+        result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, 2)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
     try:
@@ -228,20 +228,19 @@ def main():
     except:
         result['wearTime-numNonWearEpisodes(>1hr)'] = -1
     #physical activity stats and intensity distribution (minus diurnalWeights)
-    result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(paAvg*1000, f)
-    result['acc-noDiurnalAdjust-std(mg)'] = formatNum(paStd*1000, f)
-    result['acc-noDiurnalAdjust-median(mg)'] = formatNum(paMedian*1000, f)
-    result['acc-noDiurnalAdjust-min(mg)'] = formatNum(paMin*1000, f)
-    result['acc-noDiurnalAdjust-max(mg)'] = formatNum(paMax*1000, f)
-    f = '%.3f'
+    result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(paAvg*1000, 2)
+    result['acc-noDiurnalAdjust-std(mg)'] = formatNum(paStd*1000, 2)
+    result['acc-noDiurnalAdjust-median(mg)'] = formatNum(paMedian*1000, 2)
+    result['acc-noDiurnalAdjust-min(mg)'] = formatNum(paMin*1000, 2)
+    result['acc-noDiurnalAdjust-max(mg)'] = formatNum(paMax*1000, 2)
     for i in range(1,21): #1mg categories from 1-20mg
-        result['acc-ecdf-' + str(i) + 'mg'] = formatNum(paEcdf1[i-1], f)
+        result['acc-ecdf-' + str(i) + 'mg'] = formatNum(paEcdf1[i-1], 3)
     for i in range(1,17): #5mg categories from 25-100mg
-        result['acc-ecdf-' + str(20+i*5) + 'mg'] = formatNum(paEcdf2[i-1], f)
+        result['acc-ecdf-' + str(20+i*5) + 'mg'] = formatNum(paEcdf2[i-1], 3)
     for i in range(1,17): #25mg categories from 125-500mg
-        result['acc-ecdf-' + str(100+i*25) + 'mg'] = formatNum(paEcdf3[i-1], f)
+        result['acc-ecdf-' + str(100+i*25) + 'mg'] = formatNum(paEcdf3[i-1], 3)
     for i in range(1,16): #100mg categories from 500-2000mg
-        result['acc-ecdf-' + str(500+i*100) + 'mg'] = formatNum(paEcdf4[i-1], f)
+        result['acc-ecdf-' + str(500+i*100) + 'mg'] = formatNum(paEcdf4[i-1], 3)
     
     try:
         #calibration metrics 
@@ -258,13 +257,12 @@ def main():
         result['calibration-zTemp'] = calTemp[2]
         result['calibration-meanDeviceTemp'] = meanTemp
         result['calibration-numStaticPoints'] = nStatic
-        f = '%.2f'
-        result['calibration-staticXmin'] = formatNum(xMin, f)
-        result['calibration-staticXmax'] = formatNum(xMax, f)
-        result['calibration-staticYmin'] = formatNum(yMin, f)
-        result['calibration-staticYmax'] = formatNum(yMax, f)
-        result['calibration-staticZmin'] = formatNum(zMin, f)
-        result['calibration-staticZmax'] = formatNum(zMax, f)
+        result['calibration-staticXmin'] = formatNum(xMin, 2)
+        result['calibration-staticXmax'] = formatNum(xMax, 2)
+        result['calibration-staticYmin'] = formatNum(yMin, 2)
+        result['calibration-staticYmax'] = formatNum(yMax, 2)
+        result['calibration-staticZmin'] = formatNum(zMin, 2)
+        result['calibration-staticZmax'] = formatNum(zMax, 2)
     except:
         result['calibration-errsBefore'] = -1
         result['calibration-errsAfter'] = -1
@@ -292,24 +290,23 @@ def main():
     except:
         result['file-size'] = -1
         result['file-deviceID'] = -1
-    f = '%.1f'
     #other housekeeping variables
     result['errs-interrupts-num'] = numInterrupts
-    result['errs-interrupt-mins'] = formatNum(interruptMins, f)
+    result['errs-interrupt-mins'] = formatNum(interruptMins, 1)
     result['errs-data-num'] = numDataErrs
     result['clips-beforeCalibration-num'] = clipsPreCalibrSum
     result['clips-beforeCalibration-max(perEpoch)'] = clipsPreCalibrMax
     result['clips-afterCalibration-num'] = clipsPostCalibrSum
     result['clips-afterCalibration-max(perEpoch)'] = clipsPostCalibrMax
     result['totalSamples'] = epochSamplesN
-    result['sampleRate-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, f)
-    result['sampleRate-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, f)
-    result['sampleRate-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, f)
-    result['sampleRate-max(Hz)'] = formatNum(epochSamplesMax / epochPeriod, f)
-    result['deviceTemp-mean'] = formatNum(tempMean, f)
-    result['deviceTemp-std'] = formatNum(tempStd, f)
-    result['deviceTemp-min'] = formatNum(tempMin, f)
-    result['deviceTemp-max'] = formatNum(tempMax, f)
+    result['sampleRate-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, 1)
+    result['sampleRate-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, 1)
+    result['sampleRate-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, 1)
+    result['sampleRate-max(Hz)'] = formatNum(epochSamplesMax / epochPeriod, 1)
+    result['deviceTemp-mean'] = formatNum(tempMean, 1)
+    result['deviceTemp-std'] = formatNum(tempStd, 1)
+    result['deviceTemp-min'] = formatNum(tempMin, 1)
+    result['deviceTemp-max'] = formatNum(tempMax, 1)
     
     #print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'acc-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
@@ -558,7 +555,8 @@ def getDeviceId(cwaFile):
     f.close()
     return deviceId
 
-def formatNum(num, fmt):
+def formatNum(num, decimalPlaces):
+    fmt = '%.' + str(decimalPlaces) + 'f'
     return float(fmt % num)
 
 def toScreen(msg):
