@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.List;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
@@ -260,12 +261,12 @@ public class AxivityAx3Epochs
         //determine block start time
         LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp);        
         float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
-        blockTime = blockTime.plusNanos(seconds2Nanos(offsetStart));
+        blockTime = blockTime.plusNanos(secs2Nanos(offsetStart));
         
         //set target epoch start time of very first block
         if(epochStartTime==null) {
             epochStartTime=getCwaTimestamp((int)blockTimestamp);
-            epochStartTime = epochStartTime.plusNanos(seconds2Nanos(offsetStart));
+            epochStartTime = epochStartTime.plusNanos(secs2Nanos(offsetStart));
         }
 
         //raw reading values
@@ -344,7 +345,7 @@ public class AxivityAx3Epochs
                     z = range;
             }
             
-            currentPeriod = (int)java.time.Duration.between(epochStartTime,blockTime).getSeconds();
+            currentPeriod = (int)Duration.between(epochStartTime,blockTime).getSeconds();
             //check for an interrupt, i.e. where break in values > 2 * epochPeriod
             if (currentPeriod >= epochPeriod*2) {
                 int epochDiff = currentPeriod/epochPeriod;
@@ -449,13 +450,13 @@ public class AxivityAx3Epochs
                 clipsCounter[1] = 0;
             }
             //store axes and vector magnitude values for every reading
-            timeVals.add(java.time.Duration.between(epochStartTime, blockTime).toMillis());
+            timeVals.add(Duration.between(epochStartTime, blockTime).toMillis());
             xVals.add(x);
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
             //System.out.println(blockTime.format(timeFormat)) + "," + x + "," + y + "," + z);
-            blockTime = blockTime.plusNanos(seconds2Nanos(readingGap));
+            blockTime = blockTime.plusNanos(secs2Nanos(readingGap));
         }
         return epochStartTime;
     }
@@ -597,7 +598,7 @@ public class AxivityAx3Epochs
         }
     }
 
-    private static int seconds2Nanos(double num){
+    private static int secs2Nanos(double num){
         return (int)(TimeUnit.SECONDS.toNanos(1)*num);
     }
       
