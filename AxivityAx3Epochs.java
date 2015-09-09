@@ -7,6 +7,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
@@ -247,7 +248,7 @@ public class AxivityAx3Epochs
         if (sampleFreq <= 0) {
             sampleFreq = 1;
         }
-		double readingGapMs = 1000.0 / sampleFreq;
+		double readingGap = 1.0 / sampleFreq;
         //calculate num bytes per sample...
         byte bytesPerSample = 4;
         int NUM_AXES_PER_SAMPLE = 3;
@@ -259,13 +260,12 @@ public class AxivityAx3Epochs
         //determine block start time
         LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp);        
         float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
-        int milli2nano = 1000000;
-        blockTime = blockTime.plusNanos((int)(offsetStart*1000)*milli2nano);
+        blockTime = blockTime.plusNanos(seconds2Nanos(offsetStart));
         
         //set target epoch start time of very first block
         if(epochStartTime==null) {
             epochStartTime=getCwaTimestamp((int)blockTimestamp);
-            epochStartTime = epochStartTime.plusNanos((int)(offsetStart*1000)*milli2nano);
+            epochStartTime = epochStartTime.plusNanos(seconds2Nanos(offsetStart));
         }
 
         //raw reading values
@@ -455,7 +455,7 @@ public class AxivityAx3Epochs
             zVals.add(z);
             isClipped = false;
             //System.out.println(blockTime.format(timeFormat)) + "," + x + "," + y + "," + z);
-            blockTime = blockTime.plusNanos((int)readingGapMs*milli2nano);
+            blockTime = blockTime.plusNanos(seconds2Nanos(readingGap));
         }
         return epochStartTime;
     }
@@ -595,6 +595,10 @@ public class AxivityAx3Epochs
         } catch (Exception excep) {
             System.out.println(excep.toString());
         }
+    }
+
+    private static int seconds2Nanos(double num){
+        return (int)(TimeUnit.SECONDS.toNanos(1)*num);
     }
       
 }
