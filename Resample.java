@@ -63,9 +63,12 @@ class Resample{
                 int loc = Collections.binarySearch(time, timeI[i]);
                 if (loc < -1) {
                     loc = -loc - 2;
-                    xNew[i] = xSlope[loc] * timeI[i] + xIntercept[loc];
-                    yNew[i] = ySlope[loc] * timeI[i] + yIntercept[loc];
-                    zNew[i] = zSlope[loc] * timeI[i] + zIntercept[loc];
+                    double xNewInstant = xSlope[loc] * timeI[i] + xIntercept[loc];
+                    double yNewInstant = ySlope[loc] * timeI[i] + yIntercept[loc];
+                    double zNewInstant = zSlope[loc] * timeI[i] + zIntercept[loc];
+                    xNew[i] = xNewInstant; 
+                    yNew[i] = yNewInstant;
+                    zNew[i] = zNewInstant;
                 }
                 else {
                     xNew[i] = x.get(loc);

@@ -155,7 +155,6 @@ public class AxivityAx3Epochs
         try {
             rawAccReader = new FileInputStream(accFile).getChannel();
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
-            
             //data block support variables
             String header = "";        
             //epoch creation support variables
@@ -455,7 +454,7 @@ public class AxivityAx3Epochs
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
-            //System.out.println(blockTime.format(timeFormat)) + "," + x + "," + y + "," + z);
+            //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
             blockTime = blockTime.plusNanos(secs2Nanos(readingGap));
         }
         return epochStartTime;
