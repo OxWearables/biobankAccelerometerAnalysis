@@ -19,10 +19,11 @@ import datetime
 import json
 import os
 import pandas as pd
+import pytz
 import numpy as np
 import statsmodels.api as sm
-from subprocess import call, Popen
 import struct
+from subprocess import call, Popen
 import sys
 
 def main():
@@ -149,13 +150,14 @@ def main():
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
     print toScreen('generate summary variables from epochs')
-    startTime, endTime, wearTimeMins, nonWearTimeMins, numNonWearEpisodes, \
-            wearDay, wear24, diurnalHrs, diurnalMins, numInterrupts, \
-            interruptMins, numDataErrs, clipsPreCalibrSum, clipsPreCalibrMax, \
-            clipsPostCalibrSum, clipsPostCalibrMax, epochSamplesN, \
-            epochSamplesAvg, epochSamplesStd, epochSamplesMin, epochSamplesMax, \
-            tempMean, tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, \
-            paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
+    startTime, endTime, daylightSavingsCrossover, wearTimeMins, \
+            nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, \
+            diurnalMins, numInterrupts, interruptMins, numDataErrs, \
+            clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, \
+            clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, \
+            epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, \
+            tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, paMedian, \
+            paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
             paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
                     nonWearFile, tsFile)
     
@@ -201,6 +203,7 @@ def main():
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
+    result['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
     #physical activity variation by day / hour
     result['acc-mon-avg(mg)'] = formatNum(paDays[0]*1000, 2)
     result['acc-tue-avg(mg)'] = formatNum(paDays[1]*1000, 2)
@@ -341,11 +344,46 @@ def getEpochSummary(epochFile,
     which has had nonWear episodes removed from it
     """
     #use python PANDAS framework to read in and store epochs
-    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=True,
+    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=['timestamp'],
                 header=headerSize).sort_index()
-    #get start & end times, plus wear & nonWear minutes
+    #get start & end times
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
+
+    #check if data occurs at a daylight savings crossover
+    daylightSavingsCrossover = 0
+    localTime = pytz.timezone('Europe/London')
+    startTimeZone = localTime.localize(startTime)
+    endTimeZone = localTime.localize(endTime)
+    if startTimeZone.dst() != endTimeZone.dst():
+        daylightSavingsCrossover = 1
+        #find whether clock needs to go forward or back
+        if endTimeZone.dst() > startTimeZone.dst():
+            offset = 1
+        else:
+            offset = -1
+        print 'different timezones, offset = ' + str(offset)
+        #find actual crossover time
+        for t in localTime._utc_transition_times:
+            if t>startTime:
+                transition = t
+                break
+        #if Autumn crossover time, adjust transition time plus remove 1hr chunk
+        if offset == -1:
+            #pytz stores dst crossover at 1am, but clocks change at 2am local
+            transition = transition + pd.DateOffset(hours=1)
+            #remove last hr before DST cut, which will be subsequently overwritten
+            e = e[(e.index < transition - pd.DateOffset(hours=1)) | 
+                    (e.index >= transition)]
+        print 'day light savings transition at:' + str(transition)
+        #now update datetime index to 'fix' values after DST crossover
+        e['newTime'] = e.index
+        e['newTime'][e.index > transition] = e.index + np.timedelta64(offset,'h')
+        e['newTime'] = e['newTime'].fillna(e.index)
+        e = e.set_index('newTime')
+        #reset startTime and endTime variables
+        startTime = pd.to_datetime(e.index.values[0])
+        endTime = pd.to_datetime(e.index.values[-1])
 
     #calculate nonWear (nw) time
     minDuration = 60 #minutes
@@ -462,16 +500,17 @@ def getEpochSummary(epochFile,
                 np.timedelta64(1,'m') )
 
     #return physical activity summary
-    return startTime, endTime, wearTimeMin, nonWearTimeMin, \
-            len(nonWearEpisodes), wearDay, wear24, diurnalHrs, diurnalMins, \
-            len(interrupts), np.sum(interruptMins), e['dataErrors'].sum(), \
-            e['clipsBeforeCalibr'].sum(), e['clipsBeforeCalibr'].max(), \
-            e['clipsAfterCalibr'].sum(), e['clipsAfterCalibr'].max(), \
-            e['samples'].sum(), e['samples'].mean(), e['samples'].std(), \
-            e['samples'].min(), e['samples'].max(), e['temp'].mean(), \
-            e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
-            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \
-            paEcdf2, paEcdf3, paEcdf4
+    return startTime, endTime, daylightSavingsCrossover, wearTimeMin, \
+            nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, \
+            diurnalMins, len(interrupts), np.sum(interruptMins), \
+            e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), \
+            e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), \
+            e['clipsAfterCalibr'].max(), e['samples'].sum(), \
+            e['samples'].mean(), e['samples'].std(), e['samples'].min(), \
+            e['samples'].max(), e['temp'].mean(), e['temp'].std(), \
+            e['temp'].min(), e['temp'].max(), paWAvg, paWStd, paAvg, paStd, \
+            paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, \
+            paEcdf3, paEcdf4
 
 
 def getCalibrationCoefs(staticBoutsFile):
