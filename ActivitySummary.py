@@ -472,7 +472,17 @@ def getEpochSummary(epochFile,
         paEcdf3 = np.empty(16)
         paEcdf4 = np.empty(15)
     
+    #get interrupt and data error summary vals
+    epochNs = epochSec * np.timedelta64(1,'s')
+    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
+    #get duration of each interrupt in minutes
+    interruptMins = []
+    for i in interrupts:
+        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
+                np.timedelta64(1,'m') )
+
     #prepare time series header
+    e = e.reindex(pd.date_range(startTime, endTime, freq=str(epochSec)+'s'))
     tsHead = 'acceleration (mg) - '
     tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
@@ -490,15 +500,6 @@ def getEpochSummary(epochFile,
         f.write('no wearTime data,1')
         f.close()
    
-    #get interrupt and data error summary vals
-    epochNs = epochSec * np.timedelta64(1,'s')
-    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
-    #get duration of each interrupt in minutes
-    interruptMins = []
-    for i in interrupts:
-        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
-                np.timedelta64(1,'m') )
-
     #return physical activity summary
     return startTime, endTime, daylightSavingsCrossover, wearTimeMin, \
             nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, \
