@@ -167,7 +167,7 @@ public class AxivityAx3Epochs
             int[] errCounter = new int[]{0}; //store val if updated in other method
             int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
             String epochSummary = "";
-            String epochHeader = "timestamp,accPA,xMean,yMean,zMean,";
+            String epochHeader = "timestamp,enmoTrunc,xMean,yMean,zMean,";
             epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
             epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr";
 

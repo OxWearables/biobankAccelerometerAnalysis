@@ -369,7 +369,7 @@ def getEpochSummary(epochFile,
         e[episode[0]:episode[1]] = np.nan
     f.close()
 
-    paCol = 'accPA'
+    paCol = 'enmoTrunc'
     wearSamples = e[paCol].count()
     nonWearSamples = len(e[np.isnan(e[paCol])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
