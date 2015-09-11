@@ -115,8 +115,8 @@ def main():
         if not skipCalibration:
             #identify 10sec stationary epochs
             print toScreen('calibrating')
-            commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1",
-                    javaEpochProcess, rawFile, "outputFile:" + stationaryFile,
+            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                    rawFile, "outputFile:" + stationaryFile,
                     "verbose:" + str(verbose), "filter:true",
                     "getStationaryBouts:true", "epochPeriod:10",
                     "stationaryStd:0.013"]
@@ -132,15 +132,14 @@ def main():
                         errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
       
         #calculate and write filtered avgVm epochs from raw file
-        commandArgs = ["java", "-cp", ".", "-XX:ParallelGCThreads=1",
-                javaEpochProcess, rawFile, "outputFile:" + epochFile,
-                "verbose:" + str(verbose), "filter:true",
-                "xIntercept:" + str(calOff[0]), "yIntercept:" + str(calOff[1]),
-                "zIntercept:" + str(calOff[2]), "xSlope:" + str(calSlope[0]),
-                "ySlope:" + str(calSlope[1]), "zSlope:" + str(calSlope[2]),
-                "xTemp:" + str(calTemp[0]), "yTemp:" + str(calTemp[1]),
-                "zTemp:" + str(calTemp[2]), "meanTemp:" + str(meanTemp),
-                "epochPeriod:" + str(epochPeriod)]
+        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
+                rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
+                "filter:true", "xIntercept:" + str(calOff[0]),
+                "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
+                "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
+                "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
+                "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
+                "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
         print toScreen('epoch generation')
         if len(javaHeapSpace) > 1:
             commandArgs.insert(1,javaHeapSpace);
