@@ -64,9 +64,9 @@ class Resample{
                 if (loc < -1) {
                     loc = -loc - 2;
                     try{
-                        double xNewInstant = xSlope[loc] * timeI[i] + xIntercept[loc];
-                        double yNewInstant = ySlope[loc] * timeI[i] + yIntercept[loc];
-                        double zNewInstant = zSlope[loc] * timeI[i] + zIntercept[loc];
+                        xNew[i] = xSlope[loc] * timeI[i] + xIntercept[loc];
+                        yNew[i] = ySlope[loc] * timeI[i] + yIntercept[loc];
+                        zNew[i] = zSlope[loc] * timeI[i] + zIntercept[loc];
                     } catch(Exception e) {
                         System.out.println(e.toString());
                         System.exit(0);
