@@ -169,7 +169,8 @@ public class AxivityAx3Epochs
             int[] errCounter = new int[]{0}; //store val if updated in other method
             int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
 			// Inter-block timstamp tracking
-			LocalDateTime[] lastBlockNextSampleTime = { null };
+			LocalDateTime[] lastBlockTime = { null };
+			int[] lastBlockTimeIndex = { 0 };
 			
             String epochSummary = "";
             String epochHeader = "timestamp,enmoTrunc,xMean,yMean,zMean,";
@@ -198,7 +199,7 @@ public class AxivityAx3Epochs
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
                             staticStd, filter,
 							USE_PRECISE_TIME,
-							lastBlockNextSampleTime
+							lastBlockTime, lastBlockTimeIndex
 					);
                 }
                 buf.clear();
@@ -245,7 +246,8 @@ public class AxivityAx3Epochs
             double staticStd,
             LowpassFilter filter,
 			boolean preciseTime,
-			LocalDateTime[] lastBlockNextSampleTime
+			LocalDateTime[] lastBlockTime,
+			int[] lastBlockTimeIndex
 			) {
         //read block header items
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
@@ -306,27 +308,27 @@ public class AxivityAx3Epochs
         // determine the time for the indexed sample within the block
         LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp, fractional);        
 		
-		// use the last block's value for our first sample time
-		LocalDateTime firstSampleTime = lastBlockNextSampleTime[0];
+		// first sample time and last sample time (actually, the first sample in the next block)
+		LocalDateTime firstSampleTime, lastSampleTime;
 		
-		// if we don't have one, estimate (using the desired sample rate)
-		if (!preciseTime || firstSampleTime == null) {
-			float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
+		// if we don't have an interval between our times (or interval too large)
+		long spanToSample = 0;
+		if (lastBlockTime[0] != null) { spanToSample = Duration.between(lastBlockTime[0], blockTime).toNanos(); }
+		if (!preciseTime || lastBlockTime[0] == null || timestampOffset <= lastBlockTimeIndex[0] || spanToSample <= 0 || spanToSample > 1000000000.0 * 2 * maxSamples / sampleFreq) {
+			float offsetStart = (float)-timestampOffset / (float)sampleFreq;
 			firstSampleTime = blockTime.plusNanos(secs2Nanos(offsetStart));
-			//System.out.println("No first sample, estimating from raate: " + firstSampleTime);		
+			lastSampleTime = firstSampleTime.plusNanos(secs2Nanos(sampleCount / sampleFreq));
+			//System.out.println("Unable to use last time (@" + lastBlockTimeIndex[0] + "=" + lastBlockTime[0] + "), estimating from rate (offset " + timestampOffset + "): " + firstSampleTime + ", " + lastSampleTime + "");
+		} else {
+			firstSampleTime = lastBlockTime[0].plusNanos((long)(-lastBlockTimeIndex[0] * (double)spanToSample / (-lastBlockTimeIndex[0] + timestampOffset)));
+			lastSampleTime = lastBlockTime[0].plusNanos((long)((-lastBlockTimeIndex[0] + sampleCount) * (double)spanToSample / (-lastBlockTimeIndex[0] + timestampOffset)));
+			//System.out.println("From last (@" + lastBlockTimeIndex[0] + "=" + lastBlockTime[0] + ") and new time (@" + timestampOffset + "=" + blockTime + "): " + firstSampleTime + ", " + lastSampleTime + "");
 		}
 
-		LocalDateTime lastSampleTime;		// actually, the sample after the last one
-		long spanToSample = Duration.between(firstSampleTime, blockTime).toNanos();
-		
-		if (timestampOffset <= 0 || spanToSample < 0) {
-			//System.out.println("Can't use offset (" + timestampOffset + ") or span (" + spanToSample + " ns) to calculate last sample time, estimating from rate: ");		
-			lastSampleTime = firstSampleTime.plusNanos(secs2Nanos(sampleCount / sampleFreq));
-		} else {
-			lastSampleTime = firstSampleTime.plusNanos((long)(sampleCount * (double)spanToSample / timestampOffset));
-		}
-		lastBlockNextSampleTime[0] = lastSampleTime;
-		
+		// Last block time
+		lastBlockTime[0] = blockTime;
+		lastBlockTimeIndex[0] = timestampOffset - sampleCount; // Advance last block time index for next block
+			
 		// Overall span
 		long spanNanos = Duration.between(firstSampleTime, lastSampleTime).toNanos();
 		//System.out.println("Block is " + spanNanos / 1000000000.0 + "s => samples period " + spanNanos / 1000000000.0 / sampleCount);
@@ -530,14 +532,14 @@ public class AxivityAx3Epochs
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
-			//System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
-
+//System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
 			if (!preciseTime) {
 				blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));		// Moved this to recalculate at top (rather than potentially accumulate slight errors with repeated addition)
 			}
         }
         return epochStartTime;
     }
+
 	
     /**
      * Prase header HEX values and return ??
