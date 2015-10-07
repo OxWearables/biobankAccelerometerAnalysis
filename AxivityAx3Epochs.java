@@ -36,7 +36,7 @@ public class AxivityAx3Epochs
         String outputFile = "";
         Boolean verbose = true;
         int epochPeriod = 5;
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");	// ".S"
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
         double lowPassCut = 20;
         double highPassCut = 0.2;
         int sampleRate = 100;
@@ -530,7 +530,7 @@ public class AxivityAx3Epochs
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
-System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
+			//System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
 
 			if (!preciseTime) {
 				blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));		// Moved this to recalculate at top (rather than potentially accumulate slight errors with repeated addition)
