@@ -3,3 +3,5 @@
 
 # python
 *.pyc
+/*.cwa
+/*.csv

@@ -22,6 +22,9 @@ import java.text.SimpleDateFormat;
  */
 public class AxivityAx3Epochs
 {
+	
+	// preciseTime: false emulates original behaviour, true uses the block fractional time and interpolates the timestamps between blocks.
+	private static final boolean USE_PRECISE_TIME = false;
 
     /**
      * Parse command line args, then call method to identify & write epochs.
@@ -33,7 +36,7 @@ public class AxivityAx3Epochs
         String outputFile = "";
         Boolean verbose = true;
         int epochPeriod = 5;
-        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+        DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");	// ".S"
         double lowPassCut = 20;
         double highPassCut = 0.2;
         int sampleRate = 100;
@@ -165,6 +168,9 @@ public class AxivityAx3Epochs
             List<Double> zVals = new ArrayList<Double>();
             int[] errCounter = new int[]{0}; //store val if updated in other method
             int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
+			// Inter-block timstamp tracking
+			LocalDateTime[] lastBlockNextSampleTime = { null };
+			
             String epochSummary = "";
             String epochHeader = "timestamp,enmoTrunc,xMean,yMean,zMean,";
             epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
@@ -190,7 +196,10 @@ public class AxivityAx3Epochs
                             epochPeriod, timeVals, xVals, yVals, zVals,
                             range, errCounter, clipsCounter, swIntercept,
                             swSlope, tempCoef, meanTemp, getStationaryBouts,
-                            staticStd, filter);
+                            staticStd, filter,
+							USE_PRECISE_TIME,
+							lastBlockNextSampleTime
+					);
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -234,21 +243,48 @@ public class AxivityAx3Epochs
             double meanTemp,
             Boolean getStationaryBouts,
             double staticStd,
-            LowpassFilter filter) {
+            LowpassFilter filter,
+			boolean preciseTime,
+			LocalDateTime[] lastBlockNextSampleTime
+			) {
         //read block header items
         long blockTimestamp = getUnsignedInt(buf,14);// buf.getInt(14);
         int light = getUnsignedShort(buf,18);// buf.getShort(18);      
         double temperature = (getUnsignedShort(buf,20)*150.0 - 20500) / 1000;
         short rateCode = (short)(buf.get(24) & 0xff);
         short numAxesBPS = (short)(buf.get(25) & 0xff);
-        short timestampOffset = buf.getShort(26);
         int sampleCount = getUnsignedShort(buf, 28);// buf.getShort(28);
-        //determine sample frequency        
-        double sampleFreq = 3200 / (1 << (15 - (rateCode & 15)));
-        if (sampleFreq <= 0) {
-            sampleFreq = 1;
-        }
-		double readingGap = 1.0 / sampleFreq;
+        short timestampOffset = 0;
+        double sampleFreq = 0;
+		int fractional = 0;			// 1/65536th of a second fractions
+
+		// Check not an extremely old file...
+		if (rateCode != 0) {
+			// Ok to use the timestamp offset (otherwise it is actually the frequency)
+			timestampOffset = buf.getShort(26);
+
+			// If we have a fractional offset, the timestamp offset was artificially modified for backwards-compatibility, undo this...
+	        int oldDeviceId = getUnsignedShort(buf, 4);
+			if ((oldDeviceId & 0x8000) != 0) {
+				sampleFreq = 3200.0 / (1 << (15 - (rateCode & 15)));
+
+				// Do fractional time correction?
+				if (preciseTime) {
+					// Need to undo backwards-compatible shim: Take into account how many whole samples the fractional part of timestamp accounts for:  
+					// relativeOffset = fifoLength - (short)(((unsigned long)timeFractional * AccelFrequency()) >> 16);
+					//                         nearest whole sample
+					//          whole-sec       | /fifo-pos@time
+					//           |              |/
+					// [0][1][2][3][4][5][6][7][8][9]
+					fractional = ((oldDeviceId & 0x7fff) << 1); // use 15-bits as 16-bit fractional time
+					timestampOffset += ((fractional * (int)sampleFreq) >> 16);               // (frequency is truncated to an integer in firmware)
+				}
+			}
+		} else {
+			// Extremely old format
+			sampleFreq = buf.getShort(26);
+		}
+               
         //calculate num bytes per sample...
         byte bytesPerSample = 4;
         int NUM_AXES_PER_SAMPLE = 3;
@@ -257,15 +293,47 @@ public class AxivityAx3Epochs
         } else if ((numAxesBPS & 0x0f) == 0) {
             bytesPerSample = 4; // 3*10-bit + 2
         }
-        //determine block start time
-        LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp);        
-        float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
-        blockTime = blockTime.plusNanos(secs2Nanos(offsetStart));
-        
+      
+        // Limit values
+		int maxSamples = 480 / bytesPerSample;	// 80 or 120 samples/block
+		if (sampleCount > maxSamples) {
+			sampleCount = maxSamples;
+		}
+        if (sampleFreq <= 0) {
+            sampleFreq = 1;
+        }
+		
+        // determine the time for the indexed sample within the block
+        LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp, fractional);        
+		
+		// use the last block's value for our first sample time
+		LocalDateTime firstSampleTime = lastBlockNextSampleTime[0];
+		
+		// if we don't have one, estimate (using the desired sample rate)
+		if (!preciseTime || firstSampleTime == null) {
+			float offsetStart = (float)-timestampOffset / (float)sampleFreq;        
+			firstSampleTime = blockTime.plusNanos(secs2Nanos(offsetStart));
+			//System.out.println("No first sample, estimating from raate: " + firstSampleTime);		
+		}
+
+		LocalDateTime lastSampleTime;		// actually, the sample after the last one
+		long spanToSample = Duration.between(firstSampleTime, blockTime).toNanos();
+		
+		if (timestampOffset <= 0 || spanToSample < 0) {
+			//System.out.println("Can't use offset (" + timestampOffset + ") or span (" + spanToSample + " ns) to calculate last sample time, estimating from rate: ");		
+			lastSampleTime = firstSampleTime.plusNanos(secs2Nanos(sampleCount / sampleFreq));
+		} else {
+			lastSampleTime = firstSampleTime.plusNanos((long)(sampleCount * (double)spanToSample / timestampOffset));
+		}
+		lastBlockNextSampleTime[0] = lastSampleTime;
+		
+		// Overall span
+		long spanNanos = Duration.between(firstSampleTime, lastSampleTime).toNanos();
+		//System.out.println("Block is " + spanNanos / 1000000000.0 + "s => samples period " + spanNanos / 1000000000.0 / sampleCount);
+
         //set target epoch start time of very first block
         if(epochStartTime==null) {
-            epochStartTime=getCwaTimestamp((int)blockTimestamp);
-            epochStartTime = epochStartTime.plusNanos(secs2Nanos(offsetStart));
+            epochStartTime = firstSampleTime;
         }
 
         //raw reading values
@@ -284,6 +352,14 @@ public class AxivityAx3Epochs
         int currentPeriod;
         Boolean isClipped = false;
         for (int i = 0; i<sampleCount; i++) {
+			
+			// Calculate each sample's time (not successively adding so that we don't accumulate any errors)
+			if (preciseTime) {
+				blockTime = firstSampleTime.plusNanos((long)(i * (double)spanNanos / sampleCount));
+			} else if (i == 0) {
+				blockTime = firstSampleTime;	// emulate original behaviour
+			}
+			
             if (bytesPerSample == 4) {
                 try {
                     value = getUnsignedInt(buf, 30 +4*i);
@@ -454,12 +530,15 @@ public class AxivityAx3Epochs
             yVals.add(y);
             zVals.add(z);
             isClipped = false;
-            //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
-            blockTime = blockTime.plusNanos(secs2Nanos(readingGap));
+System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
+
+			if (!preciseTime) {
+				blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));		// Moved this to recalculate at top (rather than potentially accumulate slight errors with repeated addition)
+			}
         }
         return epochStartTime;
     }
-
+	
     /**
      * Prase header HEX values and return ??
      * CWA format is described at:
@@ -474,7 +553,7 @@ public class AxivityAx3Epochs
         //sequenceId = getUnsignedInt(buf,10);// buf.getInt(10);                 
         long startTimestamp = getUnsignedInt(buf,13);// buf.getInt(14);
         System.out.println(startTimestamp);
-        return getCwaTimestamp((int)startTimestamp);
+        return getCwaTimestamp((int)startTimestamp, 0);
         //return memorySizePages;
     }
 
@@ -488,7 +567,7 @@ public class AxivityAx3Epochs
         return (bb.getShort(position) & 0xffff);
     }
 
-    private static LocalDateTime getCwaTimestamp(int cwaTimestamp) {
+    private static LocalDateTime getCwaTimestamp(int cwaTimestamp, int fractional) {
         LocalDateTime tStamp;
         int year = (int)((cwaTimestamp >> 26) & 0x3f) + 2000;
         int month = (int)((cwaTimestamp >> 22) & 0x0f);
@@ -497,6 +576,10 @@ public class AxivityAx3Epochs
         int mins = (int)((cwaTimestamp >>  6) & 0x3f);
         int secs = (int)((cwaTimestamp      ) & 0x3f);
         tStamp = LocalDateTime.of(year, month, day, hours, mins, secs);
+
+		// add 1/65536th fractions of a second
+		tStamp = tStamp.plusNanos(secs2Nanos(fractional / 65536.0));
+
         return tStamp;
     }            
       
