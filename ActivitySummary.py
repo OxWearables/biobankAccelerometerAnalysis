@@ -490,7 +490,7 @@ def getEpochSummary(epochFile,
         #write time series file
         #convert 'vm' to mg units, and highlight any imputed values
         e['vmFinal'] = e[paCol+'Adjusted'] * 1000
-        e['imputed'] = np.isnan(e[paCol]).replace({True:'1',False:''})
+        e['imputed'] = np.isnan(e[paCol]).astype(int)
         e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
                 index=False,header=[tsHead,'imputed'])
     else:
