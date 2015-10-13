@@ -188,7 +188,12 @@ public class AxivityAx3Epochs
                 if(header.equals("MD")) {
                     //Read first page (& data-block) to get time, temp,
                     //measureFreq & start-epoch values
-                    //epochStartTime = parseHeader(buf,epochFileWriter);
+                    try{
+                        epochStartTime = headerLoggingEndTime(buf,epochFileWriter);
+                        System.out.println(epochStartTime.format(timeFormat));
+                    } catch (Exception e){
+                        System.out.println("aha " + e.toString());
+                    }
                     writeLine(epochFileWriter, epochHeader);
                 } else if(header.equals("AX")) {
                     //read each individual page block, and process epochs...
@@ -544,22 +549,23 @@ public class AxivityAx3Epochs
     }
 
 	
-    /**
-     * Prase header HEX values and return ??
-     * CWA format is described at:
-     * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
-     */
-    private static LocalDateTime parseHeader(
+    //Parse header HEX values, CWA format is described at:
+    //https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
+    private static LocalDateTime headerLoggingStartTime(
             ByteBuffer buf,
             BufferedWriter epochWriter) {
         //todo ideally return estimate of file size...        
-        //deviceId = getUnsignedShort(buf,4);// buf.getShort(4);
-        //sessionId = getUnsignedInt(buf,6);// buf.getInt(6); 
-        //sequenceId = getUnsignedInt(buf,10);// buf.getInt(10);                 
-        long startTimestamp = getUnsignedInt(buf,13);// buf.getInt(14);
-        System.out.println(startTimestamp);
-        return getCwaTimestamp((int)startTimestamp, 0);
-        //return memorySizePages;
+        //deviceId = getUnsignedShort(buf,5);
+        //sessionId = getUnsignedInt(buf,7);
+        long delayedLoggingStartTime = getUnsignedInt(buf,13);
+        return getCwaTimestamp((int)delayedLoggingStartTime, 0);
+    }
+    
+    private static LocalDateTime headerLoggingEndTime(
+            ByteBuffer buf,
+            BufferedWriter epochWriter) {
+        long delayedLoggingEndTime = getUnsignedInt(buf,17);
+        return getCwaTimestamp((int)delayedLoggingEndTime, 0);
     }
 
     //credit for next 2 methods goes to:
