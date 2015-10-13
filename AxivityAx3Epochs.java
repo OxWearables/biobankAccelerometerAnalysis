@@ -662,7 +662,8 @@ public class AxivityAx3Epochs
         for(int c=0; c<vals.length; c++) {
             if (vals[c] < min) {
                 min = vals[c];
-            } else if (vals[c] > max) {
+            }
+            if (vals[c] > max) {
                 max = vals[c];
             }
         }
