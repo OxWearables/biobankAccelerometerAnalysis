@@ -349,6 +349,15 @@ def getEpochSummary(epochFile,
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
 
+    #get interrupt and data error summary vals
+    epochNs = epochSec * np.timedelta64(1,'s')
+    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
+    #get duration of each interrupt in minutes
+    interruptMins = []
+    for i in interrupts:
+        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
+                np.timedelta64(1,'m') )
+
     #check if data occurs at a daylight savings crossover
     daylightSavingsCrossover = 0
     localTime = pytz.timezone('Europe/London')
@@ -471,15 +480,6 @@ def getEpochSummary(epochFile,
         paEcdf3 = np.empty(16)
         paEcdf4 = np.empty(15)
     
-    #get interrupt and data error summary vals
-    epochNs = epochSec * np.timedelta64(1,'s')
-    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
-    #get duration of each interrupt in minutes
-    interruptMins = []
-    for i in interrupts:
-        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
-                np.timedelta64(1,'m') )
-
     #prepare time series header
     e = e.reindex(pd.date_range(startTime, endTime, freq=str(epochSec)+'s'))
     tsHead = 'acceleration (mg) - '
