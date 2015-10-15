@@ -46,7 +46,7 @@ def main():
     nonWearFile = rawFile.replace(rawFileEnd,"NonWearBouts.csv")
     epochFile = rawFile.replace(rawFileEnd,"Epoch.csv")
     stationaryFile = rawFile.replace(rawFileEnd,"Stationary.csv")
-    javaEpochProcess = "AxivityAx3Epochs"
+    epochProcess = "AxivityAx3Epochs"
     javaHeapSpace = ""
     skipRaw = False
     skipCalibration = False
@@ -83,9 +83,9 @@ def main():
         elif ( param.split(':')[0] == 'javaHeapSpace' and
                 len(param.split(':')[1])>1 ):
             javaHeapSpace = param.split(':')[1]
-        elif ( param.split(':')[0] == 'javaEpochProcess' and
+        elif ( param.split(':')[0] == 'epochProcess' and
                 len(param.split(':')[1])>1 ):
-            javaEpochProcess = param.split(':')[1]
+            epochProcess = param.split(':')[1]
         elif ( param.split(':')[0] == 'calOff' and
                 len(param.split(':')[1].split(','))==3 ):
             calOff = param.split(':')[1].split(',')
@@ -111,39 +111,49 @@ def main():
         sys.exit(0)
 
     if not skipRaw:
-        #calibrate axes scale/offset values
-        if not skipCalibration:
-            #identify 10sec stationary epochs
-            print toScreen('calibrating')
-            commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                    rawFile, "outputFile:" + stationaryFile,
-                    "verbose:" + str(verbose), "filter:true",
-                    "getStationaryBouts:true", "epochPeriod:10",
-                    "stationaryStd:0.013"]
+        useJava = True
+        if 'omconvert' in epochProcess:
+            useJava = False
+        if useJava:
+            #calibrate axes scale/offset values
+            if not skipCalibration:
+                #identify 10sec stationary epochs
+                print toScreen('calibrating')
+                commandArgs = ["java", "-XX:ParallelGCThreads=1", epochProcess,
+                        rawFile, "outputFile:" + stationaryFile,
+                        "verbose:" + str(verbose), "filter:true",
+                        "getStationaryBouts:true", "epochPeriod:10",
+                        "stationaryStd:0.013"]
+                if len(javaHeapSpace) > 1:
+                    commandArgs.insert(1,javaHeapSpace);
+                call(commandArgs)
+                #record calibrated axes scale/offset/temperature vals + static point stats
+                calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
+                        xMax, yMin, yMax, zMin, zMax, \
+                        nStatic = getCalibrationCoefs(stationaryFile)
+                if verbose:
+                    print calOff, calSlope, calTemp, meanTemp, errPreCal, \
+                            errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
+          
+            #calculate and write filtered avgVm epochs from raw file
+            commandArgs = ["java", "-XX:ParallelGCThreads=1", epochProcess,
+                    rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
+                    "filter:true", "xIntercept:" + str(calOff[0]),
+                    "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
+                    "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
+                    "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
+                    "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
+                    "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
+            print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1,javaHeapSpace);
-            call(commandArgs)
-            #record calibrated axes scale/offset/temperature vals + static point stats
-            calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
-                    xMax, yMin, yMax, zMin, zMax, \
-                    nStatic = getCalibrationCoefs(stationaryFile)
-            if verbose:
-                print calOff, calSlope, calTemp, meanTemp, errPreCal, \
-                        errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
-      
-        #calculate and write filtered avgVm epochs from raw file
-        commandArgs = ["java", "-XX:ParallelGCThreads=1", javaEpochProcess,
-                rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
-                "filter:true", "xIntercept:" + str(calOff[0]),
-                "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
-                "xSlope:" + str(calSlope[0]), "ySlope:" + str(calSlope[1]),
-                "zSlope:" + str(calSlope[2]), "xTemp:" + str(calTemp[0]),
-                "yTemp:" + str(calTemp[1]), "zTemp:" + str(calTemp[2]),
-                "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
-        print toScreen('epoch generation')
-        if len(javaHeapSpace) > 1:
-            commandArgs.insert(1,javaHeapSpace);
+        else:
+            commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
+                    "-interpolate-mode", "2", "-calibrate", "1",
+                    "-svm-epoch", str(epochPeriod), "-svm-filter", "1",
+                    "-svm-extended", "1", "-svm-mode", "1"]
         call(commandArgs)
+
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
@@ -343,8 +353,12 @@ def getEpochSummary(epochFile,
     which has had nonWear episodes removed from it
     """
     #use python PANDAS framework to read in and store epochs
-    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=['timestamp'],
+    e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=['Time'],
                 header=headerSize).sort_index()
+    cols = ['enmoTrunc','xRange','yRange','zRange']
+    cols += ['xStd','yStd','zStd','temp','samples']
+    cols += ['dataErrors','clipsBeforeCalibr','clipsAfterCalibr']
+    e.columns = cols
     #get start & end times
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])

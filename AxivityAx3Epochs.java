@@ -173,7 +173,10 @@ public class AxivityAx3Epochs
 			int[] lastBlockTimeIndex = { 0 };
 			
             String epochSummary = "";
-            String epochHeader = "timestamp,enmoTrunc,xMean,yMean,zMean,";
+            String epochHeader = "Time,enmoTrunc,";
+            if(getStationaryBouts){
+                epochHeader += "xMean,yMean,zMean,";
+            }
             epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
             epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr";
 
