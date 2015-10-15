@@ -192,7 +192,7 @@ public class AxivityAx3Epochs
                     //Read first page (& data-block) to get time, temp,
                     //measureFreq & start-epoch values
                     try{
-                        epochStartTime = headerLoggingEndTime(buf,epochFileWriter);
+                        //epochStartTime = headerLoggingEndTime(buf,epochFileWriter);
                         System.out.println(epochStartTime.format(timeFormat));
                     } catch (Exception e){
                         System.out.println("aha " + e.toString());
