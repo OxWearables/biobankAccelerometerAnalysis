@@ -514,7 +514,9 @@ public class AxivityAx3Epochs
                 //write summary values to file
                 epochSummary = epochStartTime.format(timeFormat);
                 epochSummary += "," + accPA;
-                epochSummary += "," + xMean + "," + yMean + "," + zMean;
+                if(getStationaryBouts){
+                    epochSummary += "," + xMean + "," + yMean + "," + zMean;
+                }
                 epochSummary += "," + xRange + "," + yRange + "," + zRange;
                 epochSummary += "," + xStd + "," + yStd + "," + zStd;
                 epochSummary += "," + temperature + "," + timeVals.size();
