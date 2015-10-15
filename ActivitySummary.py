@@ -150,7 +150,7 @@ def main():
         else:
             commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
                     "-interpolate-mode", "2", "-calibrate", "1",
-                    "-svm-epoch", str(epochPeriod), "-svm-filter", "1",
+                    "-svm-epoch", str(epochPeriod), "-svm-filter", "2",
                     "-svm-extended", "1", "-svm-mode", "1"]
         call(commandArgs)
 
