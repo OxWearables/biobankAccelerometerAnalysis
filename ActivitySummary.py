@@ -400,7 +400,7 @@ def getEpochSummary(epochFile,
         print 'day light savings transition at:' + str(transition)
         #now update datetime index to 'fix' values after DST crossover
         e['newTime'] = e.index
-        e['newTime'][e.index > transition] = e.index + np.timedelta64(offset,'h')
+        e['newTime'][e.index >= transition] = e.index + np.timedelta64(offset,'h')
         e['newTime'] = e['newTime'].fillna(e.index)
         e = e.set_index('newTime')
         #reset startTime and endTime variables
