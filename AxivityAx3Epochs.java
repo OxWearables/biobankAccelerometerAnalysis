@@ -195,19 +195,26 @@ public class AxivityAx3Epochs
                         //epochStartTime = headerLoggingEndTime(buf,epochFileWriter);
                         System.out.println(epochStartTime.format(timeFormat));
                     } catch (Exception e){
-                        System.out.println("aha " + e.toString());
+                        System.err.println("recording start/end time err " + e.toString());
                     }
                     writeLine(epochFileWriter, epochHeader);
                 } else if(header.equals("AX")) {
                     //read each individual page block, and process epochs...
-                    epochStartTime = processDataBlockIdentifyEpochs(buf,
-                            epochFileWriter, timeFormat, epochStartTime,
-                            epochPeriod, timeVals, xVals, yVals, zVals,
-                            range, errCounter, clipsCounter, swIntercept,
-                            swSlope, tempCoef, meanTemp, getStationaryBouts,
-                            staticStd, filter, USE_PRECISE_TIME, lastBlockTime,
-                            lastBlockTimeIndex
-					);
+                    try{
+                        epochStartTime = processDataBlockIdentifyEpochs(buf,
+                                epochFileWriter, timeFormat, epochStartTime,
+                                epochPeriod, timeVals, xVals, yVals, zVals,
+                                range, errCounter, clipsCounter, swIntercept,
+                                swSlope, tempCoef, meanTemp, getStationaryBouts,
+                                staticStd, filter, USE_PRECISE_TIME,
+                                lastBlockTime, lastBlockTimeIndex);
+                    } catch(Exception excep){
+                        String errMsg = "block error at ";
+                        errMsg += epochStartTime.toString();
+                        errMsg += ": " + excep.toString();
+                        excep.printStackTrace(System.err);
+                        System.err.println(errMsg);
+                    }
                 }
                 buf.clear();
                 //option to provide status update to user...
@@ -220,7 +227,8 @@ public class AxivityAx3Epochs
         } catch (Exception excep) {
             String errorMessage = "error reading/writing file " + outputFile;
             errorMessage += ": " + excep.toString();
-            System.out.println(errorMessage);
+            excep.printStackTrace(System.err);
+            System.err.println(errorMessage);
             System.exit(0);
         }
     }
@@ -693,7 +701,7 @@ public class AxivityAx3Epochs
         try {
             fileWriter.write(line + "\n");
         } catch (Exception excep) {
-            System.out.println(excep.toString());
+            System.err.println("line write error: " + excep.toString());
         }
     }
 
