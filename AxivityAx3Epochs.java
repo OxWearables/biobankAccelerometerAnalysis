@@ -29,6 +29,8 @@ public class AxivityAx3Epochs
 	private static final boolean USE_PRECISE_TIME = true;
     private static DecimalFormat DF6 = new DecimalFormat("0.000000");
     private static DecimalFormat DF2 = new DecimalFormat("0.00");
+    private static LocalDateTime SESSION_START = null;
+    private static long START_OFFSET_NANOS = 0; 
 
     /**
      * Parse command line args, then call method to identify & write epochs.
@@ -198,10 +200,10 @@ public class AxivityAx3Epochs
                     //Read first page (& data-block) to get time, temp,
                     //measureFreq & start-epoch values
                     try{
-                        //epochStartTime = headerLoggingEndTime(buf,epochFileWriter);
-                        System.out.println(epochStartTime.format(timeFormat));
+                        SESSION_START = headerLoggingStartTime(buf);
+                        System.out.println("Session start:" + SESSION_START);
                     } catch (Exception e){
-                        System.err.println("recording start/end time err " + e.toString());
+                        System.err.println("No preset start time");
                     }
                     writeLine(epochFileWriter, epochHeader);
                 } else if(header.equals("AX")) {
@@ -326,7 +328,7 @@ public class AxivityAx3Epochs
 		
         // determine the time for the indexed sample within the block
         LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp, fractional);        
-		// first & last sample time (actually, last = first sample in next block)
+        // first & last sample time (actually, last = first sample in next block)
 		LocalDateTime firstSampleTime, lastSampleTime;
 		// if we don't have an interval between our times (or interval too large)
 		long spanToSample = 0;
@@ -357,6 +359,11 @@ public class AxivityAx3Epochs
         //set target epoch start time of very first block
         if(epochStartTime==null) {
             epochStartTime = firstSampleTime;
+            //if set, clamp whole session to intended logging start time
+            if(SESSION_START!=null){
+                START_OFFSET_NANOS = Duration.between(epochStartTime,
+                        SESSION_START).toNanos();
+            }
         }
 
         //raw reading values
@@ -526,7 +533,8 @@ public class AxivityAx3Epochs
                     accPA = mean(paVals);
                 }
                 //write summary values to file
-                epochSummary = epochStartTime.format(timeFormat);
+                epochSummary = epochStartTime.plusNanos(
+                        START_OFFSET_NANOS).format(timeFormat);
                 epochSummary += "," + DF6.format(accPA);
                 if(getStationaryBouts){
                     epochSummary += "," + DF6.format(xMean);
@@ -576,19 +584,14 @@ public class AxivityAx3Epochs
 	
     //Parse header HEX values, CWA format is described at:
     //https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
-    private static LocalDateTime headerLoggingStartTime(
-            ByteBuffer buf,
-            BufferedWriter epochWriter) {
-        //todo ideally return estimate of file size...        
+    private static LocalDateTime headerLoggingStartTime(ByteBuffer buf) {
         //deviceId = getUnsignedShort(buf,5);
         //sessionId = getUnsignedInt(buf,7);
         long delayedLoggingStartTime = getUnsignedInt(buf,13);
         return getCwaTimestamp((int)delayedLoggingStartTime, 0);
     }
     
-    private static LocalDateTime headerLoggingEndTime(
-            ByteBuffer buf,
-            BufferedWriter epochWriter) {
+    private static LocalDateTime headerLoggingEndTime(ByteBuffer buf) {
         long delayedLoggingEndTime = getUnsignedInt(buf,17);
         return getCwaTimestamp((int)delayedLoggingEndTime, 0);
     }
