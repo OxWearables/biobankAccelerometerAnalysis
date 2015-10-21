@@ -2,6 +2,7 @@
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -14,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 import java.text.SimpleDateFormat;
+import java.text.DecimalFormat;
 
 /**
  * Calculates epoch summaries from an AX3 .CWA file.
@@ -25,6 +27,8 @@ public class AxivityAx3Epochs
 	
 	// preciseTime: false emulates original behaviour, true uses the block fractional time and interpolates the timestamps between blocks.
 	private static final boolean USE_PRECISE_TIME = true;
+    private static DecimalFormat DF6 = new DecimalFormat("0.000000");
+    private static DecimalFormat DF2 = new DecimalFormat("0.00");
 
     /**
      * Parse command line args, then call method to identify & write epochs.
@@ -52,6 +56,8 @@ public class AxivityAx3Epochs
         double[] tempCoef = new double[]{0.0, 0.0, 0.0};
         double meanTemp = 0.0;
         int range = 8;
+        DF6.setRoundingMode(RoundingMode.CEILING);
+        DF2.setRoundingMode(RoundingMode.CEILING);
         if (args.length < 1) {
             String invalidInputMsg = "Invalid input, ";
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
@@ -521,14 +527,20 @@ public class AxivityAx3Epochs
                 }
                 //write summary values to file
                 epochSummary = epochStartTime.format(timeFormat);
-                epochSummary += "," + accPA;
+                epochSummary += "," + DF6.format(accPA);
                 if(getStationaryBouts){
-                    epochSummary += "," + xMean + "," + yMean + "," + zMean;
+                    epochSummary += "," + DF6.format(xMean);
+                    epochSummary += "," + DF6.format(yMean);
+                    epochSummary += "," + DF6.format(zMean);
                 }
-                epochSummary += "," + xRange + "," + yRange + "," + zRange;
-                epochSummary += "," + xStd + "," + yStd + "," + zStd;
-                epochSummary += "," + temperature + "," + timeVals.size();
-                epochSummary += "," + errCounter[0];
+                epochSummary += "," + DF6.format(xRange);
+                epochSummary += "," + DF6.format(yRange);
+                epochSummary += "," + DF6.format(zRange);
+                epochSummary += "," + DF6.format(xStd);
+                epochSummary += "," + DF6.format(yStd);
+                epochSummary += "," + DF6.format(zStd);
+                epochSummary += "," + DF2.format(temperature);
+                epochSummary += "," + timeVals.size() + "," + errCounter[0];
                 epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
                 if(!getStationaryBouts || 
                         (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
