@@ -363,6 +363,13 @@ public class AxivityAx3Epochs
             if(SESSION_START!=null){
                 START_OFFSET_NANOS = Duration.between(epochStartTime,
                         SESSION_START).toNanos();
+                //check block time and session start time are within 10secs
+                long clampLimitNanos = secs2Nanos(10);
+                if( START_OFFSET_NANOS > clampLimitNanos ||
+                        START_OFFSET_NANOS < -clampLimitNanos ){
+                    START_OFFSET_NANOS = 0;
+                    System.out.println("Can't clamp to logging start time");
+                }
             }
         }
 
@@ -720,8 +727,8 @@ public class AxivityAx3Epochs
         }
     }
 
-    private static int secs2Nanos(double num){
-        return (int)(TimeUnit.SECONDS.toNanos(1)*num);
+    private static long secs2Nanos(double num){
+        return (long)(TimeUnit.SECONDS.toNanos(1)*num);
     }
       
 }
