@@ -110,7 +110,11 @@ def main():
         sys.stderr.write(toScreen(msg))
         sys.exit(0)
 
+    fileSize = -1
+    deviceId = -1
     if not skipRaw:
+        fileSize = os.path.getsize(rawFile)
+        deviceId = getDeviceId(rawFile)
         useJava = True
         if 'omconvert' in epochProcess:
             useJava = False
@@ -147,12 +151,17 @@ def main():
             print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1,javaHeapSpace);
+            call(commandArgs)
         else:
             commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
+                    "-info", stationaryFile,
                     "-interpolate-mode", "2", "-calibrate", "1",
                     "-svm-epoch", str(epochPeriod), "-svm-filter", "2",
                     "-svm-extended", "1", "-svm-mode", "1"]
-        call(commandArgs)
+            call(commandArgs)
+            calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
+                    xMax, yMin, yMax, zMin, zMax, \
+                    nStatic = getOmconvertInfo(stationaryFile)
 
     
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
@@ -298,13 +307,9 @@ def main():
         result['calibration-staticYmax(g)'] = -1
         result['calibration-staticZmin(g)'] = -1
         result['calibration-staticZmax(g)'] = -1
-    try:
-        #raw file data quality indicators
-        result['file-size'] = os.path.getsize(rawFile)
-        result['file-deviceID'] = getDeviceId(rawFile)
-    except:
-        result['file-size'] = -1
-        result['file-deviceID'] = -1
+    #raw file data quality indicators
+    result['file-size'] = fileSize
+    result['file-deviceID'] = deviceId
     #other housekeeping variables
     result['errs-interrupts-num'] = numInterrupts
     result['errs-interrupt-mins'] = formatNum(interruptMins, 1)
@@ -599,6 +604,37 @@ def getCalibrationCoefs(staticBoutsFile):
         sys.stderr.write('WARNING: calibration error\n')
     return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, \
             xMin, xMax, yMin, yMax, zMin, zMax, len(axesVals)
+
+
+def getOmconvertInfo(omconvertInfoFile):
+    """
+    Get axes offset/gain/temp calibration coeffs from omconvert info file
+    """
+    file = open(omconvertInfoFile,'rU')
+    for line in file:
+        elements = line.split(':')
+        name, value = elements[0], elements[1]
+        if name == 'Calibration':
+            vals = value.split(',')
+            bestIntercept = float(vals[3]), float(vals[4]), float(vals[5])
+            bestSlope = float(vals[0]), float(vals[1]), float(vals[2])
+            bestTemp = float(vals[6]), float(vals[7]),float(vals[8])
+            meanTemp = float(vals[-1])
+        elif name == 'Calibration-Stationary-Error-Pre':
+            initError = float(value)
+        elif name == 'Calibration-Stationary-Error-Post':
+            bestError = float(value)
+        elif name == 'Calibration-Stationary-Min':
+            vals = value.split(',')
+            xMin, yMin, zMin = float(vals[0]), float(vals[1]), float(vals[2])
+        elif name == 'Calibration-Stationary-Max':
+            vals = value.split(',')
+            xMax, yMax, zMax = float(vals[0]), float(vals[1]), float(vals[2])
+        elif name == 'Calibration-Stationary-Count':
+            nStatic = int(value)
+    file.close()
+    return bestIntercept, bestSlope, bestTemp, meanTemp, initError, bestError, \
+            xMin, xMax, yMin, yMax, zMin, zMax, nStatic
 
 
 def getDeviceId(cwaFile):
