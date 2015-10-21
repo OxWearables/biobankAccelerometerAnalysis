@@ -154,10 +154,10 @@ def main():
             call(commandArgs)
         else:
             commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
-                    "-info", stationaryFile,
-                    "-interpolate-mode", "2", "-calibrate", "1",
-                    "-svm-epoch", str(epochPeriod), "-svm-filter", "2",
-                    "-svm-extended", "1", "-svm-mode", "1"]
+                    "-info", stationaryFile, "-svm-extended", "1",
+                    "-calibrate", "1", "-interpolate-mode", "2",
+                    "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
+                    "-svm-filter", "2"]
             call(commandArgs)
             calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
                     xMax, yMin, yMax, zMin, zMax, \
