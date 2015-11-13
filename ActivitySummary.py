@@ -362,7 +362,7 @@ def getEpochSummary(epochFile,
                 header=headerSize).sort_index()
     cols = ['enmoTrunc','xRange','yRange','zRange']
     cols += ['xStd','yStd','zStd','temp','samples']
-    cols += ['dataErrors','clipsBeforeCalibr','clipsAfterCalibr']
+    cols += ['dataErrors','clipsBeforeCalibr','clipsAfterCalibr','rawSamples']
     e.columns = cols
     #get start & end times
     startTime = pd.to_datetime(e.index.values[0])
@@ -524,12 +524,12 @@ def getEpochSummary(epochFile,
             diurnalMins, len(interrupts), np.sum(interruptMins), \
             e['dataErrors'].sum(), e['clipsBeforeCalibr'].sum(), \
             e['clipsBeforeCalibr'].max(), e['clipsAfterCalibr'].sum(), \
-            e['clipsAfterCalibr'].max(), e['samples'].sum(), \
-            e['samples'].mean(), e['samples'].std(), e['samples'].min(), \
-            e['samples'].max(), e['temp'].mean(), e['temp'].std(), \
-            e['temp'].min(), e['temp'].max(), paWAvg, paWStd, paAvg, paStd, \
-            paMedian, paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, \
-            paEcdf3, paEcdf4
+            e['clipsAfterCalibr'].max(), e['rawSamples'].sum(), \
+            e['rawSamples'].mean(), e['rawSamples'].std(), \
+            e['rawSamples'].min(), e['rawSamples'].max(), e['temp'].mean(), \
+            e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
+            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \
+            paEcdf2, paEcdf3, paEcdf4
 
 
 def getCalibrationCoefs(staticBoutsFile):

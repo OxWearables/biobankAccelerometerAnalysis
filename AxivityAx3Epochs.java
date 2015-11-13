@@ -186,7 +186,8 @@ public class AxivityAx3Epochs
                 epochHeader += "xMean,yMean,zMean,";
             }
             epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
-            epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr";
+            epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr,";
+            epochHeader += "rawSamples";
 
             //now read every page in CWA file
             int pageCount = 0;
@@ -555,8 +556,9 @@ public class AxivityAx3Epochs
                 epochSummary += "," + DF6.format(yStd);
                 epochSummary += "," + DF6.format(zStd);
                 epochSummary += "," + DF2.format(temperature);
-                epochSummary += "," + timeVals.size() + "," + errCounter[0];
+                epochSummary += "," + xResampled.length + "," + errCounter[0];
                 epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
+                epochSummary += "," + timeVals.size(); 
                 if(!getStationaryBouts || 
                         (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
                     writeLine(epochWriter, epochSummary);        
