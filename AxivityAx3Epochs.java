@@ -365,7 +365,7 @@ public class AxivityAx3Epochs
                 START_OFFSET_NANOS = Duration.between(epochStartTime,
                         SESSION_START).toNanos();
                 //check block time and session start time are within 10secs
-                long clampLimitNanos = secs2Nanos(10);
+                long clampLimitNanos = secs2Nanos(15);
                 if( START_OFFSET_NANOS > clampLimitNanos ||
                         START_OFFSET_NANOS < -clampLimitNanos ){
                     START_OFFSET_NANOS = 0;
