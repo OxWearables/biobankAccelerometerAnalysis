@@ -369,6 +369,7 @@ def getEpochSummary(epochFile,
     endTime = pd.to_datetime(e.index.values[-1])
 
     #get interrupt and data error summary vals
+    e.dropna(subset=['enmoTrunc','xStd','yStd','zStd'],how='all',inplace=True)
     epochNs = epochSec * np.timedelta64(1,'s')
     interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
     #get duration of each interrupt in minutes
