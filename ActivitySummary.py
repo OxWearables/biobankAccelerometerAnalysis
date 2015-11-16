@@ -179,9 +179,10 @@ def main():
             clipsPreCalibrSum, clipsPreCalibrMax, clipsPostCalibrSum, \
             clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, \
             epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, \
-            tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, paMedian, \
-            paMin, paMax, paDays, paHours, \
-            paEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals, 
+            tempStd, tempMin, tempMax, accAvg, accStd, unadjustedAccAvg, \
+            unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
+            unadjustedAccMax, accDays, accHours, \
+            accEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals, 
                     nonWearFile, tsFile)
     
     #data integrity outputs
@@ -219,8 +220,8 @@ def main():
     result['file-startTime'] = startTime.strftime(f)
     result['file-endTime'] = endTime.strftime(f)
     #physical activity output variable (mg)
-    result['acc-overall-avg(mg)'] = formatNum(paWAvg*1000, 2)
-    result['acc-overall-std(mg)'] = formatNum(paWStd*1000, 2)
+    result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
+    result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
     #data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
@@ -228,16 +229,16 @@ def main():
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     result['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
     #physical activity variation by day / hour
-    result['acc-mon-avg(mg)'] = formatNum(paDays[0]*1000, 2)
-    result['acc-tue-avg(mg)'] = formatNum(paDays[1]*1000, 2)
-    result['acc-wed-avg(mg)'] = formatNum(paDays[2]*1000, 2)
-    result['acc-thur-avg(mg)'] = formatNum(paDays[3]*1000, 2)
-    result['acc-fri-avg(mg)'] = formatNum(paDays[4]*1000, 2)
-    result['acc-sat-avg(mg)'] = formatNum(paDays[5]*1000, 2)
-    result['acc-sun-avg(mg)'] = formatNum(paDays[6]*1000, 2)
+    result['acc-mon-avg(mg)'] = formatNum(accDays[0]*1000, 2)
+    result['acc-tue-avg(mg)'] = formatNum(accDays[1]*1000, 2)
+    result['acc-wed-avg(mg)'] = formatNum(accDays[2]*1000, 2)
+    result['acc-thur-avg(mg)'] = formatNum(accDays[3]*1000, 2)
+    result['acc-fri-avg(mg)'] = formatNum(accDays[4]*1000, 2)
+    result['acc-sat-avg(mg)'] = formatNum(accDays[5]*1000, 2)
+    result['acc-sun-avg(mg)'] = formatNum(accDays[6]*1000, 2)
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
-        result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(paHours[i]*1000, 2)
+        result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(accHours[i]*1000, 2)
     #wear time characteristics
     result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, 2)
     result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, 2)
@@ -257,12 +258,12 @@ def main():
     except:
         result['wearTime-numNonWearEpisodes(>1hr)'] = -1
     #physical activity stats and intensity distribution (minus diurnalWeights)
-    result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(paAvg*1000, 2)
-    result['acc-noDiurnalAdjust-std(mg)'] = formatNum(paStd*1000, 2)
-    result['acc-noDiurnalAdjust-median(mg)'] = formatNum(paMedian*1000, 2)
-    result['acc-noDiurnalAdjust-min(mg)'] = formatNum(paMin*1000, 2)
-    result['acc-noDiurnalAdjust-max(mg)'] = formatNum(paMax*1000, 2)
-    for x, ecdf in zip(ecdfXVals, paEcdf):
+    result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(unadjustedAccAvg*1000, 2)
+    result['acc-noDiurnalAdjust-std(mg)'] = formatNum(unadjustedAccStd*1000, 2)
+    result['acc-noDiurnalAdjust-median(mg)'] = formatNum(unadjustedAccMedian*1000, 2)
+    result['acc-noDiurnalAdjust-min(mg)'] = formatNum(unadjustedAccMin*1000, 2)
+    result['acc-noDiurnalAdjust-max(mg)'] = formatNum(unadjustedAccMax*1000, 2)
+    for x, ecdf in zip(ecdfXVals, accEcdf):
         result['acc-ecdf-' + str(x*1000) + 'mg'] = formatNum(ecdf, 3)
     try:
         #calibration metrics 
@@ -461,25 +462,25 @@ def getEpochSummary(epochFile,
     wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean() #weartime weighted data
     e = e.join(wearTimeWeights, on=['hour','minute'], rsuffix='_imputed')
     
-    pa = e[paCol] #raw data
+    unadjustedAccData = e[paCol] #raw data
     #calculate stat summaries
-    paAvg = pa.mean()
-    paStd = pa.std()
-    paMedian = pa.median()
-    paMin = pa.min()
-    paMax = pa.max()
+    unadjustedAccAvg = unadjustedAccData.mean()
+    unadjustedAccStd = unadjustedAccData.std()
+    unadjustedAccMedian = unadjustedAccData.median()
+    unadjustedAccMin = unadjustedAccData.min()
+    unadjustedAccMax = unadjustedAccData.max()
     
     #now wearTime weight values
     e[paCol+'Adjusted'] = e[paCol].fillna(e[paCol + '_imputed'])
-    pa = e[paCol+'Adjusted'] #weartime weighted data
-    paWAvg = pa.mean()
-    paWStd = pa.std()
-    paDays = []
+    accData = e[paCol+'Adjusted'] #weartime weighted data
+    accAvg = accData.mean()
+    accStd = accData.std()
+    accDays = []
     for i in range(0,7):
-        paDays.append(pa[pa.index.weekday == i].mean())
-    paHours = []
+        accDays.append(accData[accData.index.weekday == i].mean())
+    accHours = []
     for i in range(0,24):
-        paHours.append(pa[pa.index.hour == i].mean())
+        accHours.append(accData[accData.index.hour == i].mean())
 
     #calculate empirical cumulative distribution function of vector magnitudes
     ecdfData = e[['hour','minute','enmoTrunc']][~np.isnan(e['enmoTrunc'])] #remove NaNs (necessary for statsmodels.api)
@@ -501,9 +502,9 @@ def getEpochSummary(epochFile,
         for col,imputed,adjusted in zip(cols,colsImputed,colsAdjusted):
             ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
         
-        paEcdf = ecdfData[colsAdjusted].mean()
+        accEcdf = ecdfData[colsAdjusted].mean()
     else:
-        paEcdf = np.empty(20 + 16 + 16 + 15)
+        accEcdf = np.empty(20 + 16 + 16 + 15)
     
     #prepare time series header
     e = e.reindex(pd.date_range(startTime, endTime, freq=str(epochSec)+'s'))
@@ -511,7 +512,7 @@ def getEpochSummary(epochFile,
     tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-    if len(pa) > 0:
+    if len(accData) > 0:
         #write time series file
         #convert 'vm' to mg units, and highlight any imputed values
         e['vmFinal'] = e[paCol+'Adjusted'] * 1000
@@ -533,8 +534,9 @@ def getEpochSummary(epochFile,
             e['clipsAfterCalibr'].max(), e['rawSamples'].sum(), \
             e['rawSamples'].mean(), e['rawSamples'].std(), \
             e['rawSamples'].min(), e['rawSamples'].max(), e['temp'].mean(), \
-            e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
-            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf
+            e['temp'].std(), e['temp'].min(), e['temp'].max(), accAvg, accStd, \
+            unadjustedAccAvg, unadjustedAccStd, unadjustedAccMedian, \
+            unadjustedAccMin, unadjustedAccMax, accDays, accHours, accEcdf
 
 
 def getCalibrationCoefs(staticBoutsFile):
