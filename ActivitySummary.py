@@ -264,7 +264,7 @@ def main():
     result['acc-noDiurnalAdjust-min(mg)'] = formatNum(unadjustedAccMin*1000, 2)
     result['acc-noDiurnalAdjust-max(mg)'] = formatNum(unadjustedAccMax*1000, 2)
     for x, ecdf in zip(ecdfXVals, accEcdf):
-        result['acc-ecdf-' + str(x*1000) + 'mg'] = formatNum(ecdf, 3)
+        result['acc-ecdf-' + str(x*1000) + 'mg'] = formatNum(ecdf, 4)
     try:
         #calibration metrics 
         result['calibration-errsBefore(mg)'] = formatNum(errPreCal*1000, 2)
