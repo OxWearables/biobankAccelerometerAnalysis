@@ -167,6 +167,11 @@ def main():
     #calculate average, median, stdev, min, max, count, & ecdf of sample score in
     #1440 min diurnally adjusted day. Also get overall wear time minutes across
     #each hour
+    ecdf1, step = np.linspace(0.001, 0.020, 20, retstep=True) #1mg bins from 1-20mg
+    ecdf2, step = np.linspace(0.025, 0.100, 16, retstep=True) #5mg bins from 25-100mg
+    ecdf3, step = np.linspace(0.125, 0.500, 16, retstep=True) #25mg bins from 125-500mg
+    ecdf4, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
+    ecdfXVals = np.concatenate([ecdf1, ecdf2, ecdf3, ecdf4])
     print toScreen('generate summary variables from epochs')
     startTime, endTime, daylightSavingsCrossover, wearTimeMins, \
             nonWearTimeMins, numNonWearEpisodes, wearDay, wear24, diurnalHrs, \
@@ -175,8 +180,8 @@ def main():
             clipsPostCalibrMax, epochSamplesN, epochSamplesAvg, \
             epochSamplesStd, epochSamplesMin, epochSamplesMax, tempMean, \
             tempStd, tempMin, tempMax, paWAvg, paWStd, paAvg, paStd, paMedian, \
-            paMin, paMax, paDays, paHours, paEcdf1, paEcdf2, paEcdf3, \
-            paEcdf4 = getEpochSummary(epochFile, 0, 0, epochPeriod, 
+            paMin, paMax, paDays, paHours, \
+            paEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals, 
                     nonWearFile, tsFile)
     
     #data integrity outputs
@@ -257,15 +262,8 @@ def main():
     result['acc-noDiurnalAdjust-median(mg)'] = formatNum(paMedian*1000, 2)
     result['acc-noDiurnalAdjust-min(mg)'] = formatNum(paMin*1000, 2)
     result['acc-noDiurnalAdjust-max(mg)'] = formatNum(paMax*1000, 2)
-    for i in range(1,21): #1mg categories from 1-20mg
-        result['acc-ecdf-' + str(i) + 'mg'] = formatNum(paEcdf1[i-1], 3)
-    for i in range(1,17): #5mg categories from 25-100mg
-        result['acc-ecdf-' + str(20+i*5) + 'mg'] = formatNum(paEcdf2[i-1], 3)
-    for i in range(1,17): #25mg categories from 125-500mg
-        result['acc-ecdf-' + str(100+i*25) + 'mg'] = formatNum(paEcdf3[i-1], 3)
-    for i in range(1,16): #100mg categories from 500-2000mg
-        result['acc-ecdf-' + str(500+i*100) + 'mg'] = formatNum(paEcdf4[i-1], 3)
-    
+    for x, ecdf in zip(ecdfXVals, paEcdf):
+        result['acc-ecdf-' + str(x*1000) + 'mg'] = formatNum(ecdf, 3)
     try:
         #calibration metrics 
         result['calibration-errsBefore(mg)'] = formatNum(errPreCal*1000, 2)
@@ -351,6 +349,7 @@ def getEpochSummary(epochFile,
         headerSize,
         dateColumn,
         epochSec,
+        ecdfXVals,
         nonWearFile,
         tsFile):
     """
@@ -483,22 +482,28 @@ def getEpochSummary(epochFile,
         paHours.append(pa[pa.index.hour == i].mean())
 
     #calculate empirical cumulative distribution function of vector magnitudes
-    pa = pa[~np.isnan(pa)] #remove NaNs (necessary for statsmodels.api)
-    if len(pa) > 0:
-        ecdf = sm.distributions.ECDF(pa)
-        x, step = np.linspace(0.001, 0.020, 20, retstep=True) #1mg bins from 1-20mg
-        paEcdf1 = ecdf(x)
-        x, step = np.linspace(0.025, 0.100, 16, retstep=True) #5mg bins from 25-100mg
-        paEcdf2 = ecdf(x)
-        x, step = np.linspace(0.125, 0.500, 16, retstep=True) #25mg bins from 125-500mg
-        paEcdf3 = ecdf(x)
-        x, step = np.linspace(0.6, 2.0, 15, retstep=True) #100mg bins from 500-2000mg
-        paEcdf4 = ecdf(x)
+    ecdfData = e[['hour','minute','enmoTrunc']][~np.isnan(e['enmoTrunc'])] #remove NaNs (necessary for statsmodels.api)
+    if len(ecdfData) > 0:
+        #set column names for actual, imputed, and adjusted intensity dist. vals
+        cols = []
+        colsImputed = []
+        colsAdjusted = []
+        for xVal in ecdfXVals:
+            col = 'ecdf' + str(xVal)
+            cols.append(col)
+            colsImputed.append(col + 'Imputed')
+            colsAdjusted.append(col + 'Adjusted')
+            ecdfData[col] = (ecdfData['enmoTrunc']<=xVal) *1.0
+        #calculate imputation values to replace nan metric values
+        wearTimeWeights = ecdfData.groupby(['hour', 'minute'])[cols].mean() #weartime weighted
+        ecdfData = ecdfData.join(wearTimeWeights, on=['hour','minute'], rsuffix='Imputed')
+        #for each ecdf xVal column, apply missing data imputation
+        for col,imputed,adjusted in zip(cols,colsImputed,colsAdjusted):
+            ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
+        
+        paEcdf = ecdfData[colsAdjusted].mean()
     else:
-        paEcdf1 = np.empty(20)
-        paEcdf2 = np.empty(16)
-        paEcdf3 = np.empty(16)
-        paEcdf4 = np.empty(15)
+        paEcdf = np.empty(20 + 16 + 16 + 15)
     
     #prepare time series header
     e = e.reindex(pd.date_range(startTime, endTime, freq=str(epochSec)+'s'))
@@ -529,8 +534,7 @@ def getEpochSummary(epochFile,
             e['rawSamples'].mean(), e['rawSamples'].std(), \
             e['rawSamples'].min(), e['rawSamples'].max(), e['temp'].mean(), \
             e['temp'].std(), e['temp'].min(), e['temp'].max(), paWAvg, paWStd, \
-            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf1, \
-            paEcdf2, paEcdf3, paEcdf4
+            paAvg, paStd, paMedian, paMin, paMax, paDays, paHours, paEcdf
 
 
 def getCalibrationCoefs(staticBoutsFile):
