@@ -312,12 +312,20 @@ def main():
     #other housekeeping variables
     result['errs-interrupts-num'] = numInterrupts
     result['errs-interrupt-mins'] = formatNum(interruptMins, 1)
-    result['errs-data-num'] = int(numDataErrs)
-    result['clips-beforeCalibration-num'] = int(clipsPreCalibrSum)
-    result['clips-beforeCalibration-max(perEpoch)'] = int(clipsPreCalibrMax)
-    result['clips-afterCalibration-num'] = int(clipsPostCalibrSum)
-    result['clips-afterCalibration-max(perEpoch)'] = int(clipsPostCalibrMax)
-    result['totalSamples'] = int(epochSamplesN)
+    try:
+        result['errs-data-num'] = int(numDataErrs)
+        result['clips-beforeCalibration-num'] = int(clipsPreCalibrSum)
+        result['clips-beforeCalibration-max(perEpoch)'] = int(clipsPreCalibrMax)
+        result['clips-afterCalibration-num'] = int(clipsPostCalibrSum)
+        result['clips-afterCalibration-max(perEpoch)'] = int(clipsPostCalibrMax)
+        result['totalSamples'] = int(epochSamplesN)
+    except:
+        result['errs-data-num'] = -1
+        result['clips-beforeCalibration-num'] = -1
+        result['clips-beforeCalibration-max(perEpoch)'] = -1
+        result['clips-afterCalibration-num'] = -1
+        result['clips-afterCalibration-max(perEpoch)'] = -1
+        result['totalSamples'] = -1
     result['sampleRate-avg(Hz)'] = formatNum(epochSamplesAvg / epochPeriod, 1)
     result['sampleRate-std(Hz)'] = formatNum(epochSamplesStd / epochPeriod, 1)
     result['sampleRate-min(Hz)'] = formatNum(epochSamplesMin / epochPeriod, 1)
