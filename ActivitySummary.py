@@ -153,11 +153,23 @@ def main():
                 commandArgs.insert(1,javaHeapSpace);
             call(commandArgs)
         else:
-            commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
-                    "-info", stationaryFile, "-svm-extended", "3",
-                    "-calibrate", "1", "-interpolate-mode", "2",
-                    "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
-                    "-svm-filter", "2"]
+            if not skipCalibration:
+                commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
+                        "-info", stationaryFile, "-svm-extended", "3",
+                        "-calibrate", "1", "-interpolate-mode", "2",
+                        "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
+                        "-svm-filter", "2"]
+            else:
+                calArgs = str(calSlope[0]) + ',' + str(calSlope[1]) + ','
+                calArgs += str(calSlope[2]) + ',' + str(calOff[0]) + ','
+                calArgs += str(calOff[1]) + ',' + str(calOff[2]) + ','
+                calArgs += str(calTemp[0]) + ',' + str(calTemp[1]) + ','
+                calArgs += str(calTemp[2]) + ',' + str(meanTemp)
+                commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
+                        "-info", stationaryFile, "-svm-extended", "3",
+                        "-calibrate", "0", "-calibration", calArgs,
+                        "-interpolate-mode", "2", "-svm-mode", "1",
+                        "-svm-epoch", str(epochPeriod), "-svm-filter", "2"]
             call(commandArgs)
             calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
                     xMax, yMin, yMax, zMin, zMax, \
