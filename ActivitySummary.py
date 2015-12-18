@@ -25,83 +25,127 @@ import statsmodels.api as sm
 import struct
 from subprocess import call, Popen
 import sys
+import argparse
 
 def main():
     """
     Application entry point responsible for parsing command line requests
     """
+    # for testing :
+    # sys.argv = "sample.cwa -calOff 1.2 4 99999.342435".split()
     print sys.argv
+
+    parser = argparse.ArgumentParser(
+        description="""A tool to extract meaningful health information from large accelerometer
+         datasets e.g. how much time individuals spend in sleep, sedentary behaviour, and 
+         physical activity.
+        """,
+        add_help=False
+    )
+
+    # optionals
+    parser.add_argument('-summaryFolder', metavar='filename',default="",
+                            help='folder for the %(default)s summary statistics')
+    parser.add_argument('-nonWearFolder', metavar='filename',default="",
+                            help='folder for the %(default)s file')
+    parser.add_argument('-epochFolder', metavar='filename',default="",
+                            help='folder for the %(default)s file')
+    parser.add_argument('-stationaryFolder', metavar='filename',default="",
+                            help='folder for the  %(default)s file')
+    parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
+                            help='folder for the %(default)s file')
+    parser.add_argument('-skipCalibration', 
+                            metavar='True/False',default=True, type=bool,
+                            help='skip calibration? (default : %(default)s)')
+    parser.add_argument('-verbose', 
+                            metavar='True/False',default=False, type=bool,
+                            help='enable verbose logging? (default : %(default)s)')
+    parser.add_argument('-deleteHelperFiles', 
+                            metavar='True/False',default=True, type=bool,
+                            help='skip calibration? (default : %(default)s)')
+    parser.add_argument('-skipRaw', 
+                            metavar='True/False',default=False, type=bool,
+                            help='skipRaw? (default : %(default)s)')
+    parser.add_argument('-epochPeriod', 
+                            metavar='length',default=5, type=int,
+                            help='length in seconds of a single epoch (default : %(default)ss)')
+    parser.add_argument('-calOff', 
+                            metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
+                            help='calibration offset (default : %(default)s)')
+    parser.add_argument('-calSlope', 
+                            metavar=('x','y','z'),default=[1.0,1.0,1.0], type=float, nargs=3,
+                            help='calibration slope linking offset to temperature (default : %(default)s)')
+    parser.add_argument('-calTemp', 
+                            metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
+                            help='calibration temperature (default : %(default)s)')
+    parser.add_argument('-meanTemp', 
+                            metavar="temp",default=20, type=float,
+                            help='mean calibration temperature in degrees Celsius (default : %(default)s)')
+    parser.add_argument('-javaHeapSpace', 
+                            metavar="amount in MB",default="", type=str,
+                            help='amount of heap space allocated to the java subprocesses, useful for limiting RAM (default : %(default)s)')
+    parser.add_argument('-epochProcess', 
+                        metavar="epochProcess",default="AxivityAx3Epochs", type=str,
+                        help='epochProcess (default : %(default)s)')
+
+    # required
+    parser.add_argument('rawFile', metavar='file', type=str, 
+                       help='the .cwa file to process (e.g. sample.cwa)')
+
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
-        msg = "\n Invalid input, please enter at least 1 parameter, e.g."
-        msg += "\n python ActivitySummary.py inputFile.CWA \n"
-        print msg
-        sys.exit(0)
-    #store command line arguments to local variables
-    rawFile = sys.argv[1]      
-    funcParams = sys.argv[2:]
-    rawFileEnd = '.' + rawFile.split('.')[-1]
-    summaryFile = rawFile.replace(rawFileEnd, "OutputSummary.json")
-    tsFile = rawFile.replace(rawFileEnd,"AccTimeSeries.csv")
-    nonWearFile = rawFile.replace(rawFileEnd,"NonWearBouts.csv")
-    epochFile = rawFile.replace(rawFileEnd,"Epoch.csv")
-    stationaryFile = rawFile.replace(rawFileEnd,"Stationary.csv")
-    epochProcess = "AxivityAx3Epochs"
-    javaHeapSpace = ""
-    skipRaw = False
-    skipCalibration = False
-    deleteHelperFiles = True
-    verbose = False
-    epochPeriod = 5
-    calOff = [0.0, 0.0, 0.0]
-    calSlope = [1.0, 1.0, 1.0]
-    calTemp = [0.0, 0.0, 0.0]
-    meanTemp = 20
-    #update default values by looping through user parameters
-    for param in funcParams:
-        #example param -> 'matlab:/Applications/MATLAB_R2014a.app/bin/matlab'
-        if param.split(':')[0] == 'summaryFolder':
-            summaryFile = param.split(':')[1] + summaryFile.split('/')[-1]
-        elif param.split(':')[0] == 'epochFolder':
-            epochFile = param.split(':')[1] + epochFile.split('/')[-1]
-        elif param.split(':')[0] == 'nonWearFolder':
-            nonWearFile = param.split(':')[1] + nonWearFile.split('/')[-1]
-        elif param.split(':')[0] == 'stationaryFolder':
-            stationaryFile = param.split(':')[1] + stationaryFile.split('/')[-1]
-        elif param.split(':')[0] == 'timeSeriesFolder':
-            tsFile = param.split(':')[1] + tsFile.split('/')[-1]
-        elif param.split(':')[0] == 'skipRaw':
-            skipRaw = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'skipCalibration':
-            skipCalibration = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'verbose':
-            verbose = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'deleteHelperFiles':
-            deleteHelperFiles = param.split(':')[1] in ['true', 'True']
-        elif param.split(':')[0] == 'epochPeriod':
-            epochPeriod = int(float(param.split(':')[1]))
-        elif ( param.split(':')[0] == 'javaHeapSpace' and
-                len(param.split(':')[1])>1 ):
-            javaHeapSpace = param.split(':')[1]
-        elif ( param.split(':')[0] == 'epochProcess' and
-                len(param.split(':')[1])>1 ):
-            epochProcess = param.split(':')[1]
-        elif ( param.split(':')[0] == 'calOff' and
-                len(param.split(':')[1].split(','))==3 ):
-            calOff = param.split(':')[1].split(',')
-            skipCalibration = True
-        elif ( param.split(':')[0] == 'calSlope' and 
-                len(param.split(':')[1].split(','))==3 ):
-            calSlope = param.split(':')[1].split(',')
-            skipCalibration = True
-        elif ( param.split(':')[0] == 'calTemp' and 
-                len(param.split(':')[1].split(','))==3 ):
-            calTemp = param.split(':')[1].split(',')
-            skipCalibration = True
-        elif ( param.split(':')[0] == 'calMeanTemp' and 
-                len(param.split(':')[1])>=1 ):
-            meanTemp = param.split(':')[1]
-            skipCalibration = True
+            msg = "\nInvalid input, please enter at least 1 parameter, e.g."
+            msg += "\npython ActivitySummary.py inputFile.CWA \n"
+            print msg
+            parser.print_help()
+            sys.exit(0)
+
+    print ""
+    args = parser.parse_args(sys.argv)
+
+    if (args.skipRaw is True):
+        if len(args.rawFile.split('.'))<2:
+            args.rawFile += ".cwa" # edge case since we still need a name?
+    elif not os.path.isfile(args.rawFile): 
+        print "error: file does not exist. Exiting.."
+        sys.exit()
+
+    print "rawFile = " + str(args.rawFile)
+    # get file extension
+    args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
+    args.rawFileBegin = args.rawFile[0:-len(args.rawFileEnd)]
+    print (vars(args))
+
+    # no way to deal with blank strings, so disabled for now
+    # for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
+    #     print path
+    #     if not os.access(path, os.F_OK): 
+    #         print "error: " + path + " is not a valid directory"
+    #         sys.exit() 
+
+    # could check if folder exists? probably not neccesary
+    summaryFile     = os.path.join(args.summaryFolder,    args.rawFileBegin + "OutputSummary.json")
+    nonWearFile     = os.path.join(args.nonWearFolder,    args.rawFileBegin + "NonWearBouts.csv")
+    epochFile       = os.path.join(args.epochFolder,      args.rawFileBegin + "Epoch.json")
+    stationaryFile  = os.path.join(args.stationaryFolder, args.rawFileBegin + "Stationary.csv")
+    tsFile          = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
+
+
+    # quick add to global namespace
+    meanTemp = args.meanTemp
+    deleteHelperFiles = args.deleteHelperFiles
+    skipCalibration = args.skipCalibration
+    verbose = args.verbose
+    epochPeriod = args.epochPeriod
+    skipRaw = args.skipRaw
+    rawFile = args.rawFile
+    rawFileEnd = args.rawFileEnd
+    calSlope = args.calSlope
+    calTemp = args.calTemp
+    rawFileBegin = args.rawFileBegin
+    calOff = args.calOff
+    epochProcess = args.epochProcess
+    javaHeapSpace = args.javaHeapSpace
 
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
