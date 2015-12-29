@@ -65,7 +65,7 @@ def main():
 	print "do you want to process " + str(num) + " .cwa file" \
 					+ ("s" if num!=1 else "") + "? Y/N"
 	ans = raw_input()
-	if not ans.lower() in ["y", "yes", "go"]:
+	if not ans.lower() in ["y", "yes"]:
 		print "\nyou chose no. exiting.. "
 	else:
 		print "\nprocessing " + str(num) + "files.. \n"

@@ -29,21 +29,28 @@ print "now checking for required python modules:"
 moduleChecks.append(check_module("numpy","1.9.0"))
 moduleChecks.append(check_module("pandas","0.15.0"))
 moduleChecks.append(check_module("patsy","0.3.0"))
-moduleChecks.append(check_module("python-dateutil","2.2"))
+# moduleChecks.append(check_module("python-dateutil","2.2"))
 moduleChecks.append(check_module("pytz","2014.7"))
 moduleChecks.append(check_module("scipy","0.15.1"))
 moduleChecks.append(check_module("simplejson","3.8.0"))
 moduleChecks.append(check_module("six","1.8.0"))
 moduleChecks.append(check_module("statsmodels","0.6.1"))
-moduleChecks.append(check_module("virtualenv","13.1.0"))
+# moduleChecks.append(check_module("virtualenv","13.1.0"))
 moduleChecks = filter(lambda x: len(x)>0, moduleChecks) # filter only modules that
-print str(len(moduleChecks)) + " modules need installation/updating"
-print
-print "would now run the following commands:"
-for package in moduleChecks:
-	print "pip install " + package
-	#pip.main(['install', package])
+print ""
+print str(len(moduleChecks)) + " modules need installation/updating\n"
 
+if len(moduleChecks) > 0:	
+	print "would now run the following commands:"
+	for package in moduleChecks:
+		print "pip install " + package
+	print "do you want to install those " + str(len(moduleChecks)) + " modules? (type yes)"
+	ans = raw_input()
+	if not ans.lower() in ["yes"]:
+		print "\nyou chose not to, continuing.. "
+	else:
+		for package in moduleChecks:
+			pip.main(['install', package])
 
 # check java version
 def check_java_version(java_version):
