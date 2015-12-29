@@ -153,7 +153,7 @@ def main():
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
     
-    #print meanTemp, deleteHelperFiles, skipCalibration, verbose, epochPeriod, skipRaw, rawFile, rawFileEnd, calSlope, calTemp, rawFileBegin, calOff, epochProcess, javaHeapSpace
+    print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
     
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
@@ -175,7 +175,7 @@ def main():
             if not skipCalibration:
                 #identify 10sec stationary epochs
                 print toScreen('calibrating')
-                commandArgs = ["java", "-XX:ParallelGCThreads=1", epochProcess,
+                commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                         rawFile, "outputFile:" + stationaryFile,
                         "verbose:" + str(verbose), "filter:true",
                         "getStationaryBouts:true", "epochPeriod:10",
@@ -192,7 +192,7 @@ def main():
                             errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
           
             #calculate and write filtered avgVm epochs from raw file
-            commandArgs = ["java", "-XX:ParallelGCThreads=1", epochProcess,
+            commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                     rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
                     "filter:true", "xIntercept:" + str(calOff[0]),
                     "yIntercept:" + str(calOff[1]), "zIntercept:" + str(calOff[2]),
@@ -203,6 +203,7 @@ def main():
             print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1,javaHeapSpace);
+            print commandArgs
             call(commandArgs)
         else:
             if not skipCalibration:
