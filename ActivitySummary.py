@@ -90,9 +90,10 @@ def main():
     parser.add_argument('-javaHeapSpace', 
                             metavar="amount in MB",default="", type=str,
                             help="""amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (default : unlimited)""")
+    # TODO add options e.g. 0 None [assumes presence of Epoch.csv and set processRawFile false] 1 AxivityAx3Epochs [java]
     parser.add_argument('-rawDataParser', 
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
-                            help=""" software to process raw .cwa binary file (default : %(default)s)""")
+                            help="""file containing a java program to process raw .cwa binary file, must be [.class] type (default : %(default)s)""")
     # required
     parser.add_argument('rawFile', metavar='file', type=str, 
                        help='the .cwa file to process (e.g. sample.cwa)')
@@ -151,7 +152,9 @@ def main():
     calOff = args.calibrationOffset
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
-
+    
+    #print meanTemp, deleteHelperFiles, skipCalibration, verbose, epochPeriod, skipRaw, rawFile, rawFileEnd, calSlope, calTemp, rawFileBegin, calOff, epochProcess, javaHeapSpace
+    
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
