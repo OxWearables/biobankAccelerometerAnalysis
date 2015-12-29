@@ -31,8 +31,9 @@ def main():
     """
     Application entry point responsible for parsing command line requests
     """
-    # for testing :
-    # sys.argv = "sample.cwa -calOff 1.2 4 99999.342435".split()
+    # uncomment for example input
+    # sys.argv = "sample -calibrationOffest 1.2 4 99999.342435 -processRawFile false -summaryFolder newdir".split()
+
     print sys.argv
 
     parser = argparse.ArgumentParser(
@@ -43,51 +44,55 @@ def main():
         add_help=False
     )
 
+
     # optionals
     parser.add_argument('-summaryFolder', metavar='filename',default="",
-                            help='folder for the %(default)s summary statistics')
+                            help="""folder for the %(default)s summary statistics""")
     parser.add_argument('-nonWearFolder', metavar='filename',default="",
-                            help='folder for the %(default)s file')
+                            help="""folder for the %(default)s file""")
     parser.add_argument('-epochFolder', metavar='filename',default="",
-                            help='folder for the %(default)s file')
+                            help="""folder for the epoch.json file, this must be an 
+                                    existing file if "-processRawFile" is set to False %(default)s file""")
     parser.add_argument('-stationaryFolder', metavar='filename',default="",
-                            help='folder for the  %(default)s file')
+                            help="""folder for the  %(default)s file""")
     parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
-                            help='folder for the %(default)s file')
+                            help="""folder for the %(default)s file""")
     parser.add_argument('-skipCalibration', 
                             metavar='True/False',default=True, type=bool,
-                            help='skip calibration? (default : %(default)s)')
+                            help="""skip calibration? (default : %(default)s)""")
     parser.add_argument('-verbose', 
                             metavar='True/False',default=False, type=bool,
-                            help='enable verbose logging? (default : %(default)s)')
-    parser.add_argument('-deleteHelperFiles', 
+                            help="""enable verbose logging? (default : %(default)s)""")
+    parser.add_argument('-deleteIntermediateFiles', 
                             metavar='True/False',default=True, type=bool,
-                            help='skip calibration? (default : %(default)s)')
-    parser.add_argument('-skipRaw', 
-                            metavar='True/False',default=False, type=bool,
-                            help='skipRaw? (default : %(default)s)')
+                            help="""True will remove extra "helper" files created by 
+                                    the program (default : %(default)s)""")
+    parser.add_argument('-processRawFile', 
+                            metavar='True/False',default=True, type=bool,
+                            help="""False will skip processing of the .cwa file (the
+                                epoch.csv file must already exist for this to work) 
+                                (default : %(default)s)""")
     parser.add_argument('-epochPeriod', 
                             metavar='length',default=5, type=int,
-                            help='length in seconds of a single epoch (default : %(default)ss)')
-    parser.add_argument('-calOff', 
+                            help="""length in seconds of a single epoch (default : %(default)ss)""")
+    parser.add_argument('-calibrationOffset', 
                             metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
-                            help='calibration offset (default : %(default)s)')
-    parser.add_argument('-calSlope', 
+                            help="""accelerometer calibration offset (default : %(default)s)""")
+    parser.add_argument('-calibrationSlope', 
                             metavar=('x','y','z'),default=[1.0,1.0,1.0], type=float, nargs=3,
-                            help='calibration slope linking offset to temperature (default : %(default)s)')
-    parser.add_argument('-calTemp', 
+                            help="""accelerometer calibration slope linking offset to temperature (default : %(default)s)""")
+    parser.add_argument('-calibrationTemperature', 
                             metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
-                            help='calibration temperature (default : %(default)s)')
-    parser.add_argument('-meanTemp', 
+                            help="""mean temperature in degrees Celsius of stationary data for calibration (default : %(default)s)""")
+    parser.add_argument('-meanTemperature', 
                             metavar="temp",default=20, type=float,
-                            help='mean calibration temperature in degrees Celsius (default : %(default)s)')
+                            help="""mean calibration temperature in degrees Celsius (default : %(default)s)""")
     parser.add_argument('-javaHeapSpace', 
                             metavar="amount in MB",default="", type=str,
-                            help='amount of heap space allocated to the java subprocesses, useful for limiting RAM (default : %(default)s)')
-    parser.add_argument('-epochProcess', 
-                        metavar="epochProcess",default="AxivityAx3Epochs", type=str,
-                        help='epochProcess (default : %(default)s)')
-
+                            help="""amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (default : unlimited)""")
+    parser.add_argument('-rawDataParser', 
+                            metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
+                            help=""" software to process raw .cwa binary file (default : %(default)s)""")
     # required
     parser.add_argument('rawFile', metavar='file', type=str, 
                        help='the .cwa file to process (e.g. sample.cwa)')
@@ -101,9 +106,9 @@ def main():
             sys.exit(0)
 
     print ""
-    args = parser.parse_args(sys.argv)
+    args = parser.parse_args()
 
-    if (args.skipRaw is True):
+    if (args.processRawFile is False):
         if len(args.rawFile.split('.'))<2:
             args.rawFile += ".cwa" # edge case since we still need a name?
     elif not os.path.isfile(args.rawFile): 
@@ -132,19 +137,19 @@ def main():
 
 
     # quick add to global namespace
-    meanTemp = args.meanTemp
-    deleteHelperFiles = args.deleteHelperFiles
+    meanTemp = args.meanTemperature
+    deleteHelperFiles = args.deleteIntermediateFiles
     skipCalibration = args.skipCalibration
     verbose = args.verbose
     epochPeriod = args.epochPeriod
-    skipRaw = args.skipRaw
+    skipRaw = not args.processRawFile
     rawFile = args.rawFile
     rawFileEnd = args.rawFileEnd
-    calSlope = args.calSlope
-    calTemp = args.calTemp
+    calSlope = args.calibrationSlope
+    calTemp = args.calibrationTemperature
     rawFileBegin = args.rawFileBegin
-    calOff = args.calOff
-    epochProcess = args.epochProcess
+    calOff = args.calibrationOffset
+    epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
 
     #check source cwa file exists
