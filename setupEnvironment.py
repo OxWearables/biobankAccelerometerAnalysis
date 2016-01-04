@@ -83,10 +83,13 @@ try:
 	java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT)
 	print java_version
 	java_is_ok = check_java_version(java_version)
-except:
-	raw_input("An error occured, indicating javac is not installed. Press any key to exit..\n")
-	print "Error: %s: %s" % (exc_info()[0] ,exc_info()[1])
+except: # tested on windows (throws a WindowsError)
+	print "An error occured, indicating java is not installed."
+	print "Error: %s: %s" % (sys.exc_info()[0] ,sys.exc_info()[1])
+	java_is_ok = False
 
+print "\nIn Summary:\n"
+# final summary
 if python_is_ok and java_is_ok:
 	print "Your python and java setup should be able to run this program, to do so type \"python ActivitySummary.py\" into the command line."
 else:
