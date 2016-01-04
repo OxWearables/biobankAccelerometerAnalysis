@@ -4,6 +4,7 @@ import sys
 
 print(sys.executable)
 # check python modules
+
 import pip
 def install(package):
     pip.main(['install', package])
@@ -40,6 +41,7 @@ moduleChecks = filter(lambda x: len(x)>0, moduleChecks) # filter only modules th
 print ""
 print str(len(moduleChecks)) + " modules need installation/updating\n"
 
+python_is_ok = True
 if len(moduleChecks) > 0:	
 	print "would now run the following commands:"
 	for package in moduleChecks:
@@ -48,9 +50,18 @@ if len(moduleChecks) > 0:
 	ans = raw_input()
 	if not ans.lower() in ["yes"]:
 		print "\nyou chose not to, continuing.. "
+		python_is_ok
+
 	else:
 		for package in moduleChecks:
-			pip.main(['install', package])
+			try:
+				pip.main(['install', package])
+			except:
+				print "Unable to install %s using pip. Please read the instructions for \
+				manual installation.. " % package
+				print "Error: %s: %s" % (exc_info()[0] ,exc_info()[1])
+				python_is_ok = False
+
 
 # check java version
 def check_java_version(java_version):
@@ -68,20 +79,18 @@ def check_java_version(java_version):
 
 
 print "\nrunning command : java -version"
-java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT)
-print java_version
-check_java_version(java_version)
+try:
+	java_version = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT)
+	print java_version
+	java_is_ok = check_java_version(java_version)
+except:
+	raw_input("An error occured, indicating javac is not installed. Press any key to exit..\n")
+	print "Error: %s: %s" % (exc_info()[0] ,exc_info()[1])
 
-# check javac version
-print "\nrunning command : javac -version"
-javac_version = subprocess.check_output(["C:\\Program Files\\Java\\jdk1.8.0_65\\bin\\javac.exe", "-version"], stderr=subprocess.STDOUT)
-print javac_version
-if javac_version.startswith("javac "):
-	ver =  javac_version[len("javac "):]
-	print "jdk is installed, version is : " + ver
-	isGoodVersion = LooseVersion(ver) >= LooseVersion("1.8.0_60")
-	if isGoodVersion:
-		print "jdk version is : " + ver + " >= 1.8.0_60 (good)"
-	else :
-		print "jdk version is : " + ver + " < 1.8.0_60 (must be updated!)"
-	print
+if python_is_ok and java_is_ok:
+	print "Your python and java setup should be able to run this program, to do so type \"python ActivitySummary.py\" into the command line."
+else:
+	if not python_is_ok:
+		print "Your python installation is missing required modules. Either install them or use the \"Anaconda\" python distribution."
+	if not java_is_ok:
+		print """Your java installation is probably either undetected or is not a high enough version to run this program. You can download the latest version from https://www.java.com/en/download/"""
