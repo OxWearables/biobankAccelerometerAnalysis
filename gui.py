@@ -1,5 +1,6 @@
 import Tkinter, Tkconstants, tkFileDialog
 import math
+from functools import partial
 
 class TkinterGUI(Tkinter.Frame):
 
@@ -110,7 +111,7 @@ class TkinterGUI(Tkinter.Frame):
         # Start button at bottom (todo)
         frame = Tkinter.Frame()
         Tkinter.Button(frame, text='Start (todo)', width=35, command=self.askdirectory).grid(row=0, column=0, padx=5, pady=5)
-        Tkinter.Button(frame, text='Exit (todo)', width=35, command=self.askdirectory).grid(row=0, column=1, padx=5, pady=5)
+        Tkinter.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
         frame.pack()
 
 
