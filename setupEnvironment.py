@@ -94,3 +94,6 @@ else:
 		print "Your python installation is missing required modules. Either install them or use the \"Anaconda\" python distribution."
 	if not java_is_ok:
 		print """Your java installation is probably either undetected or is not a high enough version to run this program. You can download the latest version from https://www.java.com/en/download/"""
+
+print 
+raw_input("press any key to exit\n")
