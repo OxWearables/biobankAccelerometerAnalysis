@@ -93,7 +93,7 @@ def main():
     # TODO add options e.g. 0 None [assumes presence of Epoch.csv and set processRawFile false] 1 AxivityAx3Epochs [java]
     parser.add_argument('-rawDataParser', 
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
-                            help="""file containing a java program to process raw .cwa binary file, must be [.class] type (default : %(default)s)""")
+                            help="""file containing a java program to process raw .cwa binary file, must end with .class (omitted) (default : %(default)s)""")
     # required
     parser.add_argument('rawFile', metavar='file', type=str, 
                        help='the .cwa file to process (e.g. sample.cwa)')

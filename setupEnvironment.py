@@ -57,8 +57,8 @@ if len(moduleChecks) > 0:
 			try:
 				pip.main(['install', package])
 			except:
-				print "Unable to install %s using pip. Please read the instructions for \
-				manual installation.. " % package
+				print "Unable to install %(package)s using pip. Please read the instructions for \
+				manual installation.. "
 				print "Error: %s: %s" % (exc_info()[0] ,exc_info()[1])
 				python_is_ok = False
 
