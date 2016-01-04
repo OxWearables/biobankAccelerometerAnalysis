@@ -1,6 +1,5 @@
 import Tkinter, Tkconstants, tkFileDialog
 import math
-from functools import partial
 
 class TkinterGUI(Tkinter.Frame):
 
