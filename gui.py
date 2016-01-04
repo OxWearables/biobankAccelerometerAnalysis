@@ -199,7 +199,7 @@ class TkinterGUI(Tkinter.Frame):
             return
         self.setCommand(dirname)
         self.dir_opt['initialdir'] = dirname
-        self.chosen_file = filename
+        self.chosen_file = dirname
         self.generateFullCommand()
         return
 
