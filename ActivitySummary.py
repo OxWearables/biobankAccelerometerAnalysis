@@ -58,7 +58,7 @@ def main():
     parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
                             help="""folder for the %(default)s file""")
     parser.add_argument('-skipCalibration', 
-                            metavar='True/False',default=True, type=bool,
+                            metavar='True/False',default=False, type=bool,
                             help="""skip calibration? (default : %(default)s)""")
     parser.add_argument('-verbose', 
                             metavar='True/False',default=False, type=bool,
