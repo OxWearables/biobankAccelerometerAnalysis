@@ -93,7 +93,6 @@ class TkinterGUI(Tkinter.Frame):
             else:
                 value['type'] = 'float'
                 
-            print value['type'] 
             # need to make these variables pernament since if they get garbage collected tkinter will fail
             frame = Tkinter.Frame()
 
@@ -134,7 +133,6 @@ class TkinterGUI(Tkinter.Frame):
     
         """Generates a commandline from the options given"""
     
-        print dir(self)
         if len(self.chosen_file)>0:
             cmdstr = "python ActivitySummary.py"
             for key,value in self.vargs.iteritems():
@@ -151,6 +149,7 @@ class TkinterGUI(Tkinter.Frame):
     def changed(self, key, *args):
 
         """Option button callback."""
+        
         print key, args
         arg = self.vargs[key] 
         val = arg['variable'].get()
@@ -173,35 +172,31 @@ class TkinterGUI(Tkinter.Frame):
 
     def askopenfilename(self):
 
-        """Returns an opened file in read mode.
-        This time the dialog just returns a filename and the file is opened by your own code.
-        """
+        """Returns a user-selected filename """
 
-        # get filename
         filename = tkFileDialog.askopenfilename(**self.file_opt)
-        # open file on your own
         if not filename:
             print "no filename returned"
         else:
             print filename
+            # set for when user re-opens file dialogue
             self.file_opt['initialfile'] = filename
-            self.setCommand(filename)
             self.chosen_file = filename
             self.generateFullCommand()
 
     def askdirectory(self):
 
-        """Returns a selected directoryname."""
+        """Returns a  user-selected directoryname."""
 
         dirname = tkFileDialog.askdirectory(**self.dir_opt)
         print dirname
         if not dirname:
-            return
-        self.setCommand(dirname)
-        self.dir_opt['initialdir'] = dirname
-        self.chosen_file = dirname
-        self.generateFullCommand()
-        return
+            print "no dirname given"
+        else:
+            self.dir_opt['initialdir'] = dirname
+            self.chosen_file = dirname
+            self.generateFullCommand()
+        
 
 
 def merge_two_dicts(x, y):
