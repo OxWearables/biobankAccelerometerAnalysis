@@ -20,9 +20,9 @@ def main():
 	msg = "\nUsage: python batchProcess.py [directory] [args]\n"
 	msg += "  This script will process all files ending in .cwa in [directory]\n"
 	msg += "  using ActivitySummary.py [args]\n"
-	msg += "  E.g.: python batchProcess.py ./ min_freq:10 \n"
+	msg += "  E.g.: python batchProcess.py ./ --epochPeriod 20  \n"
 	msg += "  would process all files ending in .cwa in the current directory\n"
-	msg += "  using the argument min_freq:10 on all of them\n"
+	msg += "  using the argument --epochPeriod 20 on all of them\n"
 	if len(sys.argv)<2:
 		msg += "\nError:\n"
 		msg += "  Invalid input, please enter at least 1 parameter, e.g.\n"
@@ -70,20 +70,26 @@ def main():
 	else:
 		print "\nprocessing " + str(num) + "files.. \n"
 		n = 0
+		numerrs = 0
 		for file in file_queue:
 			n += 1
 			print "starting [" + str(n) + "/" + str(num) +"]: " + file
 			if not os.path.isfile(file):
 				print "file has been deleted?"
+				numerrs += 1
 			else:
-				args = ["python", pyfile, file]
+				# generate arguments here
+				args = ["python", pyfile]
 				for i in range(0, len(sys.argv[2:])):
 					args.append(sys.argv[2 + i])
+				args.append(file)
 				print "cmd: ", args
 				try:
 					subprocess.call(args)
 				except: 
 					print "there was a problem processing this file.."
-		print "finished"
+					numerrs += 1
+		print "finished processing " + str(n) + " files"
+		print "there were " + str(numerrs) + " errors (may not detect all errors)"
 
 main()
