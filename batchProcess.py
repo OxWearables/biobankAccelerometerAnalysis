@@ -62,34 +62,36 @@ def main():
 	if num == 0:
 		print "no .cwa files were found, exiting.. "
 		sys.exit(0)
-	print "do you want to process " + str(num) + " .cwa file" \
+	print "will now process " + str(num) + " .cwa file" \
 					+ ("s" if num!=1 else "") + "? Y/N"
-	ans = raw_input()
-	if not ans.lower() in ["y", "yes"]:
-		print "\nyou chose no. exiting.. "
-	else:
-		print "\nprocessing " + str(num) + "files.. \n"
-		n = 0
-		numerrs = 0
-		for file in file_queue:
-			n += 1
-			print "starting [" + str(n) + "/" + str(num) +"]: " + file
-			if not os.path.isfile(file):
-				print "file has been deleted?"
+
+	# confirmation input (disabled)
+	# ans = raw_input()
+	# if not ans.lower() in ["y", "yes"]:
+	# 	print "\nyou chose no. exiting.. "
+	# else:
+	print "\nprocessing " + str(num) + "files.. \n"
+	n = 0
+	numerrs = 0
+	for file in file_queue:
+		n += 1
+		print "starting [" + str(n) + "/" + str(num) +"]: " + file
+		if not os.path.isfile(file):
+			print "file has been deleted?"
+			numerrs += 1
+		else:
+			# generate arguments here
+			args = ["python", pyfile]
+			for i in range(0, len(sys.argv[2:])):
+				args.append(sys.argv[2 + i])
+			args.append(file)
+			print "cmd: ", args
+			try:
+				subprocess.call(args)
+			except: 
+				print "there was a problem processing this file.."
 				numerrs += 1
-			else:
-				# generate arguments here
-				args = ["python", pyfile]
-				for i in range(0, len(sys.argv[2:])):
-					args.append(sys.argv[2 + i])
-				args.append(file)
-				print "cmd: ", args
-				try:
-					subprocess.call(args)
-				except: 
-					print "there was a problem processing this file.."
-					numerrs += 1
-		print "finished processing " + str(n) + " files"
-		print "there were " + str(numerrs) + " errors (may not detect all errors)"
+	print "finished processing " + str(n) + " files"
+	print "there were " + str(numerrs) + " errors (may not detect all errors)"
 
 main()
