@@ -2,6 +2,12 @@ import Tkinter, Tkconstants, tkFileDialog
 import math
 from functools import partial
 
+# spawning child processes
+import subprocess
+from threading  import Thread
+import sys
+import time
+
 class TkinterGUI(Tkinter.Frame):
 
     def __init__(self, root):
@@ -12,12 +18,17 @@ class TkinterGUI(Tkinter.Frame):
         button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
         txt_opt = {'fill': Tkconstants.X, 'padx': 5, 'pady': 5}
         # to know if a file has been selected
-        self.chosen_file = ""
+        self.targetfile = "" # file to process
+        self.pycommand = "" # either ActivitySummary.py or batchProcess.py
+        self.isexecuting = False # are we running a shell?
+        self.threads = [] # keep track of threads so we can stop them
+
+
         frame = Tkinter.Frame()
-
-
+        self.inputs = inputs = []
         # define buttons
-        Tkinter.Button(frame, text='Choose file', command=self.askopenfilename, width=35).grid(row=0, column=0, padx=5, pady=5)
+        inputs.append(Tkinter.Button(frame, text='Choose file', command=self.askopenfilename, width=35))
+        inputs[-1].grid(row=0, column=0, padx=5, pady=5)
         # define options for opening or saving a file
         self.file_opt = options = {}
         # options['defaultextension'] = '.*'#'.cwa'
@@ -34,7 +45,8 @@ class TkinterGUI(Tkinter.Frame):
         # if you use the multiple file version of the module functions this option is set automatically.
         #options['multiple'] = 1
 
-        Tkinter.Button(frame, text='Choose directory', command=self.askdirectory, width=35).grid(row=0, column=1, padx=5, pady=5)
+        inputs.append(Tkinter.Button(frame, text='Choose directory', command=self.askdirectory, width=35))
+        inputs[-1].grid(row=0, column=1, padx=5, pady=5)
         # defining options for opening a directory
         self.dir_opt = options = {}
         # options['initialdir'] = 'C:\\'
@@ -43,7 +55,7 @@ class TkinterGUI(Tkinter.Frame):
         options['title'] = 'Select folder to process'
 
         # Textbox 
-        txt = Tkinter.Text(frame, height = 4, width=80)
+        txt = Tkinter.Text(frame, height = 10, width=80)
         txt.grid(row=1, column=0, columnspan=2)
         txt.insert('insert', "Please select a file or folder")
         self.textbox = txt
@@ -65,7 +77,8 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'] = Tkinter.IntVar()
             value['variable'].set(value['default'])
 
-            Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']).pack(side='left',**button_opt)
+            inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
+            inputs[-1].pack(side='left',**button_opt)
 
         # print {key: value['variable'].get() for (key, value) in self.checkboxes.iteritems()}
         frame.pack(**button_opt)
@@ -105,12 +118,14 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'] = Tkinter.StringVar()
             value['variable'].set(self.formatargument(value['default']))
 
-            Tkinter.Entry(frame,textvariable=value['variable'],width=50).pack(side='right')
+            inputs.append(Tkinter.Entry(frame,textvariable=value['variable'],width=50))
+            inputs[-1].pack(side='right')
             frame.pack(**button_opt)
 
         # Start button at bottom (todo)
         frame = Tkinter.Frame()
-        Tkinter.Button(frame, text='Start (todo)', width=35, command=self.askdirectory).grid(row=0, column=0, padx=5, pady=5)
+        self.startbutton = Tkinter.Button(frame, text='Start', width=35, command=self.start)
+        self.startbutton.grid(row=0, column=0, padx=5, pady=5)
         Tkinter.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
         frame.pack()
 
@@ -133,13 +148,16 @@ class TkinterGUI(Tkinter.Frame):
     
         """Generates a commandline from the options given"""
     
-        if len(self.chosen_file)>0:
-            cmdstr = "python ActivitySummary.py"
+        if len(self.targetfile)>0 and len(self.pycommand)>0:
+            cmdstr = "python " + self.pycommand
+            if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
+            
             for key,value in self.vargs.iteritems():
                 if 'argstr' in value:
                     cmdstr += " " + value['argstr']
 
-            cmdstr += " " + self.chosen_file
+            if self.pycommand != "batchProcess.py": cmdstr += " " + self.targetfile
+
             self.setCommand(cmdstr)
                     
         else:
@@ -155,9 +173,9 @@ class TkinterGUI(Tkinter.Frame):
         val = arg['variable'].get()
         if arg['type'] == 'bool' and val != arg['default']:
             print "bool not default"
-            arg['argstr'] = '--' + key + " " + ("True" if val else "False")
+            arg['argstr'] = '-' + key + " " + ("True" if val else "False")
         elif arg['type'] != 'bool' and  val != self.formatargument(arg['default']):
-            arg['argstr'] = '--' + key + " " + val
+            arg['argstr'] = '-' + key + " " + val
             print "not default"
         else:
             print "is default"
@@ -181,7 +199,8 @@ class TkinterGUI(Tkinter.Frame):
             print filename
             # set for when user re-opens file dialogue
             self.file_opt['initialfile'] = filename
-            self.chosen_file = filename
+            self.targetfile = filename
+            self.pycommand = "ActivitySummary.py"
             self.generateFullCommand()
 
     def askdirectory(self):
@@ -194,9 +213,71 @@ class TkinterGUI(Tkinter.Frame):
             print "no dirname given"
         else:
             self.dir_opt['initialdir'] = dirname
-            self.chosen_file = dirname
+            self.targetfile = dirname
+            self.pycommand = "batchProcess.py"
             self.generateFullCommand()
+    
+    def start(self):
+
+        """Start button pressed"""
         
+        if self.isexecuting:
+            self.stop()
+        else:
+            # cmd_line = "echo Hello!"
+            cmd_line = "ping 1.0.0.0 -n 10 -w 10"
+            cmd_line = self.textbox.get("1.0",Tkconstants.END)
+
+            self.setCommand(cmd_line)
+            print "starting " + cmd_line
+            p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+
+            self.isexecuting = True
+            self.startbutton['text'] = "Stop"
+            t = Thread(target=self.pollStdout, args=(p,))
+            t.daemon = True # thread dies with the program
+            t.start()
+
+            self.threads.append(p)
+            self.enableInput(False)
+
+    def stop(self):
+        self.isexecuting = False
+        while  self.threads:
+            p = self.threads.pop()
+            p.kill()
+            print p
+        self.startbutton['text'] = "Start"
+        self.enableInput(True)
+
+    def pollStdout(self, p):
+
+        """Poll the process p until it finishes"""
+
+        while True:
+            retcode = p.poll() # returns None while subprocess is running
+            if retcode is not None:
+                print "thread ended"
+
+                self.textbox.insert(Tkinter.END, "\nprocess exitied with code "+ str(retval))
+                self.textbox.see(Tkinter.END) 
+
+                self.stop()
+                return
+            
+            line = p.stdout.readline()
+
+            if len(line)>0:
+                print line
+                self.textbox.insert(Tkinter.END, "\n" + line.rstrip())
+                self.textbox.see(Tkinter.END) 
+            print "readline"
+            time.sleep(0.01)
+
+    def enableInput(self, enable=True):
+        state = "normal" if enable else "disabled"
+        for i in self.inputs:
+            i['state'] = state
 
 
 def merge_two_dicts(x, y):
@@ -206,6 +287,7 @@ def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
+
 
 if __name__=='__main__':
   root = Tkinter.Tk()
