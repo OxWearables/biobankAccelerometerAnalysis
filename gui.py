@@ -4,7 +4,7 @@ from functools import partial
 
 # spawning child processes
 import subprocess
-from threading  import Thread
+from threading  import Thread, Timer
 import sys
 import time
 
@@ -149,7 +149,8 @@ class TkinterGUI(Tkinter.Frame):
         """Generates a commandline from the options given"""
     
         if len(self.targetfile)>0 and len(self.pycommand)>0:
-            cmdstr = "python " + self.pycommand
+            # -u for unbuffered output (prevents hanging when reading stdout and stderr)
+            cmdstr = "python -u " + self.pycommand
             if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
             
             for key,value in self.vargs.iteritems():
@@ -229,7 +230,8 @@ class TkinterGUI(Tkinter.Frame):
             cmd_line = self.textbox.get("1.0",Tkconstants.END)
 
             self.setCommand(cmd_line)
-            print "starting " + cmd_line
+            print "running:  " + cmd_line
+            self.textbox.insert("0.1", "running: ")
             p = subprocess.Popen(cmd_line, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
             self.isexecuting = True
@@ -243,9 +245,11 @@ class TkinterGUI(Tkinter.Frame):
 
     def stop(self):
         self.isexecuting = False
-        while  self.threads:
+        while self.threads:
             p = self.threads.pop()
-            p.kill()
+            t = Timer(10, p.terminate)
+            t.start
+            # p.terminate()# .kill()
             print p
         self.startbutton['text'] = "Start"
         self.enableInput(True)
@@ -254,16 +258,16 @@ class TkinterGUI(Tkinter.Frame):
 
         """Poll the process p until it finishes"""
 
+        start = -1 # the time when the process returns (exits)
         while True:
             retcode = p.poll() # returns None while subprocess is running
-            if retcode is not None:
-                print "thread ended"
+            if start==-1 and retcode is not None:
+                print "thread ended", time.time()
 
-                self.textbox.insert(Tkinter.END, "\nprocess exitied with code "+ str(retval))
+                self.textbox.insert(Tkinter.END, "\nprocess exitied with code "+ str(retcode))
                 self.textbox.see(Tkinter.END) 
-
-                self.stop()
-                return
+                
+                start = time.time()
             
             line = p.stdout.readline()
 
@@ -271,7 +275,20 @@ class TkinterGUI(Tkinter.Frame):
                 print line
                 self.textbox.insert(Tkinter.END, "\n" + line.rstrip())
                 self.textbox.see(Tkinter.END) 
+
+            line = p.stderr.readline()
+
+            if len(line)>0:
+                print line
+                self.textbox.insert(Tkinter.END, "\nERROR: " + line.rstrip())
+                self.textbox.see(Tkinter.END) 
             print "readline"
+
+            # we stop reading after 0.5s to give error messages a chance to display
+            if start != -1 and time.time() > start + 0.5:
+                print "actually finished", time.time()
+                self.stop()
+                return
             time.sleep(0.01)
 
     def enableInput(self, enable=True):
