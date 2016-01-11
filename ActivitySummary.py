@@ -23,7 +23,7 @@ import pytz
 import numpy as np
 import statsmodels.api as sm
 import struct
-from subprocess import call, Popen
+from subprocess import call
 import sys
 import argparse
 
@@ -90,6 +90,9 @@ def main():
     parser.add_argument('-javaHeapSpace', 
                             metavar="amount in MB",default="", type=str,
                             help="""amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (default : unlimited)""")
+    parser.add_argument('-javaLogFile', 
+                            metavar="True/False",default=False, type=bool,
+                            help="""write java output to javaLog.txt (default : %(default)s)""")
     # TODO add options e.g. 0 None [assumes presence of Epoch.csv and set processRawFile false] 1 AxivityAx3Epochs [java]
     parser.add_argument('-rawDataParser', 
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
@@ -135,7 +138,7 @@ def main():
     epochFile       = os.path.join(args.epochFolder,      args.rawFileBegin + "Epoch.json")
     stationaryFile  = os.path.join(args.stationaryFolder, args.rawFileBegin + "Stationary.csv")
     tsFile          = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
-
+    javaLogFile     = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -174,7 +177,7 @@ def main():
             #calibrate axes scale/offset values
             if not skipCalibration:
                 #identify 10sec stationary epochs
-                print toScreen('calibrating')
+                print toScreen('calibrating to file '+ stationaryFile)
                 commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                         rawFile, "outputFile:" + stationaryFile,
                         "verbose:" + str(verbose), "filter:true",
@@ -182,7 +185,14 @@ def main():
                         "stationaryStd:0.013"]
                 if len(javaHeapSpace) > 1:
                     commandArgs.insert(1,javaHeapSpace);
-                call(commandArgs)
+                if (javaLogFile):
+                    logfile = open("javaLog.txt", 'a')
+                    logfile.write("\n" + toScreen("New Log :\n"))
+                    exitCode = call(commandArgs, stdout=logfile, stderr=logfile)
+                    logfile.write("\n" + toScreen("process exited with code " + str(exitCode) + "\n"))
+                    logfile.close()
+                else:
+                    exitCode = call(commandArgs)
                 #record calibrated axes scale/offset/temperature vals + static point stats
                 calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
                         xMax, yMin, yMax, zMin, zMax, \
