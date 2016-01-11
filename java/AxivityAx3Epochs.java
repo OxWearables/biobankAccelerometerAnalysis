@@ -65,7 +65,7 @@ public class AxivityAx3Epochs
             invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
             invalidInputMsg += "java AxivityAx3Epochs inputFile.CWA";
             System.out.println(invalidInputMsg);
-            System.exit(0);
+            System.exit(-1);
         } else if (args.length == 1) {
             //singe parameter needs to be accFile
             accFile = args[0]; 
@@ -80,7 +80,7 @@ public class AxivityAx3Epochs
             for (String individualParam : functionParameters) {
                 //individual_Parameters will look like "epoch_period:60"
                 String funcName = individualParam.split(":")[0];
-                String funcParam = individualParam.split(":")[1];
+                String funcParam = individualParam.substring(individualParam.indexOf(":") + 1);
                 if (funcName.equals("outputFile")) {
                     outputFile = funcParam;
                 } else if (funcName.equals("verbose")) {
@@ -130,12 +130,14 @@ public class AxivityAx3Epochs
                 }
             }
         }    
-
         //process file if input parameters are all ok
         writeCwaEpochs(accFile, outputFile, verbose, epochPeriod, timeFormat,
                 startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
                 swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
                 filter);   
+        //if no errors then will reach this
+        System.out.println("reached end of main");
+        System.exit(0);
     }
 
     /**
@@ -229,7 +231,7 @@ public class AxivityAx3Epochs
                 //option to provide status update to user...
                 pageCount++;
                 if(verbose && pageCount % 10000 == 0)
-                    System.out.print((pageCount*100/memSizePages) + "%\b\b\b");
+                    System.out.println((pageCount*100/memSizePages) + "%");
             }   
             rawAccReader.close();
             epochFileWriter.close();
@@ -238,7 +240,7 @@ public class AxivityAx3Epochs
             errorMessage += ": " + excep.toString();
             excep.printStackTrace(System.err);
             System.err.println(errorMessage);
-            System.exit(0);
+            System.exit(-2);
         }
     }
 
