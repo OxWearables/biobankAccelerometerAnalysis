@@ -35,9 +35,6 @@ The output will look like:
 
 <h2>Installation</h2>
 Dependancies include: java and python (numpy and pandas).
-```
-javac *.java
-```
 
 [Click here for detailed information on installing this software on our wiki.]
 (https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/2. Installation)
