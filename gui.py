@@ -16,7 +16,6 @@ class TkinterGUI(Tkinter.Frame):
 
         # options for buttons
         button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
-        txt_opt = {'fill': Tkconstants.X, 'padx': 5, 'pady': 5}
         # to know if a file has been selected
         self.targetfile = "" # file to process
         self.pycommand = "" # either ActivitySummary.py or batchProcess.py
