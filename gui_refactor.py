@@ -15,29 +15,56 @@ class TkinterGUI(Tkinter.Frame):
         Tkinter.Frame.__init__(self, root)
 
         # options for buttons
-        button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
+        pack_opts = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
         # to know if a file has been selected
         self.targetfile = "" # file to process
         self.pycommand = "" # either ActivitySummary.py or batchProcess.py
         self.isexecuting = False # are we running a shell?
         self.threads = [] # keep track of threads so we can stop them
 
+        self.target_opts = {
+            'filename':Tkinter.StringVar(), # we use stringVar so we can monitor for changes
+            'filenames': []
+            'dirname':Tkinter.StringVar(),
+            'target_type': StringVar(),
+            'file_opts': {
+                'filetypes': [('all files', '.*'), ('CWA files', '.cwa')],
+                'parent':root,
+                'title': 'Select a file to process'
+            },
+            'dir_opts': {
+                'mustexist': False,
+                'parent': root,
+                'title': 'Select a folder to process'
+            }
+        }
+        # vargs are in format {'command': name of -command, 'varable': StringVar() for value,
+        #                         'default': if same as default it's unchanged, 'type': 'bool', 'string', 'int', or 'float' }
+        # -[command] [variable].get()   (only add if [variable] != [default])
+        self.vargs = [] 
+        # list of buttons that should be disabled when the processing has started
+        self.inputs = []
+
 
         frame = Tkinter.Frame()
-        self.inputs = inputs = []
         # define buttons
-        startingFile = ""
-        inputs.append(Tkinter.Button(frame, text='Choose file', command=lambda:self.askopenfilename(startingFile = startingFile), width=35))
-        inputs[-1].grid(row=0, column=0, padx=5, pady=15)
+        self.inputs.append(
+            Tkinter.Button(frame, 
+                text='Choose file',
+                command=lambda:self.target_opts['filename'].set(self.askopenfilename(initialFile = self.target_opts['filename']).get()),
+                width=35))
+
+        self.inputs[-1].grid(row=0, column=0, padx=5, pady=15)
+
         # define options for opening or saving a file
-        self.file_opt = options = {}
+        self.file_opt = {}
         # options['defaultextension'] = '.*'#'.cwa'
-        options['filetypes'] = [('CWA files', '.cwa'), ('all files', '.*')]
-        options['filetypes'] = [('all files', '.*'), ('CWA files', '.cwa')]
+        self.file_opt['filetypes'] = [('CWA files', '.cwa'), ('all files', '.*')]
+        self.file_opt['filetypes'] = [('all files', '.*'), ('CWA files', '.cwa')]
         # options['initialdir'] = 'C:\\'
         # options['initialfile'] = 'myfile.txt'
-        options['parent'] = root
-        options['title'] = 'Select file to process'
+        self.file_opt['parent'] = root
+        self.file_opt['title'] = 'Select file to process'
 
         # This is only available on the Macintosh, and only when Navigation Services are installed.
         #options['message'] = 'message'
@@ -47,8 +74,12 @@ class TkinterGUI(Tkinter.Frame):
 
 
         startingDir = ""
-        inputs.append(Tkinter.Button(frame, text='Choose directory', command=lambda:self.askdirectory(startingDir = startingDir), width=35))
-        inputs[-1].grid(row=0, column=1, padx=5, pady=5)
+        self.inputs.append(
+            Tkinter.Button(frame,
+            text='Choose directory',
+            command=lambda:self.target_opts['dirname'].set(self.askdirectory(startingDir = self.target_opts['filename'].get()),
+            width=35))
+        self.inputs[-1].grid(row=0, column=1, padx=5, pady=5)
         # defining options for opening a directory
         self.dir_opt = options = {}
         # options['initialdir'] = 'C:\\'
@@ -65,7 +96,7 @@ class TkinterGUI(Tkinter.Frame):
         txt.insert('insert', "Please select a file or folder")
         self.textbox = txt
 
-        frame.pack(expand = 1, **button_opt)
+        frame.pack(expand = 1, **pack_opts)
 
 
         # boolean options
@@ -82,11 +113,13 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'] = Tkinter.IntVar()
             value['variable'].set(value['default'])
 
-            inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
-            inputs[-1].pack(side='left',**button_opt)
+            self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type':'bool'})
+
+            self.inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
+            self.inputs[-1].pack(side='left',**pack_opts)
 
         # print {key: value['variable'].get() for (key, value) in self.checkboxes.iteritems()}
-        frame.pack(fill=Tkconstants.NONE, padx=button_opt['padx'], pady=button_opt['pady'])
+        frame.pack(fill=Tkconstants.NONE, padx=pack_opts['padx'], pady=pack_opts['pady'])
 
 
         # more complicated options, we will just pass them in as text for now (hoping the user will put anything silly)
@@ -123,9 +156,11 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'] = Tkinter.StringVar()
             value['variable'].set(self.formatargument(value['default']))
 
-            inputs.append(Tkinter.Entry(frame,textvariable=value['variable'],width=50))
-            inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
-            frame.pack(**button_opt)
+            self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type', value['type']})
+
+            self.inputs.append(Tkinter.Entry(frame,textvariable=value['variable'],width=50))
+            self.inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
+            frame.pack(**pack_opts)
 
         # box for output location options
         frame = Tkinter.Frame()
@@ -137,9 +172,9 @@ class TkinterGUI(Tkinter.Frame):
 
         outputFolder = Tkinter.StringVar()
         outputFolder.set("")
-        inputs.append(Tkinter.Entry(frame,textvariable=outputFolder,width=50))
-        inputs[-1].pack(side='right')
-        frame.pack(**button_opt)
+        self.inputs.append(Tkinter.Entry(frame,textvariable=outputFolder,width=50))
+        self.inputs[-1].pack(side='right')
+        frame.pack(**pack_opts)
 
         # Start button at bottom
         frame = Tkinter.Frame()
@@ -150,10 +185,10 @@ class TkinterGUI(Tkinter.Frame):
 
 
         # merge the dicts
-        self.vargs = merge_two_dicts(self.floatboxes, self.checkboxes)
+        # self.vargs = merge_two_dicts(self.floatboxes, self.checkboxes)
 
-        for key, value in self.vargs.iteritems():
-            value['variable'].trace("w", partial(self.changed, key))
+        for obj in self.vargs:
+            obj['variable'].trace("w", partial(self.changed, key))
 
     def setCommand(self, name):
 
@@ -172,7 +207,7 @@ class TkinterGUI(Tkinter.Frame):
             cmdstr = "python -u " + self.pycommand
             if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
             
-            for key,value in self.vargs.iteritems():
+            for value in self.vargs:
                 if 'argstr' in value:
                     cmdstr += " " + value['argstr']
 
