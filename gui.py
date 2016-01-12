@@ -26,7 +26,8 @@ class TkinterGUI(Tkinter.Frame):
         frame = Tkinter.Frame()
         self.inputs = inputs = []
         # define buttons
-        inputs.append(Tkinter.Button(frame, text='Choose file', command=self.askopenfilename, width=35))
+        startingFile = ""
+        inputs.append(Tkinter.Button(frame, text='Choose file', command=lambda:self.askopenfilename(startingFile = startingFile), width=35))
         inputs[-1].grid(row=0, column=0, padx=5, pady=5)
         # define options for opening or saving a file
         self.file_opt = options = {}
@@ -44,7 +45,9 @@ class TkinterGUI(Tkinter.Frame):
         # if you use the multiple file version of the module functions this option is set automatically.
         #options['multiple'] = 1
 
-        inputs.append(Tkinter.Button(frame, text='Choose directory', command=self.askdirectory, width=35))
+
+        startingDir = ""
+        inputs.append(Tkinter.Button(frame, text='Choose directory', command=lambda:self.askdirectory(startingDir = startingDir), width=35))
         inputs[-1].grid(row=0, column=1, padx=5, pady=5)
         # defining options for opening a directory
         self.dir_opt = options = {}
@@ -55,11 +58,14 @@ class TkinterGUI(Tkinter.Frame):
 
         # Textbox 
         txt = Tkinter.Text(frame, height = 10, width=80)
-        txt.grid(row=1, column=0, columnspan=2)
+        txt.grid(row=1, column=0, columnspan=2, sticky=Tkconstants.N + Tkconstants.E + Tkconstants.S + Tkconstants.W   )
+        Tkinter.Grid.grid_rowconfigure(frame, index=1, weight=1)
+        Tkinter.Grid.grid_columnconfigure(frame, index=0, weight=1)
+        Tkinter.Grid.grid_columnconfigure(frame, index=1, weight=1)
         txt.insert('insert', "Please select a file or folder")
         self.textbox = txt
 
-        frame.pack(**button_opt)
+        frame.pack(expand = 1, **button_opt)
 
 
         # boolean options
@@ -118,10 +124,24 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'].set(self.formatargument(value['default']))
 
             inputs.append(Tkinter.Entry(frame,textvariable=value['variable'],width=50))
-            inputs[-1].pack(side='right')
+            inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
             frame.pack(**button_opt)
 
-        # Start button at bottom (todo)
+        # box for output location options
+        frame = Tkinter.Frame()
+        # global folder button
+        # value['labelvar'] = Tkinter.StringVar()
+        # value['labelvar'].set()
+        value['label'] = Tkinter.Button(frame, text="Output folder for the generated summary files", width=50, wraplength=300)
+        value['label'].pack(side='left')
+
+        outputFolder = Tkinter.StringVar()
+        outputFolder.set("")
+        inputs.append(Tkinter.Entry(frame,textvariable=outputFolder,width=50))
+        inputs[-1].pack(side='right')
+        frame.pack(**button_opt)
+
+        # Start button at bottom
         frame = Tkinter.Frame()
         self.startbutton = Tkinter.Button(frame, text='Start', width=35, command=self.start)
         self.startbutton.grid(row=0, column=0, padx=5, pady=5)
@@ -188,10 +208,11 @@ class TkinterGUI(Tkinter.Frame):
         else:
             return str(value)
 
-    def askopenfilename(self):
+    def askopenfilename(self, **args):
 
         """Returns a user-selected filename """
-
+        if args['startingFile']:
+            self.file_opt['initialfile'] = args['startingFile']
         filename = tkFileDialog.askopenfilename(**self.file_opt)
         if not filename:
             print "no filename returned"
@@ -203,12 +224,15 @@ class TkinterGUI(Tkinter.Frame):
             self.pycommand = "ActivitySummary.py"
             self.generateFullCommand()
 
-    def askdirectory(self):
+    def askdirectory(self, **args):
 
         """Returns a  user-selected directoryname."""
-
+        if args['startingDir']:
+            self.dir_opt['initialdir'] = args['startingDir']
         dirname = tkFileDialog.askdirectory(**self.dir_opt)
         print dirname
+        print args
+        return dirname
         if not dirname:
             print "no dirname given"
         else:
