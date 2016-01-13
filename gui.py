@@ -105,7 +105,7 @@ class TkinterGUI(Tkinter.Frame):
         Tkinter.Grid.grid_columnconfigure(frame, index=1, weight=1)
         Tkinter.Grid.grid_columnconfigure(frame, index=2, weight=1)
         txt.insert('insert', "Please select a file or folder")
-        txt.config(state=Tkconstants.DISABLED)
+        # txt.config(state=Tkconstants.DISABLED)
         self.textbox = txt
 
         frame.pack(expand = 1, **pack_opts)
@@ -249,10 +249,10 @@ class TkinterGUI(Tkinter.Frame):
         self.textbox.configure(state='normal')
         self.textbox.delete(1.0, 'end')
         self.textbox.insert('insert', name)
-        self.textbox.configure(state='disabled')
+        # self.textbox.configure(state='disabled')
 
     # def generateFolderCommand(self, folder):
-        
+
 
     def generateFullCommand(self):
     
@@ -261,12 +261,18 @@ class TkinterGUI(Tkinter.Frame):
         target_type = self.target_opts['target_type'].get()
         if len(target_type)==0:
             self.setCommand("Please select a file or folder")
+            return ''
         else:
             print target_type, len(target_type)
             target = self.target_opts[target_type].get()
+
             if target: #len(self.targetfile)>0 and len(self.pycommand)>0:
                 # -u for unbuffered output (prevents hanging when reading stdout and stderr)
-                cmdstr = "python -u ActivitySummary.py " + target
+                if target.find(" "):
+                    # if filename has a space in it add quotes so it's parsed correctly as only one argument
+                    cmdstr = "python -u ActivitySummary.py \"" + target + "\"" 
+                else:
+                    cmdstr = "python -u ActivitySummary.py " + target
                 # if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
                 
                 for value in self.vargs:
@@ -276,10 +282,10 @@ class TkinterGUI(Tkinter.Frame):
                 # if self.pycommand != "batchProcess.py": cmdstr += " " + self.targetfile
 
                 self.setCommand(cmdstr)
-                        
+                return cmdstr
             else:
                 self.setCommand("Please select a file or folder")
-
+                return ''
 
     def changed(self, obj):
 
@@ -309,7 +315,7 @@ class TkinterGUI(Tkinter.Frame):
 
     def askopenfilename(self, **args):
 
-        """Returns a user-selected filename """
+        """Returns a user-selected filename. Tries to return the 'initialfile' default if nothing selected """
         print args
         if args['initialFile'] and len(args['initialFile'])>0:
             filename = tkFileDialog.askopenfilename(**self.file_opt)
@@ -333,7 +339,8 @@ class TkinterGUI(Tkinter.Frame):
 
     def askdirectory(self, **args):
 
-        """Returns a  user-selected directoryname."""
+        """Returns a user-selected directory name. Tries to return the 'initialdir' default if nothing selected """
+
         if args['initialDir'] and len(args['initialDir'])>0:
             dirname = tkFileDialog.askdirectory(initialdir = args['initialDir'], **self.dir_opt)
         else:
@@ -433,23 +440,15 @@ class TkinterGUI(Tkinter.Frame):
         else:
             self.showAdvancedOptions = not self.showAdvancedOptions
         if self.showAdvancedOptions:
-            self.advancedOptionsButton.config(text="Hide advanced options")
+            self.advancedOptionsButton.config(text="Show advanced options")
             for i in self.advancedOptionInputs:
                 i['frame'].pack_forget()
         else:    
-            self.advancedOptionsButton.config(text="Show advanced options")
+            self.advancedOptionsButton.config(text="Hide advanced options")
             for i in self.advancedOptionInputs:
                 i['frame'].pack(**i['pack_opts'])
         pass
 
-
-def merge_two_dicts(x, y):
-
-    """Given two dicts, merge them into a new dict as a shallow copy."""
-
-    z = x.copy()
-    z.update(y)
-    return z
 
 
 if __name__=='__main__':
