@@ -1,4 +1,5 @@
-import Tkinter, Tkconstants, tkFileDialog
+import Tkinter 
+import Tkconstants, tkFileDialog
 import math
 from functools import partial
 
@@ -13,59 +14,101 @@ class TkinterGUI(Tkinter.Frame):
     def __init__(self, root):
 
         Tkinter.Frame.__init__(self, root)
-
+        root.title("Accelerometer Processing")
         # options for buttons
-        button_opt = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
+        pack_opts = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
         # to know if a file has been selected
         self.targetfile = "" # file to process
         self.pycommand = "" # either ActivitySummary.py or batchProcess.py
         self.isexecuting = False # are we running a shell?
         self.threads = [] # keep track of threads so we can stop them
 
+        self.target_opts = {
+            'filename':Tkinter.StringVar(), # we use stringVar so we can monitor for changes
+            'dirname':Tkinter.StringVar(),
+            'filenames': [], # for multiple file selections, unused due to dodgy Tkinter support
+            'target_type': Tkinter.StringVar(),
+            'file_opts': {
+                'filetypes': [('all files', '.*'), ('CWA files', '.cwa')],
+                'parent':root,
+                'title': 'Select a file to process'
+            },
+            'dir_opts': {
+                'mustexist': False,
+                'parent': root,
+                'title': 'Select a folder to process'
+            }
+        }
+        def target_callback(type, *args):
+            print "target_callback", type
+            self.target_opts['target_type'].set(type)
+            self.generateFullCommand()
 
-        frame = Tkinter.Frame()
-        self.inputs = inputs = []
+        self.target_opts['filename'].trace("w", lambda *args: target_callback('filename', *args))
+        self.target_opts['dirname'].trace("w", lambda *args: target_callback('dirname', *args))
+        # vargs are in format {'command': name of -command, 'varable': StringVar() for value,
+        #                         'default': if same as default it's unchanged, 'type': 'bool', 'string', 'int', or 'float' }
+        # -[command] [variable].get()   (only add if [variable] != [default])
+        self.vargs = [] 
+        # list of buttons that should be disabled when the processing has started
+        self.inputs = []
+
+
+        advanced_frame = Tkinter.Frame()
+        frame = Tkinter.Frame(advanced_frame)
         # define buttons
-        startingFile = ""
-        inputs.append(Tkinter.Button(frame, text='Choose file', command=lambda:self.askopenfilename(startingFile = startingFile), width=35))
-        inputs[-1].grid(row=0, column=0, padx=5, pady=15)
-        # define options for opening or saving a file
-        self.file_opt = options = {}
-        # options['defaultextension'] = '.*'#'.cwa'
-        options['filetypes'] = [('CWA files', '.cwa'), ('all files', '.*')]
-        options['filetypes'] = [('all files', '.*'), ('CWA files', '.cwa')]
-        # options['initialdir'] = 'C:\\'
-        # options['initialfile'] = 'myfile.txt'
-        options['parent'] = root
-        options['title'] = 'Select file to process'
+        self.inputs.append(
+            Tkinter.Button(frame, 
+                text='Choose file',
+                command=lambda:self.target_opts['filename'].set(self.askopenfilename(initialFile = self.target_opts['filename'].get())),
+                width=35))
 
-        # This is only available on the Macintosh, and only when Navigation Services are installed.
-        #options['message'] = 'message'
+        self.inputs[-1].grid(row=0, column=0, padx=5, pady=15)
+
+        # define options for opening or saving a file
+        self.file_opt = {}
+        # options['defaultextension'] = '.*'#'.cwa'
+        self.file_opt['filetypes'] = [('CWA files', '.cwa'), ('all files', '.*')]
+        self.file_opt['filetypes'] = [('all files', '.*'), ('CWA files', '.cwa')]
+        self.file_opt['parent'] = root
+        self.file_opt['title'] = 'Select file to process'
 
         # if you use the multiple file version of the module functions this option is set automatically.
         #options['multiple'] = 1
 
-
-        startingDir = ""
-        inputs.append(Tkinter.Button(frame, text='Choose directory', command=lambda:self.askdirectory(startingDir = startingDir), width=35))
-        inputs[-1].grid(row=0, column=1, padx=5, pady=5)
+        self.inputs.append(
+            Tkinter.Button(frame,
+            text='Choose directory',
+            command=lambda:self.target_opts['dirname'].set(self.askdirectory(initialDir = self.target_opts['dirname'].get())),
+            width=35))
+        self.inputs[-1].grid(row=0, column=1, padx=5, pady=5)
         # defining options for opening a directory
-        self.dir_opt = options = {}
-        # options['initialdir'] = 'C:\\'
-        options['mustexist'] = False
-        options['parent'] = root
-        options['title'] = 'Select folder to process'
+        self.dir_opt = {}
+        self.dir_opt['mustexist'] = False
+        self.dir_opt['parent'] = root
+        self.dir_opt['title'] = 'Select folder to process'
+
+        
+        self.advancedOptionInputs = []
+        self.showAdvancedOptions = False
+        self.advancedOptionsButton = Tkinter.Button(frame,
+                                        text='Hide advanced Options',
+                                        command=self.toggleAdvancedOptions,
+                                        width=35)
+        self.advancedOptionsButton.grid(row=0, column=2, padx=5, pady=5)
 
         # Textbox 
-        txt = Tkinter.Text(frame, height = 10, width=80)
-        txt.grid(row=1, column=0, columnspan=2, sticky=Tkconstants.N + Tkconstants.E + Tkconstants.S + Tkconstants.W   )
+        txt = Tkinter.Text(frame, height = 10, width=70)
+        txt.grid(row=1, column=0, columnspan=3, sticky=Tkconstants.N + Tkconstants.E + Tkconstants.S + Tkconstants.W, padx=5, pady=5   )
         Tkinter.Grid.grid_rowconfigure(frame, index=1, weight=1)
         Tkinter.Grid.grid_columnconfigure(frame, index=0, weight=1)
         Tkinter.Grid.grid_columnconfigure(frame, index=1, weight=1)
+        Tkinter.Grid.grid_columnconfigure(frame, index=2, weight=1)
         txt.insert('insert', "Please select a file or folder")
+        txt.config(state=Tkconstants.DISABLED)
         self.textbox = txt
 
-        frame.pack(expand = 1, **button_opt)
+        frame.pack(expand = 1, **pack_opts)
 
 
         # boolean options
@@ -76,70 +119,111 @@ class TkinterGUI(Tkinter.Frame):
             'processRawFile': {'text':'Process the raw (.cwa) file', 'default':True}
         }
 
-        frame = Tkinter.Frame()
+        frame = Tkinter.Frame(advanced_frame)
         for key, value in self.checkboxes.iteritems():
             value['type'] = 'bool'
             value['variable'] = Tkinter.IntVar()
             value['variable'].set(value['default'])
 
-            inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
-            inputs[-1].pack(side='left',**button_opt)
+            self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type':'bool'})
+
+            self.inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
+            self.inputs[-1].pack(side='left',**pack_opts)
 
         # print {key: value['variable'].get() for (key, value) in self.checkboxes.iteritems()}
-        frame.pack(fill=Tkconstants.NONE, padx=button_opt['padx'], pady=button_opt['pady'])
+        frame.pack(fill=Tkconstants.NONE, padx=pack_opts['padx'], pady=pack_opts['pady'])
+        self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info()})
 
 
         # more complicated options, we will just pass them in as text for now (hoping the user will put anything silly)
-        self.floatboxes = {
-            'calibrationOffset':{'text': 'Calibration offset', 'default':[0.0,0.0,0.0]},
-            'calibrationSlope':{'text': 'Calibration slope linking offset to temperature', 'default':[1.0,1.0,1.0]},
-            'calibrationTemperature':{'text': 'Mean temperature in degrees Celsius of stationary data for calibration', 'default':[0.0,0.0,0.0]},
-            'meanTemperature':{'text': 'Mean calibration temperature in degrees Celsius', 'default':20.0},
-            'epochPeriod':{'text': 'Length in seconds of a single epoch', 'default':5},
-            'javaHeapSpace':{'text': 'Amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (leave blank for no limit)', 'default':''},
-            'rawDataParser':{'text': 'File containing java program to process (.cwa) binary files, must be [.class] type', 'default':'AxivityAx3Epochs'},
+        option_groups = {
+            'Calibration options': {
+                'calibrationOffset':{'text': 'Calibration offset', 'default':[0.0,0.0,0.0]},
+                'calibrationSlope':{'text': 'Calibration slope linking offset to temperature', 'default':[1.0,1.0,1.0]},
+                'calibrationTemperature':{'text': 'Mean temperature in degrees Celsius of stationary data for calibration', 'default':[0.0,0.0,0.0]},
+                'meanTemperature':{'text': 'Mean calibration temperature in degrees Celsius', 'default':20.0}
+            },
+            'Java options': {
+                'javaHeapSpace':{'text': 'Amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (leave blank for no limit)', 'default':''},
+                'rawDataParser':{'text': 'Java (.class) file, which is used to process (.cwa) binary files', 'default':'AxivityAx3Epochs'}
+            },
+            'Epoch options': {
+                'epochPeriod':{'text': 'Length in seconds of a single epoch', 'default':5}
+            }
         }
+        frame = Tkinter.Frame(advanced_frame)
+        for key, groups in option_groups.iteritems():
+            labelframe = Tkinter.LabelFrame(frame, text=key)
+            for key, value in groups.iteritems():
 
-        for key, value in self.floatboxes.iteritems():
+                if isinstance(value['default'], list):
+                    value['type'] = 'multi'
+                elif isinstance(value['default'], str):
+                    value['type'] = 'string'
+                elif isinstance(value['default'], int):
+                    value['type'] = 'int'
+                else:
+                    value['type'] = 'float'
+                    
+                # need to make these variables pernament since if they get garbage collected tkinter will fail
+                rowFrame = Tkinter.Frame(labelframe)
 
-            if isinstance(value['default'], list):
-                value['type'] = 'multi'
-            elif isinstance(value['default'], str):
-                value['type'] = 'string'
-            elif isinstance(value['default'], int):
-                value['type'] = 'int'
-            else:
-                value['type'] = 'float'
-                
-            # need to make these variables pernament since if they get garbage collected tkinter will fail
-            frame = Tkinter.Frame()
+                value['labelvar'] = Tkinter.StringVar()
+                value['labelvar'].set(value['text'])
+                value['label'] = Tkinter.Label(rowFrame, textvariable=value['labelvar'], width=50, wraplength=300)
+                value['label'].pack(side='left')
 
-            value['labelvar'] = Tkinter.StringVar()
-            value['labelvar'].set(value['text'])
-            value['label'] = Tkinter.Label(frame, textvariable=value['labelvar'], width=50, wraplength=300)
-            value['label'].pack(side='left')
+                # print str(value['default'])
+                value['variable'] = Tkinter.StringVar()
+                value['variable'].set(self.formatargument(value['default']))
 
-            # print str(value['default'])
+                self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type':value['type']})
+
+                self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
+                self.inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
+                rowFrame.pack(**pack_opts)
+            labelframe.pack(**pack_opts)
+        frame.pack()
+
+        self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info() })
+        folder_params = {
+            'summaryFolder':{'text':'Folder for summary output'},
+            'nonWearFolder':{'text':'Folder for non-wear time'},
+            'epochFolder':{'text':'Folder for epoch.json'},
+            'stationaryFolder':{'text':'Folder for stationary non-wear bouts'},
+            'timeSeriesFolder':{'text':'Folder for time series'}
+        }
+        
+
+        # box for output folder options
+        def chooseFolder(textbox, value):
+            value.set(self.askdirectory(initialDir = value.get()))
+            # self.textbox.delete(1.0, 'end')
+            # self.textbox.insert('insert', value.get())
+        
+        frame = Tkinter.Frame(advanced_frame)
+        labelframe = Tkinter.LabelFrame(frame, text="Folder options (default is same folder as input file)")
+        for key, value in folder_params.iteritems():
+            rowFrame = Tkinter.Frame(labelframe)
+
             value['variable'] = Tkinter.StringVar()
-            value['variable'].set(self.formatargument(value['default']))
+            value['variable'].set("")
+            value['variable'].trace('w', lambda *args: self.generateFullCommand())
 
-            inputs.append(Tkinter.Entry(frame,textvariable=value['variable'],width=50))
-            inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
-            frame.pack(**button_opt)
+            self.vargs.append({'command': key, 'variable': value['variable'], 'default': '', 'type':'string'})
 
-        # box for output location options
-        frame = Tkinter.Frame()
-        # global folder button
-        # value['labelvar'] = Tkinter.StringVar()
-        # value['labelvar'].set()
-        value['label'] = Tkinter.Button(frame, text="Output folder for the generated summary files", width=50, wraplength=300)
-        value['label'].pack(side='left')
+            self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
+            self.inputs[-1].pack(side='right', expand=1, fill= Tkconstants.X)
 
-        outputFolder = Tkinter.StringVar()
-        outputFolder.set("")
-        inputs.append(Tkinter.Entry(frame,textvariable=outputFolder,width=50))
-        inputs[-1].pack(side='right')
-        frame.pack(**button_opt)
+            value['label'] = Tkinter.Button(rowFrame, text=value['text'], command=lambda t=self.inputs[-1], v=value['variable']: chooseFolder(t, v), width=50, wraplength=300)
+            value['label'].pack(side='left', padx=pack_opts['padx'], pady=pack_opts['pady'])
+
+            rowFrame.pack(**pack_opts)
+        labelframe.pack(**pack_opts)
+        frame.pack()
+        self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info()})
+
+        advanced_frame.pack(expand=1, fill=Tkconstants.Y)
 
         # Start button at bottom
         frame = Tkinter.Frame()
@@ -148,58 +232,73 @@ class TkinterGUI(Tkinter.Frame):
         Tkinter.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
         frame.pack()
 
+        root.update()
+        root.minsize(root.winfo_width(), 0)
 
         # merge the dicts
-        self.vargs = merge_two_dicts(self.floatboxes, self.checkboxes)
+        # self.vargs = merge_two_dicts(floatboxes, self.checkboxes)
 
-        for key, value in self.vargs.iteritems():
-            value['variable'].trace("w", partial(self.changed, key))
+        for obj in self.vargs:
+            obj['variable'].trace('w', lambda a,b,c, obj=obj: self.changed(obj)) # lambda to generate scope -> forces obj (o) to stay the same
 
     def setCommand(self, name):
 
-        """Replaces the text in the textbox"""
+        """Set text in the textbox"""
 
         print name
+        self.textbox.configure(state='normal')
         self.textbox.delete(1.0, 'end')
         self.textbox.insert('insert', name)
+        self.textbox.configure(state='disabled')
+
+    # def generateFolderCommand(self, folder):
         
+
     def generateFullCommand(self):
     
         """Generates a commandline from the options given"""
-    
-        if len(self.targetfile)>0 and len(self.pycommand)>0:
-            # -u for unbuffered output (prevents hanging when reading stdout and stderr)
-            cmdstr = "python -u " + self.pycommand
-            if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
-            
-            for key,value in self.vargs.iteritems():
-                if 'argstr' in value:
-                    cmdstr += " " + value['argstr']
-
-            if self.pycommand != "batchProcess.py": cmdstr += " " + self.targetfile
-
-            self.setCommand(cmdstr)
-                    
-        else:
+        
+        target_type = self.target_opts['target_type'].get()
+        if len(target_type)==0:
             self.setCommand("Please select a file or folder")
+        else:
+            print target_type, len(target_type)
+            target = self.target_opts[target_type].get()
+            if target: #len(self.targetfile)>0 and len(self.pycommand)>0:
+                # -u for unbuffered output (prevents hanging when reading stdout and stderr)
+                cmdstr = "python -u ActivitySummary.py " + target
+                # if self.pycommand == "batchProcess.py": cmdstr += " " + self.targetfile
+                
+                for value in self.vargs:
+                    if 'argstr' in value:
+                        cmdstr += " " + value['argstr']
+
+                # if self.pycommand != "batchProcess.py": cmdstr += " " + self.targetfile
+
+                self.setCommand(cmdstr)
+                        
+            else:
+                self.setCommand("Please select a file or folder")
 
 
-    def changed(self, key, *args):
+    def changed(self, obj):
 
         """Option button callback."""
         
-        print key, args
-        arg = self.vargs[key] 
-        val = arg['variable'].get()
-        if arg['type'] == 'bool' and val != arg['default']:
+        print 'obj',obj
+        # args = self.vargs[key] 
+        val_type = obj['type']
+        val = obj['variable'].get()
+        print val_type, val, obj
+        if val_type == 'bool' and val != obj['default']:
             print "bool not default"
-            arg['argstr'] = '-' + key + " " + ("True" if val else "False")
-        elif arg['type'] != 'bool' and  val != self.formatargument(arg['default']):
-            arg['argstr'] = '-' + key + " " + val
+            obj['argstr'] = '-' + obj['command'] + " " + ("True" if val else "False")
+        elif val_type != 'bool' and  val != self.formatargument(obj['default']):
+            obj['argstr'] = '-' + obj['command'] + " " + val
             print "not default"
         else:
             print "is default"
-            del arg['argstr']
+            obj['argstr'] = ''
         self.generateFullCommand()
 
     def formatargument(self, value):
@@ -211,36 +310,45 @@ class TkinterGUI(Tkinter.Frame):
     def askopenfilename(self, **args):
 
         """Returns a user-selected filename """
-        if args['startingFile']:
-            self.file_opt['initialfile'] = args['startingFile']
-        filename = tkFileDialog.askopenfilename(**self.file_opt)
+        print args
+        if args['initialFile'] and len(args['initialFile'])>0:
+            filename = tkFileDialog.askopenfilename(**self.file_opt)
+        else:
+            filename = tkFileDialog.askopenfilename(initialfile=args['initialFile'], **self.file_opt)
+            
         if not filename:
             print "no filename returned"
+            if args['initialFile']:
+                return args['initialFile']
+            else:
+                return ''
         else:
             print filename
+            return filename
             # set for when user re-opens file dialogue
-            self.file_opt['initialfile'] = filename
-            self.targetfile = filename
-            self.pycommand = "ActivitySummary.py"
-            self.generateFullCommand()
+            # self.file_opt['initialfile'] = filename
+            # self.targetfile = filename
+            # self.pycommand = "ActivitySummary.py"
+            # self.generateFullCommand()
 
     def askdirectory(self, **args):
 
         """Returns a  user-selected directoryname."""
-        if args['startingDir']:
-            self.dir_opt['initialdir'] = args['startingDir']
-        dirname = tkFileDialog.askdirectory(**self.dir_opt)
+        if args['initialDir'] and len(args['initialDir'])>0:
+            dirname = tkFileDialog.askdirectory(initialdir = args['initialDir'], **self.dir_opt)
+        else:
+            dirname = tkFileDialog.askdirectory(**self.dir_opt)
         print dirname
         print args
-        return dirname
         if not dirname:
             print "no dirname given"
+            if args['initialDir']:
+                return args['initialDir']
+            else:
+                return ''
         else:
-            self.dir_opt['initialdir'] = dirname
-            self.targetfile = dirname
-            self.pycommand = "batchProcess.py"
-            self.generateFullCommand()
-    
+            return dirname   
+
     def start(self):
 
         """Start button pressed"""
@@ -319,6 +427,21 @@ class TkinterGUI(Tkinter.Frame):
         for i in self.inputs:
             i['state'] = state
 
+    def toggleAdvancedOptions(self, forceValue=None):
+        if forceValue is not None:
+            self.showAdvancedOptions = forceValue
+        else:
+            self.showAdvancedOptions = not self.showAdvancedOptions
+        if self.showAdvancedOptions:
+            self.advancedOptionsButton.config(text="Hide advanced options")
+            for i in self.advancedOptionInputs:
+                i['frame'].pack_forget()
+        else:    
+            self.advancedOptionsButton.config(text="Show advanced options")
+            for i in self.advancedOptionInputs:
+                i['frame'].pack(**i['pack_opts'])
+        pass
+
 
 def merge_two_dicts(x, y):
 
@@ -332,4 +455,5 @@ def merge_two_dicts(x, y):
 if __name__=='__main__':
   root = Tkinter.Tk()
   TkinterGUI(root).pack()
+  root.wm_title = "hi"
   root.mainloop()
