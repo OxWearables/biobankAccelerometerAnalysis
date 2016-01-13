@@ -728,14 +728,19 @@ def getOmconvertInfo(omconvertInfoFile):
 
 
 def getDeviceId(cwaFile):
-    f = open(cwaFile, 'rb')
-    header = f.read(2)
-    if header == 'MD':
-        blockSize = struct.unpack('H', f.read(2))[0]
-        performClear = struct.unpack('B', f.read(1))[0]
-        deviceId = struct.unpack('H', f.read(2))[0]
-    f.close()
-    return deviceId
+    try:
+        f = open(cwaFile, 'rb')
+        header = f.read(2)
+        if header == 'MD':
+            blockSize = struct.unpack('H', f.read(2))[0]
+            performClear = struct.unpack('B', f.read(1))[0]
+            deviceId = struct.unpack('H', f.read(2))[0]
+        f.close()
+        return deviceId
+    except UnboundLocalError as e:
+        print "ERROR: in getDeviceId(\"" + cwaFile + "\")"
+        print "A deviceId value could not be found in input file header, this usually occurs when the file is not an Axivity .cwa accelerometer file. Exiting..."
+        sys.exit(-1)
 
 def formatNum(num, decimalPlaces):
     fmt = '%.' + str(decimalPlaces) + 'f'
