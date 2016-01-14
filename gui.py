@@ -197,7 +197,12 @@ class TkinterGUI(Tkinter.Frame):
 
         # box for output folder options
         def chooseFolder(textbox, value):
-            value.set(self.askdirectory(initialDir = value.get()))
+
+            chosendir = self.askdirectory(initialDir = value.get())
+            if chosendir.find(" ")!=-1:
+                value.set('\"' + chosendir + '\"')
+            else:
+                value.set(chosendir)
             # self.textbox.delete(1.0, 'end')
             # self.textbox.insert('insert', value.get())
         
@@ -216,6 +221,7 @@ class TkinterGUI(Tkinter.Frame):
             self.inputs[-1].pack(side='right', expand=1, fill= Tkconstants.X)
 
             value['label'] = Tkinter.Button(rowFrame, text=value['text'], command=lambda t=self.inputs[-1], v=value['variable']: chooseFolder(t, v), width=50, wraplength=300)
+            self.inputs.append(value['label'])
             value['label'].pack(side='left', padx=pack_opts['padx'], pady=pack_opts['pady'])
 
             rowFrame.pack(**pack_opts)
@@ -268,7 +274,7 @@ class TkinterGUI(Tkinter.Frame):
 
             if target: #len(self.targetfile)>0 and len(self.pycommand)>0:
                 # -u for unbuffered output (prevents hanging when reading stdout and stderr)
-                if target.find(" "):
+                if target.find(" ")!=-1:
                     # if filename has a space in it add quotes so it's parsed correctly as only one argument
                     cmdstr = "python -u ActivitySummary.py \"" + target + "\"" 
                 else:
@@ -422,8 +428,8 @@ class TkinterGUI(Tkinter.Frame):
                 self.textbox.see(Tkinter.END) 
             print "readline"
 
-            # we stop reading after 0.5s to give error messages a chance to display
-            if start != -1 and time.time() > start + 0.5:
+            # we stop reading after 2s to give error messages a chance to display
+            if start != -1 and time.time() > start + 2:
                 print "actually finished", time.time()
                 self.stop()
                 return
