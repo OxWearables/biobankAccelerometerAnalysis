@@ -47,16 +47,16 @@ def main():
 
     # optionals
     parser.add_argument('-summaryFolder', metavar='filename',default="",
-                            help="""folder for the %(default)s summary statistics""")
+                            help="""folder for the OutputSummary.json summary statistics""")
     parser.add_argument('-nonWearFolder', metavar='filename',default="",
-                            help="""folder for the %(default)s file""")
+                            help="""folder for the NonWearBouts.csv file""")
     parser.add_argument('-epochFolder', metavar='filename',default="",
                             help="""folder for the epoch.json file, this must be an 
-                                    existing file if "-processRawFile" is set to False %(default)s file""")
+                                    existing file if "-processRawFile" is set to False""")
     parser.add_argument('-stationaryFolder', metavar='filename',default="",
-                            help="""folder for the  %(default)s file""")
+                            help="""folder for the Stationary.csv stationary bouts file""")
     parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
-                            help="""folder for the %(default)s file""")
+                            help="""folder for the AccTimeSeries.csv file""")
     parser.add_argument('-skipCalibration', 
                             metavar='True/False',default=False, type=bool,
                             help="""skip calibration? (default : %(default)s)""")
@@ -123,7 +123,7 @@ def main():
     print "rawFile = " + str(args.rawFile) 
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
-    args.rawFileBegin = args.rawFile[0:-len(args.rawFileEnd)]
+    (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
     print (vars(args))
 
     # no way to deal with blank strings, so disabled for now
@@ -132,13 +132,17 @@ def main():
     #     if not os.access(path, os.F_OK): 
     #         print "error: " + path + " is not a valid directory"
     #         sys.exit() 
-
+    def genPath(path, filename):
+        if len(path)==0:
+            # if no folder specified then use same folder as rawFile
+            path = rawFilePath
+        return os.path.normpath(os.path.join(path, args.rawFileBegin + filename))
     # could check if folder exists? probably not neccesary
-    summaryFile     = os.path.join(args.summaryFolder,    args.rawFileBegin + "OutputSummary.json")
-    nonWearFile     = os.path.join(args.nonWearFolder,    args.rawFileBegin + "NonWearBouts.csv")
-    epochFile       = os.path.join(args.epochFolder,      args.rawFileBegin + "Epoch.json")
-    stationaryFile  = os.path.join(args.stationaryFolder, args.rawFileBegin + "Stationary.csv")
-    tsFile          = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
+    summaryFile     = genPath(args.summaryFolder,    "OutputSummary.json")
+    nonWearFile     = genPath(args.nonWearFolder,    "NonWearBouts.csv")
+    epochFile       = genPath(args.epochFolder,      "Epoch.json")
+    stationaryFile  = genPath(args.stationaryFolder, "Stationary.csv")
+    tsFile          = genPath(args.timeSeriesFolder, "AccTimeSeries.csv")
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -156,8 +160,14 @@ def main():
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
     
-    # print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
+    print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
     
+    print "summaryFile", summaryFile
+    print "nonWearFile", nonWearFile
+    print "epochFile", epochFile
+    print "stationaryFile", stationaryFile
+    print "tsFile", tsFile
+
     #check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
