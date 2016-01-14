@@ -160,7 +160,7 @@ def main():
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
     
-    print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
+    # print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
     
     print "summaryFile", summaryFile
     print "nonWearFile", nonWearFile
@@ -187,7 +187,7 @@ def main():
             #calibrate axes scale/offset values
             if not skipCalibration:
                 #identify 10sec stationary epochs
-                print toScreen('calibrating to file '+ stationaryFile)
+                print toScreen('calibrating to file: '+ stationaryFile)
                 commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                         rawFile, "outputFile:" + stationaryFile,
                         "verbose:" + str(verbose), "filter:true",
@@ -207,7 +207,7 @@ def main():
                         xMax, yMin, yMax, zMin, zMax, \
                         nStatic = getCalibrationCoefs(stationaryFile)
                 if verbose:
-                    print calOff, calSlope, calTemp, meanTemp, errPreCal, \
+                    print "calibration results: ", calOff, calSlope, calTemp, meanTemp, errPreCal, \
                             errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
           
             #calculate and write filtered avgVm epochs from raw file
