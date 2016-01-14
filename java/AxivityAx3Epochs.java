@@ -136,7 +136,6 @@ public class AxivityAx3Epochs
                 swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
                 filter);   
         //if no errors then will reach this
-        System.out.println("reached end of main");
         System.exit(0);
     }
 

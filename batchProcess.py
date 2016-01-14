@@ -53,7 +53,7 @@ def main():
 	# print directory_files
 	file_queue = []
 	for file in directory_files:
-		if file.endswith(".cwa"):
+		if file.lower().endswith(".cwa"):
 			print "+ " + file + ""
 			file_queue.append(os.path.join(directory,file))
 		else:

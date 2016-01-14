@@ -34,7 +34,7 @@ def main():
     # uncomment for example input
     # sys.argv = "sample -calibrationOffest 1.2 4 99999.342435 -processRawFile false -summaryFolder newdir".split()
 
-    print sys.argv
+    # print sys.argv
 
     parser = argparse.ArgumentParser(
         description="""A tool to extract meaningful health information from large accelerometer
@@ -90,16 +90,13 @@ def main():
     parser.add_argument('-javaHeapSpace', 
                             metavar="amount in MB",default="", type=str,
                             help="""amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (default : unlimited)""")
-    parser.add_argument('-javaLogFile', 
-                            metavar="True/False",default=False, type=bool,
-                            help="""write java output to javaLog.txt (default : %(default)s)""")
     # TODO add options e.g. 0 None [assumes presence of Epoch.csv and set processRawFile false] 1 AxivityAx3Epochs [java]
     parser.add_argument('-rawDataParser', 
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
                             help="""file containing a java program to process raw .cwa binary file, must end with .class (omitted) (default : %(default)s)""")
     # required
     parser.add_argument('rawFile', metavar='file', type=str, 
-                       help='the .cwa file to process (e.g. sample.cwa)')
+                       help='the .cwa file to process (e.g. sample.cwa). If the file path contains spaces, it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")')
 
     #check that enough command line arguments are entered
     if len(sys.argv)<2:
@@ -107,7 +104,7 @@ def main():
             msg += "\npython ActivitySummary.py inputFile.CWA \n"
             print msg
             parser.print_help()
-            sys.exit(0)
+            sys.exit(-1)
 
     print ""
     args = parser.parse_args()
@@ -116,10 +113,14 @@ def main():
         if len(args.rawFile.split('.'))<2:
             args.rawFile += ".cwa" # edge case since we still need a name?
     elif not os.path.isfile(args.rawFile): 
-        print "error: file does not exist. Exiting.."
-        sys.exit()
+        if args.rawFile:
+            print "error: no file at " + os.path.abspath(os.path.normpath(args.rawFile))
+            print "error: specified file " + args.rawFile + " does not exist. Exiting.."
+        else:
+            print "error: no file specified. Exiting.."
+        sys.exit(-2)
 
-    print "rawFile = " + str(args.rawFile)
+    print "rawFile = " + str(args.rawFile) 
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     args.rawFileBegin = args.rawFile[0:-len(args.rawFileEnd)]
@@ -138,7 +139,6 @@ def main():
     epochFile       = os.path.join(args.epochFolder,      args.rawFileBegin + "Epoch.json")
     stationaryFile  = os.path.join(args.stationaryFolder, args.rawFileBegin + "Stationary.csv")
     tsFile          = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
-    javaLogFile     = os.path.join(args.timeSeriesFolder, args.rawFileBegin + "AccTimeSeries.csv")
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -163,7 +163,7 @@ def main():
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
         sys.stderr.write(toScreen(msg))
-        sys.exit(0)
+        sys.exit(-2)
 
     fileSize = -1
     deviceId = -1
@@ -184,15 +184,14 @@ def main():
                         "getStationaryBouts:true", "epochPeriod:10",
                         "stationaryStd:0.013"]
                 if len(javaHeapSpace) > 1:
-                    commandArgs.insert(1,javaHeapSpace);
-                if (javaLogFile):
-                    logfile = open("javaLog.txt", 'a')
-                    logfile.write("\n" + toScreen("New Log :\n"))
-                    exitCode = call(commandArgs, stdout=logfile, stderr=logfile)
-                    logfile.write("\n" + toScreen("process exited with code " + str(exitCode) + "\n"))
-                    logfile.close()
-                else:
-                    exitCode = call(commandArgs)
+                    commandArgs.insert(1,javaHeapSpace)
+
+                exitCode = call(commandArgs)
+                if exitCode != 0:
+                    print "error: java process \"" + epochProcess + ".class\" exited with code " + str(exitCode) + " (non-zero means error)"
+                    print "error: calibration failed, exiting..."
+                    sys.exit(-3)
+
                 #record calibrated axes scale/offset/temperature vals + static point stats
                 calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
                         xMax, yMin, yMax, zMin, zMax, \
@@ -213,8 +212,13 @@ def main():
             print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1,javaHeapSpace);
-            print commandArgs
-            call(commandArgs)
+            
+            exitCode = call(commandArgs)
+            if exitCode != 0:
+                print "error: java process \"" + epochProcess + ".class\" exited with code " + str(exitCode) + " (non-zero means error)"
+                print "error: epoch generation failed, exiting..."
+                sys.exit(-3)
+
         else:
             if not skipCalibration:
                 commandArgs = [epochProcess, rawFile, "-svm-file", epochFile,
