@@ -1,5 +1,6 @@
 import Tkinter
 import Tkconstants, tkFileDialog
+import os
 import ttk
 # spawning child processes
 import subprocess
@@ -22,10 +23,11 @@ class TkinterGUI(Tkinter.Frame):
         self.threads = []  # keep track of threads so we can stop them
 
         self.target_opts = {
-            'filename':Tkinter.StringVar(), # we use stringVar so we can monitor for changes
-            'dirname':Tkinter.StringVar(),
+            'filename': Tkinter.StringVar(), # we use stringVar so we can monitor for changes
+            'dirname': Tkinter.StringVar(),
             'filenames': [], # for multiple file selections, unused due to dodgy Tkinter support
             'target_type': Tkinter.StringVar(),
+            'file_list': [],
             'file_opts': {
                 'filetypes': [('all files', '.*'), ('CWA files', '.cwa')],
                 'parent':root,
@@ -38,13 +40,16 @@ class TkinterGUI(Tkinter.Frame):
             }
         }
 
-        def target_callback(type, *args):
+        # when either filename or dirname are changed, we use this callback to set the target_type refresh the display
+        def target_callback(type):
             print "target_callback", type
             self.target_opts['target_type'].set(type)
+            self.refreshFileList()
             self.generateFullCommand()
 
-        self.target_opts['filename'].trace("w", lambda *args: target_callback('filename', *args))
-        self.target_opts['dirname'].trace("w", lambda *args: target_callback('dirname', *args))
+
+        self.target_opts['filename'].trace("w", lambda *args: target_callback('filename'))
+        self.target_opts['dirname'].trace("w", lambda *args: target_callback('dirname'))
         # vargs are in format {'command': name of -command, 'varable': StringVar() for value,
         # 'default': if same as default it's unchanged, 'type': 'bool', 'string', 'int', or 'float' }
         # -[command] [variable].get()   (only add if [variable] != [default])
@@ -97,13 +102,13 @@ class TkinterGUI(Tkinter.Frame):
         self.advancedOptionsButton.grid(row=0, column=2, padx=5, pady=5)
 
         # Textbox
-        self.textnbframe = ttk.Notebook(frame)  # for tabs above textbox
-        page1 = ttk.Frame(self.textnbframe)
-        page2 = ttk.Frame(self.textnbframe)
-        self.textnbframe.add(page1, text='Command')
-        self.textnbframe.add(page2, text='Files to process')
+        textnbframe = ttk.Notebook(frame)  # for tabs above textbox
 
-        self.textbox = Tkinter.Text(page1, height=10, width=70)
+        # first tab
+        tab1 = ttk.Frame(textnbframe)
+        textnbframe.add(tab1, text='Command')
+
+        self.textbox = Tkinter.Text(tab1, height=10, width=70)
         self.textbox.pack(expand=1, **pack_opts)
         Tkinter.Grid.grid_rowconfigure(frame, index=1, weight=1)
         Tkinter.Grid.grid_columnconfigure(frame, index=0, weight=1)
@@ -111,8 +116,14 @@ class TkinterGUI(Tkinter.Frame):
         Tkinter.Grid.grid_columnconfigure(frame, index=2, weight=1)
         self.textbox.insert('insert', "Please select a file or folder")
 
+        # second tab
+        self.tab2 = ttk.Frame(textnbframe)
+        textnbframe.add(self.tab2, text='Files to process')#, state='disabled')
 
-        self.textnbframe.grid(row=1, column=0, columnspan=3,
+        self.listbox = Tkinter.Listbox(self.tab2, height=10)
+        self.listbox.pack(expand=1, **pack_opts)
+
+        textnbframe.grid(row=1, column=0, columnspan=3,
                               sticky=Tkconstants.N + Tkconstants.E + Tkconstants.S + Tkconstants.W,
                               padx=5, pady=5)
 
@@ -120,10 +131,10 @@ class TkinterGUI(Tkinter.Frame):
 
         # boolean options
         self.checkboxes = {
-            'skipCalibration': {'text':'Skip calibration step', 'default':False},
-            'verbose': {'text':'Verbose mode', 'default':False},
-            'deleteIntermediateFiles': {'text':'Delete intermediate files', 'default':True},
-            'processRawFile': {'text':'Process the raw (.cwa) file', 'default':True}
+            'skipCalibration': {'text': 'Skip calibration step', 'default': False},
+            'verbose': {'text': 'Verbose mode', 'default': False},
+            'deleteIntermediateFiles': {'text':'Delete intermediate files', 'default': True},
+            'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True}
         }
 
         frame = Tkinter.Frame(advanced_frame)
@@ -291,6 +302,22 @@ class TkinterGUI(Tkinter.Frame):
             else:
                 self.setCommand("Please select a file or folder")
                 return ''
+
+    def refreshFileList(self):
+        if self.target_opts['target_type'].get() != 'dirname':
+            print self.target_opts['target_type'].get()
+            print 'no dir!'
+            return
+        # self.tab2.configure(state='enabled')
+        dir = self.target_opts['dirname'].get()
+        self.target_opts['file_list'] = [f for f in os.listdir(dir) if f.lower().endswith('.cwa')]
+
+        print  self.target_opts['file_list']
+        self.listbox.delete(0, Tkconstants.END)
+
+        for f in self.target_opts['file_list']:
+            self.listbox.insert(Tkconstants.END, f)
+
 
     def changed(self, obj):
 
