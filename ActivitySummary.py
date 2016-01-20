@@ -44,61 +44,64 @@ def main():
         add_help=False
     )
 
-
     # optionals
     parser.add_argument('-summaryFolder', metavar='filename',default="",
                             help="""folder for the OutputSummary.json summary statistics""")
     parser.add_argument('-nonWearFolder', metavar='filename',default="",
                             help="""folder for the NonWearBouts.csv file""")
     parser.add_argument('-epochFolder', metavar='filename',default="",
-                            help="""folder for the epoch.json file, this must be an 
+                            help="""folder for the epoch.json file, this must be an
                                     existing file if "-processRawFile" is set to False""")
     parser.add_argument('-stationaryFolder', metavar='filename',default="",
                             help="""folder for the Stationary.csv stationary bouts file""")
     parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
                             help="""folder for the AccTimeSeries.csv file""")
-    parser.add_argument('-skipCalibration', 
+    parser.add_argument('-skipCalibration',
                             metavar='True/False',default=False, type=bool,
                             help="""skip calibration? (default : %(default)s)""")
-    parser.add_argument('-verbose', 
+    parser.add_argument('-verbose',
                             metavar='True/False',default=False, type=bool,
                             help="""enable verbose logging? (default : %(default)s)""")
-    parser.add_argument('-deleteIntermediateFiles', 
+    parser.add_argument('-deleteIntermediateFiles',
                             metavar='True/False',default=True, type=bool,
-                            help="""True will remove extra "helper" files created by 
+                            help="""True will remove extra "helper" files created by
                                     the program (default : %(default)s)""")
-    parser.add_argument('-processRawFile', 
+    parser.add_argument('-processRawFile',
                             metavar='True/False',default=True, type=bool,
                             help="""False will skip processing of the .cwa file (the
                                 epoch.csv file must already exist for this to work) 
                                 (default : %(default)s)""")
-    parser.add_argument('-epochPeriod', 
+    parser.add_argument('-epochPeriod',
                             metavar='length',default=5, type=int,
                             help="""length in seconds of a single epoch (default : %(default)ss)""")
-    parser.add_argument('-calibrationOffset', 
+    parser.add_argument('-calibrationOffset',
                             metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
                             help="""accelerometer calibration offset (default : %(default)s)""")
-    parser.add_argument('-calibrationSlope', 
+    parser.add_argument('-calibrationSlope',
                             metavar=('x','y','z'),default=[1.0,1.0,1.0], type=float, nargs=3,
-                            help="""accelerometer calibration slope linking offset to temperature (default : %(default)s)""")
-    parser.add_argument('-calibrationTemperature', 
+                            help="""accelerometer calibration slope linking offset to temperature
+                            (default : %(default)s)""")
+    parser.add_argument('-calibrationTemperature',
                             metavar=('x','y','z'),default=[0.0,0.0,0.0], type=float, nargs=3,
-                            help="""mean temperature in degrees Celsius of stationary data for calibration (default : %(default)s)""")
-    parser.add_argument('-meanTemperature', 
+                            help="""mean temperature in degrees Celsius of stationary data for calibration
+                            (default : %(default)s)""")
+    parser.add_argument('-meanTemperature',
                             metavar="temp",default=20, type=float,
                             help="""mean calibration temperature in degrees Celsius (default : %(default)s)""")
-    parser.add_argument('-javaHeapSpace', 
+    parser.add_argument('-javaHeapSpace',
                             metavar="amount in MB",default="", type=str,
-                            help="""amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (default : unlimited)""")
-    # TODO add options e.g. 0 None [assumes presence of Epoch.csv and set processRawFile false] 1 AxivityAx3Epochs [java]
-    parser.add_argument('-rawDataParser', 
+                            help="""amount of heap space allocated to the java subprocesses,
+                             useful for limiting RAM usage (default : unlimited)""")
+    parser.add_argument('-rawDataParser',
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
-                            help="""file containing a java program to process raw .cwa binary file, must end with .class (omitted) (default : %(default)s)""")
+                            help="""file containing a java program to process raw .cwa binary file,
+                             must end with .class (omitted) (default : %(default)s)""")
     # required
-    parser.add_argument('rawFile', metavar='file', type=str, 
-                       help='the .cwa file to process (e.g. sample.cwa). If the file path contains spaces, it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")')
+    parser.add_argument('rawFile', metavar='file', type=str,
+                       help="""the .cwa file to process (e.g. sample.cwa). If the file path contains spaces,
+                        it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
 
-    #check that enough command line arguments are entered
+    # check that enough command line arguments are entered
     if len(sys.argv)<2:
             msg = "\nInvalid input, please enter at least 1 parameter, e.g."
             msg += "\npython ActivitySummary.py inputFile.CWA \n"
@@ -109,10 +112,10 @@ def main():
     print ""
     args = parser.parse_args()
 
-    if (args.processRawFile is False):
+    if args.processRawFile is False:
         if len(args.rawFile.split('.'))<2:
             args.rawFile += ".cwa" # edge case since we still need a name?
-    elif not os.path.isfile(args.rawFile): 
+    elif not os.path.isfile(args.rawFile):
         if args.rawFile:
             print "error: no file at " + os.path.abspath(os.path.normpath(args.rawFile))
             print "error: specified file " + args.rawFile + " does not exist. Exiting.."
@@ -120,29 +123,31 @@ def main():
             print "error: no file specified. Exiting.."
         sys.exit(-2)
 
-    print "rawFile = " + str(args.rawFile) 
+    print "rawFile = " + str(args.rawFile)
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
     print (vars(args))
 
     # no way to deal with blank strings, so disabled for now
-    # for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
-    #     print path
-    #     if not os.access(path, os.F_OK): 
-    #         print "error: " + path + " is not a valid directory"
-    #         sys.exit() 
-    def genPath(path, filename):
+    for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
+        print path
+        if len(path) > 0 and not os.access(path, os.F_OK):
+            print "error: " + path + " is not a valid directory"
+            sys.exit()
+
+    def generatepath(path, filename):
         if len(path)==0:
             # if no folder specified then use same folder as rawFile
             path = rawFilePath
         return os.path.normpath(os.path.join(path, args.rawFileBegin + filename))
-    # could check if folder exists? probably not neccesary
-    summaryFile     = genPath(args.summaryFolder,    "OutputSummary.json")
-    nonWearFile     = genPath(args.nonWearFolder,    "NonWearBouts.csv")
-    epochFile       = genPath(args.epochFolder,      "Epoch.json")
-    stationaryFile  = genPath(args.stationaryFolder, "Stationary.csv")
-    tsFile          = genPath(args.timeSeriesFolder, "AccTimeSeries.csv")
+
+    # could check if folder exists? probably not necessary
+    summaryFile     = generatepath(args.summaryFolder, "OutputSummary.json")
+    nonWearFile     = generatepath(args.nonWearFolder, "NonWearBouts.csv")
+    epochFile       = generatepath(args.epochFolder, "Epoch.json")
+    stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
+    tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -159,16 +164,16 @@ def main():
     calOff = args.calibrationOffset
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
-    
+
     # print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
-    
+
     print "summaryFile", summaryFile
     print "nonWearFile", nonWearFile
     print "epochFile", epochFile
     print "stationaryFile", stationaryFile
     print "tsFile", tsFile
 
-    #check source cwa file exists
+    # check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
@@ -184,17 +189,17 @@ def main():
         if 'omconvert' in epochProcess:
             useJava = False
         if useJava:
-            #calibrate axes scale/offset values
+            # calibrate axes scale/offset values
             if not skipCalibration:
-                #identify 10sec stationary epochs
-                print toScreen('calibrating to file: '+ stationaryFile)
+                # identify 10sec stationary epochs
+                print toScreen('calibrating to file: ' + stationaryFile)
                 commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                         rawFile, "outputFile:" + stationaryFile,
                         "verbose:" + str(verbose), "filter:true",
                         "getStationaryBouts:true", "epochPeriod:10",
                         "stationaryStd:0.013"]
                 if len(javaHeapSpace) > 1:
-                    commandArgs.insert(1,javaHeapSpace)
+                    commandArgs.insert(1, javaHeapSpace)
 
                 exitCode = call(commandArgs)
                 if exitCode != 0:
@@ -202,15 +207,15 @@ def main():
                     print "error: calibration failed, exiting..."
                     sys.exit(-3)
 
-                #record calibrated axes scale/offset/temperature vals + static point stats
+                # record calibrated axes scale/offset/temperature vals + static point stats
                 calOff, calSlope, calTemp, meanTemp, errPreCal, errPostCal, xMin, \
                         xMax, yMin, yMax, zMin, zMax, \
                         nStatic = getCalibrationCoefs(stationaryFile)
                 if verbose:
                     print "calibration results: ", calOff, calSlope, calTemp, meanTemp, errPreCal, \
                             errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
-          
-            #calculate and write filtered avgVm epochs from raw file
+
+            # calculate and write filtered avgVm epochs from raw file
             commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
                     rawFile, "outputFile:" + epochFile, "verbose:" + str(verbose),
                     "filter:true", "xIntercept:" + str(calOff[0]),
@@ -221,8 +226,8 @@ def main():
                     "meanTemp:" + str(meanTemp), "epochPeriod:" + str(epochPeriod)]
             print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
-                commandArgs.insert(1,javaHeapSpace);
-            
+                commandArgs.insert(1, javaHeapSpace)
+
             exitCode = call(commandArgs)
             if exitCode != 0:
                 print "error: java process \"" + epochProcess + ".class\" exited with code " + str(exitCode) + " (non-zero means error)"
@@ -252,10 +257,9 @@ def main():
                     xMax, yMin, yMax, zMin, zMax, \
                     nStatic = getOmconvertInfo(stationaryFile)
 
-    
-    #calculate average, median, stdev, min, max, count, & ecdf of sample score in
-    #1440 min diurnally adjusted day. Also get overall wear time minutes across
-    #each hour
+    # calculate average, median, stdev, min, max, count, & ecdf of sample score in
+    # 1440 min diurnally adjusted day. Also get overall wear time minutes across
+    # each hour
     ecdf1, step = np.linspace(0.001, 0.020, 20, retstep=True) #1mg bins from 1-20mg
     ecdf2, step = np.linspace(0.025, 0.100, 16, retstep=True) #5mg bins from 25-100mg
     ecdf3, step = np.linspace(0.125, 0.500, 16, retstep=True) #25mg bins from 125-500mg
@@ -271,24 +275,24 @@ def main():
             tempStd, tempMin, tempMax, accAvg, accStd, unadjustedAccAvg, \
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
-            accEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals, 
+            accEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals,
                     nonWearFile, tsFile)
-    
-    #data integrity outputs
+
+    # data integrity outputs
     maxErrorRate = 0.001
     lowErrorRate = 1
     norm = epochSamplesN*1.0
-    if ( clipsPreCalibrSum/norm >= maxErrorRate or 
-            clipsPostCalibrSum/norm >= maxErrorRate or 
+    if ( clipsPreCalibrSum/norm >= maxErrorRate or
+            clipsPostCalibrSum/norm >= maxErrorRate or
             numDataErrs/norm >= maxErrorRate ):
         lowErrorRate = 0
-    #min wear time
+    # min wear time
     minDiurnalHrs = 24
     minWearDays = 5
     goodWearTime = 1
     if diurnalHrs < minDiurnalHrs or wearTimeMins/1440.0 < minWearDays:
         goodWearTime = 0
-    #good calibration
+    # good calibration
     goodCalibration = 1
     s = 0.3 #sphere criteria
     try:
@@ -297,27 +301,27 @@ def main():
             goodCalibration = 0
     except:
         goodCalibration = 0
-    #calibrated on own data
+    # calibrated on own data
     calibratedOnOwnData = 1
     if skipCalibration or skipRaw:
         calibratedOnOwnData = 0
-    
-    #store variables to dictionary
+
+    # store variables to dictionary
     result = collections.OrderedDict()
     result['file-name'] = rawFile
     f = '%Y-%m-%d %H:%M:%S'
     result['file-startTime'] = startTime.strftime(f)
     result['file-endTime'] = endTime.strftime(f)
-    #physical activity output variable (mg)
+    # physical activity output variable (mg)
     result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
     result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
-    #data integrity outputs
+    # data integrity outputs
     result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
     result['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
-    #physical activity variation by day / hour
+    # physical activity variation by day / hour
     result['acc-mon-avg(mg)'] = formatNum(accDays[0]*1000, 2)
     result['acc-tue-avg(mg)'] = formatNum(accDays[1]*1000, 2)
     result['acc-wed-avg(mg)'] = formatNum(accDays[2]*1000, 2)
@@ -328,7 +332,7 @@ def main():
     result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0,24):
         result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(accHours[i]*1000, 2)
-    #wear time characteristics
+    # wear time characteristics
     result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, 2)
     result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, 2)
     result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, 2)
@@ -346,7 +350,7 @@ def main():
         result['wearTime-numNonWearEpisodes(>1hr)'] = numNonWearEpisodes
     except:
         result['wearTime-numNonWearEpisodes(>1hr)'] = -1
-    #physical activity stats and intensity distribution (minus diurnalWeights)
+    # physical activity stats and intensity distribution (minus diurnalWeights)
     result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(unadjustedAccAvg*1000, 2)
     result['acc-noDiurnalAdjust-std(mg)'] = formatNum(unadjustedAccStd*1000, 2)
     result['acc-noDiurnalAdjust-median(mg)'] = formatNum(unadjustedAccMedian*1000, 2)
@@ -355,7 +359,7 @@ def main():
     for x, ecdf in zip(ecdfXVals, accEcdf):
         result['acc-ecdf-' + str(x*1000) + 'mg'] = formatNum(ecdf, 4)
     try:
-        #calibration metrics 
+        # calibration metrics
         result['calibration-errsBefore(mg)'] = formatNum(errPreCal*1000, 2)
         result['calibration-errsAfter(mg)'] = formatNum(errPostCal*1000, 2)
         result['calibration-xOffset(g)'] = formatNum(calOff[0], 4)
@@ -395,10 +399,10 @@ def main():
         result['calibration-staticYmax(g)'] = -1
         result['calibration-staticZmin(g)'] = -1
         result['calibration-staticZmax(g)'] = -1
-    #raw file data quality indicators
+    # raw file data quality indicators
     result['file-size'] = fileSize
     result['file-deviceID'] = deviceId
-    #other housekeeping variables
+    # other housekeeping variables
     result['errs-interrupts-num'] = numInterrupts
     result['errs-interrupt-mins'] = formatNum(interruptMins, 1)
     try:
@@ -423,13 +427,13 @@ def main():
     result['deviceTemp-std'] = formatNum(tempStd, 1)
     result['deviceTemp-min'] = formatNum(tempMin, 1)
     result['deviceTemp-max'] = formatNum(tempMax, 1)
-    
-    #print basic output
+
+    # print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'acc-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
     summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
     print toScreen(json.dumps(summaryDict, indent=4))
-    
-    #write detailed output to file
+
+    # write detailed output to file
     f = open(summaryFile,'w')
     json.dump(result, f, indent=4)
     f.close()
@@ -438,7 +442,7 @@ def main():
             os.remove(stationaryFile)
             os.remove(epochFile)
         except:
-            print 'could not delete helper file' 
+            print 'could not delete helper file'
     if verbose:
         print toScreen('see all variables at: ' + summaryFile)
 
@@ -454,72 +458,72 @@ def getEpochSummary(epochFile,
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
     """
-    #use python PANDAS framework to read in and store epochs
+    # use python PANDAS framework to read in and store epochs
     e = pd.read_csv(epochFile, index_col=dateColumn, parse_dates=['Time'],
                 header=headerSize).sort_index()
-    cols = ['enmoTrunc','xRange','yRange','zRange']
-    cols += ['xStd','yStd','zStd','temp','samples']
-    cols += ['dataErrors','clipsBeforeCalibr','clipsAfterCalibr','rawSamples']
+    cols = ['enmoTrunc', 'xRange', 'yRange', 'zRange']
+    cols += ['xStd', 'yStd', 'zStd', 'temp', 'samples']
+    cols += ['dataErrors', 'clipsBeforeCalibr', 'clipsAfterCalibr', 'rawSamples']
     e.columns = cols
-    #get start & end times
+    # get start & end times
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
 
-    #get interrupt and data error summary vals
-    e.dropna(subset=['enmoTrunc','xStd','yStd','zStd'],how='all',inplace=True)
-    epochNs = epochSec * np.timedelta64(1,'s')
+    # get interrupt and data error summary vals
+    e.dropna(subset=['enmoTrunc', 'xStd', 'yStd', 'zStd'], how='all', inplace=True)
+    epochNs = epochSec * np.timedelta64(1, 's')
     interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
-    #get duration of each interrupt in minutes
+    # get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
         interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
-                np.timedelta64(1,'m') )
+                np.timedelta64(1, 'm') )
 
-    #check if data occurs at a daylight savings crossover
+    # check if data occurs at a daylight savings crossover
     daylightSavingsCrossover = 0
     localTime = pytz.timezone('Europe/London')
     startTimeZone = localTime.localize(startTime)
     endTimeZone = localTime.localize(endTime)
     if startTimeZone.dst() != endTimeZone.dst():
         daylightSavingsCrossover = 1
-        #find whether clock needs to go forward or back
+        # find whether clock needs to go forward or back
         if endTimeZone.dst() > startTimeZone.dst():
             offset = 1
         else:
             offset = -1
         print 'different timezones, offset = ' + str(offset)
-        #find actual crossover time
+        # find actual crossover time
         for t in localTime._utc_transition_times:
             if t>startTime:
                 transition = t
                 break
-        #if Autumn crossover time, adjust transition time plus remove 1hr chunk
+        # if Autumn crossover time, adjust transition time plus remove 1hr chunk
         if offset == -1:
-            #pytz stores dst crossover at 1am, but clocks change at 2am local
+            # pytz stores dst crossover at 1am, but clocks change at 2am local
             transition = transition + pd.DateOffset(hours=1)
-            #remove last hr before DST cut, which will be subsequently overwritten
-            e = e[(e.index < transition - pd.DateOffset(hours=1)) | 
+            # remove last hr before DST cut, which will be subsequently overwritten
+            e = e[(e.index < transition - pd.DateOffset(hours=1)) |
                     (e.index >= transition)]
         print 'day light savings transition at:' + str(transition)
-        #now update datetime index to 'fix' values after DST crossover
+        # now update datetime index to 'fix' values after DST crossover
         e['newTime'] = e.index
         e['newTime'][e.index >= transition] = e.index + np.timedelta64(offset,'h')
         e['newTime'] = e['newTime'].fillna(e.index)
         e = e.set_index('newTime')
-        #reset startTime and endTime variables
+        # reset startTime and endTime variables
         startTime = pd.to_datetime(e.index.values[0])
         endTime = pd.to_datetime(e.index.values[-1])
 
-    #calculate nonWear (nw) time
-    minDuration = 60 #minutes
+    # calculate nonWear (nw) time
+    minDuration = 60  # minutes
     maxStd = 0.013
-    e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) & 
+    e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd),1,0)
     starts = e.index[(e['nw']==True) & (e['nw'].shift(1).fillna(False)==False)]
     ends = e.index[(e['nw']==True) & (e['nw'].shift(-1).fillna(False)==False)]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
             if end > start + np.timedelta64(minDuration,'m')]
-    #set nonWear data to nan and record to nonWearBouts file
+    # set nonWear data to nan and record to nonWearBouts file
     f = open(nonWearFile,'w')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n')
     timeFormat = '%Y-%m-%d %H:%M:%S'
@@ -531,58 +535,63 @@ def getEpochSummary(epochFile,
         summary += str(tmp['yStd'].mean()) + ','
         summary += str(tmp['zStd'].mean())
         f.write(summary + '\n')
-        #set main dataframe values to nan
+        # set main dataframe values to nan
         e[episode[0]:episode[1]] = np.nan
     f.close()
 
+    # enmo : Euclidean Norm Minus One
+    # Trunc :  negative values truncated to zero (i.e never negative)
+    # emmo = 1 - sqrt(x, y, z)
+    # enmoTrunc = max(enmo, 0)
     paCol = 'enmoTrunc'
     wearSamples = e[paCol].count()
     nonWearSamples = len(e[np.isnan(e[paCol])].index.values)
     wearTimeMin = wearSamples * epochSec / 60.0
     nonWearTimeMin = nonWearSamples * epochSec / 60.0
-   
-    #get wear time in each of 24 hours across week
+
+    # get wear time in each of 24 hours across week
     epochsInMin = 60 / epochSec
     wearDay = []
-    for i in range(0,7):
+    for i in range(0, 7):
         wearDay.append( e[paCol][e.index.weekday == i].count() / epochsInMin )
     wear24 = []
-    for i in range(0,24):
+    for i in range(0, 24):
         wear24.append( e[paCol][e.index.hour == i].count() / epochsInMin )
     diurnalHrs = e[paCol].groupby(e.index.hour).mean().count()
-    diurnalMins = e[paCol].groupby([e.index.hour,e.index.minute]).mean().count()
+    diurnalMins = e[paCol].groupby([e.index.hour, e.index.minute]).mean().count()
 
-    #calculate imputation values to replace nan PA metric values
-    #i.e. replace with mean avgVm from same time in other days
+    # calculate imputation values to replace nan PA metric values
+    # i.e. replace with mean avgVm from same time in other days
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean() #weartime weighted data
-    e = e.join(wearTimeWeights, on=['hour','minute'], rsuffix='_imputed')
-    
-    unadjustedAccData = e[paCol] #raw data
-    #calculate stat summaries
+    wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean()  # weartime weighted data
+    # add the wearTimeWeights column to the other data as 'enmoTrunc_imputed'
+    e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
+    print e[['enmoTrunc', 'enmoTrunk_imputed']].head()
+    unadjustedAccData = e[paCol] # raw data
+    # calculate stat summaries
     unadjustedAccAvg = unadjustedAccData.mean()
     unadjustedAccStd = unadjustedAccData.std()
     unadjustedAccMedian = unadjustedAccData.median()
     unadjustedAccMin = unadjustedAccData.min()
     unadjustedAccMax = unadjustedAccData.max()
-    
-    #now wearTime weight values
+
+    # now wearTime weight values
     e[paCol+'Adjusted'] = e[paCol].fillna(e[paCol + '_imputed'])
-    accData = e[paCol+'Adjusted'] #weartime weighted data
-    accAvg = accData.mean()
-    accStd = accData.std()
+    adjustedAccData = e[paCol+'Adjusted']  # weartime weighted data
+    accAvg = adjustedAccData.mean()
+    accStd = adjustedAccData.std()
     accDays = []
     for i in range(0,7):
-        accDays.append(accData[accData.index.weekday == i].mean())
+        accDays.append(adjustedAccData[adjustedAccData.index.weekday == i].mean())
     accHours = []
     for i in range(0,24):
-        accHours.append(accData[accData.index.hour == i].mean())
+        accHours.append(adjustedAccData[adjustedAccData.index.hour == i].mean())
 
-    #calculate empirical cumulative distribution function of vector magnitudes
+    # calculate empirical cumulative distribution function of vector magnitudes
     ecdfData = e[['hour','minute','enmoTrunc']][~np.isnan(e['enmoTrunc'])] #remove NaNs (necessary for statsmodels.api)
     if len(ecdfData) > 0:
-        #set column names for actual, imputed, and adjusted intensity dist. vals
+        # set column names for actual, imputed, and adjusted intensity dist. vals
         cols = []
         colsImputed = []
         colsAdjusted = []
@@ -592,26 +601,26 @@ def getEpochSummary(epochFile,
             colsImputed.append(col + 'Imputed')
             colsAdjusted.append(col + 'Adjusted')
             ecdfData[col] = (ecdfData['enmoTrunc']<=xVal) *1.0
-        #calculate imputation values to replace nan metric values
+        # calculate imputation values to replace nan metric values
         wearTimeWeights = ecdfData.groupby(['hour', 'minute'])[cols].mean() #weartime weighted
         ecdfData = ecdfData.join(wearTimeWeights, on=['hour','minute'], rsuffix='Imputed')
-        #for each ecdf xVal column, apply missing data imputation
+        # for each ecdf xVal column, apply missing data imputation
         for col,imputed,adjusted in zip(cols,colsImputed,colsAdjusted):
             ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
-        
+
         accEcdf = ecdfData[colsAdjusted].mean()
     else:
         accEcdf = np.empty(20 + 16 + 16 + 15)
-    
-    #prepare time series header
+
+    # prepare time series header
     e = e.reindex(pd.date_range(startTime, endTime, freq=str(epochSec)+'s'))
     tsHead = 'acceleration (mg) - '
     tsHead += e.index.min().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += e.index.max().strftime('%Y-%m-%d %H:%M:%S') + ' - '
     tsHead += 'sampleRate = ' + str(epochSec) + ' seconds'
-    if len(accData) > 0:
-        #write time series file
-        #convert 'vm' to mg units, and highlight any imputed values
+    if len(adjustedAccData) > 0:
+        # write time series file
+        # convert 'vm' to mg units, and highlight any imputed values
         e['vmFinal'] = e[paCol+'Adjusted'] * 1000
         e['imputed'] = np.isnan(e[paCol]).astype(int)
         e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
@@ -621,8 +630,8 @@ def getEpochSummary(epochFile,
         f.write(tsHead + '\n')
         f.write('no wearTime data,1')
         f.close()
-   
-    #return physical activity summary
+
+    # return physical activity summary
     return startTime, endTime, daylightSavingsCrossover, wearTimeMin, \
             nonWearTimeMin, len(nonWearEpisodes), wearDay, wear24, diurnalHrs, \
             diurnalMins, len(interrupts), np.sum(interruptMins), \
@@ -641,68 +650,65 @@ def getCalibrationCoefs(staticBoutsFile):
     Get axes offset/gain/temp calibration coefficients through linear regression
     of stationary episodes
     """
-    #learning/research parameters
+    # learning/research parameters
     maxIter = 1000
     minIterImprovement = 0.0001 #0.1mg
-    #use python NUMPY framework to store stationary episodes from epoch file
+    # use python NUMPY framework to store stationary episodes from epoch file
     d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,
             usecols=(2,3,4,11,13))
-    if len(d)<=5: 
+    if len(d)<=5:
         return [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan, \
-            np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d) 
-    stationaryPoints = d[d[:,4] == 0] #don't consider episodes with data errors
+            np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d)
+    stationaryPoints = d[d[:,4] == 0] # don't consider episodes with data errors
     axesVals = stationaryPoints[:,[0,1,2]]
     tempVals = stationaryPoints[:,[3]]
     meanTemp = np.mean(tempVals)
     tempVals = np.copy(tempVals-meanTemp)
-    #store information on spread of stationary points
+    # store information on spread of stationary points
     xMin, yMin, zMin = np.amin(axesVals, axis=0)
     xMax, yMax, zMax = np.amax(axesVals, axis=0)
-    #initialise intercept/slope variables to assume no error initially present
+    # initialise intercept/slope variables to assume no error initially present
     intercept = np.array([0.0, 0.0, 0.0])
     slope = np.array([1.0, 1.0, 1.0])
     tempCoef = np.array([0.0, 0.0, 0.0])
-    #variables to support model fitting
-    initError = float("inf")
-    prevError = float("inf")
+    # variables to support model fitting
     bestError = float("inf")
     bestIntercept = np.copy(intercept)
     bestSlope = np.copy(slope)
     bestTemp = np.copy(tempCoef)
-    #record initial uncalibrated error
+    # record initial uncalibrated error
     curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
-    target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
-    initError = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
-    #iterate through linear model fitting
+    target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:, None]
+    initError = np.sqrt(np.mean(np.square(curr-target)))  # root mean square error
+    # iterate through linear model fitting
     try:
         for i in range(1, maxIter):
-            #iterate through each axis, refitting its intercept/slope vals
+            # iterate through each axis, refitting its intercept/slope vals
             for a in range(0,3):
-                x = np.concatenate([curr[:,[a]], tempVals], axis=1)
-                x = sm.add_constant(x, prepend=True) #add bias/intercept term
-                y = target[:,a]
+                x = np.concatenate([curr[:, [a]], tempVals], axis=1)
+                x = sm.add_constant(x, prepend=True)  # add bias/intercept term
+                y = target[:, a]
                 newI, newS, newT = sm.OLS(y,x).fit().params
-                #update values as part of iterative closest point fitting process
-                #refer to wiki as there is quite a bit of math behind next 3 lines
+                # update values as part of iterative closest point fitting process
+                # refer to wiki as there is quite a bit of math behind next 3 lines
                 intercept[a] = newI + (intercept[a] * newS)
                 slope[a] = newS * slope[a]
                 tempCoef[a] = newT + (tempCoef[a] * newS)
-            #update vals (and targed) based on new intercept/slope/temp coeffs
+            # update vals (and targed) based on new intercept/slope/temp coeffs
             curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
             target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
-            rms = np.sqrt(np.mean(np.square(curr-target))) #root mean square error
-            #assess iterative error convergence
+            rms = np.sqrt(np.mean(np.square(curr-target)))  # root mean square error
+            # assess iterative error convergence
             improvement = (bestError-rms)/bestError
-            prevError=rms
             if rms < bestError:
                 bestIntercept = np.copy(intercept)
                 bestSlope = np.copy(slope)
                 bestTemp = np.copy(tempCoef)
                 bestError = rms
             if improvement < minIterImprovement:
-                break #break if not largely converged
+                break  # break if not largely converged
     except:
-        #highlight problem with regression, and exit
+        # highlight problem with regression, and exit
         xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
         xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
         sys.stderr.write('WARNING: calibration error\n')
@@ -713,6 +719,7 @@ def getCalibrationCoefs(staticBoutsFile):
 def getOmconvertInfo(omconvertInfoFile):
     """
     Get axes offset/gain/temp calibration coeffs from omconvert info file
+    :param omconvertInfoFile: open file with
     """
     file = open(omconvertInfoFile,'rU')
     for line in file:
@@ -742,30 +749,30 @@ def getOmconvertInfo(omconvertInfoFile):
 
 
 def getDeviceId(cwaFile):
-    try:
-        f = open(cwaFile, 'rb')
-        header = f.read(2)
-        if header == 'MD':
-            blockSize = struct.unpack('H', f.read(2))[0]
-            performClear = struct.unpack('B', f.read(1))[0]
-            deviceId = struct.unpack('H', f.read(2))[0]
-        f.close()
-        return deviceId
-    except UnboundLocalError as e:
+    f = open(cwaFile, 'rb')
+    header = f.read(2)
+    if header == 'MD':
+        blockSize = struct.unpack('H', f.read(2))[0]
+        performClear = struct.unpack('B', f.read(1))[0]
+        deviceId = struct.unpack('H', f.read(2))[0]
+    else:
         print "ERROR: in getDeviceId(\"" + cwaFile + "\")"
-        print "A deviceId value could not be found in input file header, this usually occurs when the file is not an Axivity .cwa accelerometer file. Exiting..."
+        print """A deviceId value could not be found in input file header,
+         this usually occurs when the file is not an Axivity .cwa accelerometer file. Exiting..."""
         sys.exit(-1)
+    f.close()
+    return deviceId
+
 
 def formatNum(num, decimalPlaces):
     fmt = '%.' + str(decimalPlaces) + 'f'
     return float(fmt % num)
 
+
 def toScreen(msg):
     timeFormat = '%Y-%m-%d %H:%M:%S'
     return datetime.datetime.now().strftime(timeFormat) +  ' ' + msg
 
-"""
-Standard boilerplate to call the main() function to begin the program.
-"""
-if __name__ == '__main__': 
-    main() #Standard boilerplate to call the main() function to begin the program.
+
+if __name__ == '__main__':
+    main()  # Standard boilerplate to call the main() function to begin the program.
