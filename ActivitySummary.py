@@ -37,11 +37,8 @@ def main():
     # print sys.argv
 
     parser = argparse.ArgumentParser(
-        description="""A tool to extract meaningful health information from large accelerometer
-         datasets e.g. how much time individuals spend in sleep, sedentary behaviour, and 
-         physical activity.
-        """,
-        add_help=False
+        description="""A tool to extract physical activity information from
+            raw accelerometer files.""", add_help=False
     )
 
     # optionals
