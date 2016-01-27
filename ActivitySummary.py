@@ -109,7 +109,7 @@ def main():
     args = parser.parse_args()
     # check file exists
     if args.processRawFile is False:
-        if len(args.rawFile.split('.'))<2:
+        if len(args.rawFile.split('.')) < 2:
             args.rawFile += ".cwa" # edge case since we still need a name?
     elif not os.path.isfile(args.rawFile):
         if args.rawFile:
