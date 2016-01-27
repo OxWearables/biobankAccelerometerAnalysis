@@ -108,10 +108,9 @@ def main():
             print msg
             parser.print_help()
             sys.exit(-1)
-
-    print ""
+    
     args = parser.parse_args()
-
+    # check file exists
     if args.processRawFile is False:
         if len(args.rawFile.split('.'))<2:
             args.rawFile += ".cwa" # edge case since we still need a name?
@@ -122,14 +121,14 @@ def main():
         else:
             print "error: no file specified. Exiting.."
         sys.exit(-2)
-
-    print "rawFile = " + str(args.rawFile)
+    print "\nrawFile = " + str(args.rawFile)
+    
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
     print (vars(args))
 
-    # no way to deal with blank strings, so disabled for now
+    # check folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
         print path
         if len(path) > 0 and not os.access(path, os.F_OK):
@@ -148,6 +147,11 @@ def main():
     epochFile       = generatepath(args.epochFolder, "Epoch.json")
     stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
     tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
+    print "summaryFile", summaryFile
+    print "nonWearFile", nonWearFile
+    print "epochFile", epochFile
+    print "stationaryFile", stationaryFile
+    print "tsFile", tsFile
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -164,14 +168,6 @@ def main():
     calOff = args.calibrationOffset
     epochProcess = args.rawDataParser
     javaHeapSpace = args.javaHeapSpace
-
-    # print "\nmeanTemp:", meanTemp, "\ndeleteHelperFiles:", deleteHelperFiles, "\nskipCalibration:", skipCalibration, "\nverbose:", verbose, "\nepochPeriod:", epochPeriod, "\nskipRaw:", skipRaw, "\nrawFile:", rawFile, "\nrawFileEnd:", rawFileEnd, "\ncalSlope:", calSlope, "\ncalTemp:", calTemp, "\nrawFileBegin:", rawFileBegin, "\ncalOff:", calOff, "\nepochProcess:", epochProcess, "\njavaHeapSpace:", javaHeapSpace
-
-    print "summaryFile", summaryFile
-    print "nonWearFile", nonWearFile
-    print "epochFile", epochFile
-    print "stationaryFile", stationaryFile
-    print "tsFile", tsFile
 
     # check source cwa file exists
     if not skipRaw and not os.path.isfile(rawFile):
@@ -200,11 +196,9 @@ def main():
                         "stationaryStd:0.013"]
                 if len(javaHeapSpace) > 1:
                     commandArgs.insert(1, javaHeapSpace)
-
                 exitCode = call(commandArgs)
                 if exitCode != 0:
-                    print "error: java process \"" + epochProcess + ".class\" exited with code " + str(exitCode) + " (non-zero means error)"
-                    print "error: calibration failed, exiting..."
+                    print "Error: java calibration failed, exit code " + str(exitCode)
                     sys.exit(-3)
 
                 # record calibrated axes scale/offset/temperature vals + static point stats
@@ -212,8 +206,9 @@ def main():
                         xMax, yMin, yMax, zMin, zMax, \
                         nStatic = getCalibrationCoefs(stationaryFile)
                 if verbose:
-                    print "calibration results: ", calOff, calSlope, calTemp, meanTemp, errPreCal, \
-                            errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, nStatic
+                    print "calibration results: ", calOff, calSlope, calTemp, \
+                            meanTemp, errPreCal, errPostCal, xMin, xMax, yMin, \
+                            yMax, zMin, zMax, nStatic
 
             # calculate and write filtered avgVm epochs from raw file
             commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", epochProcess,
@@ -227,11 +222,9 @@ def main():
             print toScreen('epoch generation')
             if len(javaHeapSpace) > 1:
                 commandArgs.insert(1, javaHeapSpace)
-
             exitCode = call(commandArgs)
             if exitCode != 0:
-                print "error: java process \"" + epochProcess + ".class\" exited with code " + str(exitCode) + " (non-zero means error)"
-                print "error: epoch generation failed, exiting..."
+                print "Error: java epoch generation failed, exit code " + str(exitCode)
                 sys.exit(-3)
 
         else:
@@ -429,7 +422,9 @@ def main():
     result['deviceTemp-max'] = formatNum(tempMax, 1)
 
     # print basic output
-    summaryVals = ['file-name', 'file-startTime', 'file-endTime', 'acc-overall-avg(mg)','wearTime-overall(days)','nonWearTime-overall(days)']
+    summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
+            'acc-overall-avg(mg)','wearTime-overall(days)', \
+            'nonWearTime-overall(days)']
     summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
     print toScreen(json.dumps(summaryDict, indent=4))
 
