@@ -54,17 +54,17 @@ def main():
     parser.add_argument('-timeSeriesFolder', metavar='filename',default="",
                             help="""folder for the AccTimeSeries.csv file""")
     parser.add_argument('-skipCalibration',
-                            metavar='True/False',default=False, type=bool,
+                            metavar='True/False',default=False, type=str2bool,
                             help="""skip calibration? (default : %(default)s)""")
     parser.add_argument('-verbose',
-                            metavar='True/False',default=False, type=bool,
+                            metavar='True/False',default=False, type=str2bool,
                             help="""enable verbose logging? (default : %(default)s)""")
     parser.add_argument('-deleteIntermediateFiles',
-                            metavar='True/False',default=True, type=bool,
+                            metavar='True/False',default=True, type=str2bool,
                             help="""True will remove extra "helper" files created by
                                     the program (default : %(default)s)""")
     parser.add_argument('-processRawFile',
-                            metavar='True/False',default=True, type=bool,
+                            metavar='True/False',default=True, type=str2bool,
                             help="""False will skip processing of the .cwa file (the
                                 epoch.csv file must already exist for this to work) 
                                 (default : %(default)s)""")
@@ -765,6 +765,9 @@ def toScreen(msg):
     timeFormat = '%Y-%m-%d %H:%M:%S'
     return datetime.datetime.now().strftime(timeFormat) +  ' ' + msg
 
+def str2bool(v):
+  #susendberg's function
+  return v.lower() in ("yes", "true", "t", "1")
 
 if __name__ == '__main__':
     main()  # Standard boilerplate to call the main() function to begin the program.
