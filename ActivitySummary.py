@@ -559,7 +559,7 @@ def getEpochSummary(epochFile,
     wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean()  # weartime weighted data
     # add the wearTimeWeights column to the other data as 'enmoTrunc_imputed'
     e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
-    print e[['enmoTrunc', 'enmoTrunk_imputed']].head()
+    print e[['enmoTrunc', 'enmoTrunc_imputed']].head()
     unadjustedAccData = e[paCol] # raw data
     # calculate stat summaries
     unadjustedAccAvg = unadjustedAccData.mean()
