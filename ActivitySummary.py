@@ -14,18 +14,18 @@ e.g.
     python ActivitySummary.py p001.CWA min_freq:10 
 """
 
+import argparse
 import collections
 import datetime
 import json
+import numpy as np
 import os
 import pandas as pd
 import pytz
-import numpy as np
 import statsmodels.api as sm
 import struct
 from subprocess import call
 import sys
-import argparse
 
 def main():
     """
