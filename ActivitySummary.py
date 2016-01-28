@@ -268,7 +268,7 @@ def main():
 
     # min wear time
     minDiurnalHrs = 24
-    minWearDays = 5
+    minWearDays = 3
     goodWearTime = 1
     if diurnalHrs < minDiurnalHrs or wearTimeMins/1440.0 < minWearDays:
         goodWearTime = 0
