@@ -117,16 +117,14 @@ def main():
         else:
             print "error: no file specified. Exiting.."
         sys.exit(-2)
-    print "\nrawFile = " + str(args.rawFile)
     
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
-    print (vars(args))
+    print "\n", (vars(args))
 
     # check folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
-        print path
         if len(path) > 0 and not os.access(path, os.F_OK):
             print "error: " + path + " is not a valid directory"
             sys.exit()
@@ -143,11 +141,12 @@ def main():
     epochFile       = generatepath(args.epochFolder, "Epoch.json")
     stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
     tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
-    print "summaryFile", summaryFile
-    print "nonWearFile", nonWearFile
-    print "epochFile", epochFile
-    print "stationaryFile", stationaryFile
-    print "tsFile", tsFile
+    print "\nrawFile = " + str(args.rawFile)
+    print "summaryFile = ", summaryFile
+    print "nonWearFile = ", nonWearFile
+    print "epochFile = ", epochFile
+    print "stationaryFile = ", stationaryFile
+    print "tsFile = ", tsFile, "\n"
 
     # quick add to global namespace
     meanTemp = args.meanTemperature
@@ -559,7 +558,6 @@ def getEpochSummary(epochFile,
     wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean()  # weartime weighted data
     # add the wearTimeWeights column to the other data as 'enmoTrunc_imputed'
     e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
-    print e[['enmoTrunc', 'enmoTrunc_imputed']].head()
     unadjustedAccData = e[paCol] # raw data
     # calculate stat summaries
     unadjustedAccAvg = unadjustedAccData.mean()
