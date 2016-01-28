@@ -154,7 +154,7 @@ def main():
     skipCalibration = args.skipCalibration
     verbose = args.verbose
     epochPeriod = args.epochPeriod
-    skipRaw = not args.processRawFile
+    processRawFile = args.processRawFile
     rawFile = args.rawFile
     rawFileEnd = args.rawFileEnd
     calSlope = args.calibrationSlope
@@ -165,7 +165,7 @@ def main():
     javaHeapSpace = args.javaHeapSpace
 
     # check source cwa file exists
-    if not skipRaw and not os.path.isfile(rawFile):
+    if processRawFile and not os.path.isfile(rawFile):
         msg = "\n Invalid input"
         msg += "\n File does not exist: " + rawFile + "\n"
         sys.stderr.write(toScreen(msg))
@@ -173,7 +173,7 @@ def main():
 
     fileSize = -1
     deviceId = -1
-    if not skipRaw:
+    if processRawFile:
         fileSize = os.path.getsize(rawFile)
         deviceId = getDeviceId(rawFile)
         useJava = True
@@ -283,7 +283,7 @@ def main():
         goodCalibration = 0
     # calibrated on own data
     calibratedOnOwnData = 1
-    if skipCalibration or skipRaw:
+    if skipCalibration or not processRawFile:
         calibratedOnOwnData = 0
         goodCalibration = 1 #assume data is good if we skip calibration
 
