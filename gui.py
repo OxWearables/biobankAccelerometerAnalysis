@@ -157,7 +157,10 @@ class TkinterGUI(Tkinter.Frame):
             'Calibration options': {
                 'calibrationOffset': {'text': 'Calibration offset', 'default':[0.0,0.0,0.0]},
                 'calibrationSlope': {'text': 'Calibration slope linking offset to temperature', 'default':[1.0,1.0,1.0]},
-                'calibrationTemperature': {'text': 'Mean temperature in degrees Celsius of stationary data for calibration', 'default':[0.0,0.0,0.0]},
+                'calibrationTemperature': {'text': 'Mean temperature in degrees \
+                                                    Celsius of stationary data \
+                                                    for calibration', \
+                                                    'default':[0.0,0.0,0.0]},
                 'meanTemperature': {'text': 'Mean calibration temperature in degrees Celsius', 'default':20.0}
             },
             'Java options': {

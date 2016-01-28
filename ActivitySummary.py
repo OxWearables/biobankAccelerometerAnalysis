@@ -46,7 +46,8 @@ def main():
                         it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
     # optionals
     parser.add_argument('-summaryFolder', metavar='filename',default="",
-                            help="""folder for the OutputSummary.json summary statistics""")
+                            help="""folder for the OutputSummary.json summary \
+                                    statistics""")
     parser.add_argument('-nonWearFolder', metavar='filename',default="",
                             help="""folder for the NonWearBouts.csv file""")
     parser.add_argument('-epochFolder', metavar='filename',default="",
