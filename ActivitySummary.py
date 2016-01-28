@@ -40,7 +40,10 @@ def main():
         description="""A tool to extract physical activity information from
             raw accelerometer files.""", add_help=False
     )
-
+    # required
+    parser.add_argument('rawFile', metavar='file', type=str,
+                       help="""the .cwa file to process (e.g. sample.cwa). If the file path contains spaces,
+                        it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
     # optionals
     parser.add_argument('-summaryFolder', metavar='filename',default="",
                             help="""folder for the OutputSummary.json summary statistics""")
@@ -91,12 +94,8 @@ def main():
                              useful for limiting RAM usage (default : unlimited)""")
     parser.add_argument('-rawDataParser',
                             metavar="rawDataParser",default="AxivityAx3Epochs", type=str,
-                            help="""file containing a java program to process raw .cwa binary file,
-                             must end with .class (omitted) (default : %(default)s)""")
-    # required
-    parser.add_argument('rawFile', metavar='file', type=str,
-                       help="""the .cwa file to process (e.g. sample.cwa). If the file path contains spaces,
-                        it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
+                            help="""helper software to process raw accelerometer
+                                binary files. (default : %(default)s)""")
 
     # check that enough command line arguments are entered
     if len(sys.argv)<2:
