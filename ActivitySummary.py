@@ -138,7 +138,7 @@ def main():
     # could check if folder exists? probably not necessary
     summaryFile     = generatepath(args.summaryFolder, "OutputSummary.json")
     nonWearFile     = generatepath(args.nonWearFolder, "NonWearBouts.csv")
-    epochFile       = generatepath(args.epochFolder, "Epoch.json")
+    epochFile       = generatepath(args.epochFolder, "Epoch.csv")
     stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
     tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
     print "\nrawFile = " + str(args.rawFile)
@@ -266,14 +266,6 @@ def main():
             accEcdf = getEpochSummary(epochFile, 0, 0, epochPeriod, ecdfXVals,
                     nonWearFile, tsFile)
 
-    # data integrity outputs
-    maxErrorRate = 0.001
-    lowErrorRate = 1
-    norm = epochSamplesN*1.0
-    if ( clipsPreCalibrSum/norm >= maxErrorRate or
-            clipsPostCalibrSum/norm >= maxErrorRate or
-            numDataErrs/norm >= maxErrorRate ):
-        lowErrorRate = 0
     # min wear time
     minDiurnalHrs = 24
     minWearDays = 5
@@ -293,6 +285,7 @@ def main():
     calibratedOnOwnData = 1
     if skipCalibration or skipRaw:
         calibratedOnOwnData = 0
+        goodCalibration = 1 #assume data is good if we skip calibration
 
     # store variables to dictionary
     result = collections.OrderedDict()
@@ -304,7 +297,6 @@ def main():
     result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
     result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
     # data integrity outputs
-    result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
@@ -419,7 +411,7 @@ def main():
     # print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
             'acc-overall-avg(mg)','wearTime-overall(days)', \
-            'nonWearTime-overall(days)']
+            'nonWearTime-overall(days)', 'quality-goodCalibration']
     summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
     print toScreen(json.dumps(summaryDict, indent=4))
 
