@@ -25,7 +25,6 @@ import java.text.DecimalFormat;
 public class AxivityAx3Epochs
 {
 	
-	// preciseTime: false emulates original behaviour, true uses the block fractional time and interpolates the timestamps between blocks.
     private static DecimalFormat DF6 = new DecimalFormat("0.000000");
     private static DecimalFormat DF2 = new DecimalFormat("0.00");
     private static LocalDateTime SESSION_START = null;
@@ -195,7 +194,9 @@ public class AxivityAx3Epochs
             //now read every page in CWA file
             int pageCount = 0;
             long memSizePages = rawAccReader.size()/bufSize;
-            boolean USE_PRECISE_TIME = true;
+            boolean USE_PRECISE_TIME = true; //true uses the block fractional
+                                             //time and interpolates timestamps
+                                             //between blocks.
             while(rawAccReader.read(buf) != -1) {
                 buf.flip();
                 buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -217,8 +218,8 @@ public class AxivityAx3Epochs
                         //read block header items
                         long blockTimestamp = getUnsignedInt(buf,14);
                         int light = getUnsignedShort(buf,18);
-                        double temperature = (getUnsignedShort(buf,20)*150.0
-                                             - 20500) / 1000;
+                        double temperature = (getUnsignedShort(buf,20)*150.0- 20500)
+                                                / 1000;
                         short rateCode = (short)(buf.get(24) & 0xff);
                         short numAxesBPS = (short)(buf.get(25) & 0xff);
                         int sampleCount = getUnsignedShort(buf, 28);
@@ -249,12 +250,13 @@ public class AxivityAx3Epochs
                                     // use 15-bits as 16-bit fractional time
                                     fractional = ((oldDeviceId & 0x7fff) << 1);
                                     //frequency is truncated to int in firmware
-                                    timestampOffset += ((fractional * 
-                                                (int)sampleFreq) >> 16);
+                                    timestampOffset += ((fractional 
+                                                        * (int)sampleFreq) >> 16);
                                 }
                             }
                         } else {
-                            sampleFreq = buf.getShort(26); //very old format, where pos26 = freq
+                            sampleFreq = buf.getShort(26);
+                            //very old format, where pos26 = freq
                         }
                         //calculate num bytes per sample...
                         byte bytesPerSample = 4;
@@ -265,7 +267,8 @@ public class AxivityAx3Epochs
                             bytesPerSample = 4; // 3*10-bit + 2
                         }
                         // Limit values
-                        int maxSamples = 480 / bytesPerSample;	// 80 or 120 samples/block
+                        int maxSamples = 480 / bytesPerSample; // 80 or 120
+                                                               //samples/block
                         if (sampleCount > maxSamples) {
                             sampleCount = maxSamples;
                         }
@@ -273,25 +276,41 @@ public class AxivityAx3Epochs
                             sampleFreq = 1;
                         }
                         
-                        // determine the time for the indexed sample within the block
+                        // determine time for indexed sample within block
                         LocalDateTime blockTime = getCwaTimestamp((int)blockTimestamp, fractional);        
-                        // first & last sample time (actually, last = first sample in next block)
+                        // first & last sample time
+                        // (actually, last = first sample in next block)
                         LocalDateTime firstSampleTime, lastSampleTime;
-                        // if we don't have an interval between our times (or interval too large)
+                        // if no interval between times (or interval too large)
                         long spanToSample = 0;
                         if (lastBlockTime[0] != null){
-                            spanToSample = Duration.between(lastBlockTime[0], blockTime).toNanos();
+                            spanToSample = Duration.between
+                                                (lastBlockTime[0], blockTime)
+                                                .toNanos();
                         }
                         if (!USE_PRECISE_TIME || lastBlockTime[0] == null ||
-                                timestampOffset <= lastBlockTimeIndex[0] || spanToSample <= 0 ||
+                                timestampOffset <= lastBlockTimeIndex[0] || 
+                                spanToSample <= 0 ||
                                 spanToSample > 1000000000.0 * 2 * maxSamples / sampleFreq) {
-                            float offsetStart = (float)-timestampOffset / (float)sampleFreq;
-                            firstSampleTime = blockTime.plusNanos(secs2Nanos(offsetStart));
-                            lastSampleTime = firstSampleTime.plusNanos(secs2Nanos(sampleCount / sampleFreq));
+                            float offsetStart = (float)-timestampOffset
+                                                    / (float)sampleFreq;
+                            firstSampleTime = blockTime.plusNanos(
+                                                    secs2Nanos(offsetStart)
+                                                    );
+                            lastSampleTime = firstSampleTime.plusNanos(
+                                                    secs2Nanos(sampleCount / sampleFreq)
+                                                    );
                         } else {
-                            double gap = (double)spanToSample / (-lastBlockTimeIndex[0] + timestampOffset);
-                            firstSampleTime = lastBlockTime[0].plusNanos((long)(-lastBlockTimeIndex[0] * gap));
-                            lastSampleTime = lastBlockTime[0].plusNanos((long)((-lastBlockTimeIndex[0] + sampleCount) * gap));
+                            double gap = (double)spanToSample 
+                                            / (-lastBlockTimeIndex[0] + timestampOffset);
+                            firstSampleTime = lastBlockTime[0].plusNanos(
+                                                    (long)(-lastBlockTimeIndex[0] * gap)
+                                                    );
+                            lastSampleTime = lastBlockTime[0].plusNanos(
+                                                    (long)(
+                                                            (-lastBlockTimeIndex[0] + sampleCount) * gap
+                                                          )
+                                                    );
                         }
 
                         // Last block time
@@ -299,16 +318,20 @@ public class AxivityAx3Epochs
                         //Advance last block time index for next block
                         lastBlockTimeIndex[0] = timestampOffset - sampleCount;
                         // Overall span
-                        long spanNanos = Duration.between(firstSampleTime, lastSampleTime).toNanos();
+                        long spanNanos = Duration.between(
+                                                firstSampleTime, lastSampleTime
+                                                ).toNanos();
                         
                         //set target epoch start time of very first block
                         if(epochStartTime==null) {
                             epochStartTime = firstSampleTime;
-                            //if set, clamp whole session to intended logging start time
+                            //if set, clamp session to intended log start time
                             if(SESSION_START!=null){
-                                START_OFFSET_NANOS = Duration.between(epochStartTime,
-                                        SESSION_START).toNanos();
-                                //check block time and session start time are within 10secs
+                                START_OFFSET_NANOS = Duration.between(
+                                                        epochStartTime, SESSION_START
+                                                        ).toNanos();
+                                //check block time and session start time
+                                //are within 10secs
                                 long clampLimitNanos = secs2Nanos(15);
                                 if( START_OFFSET_NANOS > clampLimitNanos ||
                                         START_OFFSET_NANOS < -clampLimitNanos ){
@@ -327,16 +350,18 @@ public class AxivityAx3Epochs
                         double y = 0.0;
                         double z = 0.0;
                         
-                        //loop through each line in data block & check if it is last in epoch
+                        //loop through each line in data block
+                        //and check if it is last in epoch
                         //then write epoch summary to file
-                        //an epoch will have a start+end time, and be of fixed duration            
+                        //an epoch will have a start+end time, and fixed duration            
                         int currentPeriod;
                         for (int i = 0; i<sampleCount; i++) {
-                            //Calculate each sample's time, not successively adding so that we
-                            //don't accumulate any errors
+                            //Calculate each sample's time, not successively
+                            //adding so that we don't accumulate any errors
                             if (USE_PRECISE_TIME) {
-                                blockTime = firstSampleTime.plusNanos(
-                                        (long)(i * (double)spanNanos / sampleCount) );
+                                blockTime = firstSampleTime.plusNanos
+                                                ( (long)(i * (double)spanNanos / sampleCount) 
+                                                );
                             } else if (i == 0) {
                                 blockTime = firstSampleTime; //emulate original behaviour
                             }
@@ -346,22 +371,36 @@ public class AxivityAx3Epochs
                                     value = getUnsignedInt(buf, 30 +4*i);
                                 } catch (Exception excep) {
                                     errCounter[0] += 1;
-                                    System.err.println("xyz reading err: " + excep.toString());
-                                    break; //rest of block/page could be corrupted
+                                    System.err.println("xyz reading err: " 
+                                                        + excep.toString());
+                                    break; //rest of block/page may be corrupted
                                 }
                                 // Sign-extend 10-bit values, adjust for exponents
-                                xRaw = (short)((short)(0xffffffc0 & (value <<  6)) >> (6 - ((value >> 30) & 0x03)));
-                                yRaw = (short)((short)(0xffffffc0 & (value >>  4)) >> (6 - ((value >> 30) & 0x03)));
-                                zRaw = (short)((short)(0xffffffc0 & (value >>  14)) >> (6 - ((value >> 30) & 0x03)));
+                                xRaw = (short)(
+                                                (short)(0xffffffc0 & (value <<  6))
+                                                >> (6 - ((value >> 30) & 0x03))
+                                              );
+                                yRaw = (short)(
+                                                (short)(0xffffffc0 & (value >>  4))
+                                                >> (6 - ((value >> 30) & 0x03))
+                                              );
+                                zRaw = (short)(
+                                                (short)(0xffffffc0 & (value >>  14))
+                                                >> (6 - ((value >> 30) & 0x03))
+                                              );
                             } else if (bytesPerSample == 6) {
                                 try {
                                     errCounter[0] += 1;
-                                    xRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 0);
-                                    yRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 2);
-                                    zRaw = buf.getShort(30 + 2 * NUM_AXES_PER_SAMPLE * i + 4);
+                                    xRaw = buf.getShort(30 
+                                            + 2 * NUM_AXES_PER_SAMPLE * i + 0);
+                                    yRaw = buf.getShort(30 
+                                            + 2 * NUM_AXES_PER_SAMPLE * i + 2);
+                                    zRaw = buf.getShort(30 
+                                            + 2 * NUM_AXES_PER_SAMPLE * i + 4);
                                 } catch (Exception excep) {
-                                    System.err.println("xyz reading err: " + excep.toString());
-                                    break; //rest of block/page could be corrupted
+                                    System.err.println("xyz read err: " 
+                                                        + excep.toString());
+                                    break; //rest of block/page may be corrupted
                                 }
                             } else {
                                 xRaw = 0;
@@ -371,24 +410,36 @@ public class AxivityAx3Epochs
                             x = xRaw / 256.0;
                             y = yRaw / 256.0;
                             z = zRaw / 256.0;
-                            currentPeriod = (int)Duration.between(epochStartTime,blockTime).getSeconds();
+                            currentPeriod = (int)Duration.between(
+                                                        epochStartTime,blockTime
+                                                        ).getSeconds();
                             
-                            //check for an interrupt, i.e. where break in values > 2 * epochPeriod
+                            //check for an interrupt
+                            //i.e. where break in values > 2 * epochPeriod
                             if (currentPeriod >= epochPeriod*2) {
                                 int epochDiff = currentPeriod/epochPeriod;
-                                epochStartTime = epochStartTime.plusSeconds(epochPeriod*epochDiff);
+                                epochStartTime = epochStartTime.plusSeconds(
+                                                        epochPeriod*epochDiff
+                                                        );
                                 //and update how far we are into the new epoch...
-                                currentPeriod = (int) ((blockTime.get(ChronoField.MILLI_OF_SECOND) -
-                                        epochStartTime.get(ChronoField.MILLI_OF_SECOND))/1000);
+                                currentPeriod = (int) (
+                                                        (blockTime.get(ChronoField.MILLI_OF_SECOND)
+                                                         - epochStartTime.get(ChronoField.MILLI_OF_SECOND)
+                                                         ) / 1000
+                                                      );
                             }
                             
                             //check we have collected enough values to form an epoch
                             if (currentPeriod >= epochPeriod){
-                                writeEpochSummary(epochFileWriter, timeFormat, epochStartTime, 
-                                                    epochPeriod, sampleFreq, timeVals, xVals, yVals, zVals, temperature,
-                                                    range, errCounter, clipsCounter, swIntercept,
-                                                    swSlope, tempCoef, meanTemp,
-                                                    getStationaryBouts, staticStd, filter);
+                                writeEpochSummary(epochFileWriter, timeFormat,
+                                                    epochStartTime, epochPeriod,
+                                                    sampleFreq, timeVals, xVals,
+                                                    yVals, zVals, temperature,
+                                                    range, errCounter, clipsCounter,
+                                                    swIntercept, swSlope,
+                                                    tempCoef, meanTemp,
+                                                    getStationaryBouts,
+                                                    staticStd, filter);
                                 //reset target start time and reset arrays for next epoch
                                 epochStartTime = epochStartTime.plusSeconds(epochPeriod);
                                 timeVals.clear();
@@ -400,16 +451,20 @@ public class AxivityAx3Epochs
                                 clipsCounter[1] = 0;
                             }
                             
-                            //store axes and vector magnitude values for every reading
-                            timeVals.add(Duration.between(epochStartTime, blockTime).toMillis());
+                            //store axes + vector magnitude vals for every reading
+                            timeVals.add(Duration.between(
+                                            epochStartTime, blockTime).toMillis());
                             xVals.add(x);
                             yVals.add(y);
                             zVals.add(z);
                             //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
                             if (!USE_PRECISE_TIME) {
-                                // Moved this to recalculate at top (rather than potentially 
-                                // accumulate slight errors with repeated addition)
-                                blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));
+                                // Moved this to recalculate at top
+                                // (rather than potentially accumulate slight 
+                                // errors with repeated addition)
+                                blockTime = blockTime.plusNanos(
+                                                secs2Nanos(1.0 / sampleFreq)
+                                                );
                             }
                         }
                     } catch(Exception excep){
