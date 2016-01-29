@@ -14,18 +14,18 @@ e.g.
     python ActivitySummary.py p001.CWA min_freq:10 
 """
 
+import argparse
 import collections
 import datetime
 import json
+import numpy as np
 import os
 import pandas as pd
 import pytz
-import numpy as np
 import statsmodels.api as sm
 import struct
 from subprocess import call
 import sys
-import argparse
 
 
 def main():
@@ -37,11 +37,17 @@ def main():
         description="""A tool to extract physical activity information from
             raw accelerometer files.""", add_help=False
     )
-
+    # required
+    parser.add_argument('rawFile', metavar='file', type=str,
+                       help="""the .cwa file to process (e.g. sample.cwa). If the file path contains spaces,
+                        it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
     # optionals
-    parser.add_argument('-summaryFolder', metavar='filename', default="",
-                            help="""folder for the OutputSummary.json summary statistics""")
-    parser.add_argument('-nonWearFolder', metavar='filename', default="",
+    parser.add_argument('-summaryFolder', metavar='filename',default="",
+                            help="""folder for the OutputSummary.json summary \
+                                    statistics""")
+    parser.add_argument('-nonWearFolder', metavar='filename',default="",
+
+
                             help="""folder for the NonWearBouts.csv file""")
     parser.add_argument('-epochFolder', metavar='filename', default="",
                             help="""folder for the epoch.json file, this must be an
@@ -95,6 +101,7 @@ def main():
                        help="""the .cwa file to process (e.g. sample.cwa). If the file path contains spaces,
                         it must be enclosed in quote marks (e.g. \"../My Documents/sample.cwa\")""")
 
+
     # check that enough command line arguments are entered
     if len(sys.argv) < 2:
             msg = "\nInvalid input, please enter at least 1 parameter, e.g."
@@ -115,16 +122,14 @@ def main():
         else:
             print "error: no file specified. Exiting.."
         sys.exit(-2)
-    print "\nrawFile = " + str(args.rawFile)
     
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
-    print (vars(args))
+    print "\n", (vars(args))
 
     # check folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder, args.stationaryFolder, args.timeSeriesFolder]:
-        print path
         if len(path) > 0 and not os.access(path, os.F_OK):
             print "error: " + path + " is not a valid directory"
             sys.exit()
@@ -138,14 +143,15 @@ def main():
     # could check if folder exists? probably not necessary
     summaryFile     = generatepath(args.summaryFolder, "OutputSummary.json")
     nonWearFile     = generatepath(args.nonWearFolder, "NonWearBouts.csv")
-    epochFile       = generatepath(args.epochFolder, "Epoch.json")
+    epochFile       = generatepath(args.epochFolder, "Epoch.csv")
     stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
     tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
-    print "summaryFile", summaryFile
-    print "nonWearFile", nonWearFile
-    print "epochFile", epochFile
-    print "stationaryFile", stationaryFile
-    print "tsFile", tsFile
+    print "\nrawFile = " + str(args.rawFile)
+    print "summaryFile = ", summaryFile
+    print "nonWearFile = ", nonWearFile
+    print "epochFile = ", epochFile
+    print "stationaryFile = ", stationaryFile
+    print "tsFile = ", tsFile, "\n"
 
     # check source cwa file exists
     if args.processRawFile and not os.path.isfile(args.rawFile):
@@ -249,17 +255,9 @@ def main():
             accEcdf = getEpochSummary(epochFile, 0, 0, args.epochPeriod, ecdfXVals,
                     nonWearFile, tsFile)
 
-    # data integrity outputs
-    maxErrorRate = 0.001
-    lowErrorRate = 1
-    norm = epochSamplesN*1.0
-    if (clipsPreCalibrSum/norm >= maxErrorRate or
-            clipsPostCalibrSum/norm >= maxErrorRate or
-            numDataErrs/norm >= maxErrorRate):
-        lowErrorRate = 0
     # min wear time
     minDiurnalHrs = 24
-    minWearDays = 5
+    minWearDays = 3
     goodWearTime = 1
     if diurnalHrs < minDiurnalHrs or wearTimeMins/1440.0 < minWearDays:
         goodWearTime = 0
@@ -274,8 +272,10 @@ def main():
         goodCalibration = 0
     # calibrated on own data
     calibratedOnOwnData = 1
+
     if args.skipCalibration or not args.processRawFile:
         calibratedOnOwnData = 0
+        goodCalibration = 1 # assume data is good if we skip calibration
 
     # store variables to dictionary
     result = collections.OrderedDict()
@@ -287,7 +287,6 @@ def main():
     result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
     result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
     # data integrity outputs
-    result['quality-lowErrorRate'] = lowErrorRate
     result['quality-goodWearTime'] = goodWearTime
     result['quality-goodCalibration'] = goodCalibration
     result['quality-calibratedOnOwnData'] = calibratedOnOwnData
@@ -402,7 +401,7 @@ def main():
     # print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
             'acc-overall-avg(mg)','wearTime-overall(days)', \
-            'nonWearTime-overall(days)']
+            'nonWearTime-overall(days)', 'quality-goodCalibration']
     summaryDict = collections.OrderedDict([(i, result[i]) for i in summaryVals])
     print toScreen(json.dumps(summaryDict, indent=4))
 
@@ -480,8 +479,9 @@ def getEpochSummary(epochFile,
         print 'day light savings transition at:' + str(transition)
         # now update datetime index to 'fix' values after DST crossover
         e['newTime'] = e.index
-        e['newTime'][e.index >= transition] = e.index + np.timedelta64(offset,'h')
-        e['newTime'] = e['newTime'].fillna(e.index)
+        e['newTime'] = np.where(e.index >= transition,
+                e.index + np.timedelta64(offset,'h'), e.index)
+        e['newTime'] = np.where(e['newTime'].isnull(), e.index, e['newTime'])
         e = e.set_index('newTime')
         # reset startTime and endTime variables
         startTime = pd.to_datetime(e.index.values[0])
@@ -540,7 +540,6 @@ def getEpochSummary(epochFile,
     wearTimeWeights = e.groupby(['hour', 'minute'])[paCol].mean()  # weartime weighted data
     # add the wearTimeWeights column to the other data as 'enmoTrunc_imputed'
     e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
-    print e[['enmoTrunc', 'enmoTrunc_imputed']].head()
     unadjustedAccData = e[paCol] # raw data
     # calculate stat summaries
     unadjustedAccAvg = unadjustedAccData.mean()
@@ -746,9 +745,9 @@ def toScreen(msg):
     timeFormat = '%Y-%m-%d %H:%M:%S'
     return datetime.datetime.now().strftime(timeFormat) +  ' ' + msg
 
+
 def str2bool(v):
-  #susendberg's function
-  return v.lower() in ("yes", "true", "t", "1")
+    return v.lower() in ("yes", "true", "t", "1")
 
 if __name__ == '__main__':
     main()  # Standard boilerplate to call the main() function to begin the program.

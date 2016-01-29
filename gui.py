@@ -169,6 +169,7 @@ class TkinterGUI(Tkinter.Frame):
                                            'default': [0.0,0.0,0.0]},
                 'meanTemperature': {'text': 'Mean calibration temperature in degrees Celsius',
                                     'default': 20.0}
+
             },
             'Java options': {
                 'javaHeapSpace': {'text': 'Amount of heap space allocated to the java subprocesses, useful for limiting'
