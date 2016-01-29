@@ -4,7 +4,7 @@ import os
 import ttk
 # spawning child processes
 import subprocess
-from threading  import Thread, Timer
+from threading import Thread, Timer
 import time
 
 
@@ -46,10 +46,9 @@ class TkinterGUI(Tkinter.Frame):
             self.target_opts['target_type'].set(type)
             self.refreshFileList()
             self.generateFullCommand()
-
-
         self.target_opts['filename'].trace("w", lambda *args: target_callback('filename'))
         self.target_opts['dirname'].trace("w", lambda *args: target_callback('dirname'))
+
         # vargs are in format {'command': name of -command, 'varable': StringVar() for value,
         # 'default': if same as default it's unchanged, 'type': 'bool', 'string', 'int', or 'float' }
         # -[command] [variable].get()   (only add if [variable] != [default])
@@ -63,7 +62,9 @@ class TkinterGUI(Tkinter.Frame):
         self.inputs.append(
             Tkinter.Button(frame,
                 text='Choose file',
-                command=lambda:self.target_opts['filename'].set(self.askopenfilename(initialFile = self.target_opts['filename'].get())),
+                command=lambda: self.target_opts['filename'].set(
+                        self.askopenfilename(initialFile=self.target_opts['filename'].get())
+                ),
                 width=35))
 
         self.inputs[-1].grid(row=0, column=0, padx=5, pady=15)
@@ -143,7 +144,11 @@ class TkinterGUI(Tkinter.Frame):
             value['variable'] = Tkinter.IntVar()
             value['variable'].set(value['default'])
 
-            self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type':'bool'})
+            self.vargs.append({
+                'command': key,
+                'variable': value['variable'],
+                'default': value['default'],
+                'type': 'bool'})
 
             self.inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
             self.inputs[-1].pack(side='left',**pack_opts)
@@ -155,17 +160,26 @@ class TkinterGUI(Tkinter.Frame):
         # more complicated options, we will just pass them in as text for now (hoping the user will put anything silly)
         option_groups = {
             'Calibration options': {
-                'calibrationOffset': {'text': 'Calibration offset', 'default':[0.0,0.0,0.0]},
-                'calibrationSlope': {'text': 'Calibration slope linking offset to temperature', 'default':[1.0,1.0,1.0]},
-                'calibrationTemperature': {'text': 'Mean temperature in degrees Celsius of stationary data for calibration', 'default':[0.0,0.0,0.0]},
-                'meanTemperature': {'text': 'Mean calibration temperature in degrees Celsius', 'default':20.0}
+                'calibrationOffset': {'text': 'Calibration offset',
+                                      'default': [0.0,0.0,0.0]},
+                'calibrationSlope': {'text': 'Calibration slope linking offset to temperature',
+                                     'default': [1.0,1.0,1.0]},
+                'calibrationTemperature': {'text': 'Mean temperature in degrees Celsius of stationary data for'
+                                                   ' calibration',
+                                           'default': [0.0,0.0,0.0]},
+                'meanTemperature': {'text': 'Mean calibration temperature in degrees Celsius',
+                                    'default': 20.0}
             },
             'Java options': {
-                'javaHeapSpace': {'text': 'Amount of heap space allocated to the java subprocesses, useful for limiting RAM usage (leave blank for no limit)', 'default':''},
-                'rawDataParser': {'text': 'Java (.class) file, which is used to process (.cwa) binary files', 'default':'AxivityAx3Epochs'}
+                'javaHeapSpace': {'text': 'Amount of heap space allocated to the java subprocesses, useful for limiting'
+                                          ' RAM usage (leave blank for no limit)',
+                                  'default': ''},
+                'rawDataParser': {'text': 'Java (.class) file, which is used to process (.cwa) binary files',
+                                  'default': 'AxivityAx3Epochs'}
             },
             'Epoch options': {
-                'epochPeriod': {'text': 'Length in seconds of a single epoch', 'default': 5}
+                'epochPeriod': {'text': 'Length in seconds of a single epoch',
+                                'default': 5}
             }
         }
         frame = Tkinter.Frame(advanced_frame)
@@ -182,7 +196,7 @@ class TkinterGUI(Tkinter.Frame):
                 else:
                     value['type'] = 'float'
 
-                # need to make these variables pernament since if they get garbage collected tkinter will fail
+                # need to make these variables permanent since if they get garbage collected tkinter will fail
                 rowFrame = Tkinter.Frame(labelframe)
 
                 value['labelvar'] = Tkinter.StringVar()
@@ -194,7 +208,8 @@ class TkinterGUI(Tkinter.Frame):
                 value['variable'] = Tkinter.StringVar()
                 value['variable'].set(self.formatargument(value['default']))
 
-                self.vargs.append({'command': key, 'variable': value['variable'], 'default': value['default'], 'type':value['type']})
+                self.vargs.append({'command': key, 'variable': value['variable'],
+                                   'default': value['default'], 'type': value['type']})
 
                 self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
                 self.inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
@@ -213,7 +228,6 @@ class TkinterGUI(Tkinter.Frame):
 
         # box for output folder options
         def chooseFolder(value):
-
             chosendir = self.askdirectory(initialDir=value.get())
             if chosendir.find(" ") != -1:
                 value.set('\"' + chosendir + '\"')
@@ -234,7 +248,10 @@ class TkinterGUI(Tkinter.Frame):
             self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
             self.inputs[-1].pack(side='right', expand=1, fill= Tkconstants.X)
 
-            value['label'] = Tkinter.Button(rowFrame, text=value['text'], command=lambda v=value['variable']: chooseFolder(v), width=50, wraplength=300)
+            value['label'] = Tkinter.Button(rowFrame,
+                                            text=value['text'],
+                                            command=lambda v=value['variable']: chooseFolder(v),
+                                            width=50, wraplength=300)
             self.inputs.append(value['label'])
             value['label'].pack(side='left', padx=pack_opts['padx'], pady=pack_opts['pady'])
 
@@ -261,9 +278,7 @@ class TkinterGUI(Tkinter.Frame):
             obj['variable'].trace('w', lambda a,b,c, o=obj: self.changed(o))
 
     def setCommand(self, name):
-
         """Set text in the textbox"""
-
         print name
         self.textbox.configure(state='normal')
         self.textbox.delete(1.0, 'end')
@@ -271,9 +286,7 @@ class TkinterGUI(Tkinter.Frame):
         # self.textbox.configure(state='disabled')
 
     def generateFullCommand(self):
-
         """Generates a commandline from the options given"""
-
         target_type = self.target_opts['target_type'].get()
         if len(target_type) == 0:
             self.setCommand("Please select a file or folder")
@@ -318,11 +331,8 @@ class TkinterGUI(Tkinter.Frame):
         for f in self.target_opts['file_list']:
             self.listbox.insert(Tkconstants.END, f)
 
-
     def changed(self, obj):
-
         """Option button callback."""
-
         print 'obj',obj
         # args = self.vargs[key] 
         val_type = obj['type']
@@ -346,7 +356,6 @@ class TkinterGUI(Tkinter.Frame):
             return str(value)
 
     def askopenfilename(self, **args):
-
         """Returns a user-selected filename. Tries to return the 'initialfile' default if nothing selected """
         print args
         if args['initialFile'] and len(args['initialFile'])>0:
@@ -365,9 +374,7 @@ class TkinterGUI(Tkinter.Frame):
             return filename
 
     def askdirectory(self, **args):
-
         """Returns a user-selected directory name. Tries to return the 'initialdir' default if nothing selected """
-
         if args['initialDir'] and len(args['initialDir'])>0:
             dirname = tkFileDialog.askdirectory(initialdir = args['initialDir'], **self.dir_opt)
         else:
@@ -385,9 +392,7 @@ class TkinterGUI(Tkinter.Frame):
             return dirname
 
     def start(self):
-
         """Start button pressed"""
-
         if self.isexecuting:
             self.stop()
         else:
@@ -420,9 +425,7 @@ class TkinterGUI(Tkinter.Frame):
         self.enableInput(True)
 
     def pollStdout(self, p):
-
         """Poll the process p until it finishes"""
-
         start = -1  # the time when the process returns (exits)
         while True:
             retcode = p.poll()  # returns None while subprocess is running
