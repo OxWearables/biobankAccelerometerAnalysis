@@ -25,8 +25,10 @@ import pytz
 import statsmodels.api as sm
 import struct
 from subprocess import call
+from multiprocessing import Pool
 import sys
-
+import copy
+from time import sleep
 
 def main():
     """
@@ -47,8 +49,6 @@ def main():
                             help="""folder for the OutputSummary.json summary \
                                     statistics""")
     parser.add_argument('-nonWearFolder', metavar='filename',default="",
-
-
                             help="""folder for the NonWearBouts.csv file""")
     parser.add_argument('-epochFolder', metavar='filename', default="",
                             help="""folder for the epoch.json file, this must be
@@ -110,6 +110,11 @@ def main():
                             help="""file containing a java program to process
                             raw .cwa binary file, must end with .class (omitted)
                              (default : %(default)s)""")
+    parser.add_argument('-numWorkers',
+                            metavar="numWorkers", default=1,type=int,
+                            help="""number of workers to use when processing
+                            multiple files, has no effect on single files
+                             (default : %(default)s)""")
 
 
     # check that enough command line arguments are entered
@@ -121,6 +126,34 @@ def main():
             sys.exit(-1)
     
     args = parser.parse_args()
+
+    if os.path.isdir(args.rawFile):
+        print "input is a directory, the marked .cwa files will be processed:"
+        file_queue = []
+        for file in os.listdir(args.rawFile):
+            if file.lower().endswith(".cwa"):
+                print "> " + file + ""
+                # print args
+                file_args = copy.copy(args)
+                file_args.rawFile = os.path.normpath(os.path.join(args.rawFile, file))
+                file_args.fileNumber = len(file_queue)
+                file_queue.append(file_args)
+            else:
+                print "  " + file
+        numWorkers = min(len(file_queue), args.numWorkers)
+        pool = Pool(numWorkers)
+        # print file_queue
+        print "spawning " + str(numWorkers) + " workers for the following files:"
+        for f in file_queue:
+            print "  " + f.rawFile
+        pool.map(processSingleFile, file_queue)
+        pool.join()
+        print "all workers have finished processing"
+    else:
+        processSingleFile(args)
+
+
+def processSingleFile(args):
     # check file exists
     if args.processRawFile is False:
         if len(args.rawFile.split('.')) < 2:
@@ -136,7 +169,13 @@ def main():
     # get file extension
     args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
     (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
-    print "\n", (vars(args))
+
+    if args.fileNumber:
+        sleep(args.fileNumber)  # so workers don't print on top of each other
+    print "processing " + args.rawFile + " with these arguments:"
+    for key, value in vars(args).iteritems():
+        if not (isinstance(value, str) and len(value)==0):
+            print "  ", key.ljust(15), ':', value
 
     # check folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder,
@@ -292,39 +331,42 @@ def main():
         goodCalibration = 1 # assume data is good if we skip calibration
 
     # store variables to dictionary
-    result = collections.OrderedDict()
-    result['file-name'] = args.rawFile
-    result['file-startTime'] = startTime.strftime('%Y-%m-%d %H:%M:%S')
-    result['file-endTime'] = endTime.strftime('%Y-%m-%d %H:%M:%S')
-    # physical activity output variable (mg)
-    result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
-    result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
-    # data integrity outputs
-    result['quality-goodWearTime'] = goodWearTime
-    result['quality-goodCalibration'] = goodCalibration
-    result['quality-calibratedOnOwnData'] = calibratedOnOwnData
-    result['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
-    # physical activity variation by day / hour
-    result['acc-mon-avg(mg)'] = formatNum(accDays[0]*1000, 2)
-    result['acc-tue-avg(mg)'] = formatNum(accDays[1]*1000, 2)
-    result['acc-wed-avg(mg)'] = formatNum(accDays[2]*1000, 2)
-    result['acc-thur-avg(mg)'] = formatNum(accDays[3]*1000, 2)
-    result['acc-fri-avg(mg)'] = formatNum(accDays[4]*1000, 2)
-    result['acc-sat-avg(mg)'] = formatNum(accDays[5]*1000, 2)
-    result['acc-sun-avg(mg)'] = formatNum(accDays[6]*1000, 2)
-    result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
+    result = {
+        'file-name' : args.rawFile,
+        'file-startTime': startTime.strftime('%Y-%m-%d %H:%M:%S'),
+        'file-endTime': endTime.strftime('%Y-%m-%d %H:%M:%S'),
+        # physical activity output variable (mg)
+        'acc-overall-avg(mg)': formatNum(accAvg*1000, 2),
+        'acc-overall-std(mg)': formatNum(accStd*1000, 2),
+        # data integrity outputs
+        'quality-goodWearTime': goodWearTime,
+        'quality-goodCalibration': goodCalibration,
+        'quality-calibratedOnOwnData': calibratedOnOwnData,
+        'quality-daylightSavingsCrossover': daylightSavingsCrossover,
+        # physical activity variation by day / hour
+        'acc-mon-avg(mg)': formatNum(accDays[0]*1000, 2),
+        'acc-tue-avg(mg)': formatNum(accDays[1]*1000, 2),
+        'acc-wed-avg(mg)': formatNum(accDays[2]*1000, 2),
+        'acc-thur-avg(mg)': formatNum(accDays[3]*1000, 2),
+        'acc-fri-avg(mg)': formatNum(accDays[4]*1000, 2),
+        'acc-sat-avg(mg)': formatNum(accDays[5]*1000, 2),
+        'acc-sun-avg(mg)': formatNum(accDays[6]*1000, 2),
+        'file-firstDay(0=mon,6=sun)': startTime.weekday()
+    }
     for i in range(0, 24):
         result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(accHours[i]*1000, 2)
     # wear time characteristics
-    result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, 2)
-    result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, 2)
-    result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, 2)
-    result['wearTime-tue(hrs)'] = formatNum(wearDay[1]/60.0, 2)
-    result['wearTime-wed(hrs)'] = formatNum(wearDay[2]/60.0, 2)
-    result['wearTime-thur(hrs)'] = formatNum(wearDay[3]/60.0, 2)
-    result['wearTime-fri(hrs)'] = formatNum(wearDay[4]/60.0, 2)
-    result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, 2)
-    result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, 2)
+    result = result.update({
+        'wearTime-overall(days)': formatNum(wearTimeMins/1440.0, 2),
+        'nonWearTime-overall(days)': formatNum(nonWearTimeMins/1440.0, 2),
+        'wearTime-mon(hrs)': formatNum(wearDay[0]/60.0, 2),
+        'wearTime-tue(hrs)': formatNum(wearDay[1]/60.0, 2),
+        'wearTime-wed(hrs)': formatNum(wearDay[2]/60.0, 2),
+        'wearTime-thur(hrs)': formatNum(wearDay[3]/60.0, 2),
+        'wearTime-fri(hrs)': formatNum(wearDay[4]/60.0, 2),
+        'wearTime-sat(hrs)': formatNum(wearDay[5]/60.0, 2),
+        'wearTime-sun(hrs)': formatNum(wearDay[6]/60.0, 2)
+    })
     for i in range(0,24):
         result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, 2)
     result['wearTime-diurnalHrs'] = diurnalHrs
