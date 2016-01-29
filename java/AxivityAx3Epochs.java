@@ -347,12 +347,10 @@ public class AxivityAx3Epochs
 			float offsetStart = (float)-timestampOffset / (float)sampleFreq;
 			firstSampleTime = blockTime.plusNanos(secs2Nanos(offsetStart));
 			lastSampleTime = firstSampleTime.plusNanos(secs2Nanos(sampleCount / sampleFreq));
-			//System.out.println("Unable to use last time (@" + lastBlockTimeIndex[0] + "=" + lastBlockTime[0] + "), estimating from rate (offset " + timestampOffset + "): " + firstSampleTime + ", " + lastSampleTime + "");
 		} else {
             double gap = (double)spanToSample / (-lastBlockTimeIndex[0] + timestampOffset);
             firstSampleTime = lastBlockTime[0].plusNanos((long)(-lastBlockTimeIndex[0] * gap));
             lastSampleTime = lastBlockTime[0].plusNanos((long)((-lastBlockTimeIndex[0] + sampleCount) * gap));
-            //System.out.println("From last (@" + lastBlockTimeIndex[0] + "=" + lastBlockTime[0] + ") and new time (@" + timestampOffset + "=" + blockTime + "): " + firstSampleTime + ", " + lastSampleTime + "");
 		}
 
 		// Last block time
@@ -361,7 +359,7 @@ public class AxivityAx3Epochs
 		lastBlockTimeIndex[0] = timestampOffset - sampleCount;
 		// Overall span
 		long spanNanos = Duration.between(firstSampleTime, lastSampleTime).toNanos();
-		//System.out.println("Block is " + spanNanos / 1000000000.0 + "s => samples period " + spanNanos / 1000000000.0 / sampleCount);
+        
         //set target epoch start time of very first block
         if(epochStartTime==null) {
             epochStartTime = firstSampleTime;
@@ -393,7 +391,6 @@ public class AxivityAx3Epochs
         //an epoch will have a start+end time, and be of fixed duration            
         int currentPeriod;
         for (int i = 0; i<sampleCount; i++) {
-			
 			//Calculate each sample's time, not successively adding so that we
             //don't accumulate any errors
 			if (preciseTime) {
@@ -433,8 +430,8 @@ public class AxivityAx3Epochs
             x = xRaw / 256.0;
             y = yRaw / 256.0;
             z = zRaw / 256.0;
-            
             currentPeriod = (int)Duration.between(epochStartTime,blockTime).getSeconds();
+            
             //check for an interrupt, i.e. where break in values > 2 * epochPeriod
             if (currentPeriod >= epochPeriod*2) {
                 int epochDiff = currentPeriod/epochPeriod;
@@ -461,6 +458,7 @@ public class AxivityAx3Epochs
                 clipsCounter[0] = 0;
                 clipsCounter[1] = 0;
             }
+            
             //store axes and vector magnitude values for every reading
             timeVals.add(Duration.between(epochStartTime, blockTime).toMillis());
             xVals.add(x);
