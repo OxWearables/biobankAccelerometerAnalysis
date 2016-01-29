@@ -110,11 +110,6 @@ def main():
                             help="""file containing a java program to process
                             raw .cwa binary file, must end with .class (omitted)
                              (default : %(default)s)""")
-    # required
-    parser.add_argument('rawFile', metavar='file', type=str,
-                       help="""the .cwa file to process (e.g. sample.cwa). If
-                       the file path contains spaces, it must be enclosed in
-                       quote marks (e.g. \"../My Documents/sample.cwa\")""")
 
 
     # check that enough command line arguments are entered
@@ -299,9 +294,8 @@ def main():
     # store variables to dictionary
     result = collections.OrderedDict()
     result['file-name'] = args.rawFile
-    f = '%Y-%m-%d %H:%M:%S'
-    result['file-startTime'] = startTime.strftime(f)
-    result['file-endTime'] = endTime.strftime(f)
+    result['file-startTime'] = startTime.strftime('%Y-%m-%d %H:%M:%S')
+    result['file-endTime'] = endTime.strftime('%Y-%m-%d %H:%M:%S')
     # physical activity output variable (mg)
     result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
     result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
