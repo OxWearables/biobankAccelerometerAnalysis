@@ -524,6 +524,9 @@ public class AxivityAx3Epochs
             x = swIntercept[0] + x*swSlope[0] + mcTemp*tempCoef[0];
             y = swIntercept[1] + y*swSlope[1] + mcTemp*tempCoef[1];
             z = swIntercept[2] + z*swSlope[2] + mcTemp*tempCoef[2];
+            xVals.set(c, x);
+            yVals.set(c, y);
+            zVals.set(c, z);
             //check if any new clipping has happened
             //find crossing of range threshold so use < rather than ==
             if(x<-range || x>range || y<-range || y>range || z<-range || z>range){
