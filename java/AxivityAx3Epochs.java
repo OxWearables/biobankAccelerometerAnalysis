@@ -130,11 +130,21 @@ public class AxivityAx3Epochs
                 }
             }
         }    
+        
+        String epochHeader = "Time,enmoTrunc,";
+        if(getStationaryBouts){
+            epochHeader += "xMean,yMean,zMean,";
+        }
+        epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
+        epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr,";
+        epochHeader += "rawSamples";
+        
         //process file if input parameters are all ok
-        writeCwaEpochs(accFile, outputFile, verbose, epochPeriod, timeFormat,
-                startEpochWholeMinute, startEpochWholeSecond, range, swIntercept,
-                swSlope, tempCoef, meanTemp, getStationaryBouts, stationaryStd,
-                filter);   
+        writeCwaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
+                timeFormat, startEpochWholeMinute, startEpochWholeSecond,
+                range, swIntercept, swSlope, tempCoef, meanTemp,
+                getStationaryBouts, stationaryStd, filter);   
+        
         //if no errors then will reach this
         System.exit(0);
     }
@@ -146,6 +156,7 @@ public class AxivityAx3Epochs
     private static void writeCwaEpochs(
             String accFile,
             String outputFile,
+            String epochHeader,
             Boolean verbose,
             int epochPeriod,
             DateTimeFormatter timeFormat,
@@ -159,6 +170,20 @@ public class AxivityAx3Epochs
             Boolean getStationaryBouts,
             double staticStd,
             LowpassFilter filter) {
+        //epoch creation support variables
+        LocalDateTime epochStartTime = null;
+        List<Long> timeVals = new ArrayList<Long>();
+        List<Double> xVals = new ArrayList<Double>();
+        List<Double> yVals = new ArrayList<Double>();
+        List<Double> zVals = new ArrayList<Double>();
+        int[] errCounter = new int[]{0}; //store val if updated in other method
+        int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
+        // Inter-block timstamp tracking
+        LocalDateTime[] lastBlockTime = { null };
+        int[] lastBlockTimeIndex = { 0 };
+        
+        //data block support variables
+        String header = "";        
         //file read/write objects
         FileChannel rawAccReader = null;
         BufferedWriter epochFileWriter = null;
@@ -167,28 +192,6 @@ public class AxivityAx3Epochs
         try {
             rawAccReader = new FileInputStream(accFile).getChannel();
             epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
-            //data block support variables
-            String header = "";        
-            //epoch creation support variables
-            LocalDateTime epochStartTime = null;
-            List<Long> timeVals = new ArrayList<Long>();
-            List<Double> xVals = new ArrayList<Double>();
-            List<Double> yVals = new ArrayList<Double>();
-            List<Double> zVals = new ArrayList<Double>();
-            int[] errCounter = new int[]{0}; //store val if updated in other method
-            int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
-			// Inter-block timstamp tracking
-			LocalDateTime[] lastBlockTime = { null };
-			int[] lastBlockTimeIndex = { 0 };
-			
-            String epochSummary = "";
-            String epochHeader = "Time,enmoTrunc,";
-            if(getStationaryBouts){
-                epochHeader += "xMean,yMean,zMean,";
-            }
-            epochHeader += "xRange,yRange,zRange,xStd,yStd,zStd,temp,samples,";
-            epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr,";
-            epochHeader += "rawSamples";
 
             //now read every page in CWA file
             int pageCount = 0;
@@ -242,6 +245,7 @@ public class AxivityAx3Epochs
             System.exit(-2);
         }
     }
+
 
     /**
      * Read data block HEX values, store each raw reading, then continually test
@@ -383,13 +387,11 @@ public class AxivityAx3Epochs
         double x = 0.0;
         double y = 0.0;
         double z = 0.0;
-        double mcTemp = temperature-meanTemp; //mean centred temperature
         
         //loop through each line in data block & check if it is last in epoch
         //then write epoch summary to file
         //an epoch will have a start+end time, and be of fixed duration            
         int currentPeriod;
-        Boolean isClipped = false;
         for (int i = 0; i<sampleCount; i++) {
 			
 			//Calculate each sample's time, not successively adding so that we
@@ -431,6 +433,87 @@ public class AxivityAx3Epochs
             x = xRaw / 256.0;
             y = yRaw / 256.0;
             z = zRaw / 256.0;
+            
+            currentPeriod = (int)Duration.between(epochStartTime,blockTime).getSeconds();
+            //check for an interrupt, i.e. where break in values > 2 * epochPeriod
+            if (currentPeriod >= epochPeriod*2) {
+                int epochDiff = currentPeriod/epochPeriod;
+                epochStartTime = epochStartTime.plusSeconds(epochPeriod*epochDiff);
+                //and update how far we are into the new epoch...
+                currentPeriod = (int) ((blockTime.get(ChronoField.MILLI_OF_SECOND) -
+                        epochStartTime.get(ChronoField.MILLI_OF_SECOND))/1000);
+            }
+            
+            //check we have collected enough values to form an epoch
+            if (currentPeriod >= epochPeriod){
+                writeEpochSummary(epochWriter, timeFormat, epochStartTime, 
+                                    epochPeriod, sampleFreq, timeVals, xVals, yVals, zVals, temperature,
+                                    range, errCounter, clipsCounter, swIntercept,
+                                    swSlope, tempCoef, meanTemp,
+                                    getStationaryBouts, staticStd, filter);
+                //reset target start time and reset arrays for next epoch
+                epochStartTime = epochStartTime.plusSeconds(epochPeriod);
+                timeVals.clear();
+                xVals.clear();
+                yVals.clear();
+                zVals.clear();
+                errCounter[0] = 0;
+                clipsCounter[0] = 0;
+                clipsCounter[1] = 0;
+            }
+            //store axes and vector magnitude values for every reading
+            timeVals.add(Duration.between(epochStartTime, blockTime).toMillis());
+            xVals.add(x);
+            yVals.add(y);
+            zVals.add(z);
+            //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
+			if (!preciseTime) {
+                // Moved this to recalculate at top (rather than potentially 
+                // accumulate slight errors with repeated addition)
+				blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));
+			}
+        }
+        return epochStartTime;
+    }
+
+
+    /**
+     * Read data block HEX values, store each raw reading, then continually test
+     * if an epoch of data has been collected or not. Finally, write each epoch
+     * to <epochFileWriter>. Method also updates and returns <epochStartTime>.
+     * CWA format is described at:
+     * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
+     */
+    private static void writeEpochSummary(
+            BufferedWriter epochWriter,
+            DateTimeFormatter timeFormat,
+            LocalDateTime epochStartTime,
+            int epochPeriod,
+            double intendedSampleRate,
+            List<Long> timeVals,
+            List<Double> xVals,
+            List<Double> yVals,
+            List<Double> zVals,
+            double lastBlockTemperature,
+            int range,
+            int[] errCounter,
+            int[] clipsCounter,
+            double[] swIntercept,
+            double[] swSlope,
+            double[] tempCoef,
+            double meanTemp,
+            Boolean getStationaryBouts,
+            double staticStd,
+            LowpassFilter filter) {
+        Boolean isClipped = false;
+        double x;
+        double y;
+        double z;
+        double mcTemp = lastBlockTemperature-meanTemp; //mean centred temperature
+        for(int c=0; c<xVals.size(); c++){
+            x = xVals.get(c);
+            y = yVals.get(c);
+            z = zVals.get(c);
             //check if any clipping present, use ==range as it's clipped here
             if(x<=-range || x>=range || y<=-range || y>=range || z<=-range || z>=range){
                 clipsCounter[0] += 1;
@@ -460,138 +543,102 @@ public class AxivityAx3Epochs
                 else if (z>range || (isClipped && z>0))
                     z = range;
             }
-            
-            currentPeriod = (int)Duration.between(epochStartTime,blockTime).getSeconds();
-            //check for an interrupt, i.e. where break in values > 2 * epochPeriod
-            if (currentPeriod >= epochPeriod*2) {
-                int epochDiff = currentPeriod/epochPeriod;
-                epochStartTime = epochStartTime.plusSeconds(epochPeriod*epochDiff);
-                //and update how far we are into the new epoch...
-                currentPeriod = (int) ((blockTime.get(ChronoField.MILLI_OF_SECOND) -
-                        epochStartTime.get(ChronoField.MILLI_OF_SECOND))/1000);
-            }
-            
-            //check we have collected enough values to form an epoch
-            if (currentPeriod >= epochPeriod){
-                //resample values to epochSec * (intended) sampleRate
-                long[] timeResampled = new long[epochPeriod * (int)sampleFreq];
-                for(int c=0; c<timeResampled.length; c++){
-                    timeResampled[c] = timeVals.get(0) + (10*c);
-                }
-                double[] xResampled = new double[timeResampled.length];
-                double[] yResampled = new double[timeResampled.length];
-                double[] zResampled = new double[timeResampled.length];
-                Resample.interpLinear(timeVals, xVals, yVals, zVals,
-                        timeResampled, xResampled, yResampled, zResampled);
-                
-                //epoch variables
-                String epochSummary = "";
-                double accPA = 0;
-                double xMean = 0;
-                double yMean = 0;
-                double zMean = 0;
-                double xRange = 0;
-                double yRange = 0;
-                double zRange = 0;
-                double xStd = 0;
-                double yStd = 0;
-                double zStd = 0;     
-
-                //calculate raw x/y/z summary values
-                xMean = mean(xResampled);
-                yMean = mean(yResampled);
-                zMean = mean(zResampled);
-                xRange = range(xResampled);
-                yRange = range(yResampled);
-                zRange = range(zResampled);
-                xStd = std(xResampled, xMean);
-                yStd = std(yResampled, yMean);
-                zStd = std(zResampled, zMean);
-
-                //see if values have been abnormally stuck this epoch
-                double stuckVal = 1.5;
-                if (xStd==0 && (xMean<-stuckVal || xMean>stuckVal))
-                    errCounter[0] += 1;
-                if (yStd==0 && (yMean<-stuckVal || yMean>stuckVal))
-                    errCounter[0] += 1;
-                if (zStd==0 && (zMean<-stuckVal || zMean>stuckVal))
-                    errCounter[0] += 1;
-               
-                //calculate summary vector magnitude based metrics
-                List<Double> paVals = new ArrayList<Double>();
-                if(!getStationaryBouts) {
-                    for(int c=0; c<xResampled.length; c++){
-                        x = xResampled[c];
-                        y = yResampled[c];
-                        z = zResampled[c];
-                        if(!Double.isNaN(x)) {
-                            double vm = getVectorMagnitude(x,y,z);
-                            paVals.add(vm-1);
-                        }
-                    }
-
-                    //filter AvgVm-1 values
-                    if (filter != null) {
-                        filter.filter(paVals);
-                    }
-
-                    //run abs() or trunc() on summary variables after filtering
-                    trunc(paVals); //abs(paVals)
-                   
-                    //calculate mean values for each outcome metric 
-                    accPA = mean(paVals);
-                }
-                //write summary values to file
-                epochSummary = epochStartTime.plusNanos(
-                        START_OFFSET_NANOS).format(timeFormat);
-                epochSummary += "," + DF6.format(accPA);
-                if(getStationaryBouts){
-                    epochSummary += "," + DF6.format(xMean);
-                    epochSummary += "," + DF6.format(yMean);
-                    epochSummary += "," + DF6.format(zMean);
-                }
-                epochSummary += "," + DF6.format(xRange);
-                epochSummary += "," + DF6.format(yRange);
-                epochSummary += "," + DF6.format(zRange);
-                epochSummary += "," + DF6.format(xStd);
-                epochSummary += "," + DF6.format(yStd);
-                epochSummary += "," + DF6.format(zStd);
-                epochSummary += "," + DF2.format(temperature);
-                epochSummary += "," + xResampled.length + "," + errCounter[0];
-                epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
-                epochSummary += "," + timeVals.size(); 
-                if(!getStationaryBouts || 
-                        (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
-                    writeLine(epochWriter, epochSummary);        
-                }
-                       
-                //reset target start time and reset arrays for next epoch
-                epochStartTime = epochStartTime.plusSeconds(epochPeriod);
-                timeVals.clear();
-                xVals.clear();
-                yVals.clear();
-                zVals.clear();
-                errCounter[0] = 0;
-                clipsCounter[0] = 0;
-                clipsCounter[1] = 0;
-            }
-            //store axes and vector magnitude values for every reading
-            timeVals.add(Duration.between(epochStartTime, blockTime).toMillis());
-            xVals.add(x);
-            yVals.add(y);
-            zVals.add(z);
-            isClipped = false;
-            //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
-			if (!preciseTime) {
-                // Moved this to recalculate at top (rather than potentially 
-                // accumulate slight errors with repeated addition)
-				blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));
-			}
         }
-        return epochStartTime;
+        
+        //resample values to epochSec * (intended) sampleRate
+        long[] timeResampled = new long[epochPeriod * (int)intendedSampleRate];
+        for(int c=0; c<timeResampled.length; c++){
+            timeResampled[c] = timeVals.get(0) + (10*c);
+        }
+        double[] xResampled = new double[timeResampled.length];
+        double[] yResampled = new double[timeResampled.length];
+        double[] zResampled = new double[timeResampled.length];
+        Resample.interpLinear(timeVals, xVals, yVals, zVals,
+                timeResampled, xResampled, yResampled, zResampled);
+        
+        //epoch variables
+        String epochSummary = "";
+        double accPA = 0;
+        double xMean = 0;
+        double yMean = 0;
+        double zMean = 0;
+        double xRange = 0;
+        double yRange = 0;
+        double zRange = 0;
+        double xStd = 0;
+        double yStd = 0;
+        double zStd = 0;     
+
+        //calculate raw x/y/z summary values
+        xMean = mean(xResampled);
+        yMean = mean(yResampled);
+        zMean = mean(zResampled);
+        xRange = range(xResampled);
+        yRange = range(yResampled);
+        zRange = range(zResampled);
+        xStd = std(xResampled, xMean);
+        yStd = std(yResampled, yMean);
+        zStd = std(zResampled, zMean);
+
+        //see if values have been abnormally stuck this epoch
+        double stuckVal = 1.5;
+        if (xStd==0 && (xMean<-stuckVal || xMean>stuckVal))
+            errCounter[0] += 1;
+        if (yStd==0 && (yMean<-stuckVal || yMean>stuckVal))
+            errCounter[0] += 1;
+        if (zStd==0 && (zMean<-stuckVal || zMean>stuckVal))
+            errCounter[0] += 1;
+       
+        //calculate summary vector magnitude based metrics
+        List<Double> paVals = new ArrayList<Double>();
+        if(!getStationaryBouts) {
+            for(int c=0; c<xResampled.length; c++){
+                x = xResampled[c];
+                y = yResampled[c];
+                z = zResampled[c];
+                if(!Double.isNaN(x)) {
+                    double vm = getVectorMagnitude(x,y,z);
+                    paVals.add(vm-1);
+                }
+            }
+
+            //filter AvgVm-1 values
+            if (filter != null) {
+                filter.filter(paVals);
+            }
+
+            //run abs() or trunc() on summary variables after filtering
+            trunc(paVals); //abs(paVals)
+           
+            //calculate mean values for each outcome metric 
+            accPA = mean(paVals);
+        }
+        //write summary values to file
+        epochSummary = epochStartTime.plusNanos(
+                START_OFFSET_NANOS).format(timeFormat);
+        epochSummary += "," + DF6.format(accPA);
+        if(getStationaryBouts){
+            epochSummary += "," + DF6.format(xMean);
+            epochSummary += "," + DF6.format(yMean);
+            epochSummary += "," + DF6.format(zMean);
+        }
+        epochSummary += "," + DF6.format(xRange);
+        epochSummary += "," + DF6.format(yRange);
+        epochSummary += "," + DF6.format(zRange);
+        epochSummary += "," + DF6.format(xStd);
+        epochSummary += "," + DF6.format(yStd);
+        epochSummary += "," + DF6.format(zStd);
+        epochSummary += "," + DF2.format(lastBlockTemperature);
+        epochSummary += "," + xResampled.length + "," + errCounter[0];
+        epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
+        epochSummary += "," + timeVals.size(); 
+        if(!getStationaryBouts || 
+                (xStd<staticStd && yStd<staticStd && zStd<staticStd)) {
+            writeLine(epochWriter, epochSummary);        
+        }
     }
 
-	
+
     //Parse header HEX values, CWA format is described at:
     //https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
     private static LocalDateTime headerLoggingStartTime(ByteBuffer buf) {
