@@ -150,6 +150,7 @@ def main():
         pool.join()
         print "all workers have finished processing"
     else:
+        args.fileNumber = 1
         processSingleFile(args)
 
 
