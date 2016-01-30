@@ -332,42 +332,39 @@ def processSingleFile(args):
         goodCalibration = 1 # assume data is good if we skip calibration
 
     # store variables to dictionary
-    result = {
-        'file-name' : args.rawFile,
-        'file-startTime': startTime.strftime('%Y-%m-%d %H:%M:%S'),
-        'file-endTime': endTime.strftime('%Y-%m-%d %H:%M:%S'),
-        # physical activity output variable (mg)
-        'acc-overall-avg(mg)': formatNum(accAvg*1000, 2),
-        'acc-overall-std(mg)': formatNum(accStd*1000, 2),
-        # data integrity outputs
-        'quality-goodWearTime': goodWearTime,
-        'quality-goodCalibration': goodCalibration,
-        'quality-calibratedOnOwnData': calibratedOnOwnData,
-        'quality-daylightSavingsCrossover': daylightSavingsCrossover,
-        # physical activity variation by day / hour
-        'acc-mon-avg(mg)': formatNum(accDays[0]*1000, 2),
-        'acc-tue-avg(mg)': formatNum(accDays[1]*1000, 2),
-        'acc-wed-avg(mg)': formatNum(accDays[2]*1000, 2),
-        'acc-thur-avg(mg)': formatNum(accDays[3]*1000, 2),
-        'acc-fri-avg(mg)': formatNum(accDays[4]*1000, 2),
-        'acc-sat-avg(mg)': formatNum(accDays[5]*1000, 2),
-        'acc-sun-avg(mg)': formatNum(accDays[6]*1000, 2),
-        'file-firstDay(0=mon,6=sun)': startTime.weekday()
-    }
+    result = collections.OrderedDict()
+    result['file-name'] = args.rawFile
+    result['file-startTime'] = startTime.strftime('%Y-%m-%d %H:%M:%S')
+    result['file-endTime'] = endTime.strftime('%Y-%m-%d %H:%M:%S')
+    # physical activity output variable (mg)
+    result['acc-overall-avg(mg)'] = formatNum(accAvg*1000, 2)
+    result['acc-overall-std(mg)'] = formatNum(accStd*1000, 2)
+    # data integrity outputs
+    result['quality-goodWearTime'] = goodWearTime
+    result['quality-goodCalibration'] = goodCalibration
+    result['quality-calibratedOnOwnData'] = calibratedOnOwnData
+    result['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
+    # physical activity variation by day / hour
+    result['acc-mon-avg(mg)'] = formatNum(accDays[0]*1000, 2)
+    result['acc-tue-avg(mg)'] = formatNum(accDays[1]*1000, 2)
+    result['acc-wed-avg(mg)'] = formatNum(accDays[2]*1000, 2)
+    result['acc-thur-avg(mg)'] = formatNum(accDays[3]*1000, 2)
+    result['acc-fri-avg(mg)'] = formatNum(accDays[4]*1000, 2)
+    result['acc-sat-avg(mg)'] = formatNum(accDays[5]*1000, 2)
+    result['acc-sun-avg(mg)'] = formatNum(accDays[6]*1000, 2)
+    result['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
     for i in range(0, 24):
         result['acc-hourOfDay' + str(i) + '-avg(mg)'] = formatNum(accHours[i]*1000, 2)
     # wear time characteristics
-    result = result.update({
-        'wearTime-overall(days)': formatNum(wearTimeMins/1440.0, 2),
-        'nonWearTime-overall(days)': formatNum(nonWearTimeMins/1440.0, 2),
-        'wearTime-mon(hrs)': formatNum(wearDay[0]/60.0, 2),
-        'wearTime-tue(hrs)': formatNum(wearDay[1]/60.0, 2),
-        'wearTime-wed(hrs)': formatNum(wearDay[2]/60.0, 2),
-        'wearTime-thur(hrs)': formatNum(wearDay[3]/60.0, 2),
-        'wearTime-fri(hrs)': formatNum(wearDay[4]/60.0, 2),
-        'wearTime-sat(hrs)': formatNum(wearDay[5]/60.0, 2),
-        'wearTime-sun(hrs)': formatNum(wearDay[6]/60.0, 2)
-    })
+    result['wearTime-overall(days)'] = formatNum(wearTimeMins/1440.0, 2)
+    result['nonWearTime-overall(days)'] = formatNum(nonWearTimeMins/1440.0, 2)
+    result['wearTime-mon(hrs)'] = formatNum(wearDay[0]/60.0, 2)
+    result['wearTime-tue(hrs)'] = formatNum(wearDay[1]/60.0, 2)
+    result['wearTime-wed(hrs)'] = formatNum(wearDay[2]/60.0, 2)
+    result['wearTime-thur(hrs)'] = formatNum(wearDay[3]/60.0, 2)
+    result['wearTime-fri(hrs)'] = formatNum(wearDay[4]/60.0, 2)
+    result['wearTime-sat(hrs)'] = formatNum(wearDay[5]/60.0, 2)
+    result['wearTime-sun(hrs)'] = formatNum(wearDay[6]/60.0, 2)
     for i in range(0,24):
         result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, 2)
     result['wearTime-diurnalHrs'] = diurnalHrs
