@@ -521,12 +521,12 @@ public class AxivityAx3Epochs
             Boolean getStationaryBouts,
             double staticStd,
             LowpassFilter filter) {
-        Boolean isClipped = false;
         double x;
         double y;
         double z;
         double mcTemp = lastBlockTemperature-meanTemp; //mean centred temperature
         for(int c=0; c<xVals.size(); c++){
+            Boolean isClipped = false;
             x = xVals.get(c);
             y = yVals.get(c);
             z = zVals.get(c);
