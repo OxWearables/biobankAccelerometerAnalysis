@@ -7,6 +7,53 @@ import subprocess
 from threading import Thread, Timer
 import time
 
+
+class VerticalScrolledFrame(Tk.Frame):
+    """A pure Tkinter scrollable frame that actually works!
+    * Use the 'interior' attribute to place widgets inside the scrollable frame
+    * Construct and pack/place/grid normally
+    * This frame only allows vertical scrolling
+
+    """
+    def __init__(self, parent, *args, **kw):
+        Tk.Frame.__init__(self, parent, *args, **kw)            
+
+        # create a canvas object and a vertical scrollbar for scrolling it
+        vscrollbar = Tk.Scrollbar(self, orient="vertical")
+        vscrollbar.pack(fill="y", side="right", expand=False)
+        canvas = Tk.Canvas(self, bd=0, highlightthickness=0,
+                        yscrollcommand=vscrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        vscrollbar.config(command=canvas.yview)
+
+        # reset the view
+        canvas.xview_moveto(0)
+        canvas.yview_moveto(0)
+
+        # create a frame inside the canvas which will be scrolled with it
+        self.interior = interior = Tk.Frame(canvas)
+        interior_id = canvas.create_window(0, 0, window=interior,
+                                           anchor="nw")
+
+        # track changes to the canvas and frame width and sync them,
+        # also updating the scrollbar
+        def _configure_interior(event):
+            # update the scrollbars to match the size of the inner frame
+            size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
+            print size
+            canvas.config(scrollregion="0 0 %s %s" % size)
+            if interior.winfo_reqwidth() != canvas.winfo_width():
+                # update the canvas's width to fit the inner frame
+                canvas.config(width=interior.winfo_reqwidth())
+        interior.bind('<Configure>', _configure_interior)
+
+        def _configure_canvas(event):
+            if interior.winfo_reqwidth() != canvas.winfo_width():
+                # update the inner frame's width to fill the canvas
+                canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+        canvas.bind('<Configure>', _configure_canvas)
+
+
 class TkinterGUI(Tk.Frame):
 
     def __init__(self, root):
@@ -55,7 +102,7 @@ class TkinterGUI(Tk.Frame):
         # list of buttons that should be disabled when the processing has started
         self.inputs = []
 
-        self.advanced_frame = Tk.Frame()
+        self.advanced_frame = VerticalScrolledFrame(root)
 
         frame = Tk.Frame()
         # define buttons
@@ -124,10 +171,10 @@ class TkinterGUI(Tk.Frame):
         self.listbox.pack(expand=1, **pack_opts)
 
         textnbframe.grid(row=1, column=0, columnspan=3,
-                              sticky=Tkconstants.N + Tkconstants.E + Tkconstants.S + Tkconstants.W,
+                              sticky=Tkconstants.N,# + Tkconstants.E + Tkconstants.S + Tkconstants.W,
                               padx=5, pady=5)
 
-        frame.pack(expand=1, **pack_opts)
+        frame.pack(expand=0, **pack_opts)
 
         # boolean options
         self.checkboxes = {
@@ -137,7 +184,7 @@ class TkinterGUI(Tk.Frame):
             'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True}
         }
 
-        frame = Tk.Frame(self.advanced_frame)
+        frame = Tk.Frame(self.advanced_frame.interior)
         for key, value in self.checkboxes.iteritems():
             value['type'] = 'bool'
             value['variable'] = Tk.IntVar()
@@ -185,7 +232,7 @@ class TkinterGUI(Tk.Frame):
                                 'default': 1}
             }
         }
-        frame = Tk.Frame(self.advanced_frame)
+        frame = Tk.Frame(self.advanced_frame.interior)
         for key, groups in option_groups.iteritems():
             labelframe = Tk.LabelFrame(frame, text=key)
             for key, value in groups.iteritems():
@@ -236,7 +283,7 @@ class TkinterGUI(Tk.Frame):
             else:
                 value.set(chosendir)
 
-        frame = Tk.Frame(self.advanced_frame)
+        frame = Tk.Frame(self.advanced_frame.interior)
         labelframe = Tk.LabelFrame(frame, text="Folder options (default is same folder as input file)")
         for key, value in folder_params.iteritems():
             rowFrame = Tk.Frame(labelframe)
@@ -269,7 +316,7 @@ class TkinterGUI(Tk.Frame):
         self.startbutton.grid(row=0, column=0, padx=5, pady=5)
         Tk.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
         frame.pack()
-        self.advanced_frame.pack(expand=1, fill=Tkconstants.Y)
+        self.advanced_frame.pack(expand=1, fill="both")
 
         root.update()
         root.minsize(root.winfo_width(), 0)
@@ -475,7 +522,7 @@ class TkinterGUI(Tk.Frame):
             self.advanced_frame.pack_forget()
         else:
             self.advancedOptionsButton.config(text="Hide advanced options")
-            self.advanced_frame.pack()
+            self.advanced_frame.pack(expand=1, fill="both")
         pass
 
 
