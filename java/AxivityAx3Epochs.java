@@ -174,8 +174,8 @@ public class AxivityAx3Epochs
         List<Double> xVals = new ArrayList<Double>();
         List<Double> yVals = new ArrayList<Double>();
         List<Double> zVals = new ArrayList<Double>();
+        List<Double> temperatureVals = new ArrayList<Double>();
         int[] errCounter = new int[]{0}; //store val if updated in other method
-        int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
         // Inter-block timstamp tracking
         LocalDateTime[] lastBlockTime = { null };
         int[] lastBlockTimeIndex = { 0 };
@@ -434,8 +434,8 @@ public class AxivityAx3Epochs
                                 writeEpochSummary(epochFileWriter, timeFormat,
                                                     epochStartTime, epochPeriod,
                                                     sampleFreq, timeVals, xVals,
-                                                    yVals, zVals, temperature,
-                                                    range, errCounter, clipsCounter,
+                                                    yVals, zVals, temperatureVals,
+                                                    range, errCounter,
                                                     swIntercept, swSlope,
                                                     tempCoef, meanTemp,
                                                     getStationaryBouts,
@@ -446,9 +446,8 @@ public class AxivityAx3Epochs
                                 xVals.clear();
                                 yVals.clear();
                                 zVals.clear();
+                                temperatureVals.clear();
                                 errCounter[0] = 0;
-                                clipsCounter[0] = 0;
-                                clipsCounter[1] = 0;
                             }
                             
                             //store axes + vector magnitude vals for every reading
@@ -457,6 +456,7 @@ public class AxivityAx3Epochs
                             xVals.add(x);
                             yVals.add(y);
                             zVals.add(z);
+                            temperatureVals.add(temperature);
                             //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
                             if (!USE_PRECISE_TIME) {
                                 // Moved this to recalculate at top
@@ -510,10 +510,9 @@ public class AxivityAx3Epochs
             List<Double> xVals,
             List<Double> yVals,
             List<Double> zVals,
-            double lastBlockTemperature,
+            List<Double> temperatureVals,
             int range,
             int[] errCounter,
-            int[] clipsCounter,
             double[] swIntercept,
             double[] swSlope,
             double[] tempCoef,
@@ -521,17 +520,19 @@ public class AxivityAx3Epochs
             Boolean getStationaryBouts,
             double staticStd,
             LowpassFilter filter) {
+        int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
         double x;
         double y;
         double z;
-        double mcTemp = lastBlockTemperature-meanTemp; //mean centred temperature
         for(int c=0; c<xVals.size(); c++){
             Boolean isClipped = false;
             x = xVals.get(c);
             y = yVals.get(c);
             z = zVals.get(c);
+            double mcTemp = temperatureVals.get(c) - meanTemp; //mean centred temp
             //check if any clipping present, use ==range as it's clipped here
-            if(x<=-range || x>=range || y<=-range || y>=range || z<=-range || z>=range){
+            if(x<=-range || x>=range || y<=-range || y>=range
+                    || z<=-range || z>=range){
                 clipsCounter[0] += 1;
                 isClipped = true;
             }
@@ -647,7 +648,7 @@ public class AxivityAx3Epochs
         epochSummary += "," + DF6.format(xStd);
         epochSummary += "," + DF6.format(yStd);
         epochSummary += "," + DF6.format(zStd);
-        epochSummary += "," + DF2.format(lastBlockTemperature);
+        epochSummary += "," + DF2.format(mean(temperatureVals));
         epochSummary += "," + xResampled.length + "," + errCounter[0];
         epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
         epochSummary += "," + timeVals.size(); 
