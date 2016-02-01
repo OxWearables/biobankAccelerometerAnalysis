@@ -126,7 +126,7 @@ def main():
             sys.exit(-1)
     
     args = parser.parse_args()
-    start = datetime.datetime.now()
+    beginDate = datetime.datetime.now()
 
     if os.path.isdir(args.rawFile):
         print "input is a directory, the marked .cwa files will be processed:"
@@ -142,20 +142,21 @@ def main():
             else:
                 print "  " + file
         numWorkers = min(len(file_queue), args.numWorkers)
-        pool = Pool(numWorkers)
         # print file_queue
-        print "spawning " + str(numWorkers) + " workers for the following files:"
+        print "spawning " + str(numWorkers) + " workers for the following " \
+                                            + str(len(file_queue)) + " files:"
         for f in file_queue:
             print "  " + f.rawFile
-        pool.map(processSingleFile, file_queue)
-        pool.join()
-        print "all workers have finished processing"
 
+        pool = Pool(numWorkers)
+        pool.map(processSingleFile, file_queue)
+        print "all workers have finished processing"
     else:
-        args.fileNumber = 1
+        args.fileNumber = 0
         processSingleFile(args)
-    end = datetime.datetime.now()
-    print "in total, processing took ", (end-start), "seconds" 
+    
+    endDate = datetime.datetime.now()
+    print "in total, processing took ", (endDate-beginDate).total_seconds(), "seconds" 
 
 def processSingleFile(args):
     # check file exists
@@ -195,9 +196,11 @@ def processSingleFile(args):
     args.stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
     args.tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
 
-    if args.fileNumber:
-        sleep(args.fileNumber)  # so workers don't print on top of each other
-    print "processing '" + args.rawFile + "' with these arguments:\n"
+    if args.numWorkers > 1:
+        # print "sleeping for ", args.fileNumber, " seconds"
+        sleep(args.fileNumber)  # stagger workers so they don't print at the exact same time
+
+    print "processing file " + str(args.fileNumber) + " '" + args.rawFile + "' with these arguments:\n"
     for key, value in sorted(vars(args).items()):
         if not (isinstance(value, str) and len(value)==0):
             print "  ", key.ljust(15), ':', value
