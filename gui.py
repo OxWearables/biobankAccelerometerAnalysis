@@ -182,6 +182,10 @@ class TkinterGUI(Tk.Frame):
             'Epoch options': {
                 'epochPeriod': {'text': 'Length in seconds of a single epoch',
                                 'default': 5}
+            },
+            'Multi-threading options': {
+                'numWorkers': {'text': 'Number of processing threads to execute simultaneously (for multiple files)',
+                                'default': 1}
             }
         }
         frame = Tk.Frame(self.advanced_frame)
