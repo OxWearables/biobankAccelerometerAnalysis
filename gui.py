@@ -7,7 +7,6 @@ import subprocess
 from threading import Thread, Timer
 import time
 
-
 class TkinterGUI(Tk.Frame):
 
     def __init__(self, root):
@@ -95,7 +94,6 @@ class TkinterGUI(Tk.Frame):
             'title': 'Select folder to process'
         }
 
-        self.advancedOptionInputs = []
         self.showAdvancedOptions = False
         self.advancedOptionsButton = Tk.Button(frame,
                                         text='Hide advanced Options',
@@ -156,7 +154,6 @@ class TkinterGUI(Tk.Frame):
 
         # print {key: value['variable'].get() for (key, value) in self.checkboxes.iteritems()}
         frame.pack(fill=Tkconstants.NONE, padx=pack_opts['padx'], pady=pack_opts['pady'])
-        self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info()})
 
         # more complicated options, we will just pass them in as text for now (hoping the user will put anything silly)
         option_groups = {
@@ -223,7 +220,6 @@ class TkinterGUI(Tk.Frame):
             labelframe.pack(**pack_opts)
         frame.pack()
 
-        self.advancedOptionInputs.append({'frame': frame, 'pack_opts': frame.pack_info() })
         folder_params = {
             'summaryFolder': {'text': 'Folder for summary output'},
             'nonWearFolder': {'text': 'Folder for non-wear time'},
@@ -264,7 +260,6 @@ class TkinterGUI(Tk.Frame):
             rowFrame.pack(**pack_opts)
         labelframe.pack(**pack_opts)
         frame.pack()
-        self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info()})
         print "started"
 
 
@@ -478,13 +473,9 @@ class TkinterGUI(Tk.Frame):
         if self.showAdvancedOptions:
             self.advancedOptionsButton.config(text="Show advanced options")
             self.advanced_frame.pack_forget()
-            # for i in self.advancedOptionInputs:
-            #     i['frame'].pack_forget()
         else:
             self.advancedOptionsButton.config(text="Hide advanced options")
             self.advanced_frame.pack()
-            # for i in self.advancedOptionInputs:
-            #     i['frame'].pack(**i['pack_opts'])
         pass
 
 
