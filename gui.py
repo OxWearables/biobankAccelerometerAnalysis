@@ -1,4 +1,4 @@
-import Tkinter
+import Tkinter as Tk
 import Tkconstants, tkFileDialog
 import os
 import ttk
@@ -8,11 +8,11 @@ from threading import Thread, Timer
 import time
 
 
-class TkinterGUI(Tkinter.Frame):
+class TkinterGUI(Tk.Frame):
 
     def __init__(self, root):
 
-        Tkinter.Frame.__init__(self, root)
+        Tk.Frame.__init__(self, root)
         root.title("Accelerometer Processing")
         # options for buttons
         pack_opts = {'fill': Tkconstants.BOTH, 'padx': 5, 'pady': 5}
@@ -23,10 +23,10 @@ class TkinterGUI(Tkinter.Frame):
         self.threads = []  # keep track of threads so we can stop them
 
         self.target_opts = {
-            'filename': Tkinter.StringVar(), # we use stringVar so we can monitor for changes
-            'dirname': Tkinter.StringVar(),
+            'filename': Tk.StringVar(), # we use stringVar so we can monitor for changes
+            'dirname': Tk.StringVar(),
             'filenames': [], # for multiple file selections, unused due to dodgy Tkinter support
-            'target_type': Tkinter.StringVar(),
+            'target_type': Tk.StringVar(),
             'file_list': [],
             'file_opts': {
                 'filetypes': [('all files', '.*'), ('CWA files', '.cwa')],
@@ -56,11 +56,12 @@ class TkinterGUI(Tkinter.Frame):
         # list of buttons that should be disabled when the processing has started
         self.inputs = []
 
-        advanced_frame = Tkinter.Frame()
-        frame = Tkinter.Frame(advanced_frame)
+        self.advanced_frame = Tk.Frame()
+
+        frame = Tk.Frame()
         # define buttons
         self.inputs.append(
-            Tkinter.Button(frame,
+            Tk.Button(frame,
                 text='Choose file',
                 command=lambda: self.target_opts['filename'].set(
                         self.askopenfilename(initialFile=self.target_opts['filename'].get())
@@ -81,7 +82,7 @@ class TkinterGUI(Tkinter.Frame):
         # options['multiple'] = 1
 
         self.inputs.append(
-            Tkinter.Button(frame,
+            Tk.Button(frame,
                 text='Choose directory',
                 command=lambda: self.target_opts['dirname'].set(
                         self.askdirectory(initialDir=self.target_opts['dirname'].get())),
@@ -96,7 +97,7 @@ class TkinterGUI(Tkinter.Frame):
 
         self.advancedOptionInputs = []
         self.showAdvancedOptions = False
-        self.advancedOptionsButton = Tkinter.Button(frame,
+        self.advancedOptionsButton = Tk.Button(frame,
                                         text='Hide advanced Options',
                                         command=self.toggleAdvancedOptions,
                                         width=35)
@@ -109,19 +110,19 @@ class TkinterGUI(Tkinter.Frame):
         tab1 = ttk.Frame(textnbframe)
         textnbframe.add(tab1, text='Command')
 
-        self.textbox = Tkinter.Text(tab1, height=10, width=70)
+        self.textbox = Tk.Text(tab1, height=10, width=70)
         self.textbox.pack(expand=1, **pack_opts)
-        Tkinter.Grid.grid_rowconfigure(frame, index=1, weight=1)
-        Tkinter.Grid.grid_columnconfigure(frame, index=0, weight=1)
-        Tkinter.Grid.grid_columnconfigure(frame, index=1, weight=1)
-        Tkinter.Grid.grid_columnconfigure(frame, index=2, weight=1)
+        Tk.Grid.grid_rowconfigure(frame, index=1, weight=1)
+        Tk.Grid.grid_columnconfigure(frame, index=0, weight=1)
+        Tk.Grid.grid_columnconfigure(frame, index=1, weight=1)
+        Tk.Grid.grid_columnconfigure(frame, index=2, weight=1)
         self.textbox.insert('insert', "Please select a file or folder")
 
         # second tab
         self.tab2 = ttk.Frame(textnbframe)
         textnbframe.add(self.tab2, text='Files to process')#, state='disabled')
 
-        self.listbox = Tkinter.Listbox(self.tab2, height=10)
+        self.listbox = Tk.Listbox(self.tab2, height=10)
         self.listbox.pack(expand=1, **pack_opts)
 
         textnbframe.grid(row=1, column=0, columnspan=3,
@@ -138,10 +139,10 @@ class TkinterGUI(Tkinter.Frame):
             'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True}
         }
 
-        frame = Tkinter.Frame(advanced_frame)
+        frame = Tk.Frame(self.advanced_frame)
         for key, value in self.checkboxes.iteritems():
             value['type'] = 'bool'
-            value['variable'] = Tkinter.IntVar()
+            value['variable'] = Tk.IntVar()
             value['variable'].set(value['default'])
 
             self.vargs.append({
@@ -150,7 +151,7 @@ class TkinterGUI(Tkinter.Frame):
                 'default': value['default'],
                 'type': 'bool'})
 
-            self.inputs.append(Tkinter.Checkbutton(frame, text=value['text'], variable=value['variable']))
+            self.inputs.append(Tk.Checkbutton(frame, text=value['text'], variable=value['variable']))
             self.inputs[-1].pack(side='left',**pack_opts)
 
         # print {key: value['variable'].get() for (key, value) in self.checkboxes.iteritems()}
@@ -183,9 +184,9 @@ class TkinterGUI(Tkinter.Frame):
                                 'default': 5}
             }
         }
-        frame = Tkinter.Frame(advanced_frame)
+        frame = Tk.Frame(self.advanced_frame)
         for key, groups in option_groups.iteritems():
-            labelframe = Tkinter.LabelFrame(frame, text=key)
+            labelframe = Tk.LabelFrame(frame, text=key)
             for key, value in groups.iteritems():
 
                 if isinstance(value['default'], list):
@@ -198,21 +199,21 @@ class TkinterGUI(Tkinter.Frame):
                     value['type'] = 'float'
 
                 # need to make these variables permanent since if they get garbage collected tkinter will fail
-                rowFrame = Tkinter.Frame(labelframe)
+                rowFrame = Tk.Frame(labelframe)
 
-                value['labelvar'] = Tkinter.StringVar()
+                value['labelvar'] = Tk.StringVar()
                 value['labelvar'].set(value['text'])
-                value['label'] = Tkinter.Label(rowFrame, textvariable=value['labelvar'], width=50, wraplength=300)
+                value['label'] = Tk.Label(rowFrame, textvariable=value['labelvar'], width=50, wraplength=300)
                 value['label'].pack(side='left')
 
                 # print str(value['default'])
-                value['variable'] = Tkinter.StringVar()
+                value['variable'] = Tk.StringVar()
                 value['variable'].set(self.formatargument(value['default']))
 
                 self.vargs.append({'command': key, 'variable': value['variable'],
                                    'default': value['default'], 'type': value['type']})
 
-                self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
+                self.inputs.append(Tk.Entry(rowFrame,textvariable=value['variable'],width=50))
                 self.inputs[-1].pack(side='right' , expand=1, fill=Tkconstants.X)
                 rowFrame.pack(**pack_opts)
             labelframe.pack(**pack_opts)
@@ -235,21 +236,21 @@ class TkinterGUI(Tkinter.Frame):
             else:
                 value.set(chosendir)
 
-        frame = Tkinter.Frame(advanced_frame)
-        labelframe = Tkinter.LabelFrame(frame, text="Folder options (default is same folder as input file)")
+        frame = Tk.Frame(self.advanced_frame)
+        labelframe = Tk.LabelFrame(frame, text="Folder options (default is same folder as input file)")
         for key, value in folder_params.iteritems():
-            rowFrame = Tkinter.Frame(labelframe)
+            rowFrame = Tk.Frame(labelframe)
 
-            value['variable'] = Tkinter.StringVar()
+            value['variable'] = Tk.StringVar()
             value['variable'].set("")
             value['variable'].trace('w', lambda *args: self.generateFullCommand())
 
             self.vargs.append({'command': key, 'variable': value['variable'], 'default': '', 'type':'string'})
 
-            self.inputs.append(Tkinter.Entry(rowFrame,textvariable=value['variable'],width=50))
+            self.inputs.append(Tk.Entry(rowFrame,textvariable=value['variable'],width=50))
             self.inputs[-1].pack(side='right', expand=1, fill= Tkconstants.X)
 
-            value['label'] = Tkinter.Button(rowFrame,
+            value['label'] = Tk.Button(rowFrame,
                                             text=value['text'],
                                             command=lambda v=value['variable']: chooseFolder(v),
                                             width=50, wraplength=300)
@@ -262,14 +263,14 @@ class TkinterGUI(Tkinter.Frame):
         self.advancedOptionInputs.append({'frame':frame, 'pack_opts': frame.pack_info()})
         print "started"
 
-        advanced_frame.pack(expand=1, fill=Tkconstants.Y)
 
         # Start button at bottom
-        frame = Tkinter.Frame()
-        self.startbutton = Tkinter.Button(frame, text='Start', width=35, command=self.start)
+        frame = Tk.Frame()
+        self.startbutton = Tk.Button(frame, text='Start', width=35, command=self.start)
         self.startbutton.grid(row=0, column=0, padx=5, pady=5)
-        Tkinter.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
+        Tk.Button(frame, text='Exit', width=35, command=lambda: self.quit()).grid(row=0, column=1, padx=5, pady=5)
         frame.pack()
+        self.advanced_frame.pack(expand=1, fill=Tkconstants.Y)
 
         root.update()
         root.minsize(root.winfo_width(), 0)
@@ -433,8 +434,8 @@ class TkinterGUI(Tkinter.Frame):
             if start == -1 and retcode is not None:
                 print "thread ended", time.time()
 
-                self.textbox.insert(Tkinter.END, "\nprocess exited with code "+ str(retcode))
-                self.textbox.see(Tkinter.END)
+                self.textbox.insert(Tk.END, "\nprocess exited with code "+ str(retcode))
+                self.textbox.see(Tk.END)
 
                 start = time.time()
 
@@ -442,15 +443,15 @@ class TkinterGUI(Tkinter.Frame):
 
             if len(line) > 0:
                 print line
-                self.textbox.insert(Tkinter.END, "\n" + line.rstrip())
-                self.textbox.see(Tkinter.END)
+                self.textbox.insert(Tk.END, "\n" + line.rstrip())
+                self.textbox.see(Tk.END)
 
             line = p.stderr.readline()
 
             if len(line) > 0:
                 print line
-                self.textbox.insert(Tkinter.END, "\nERROR: " + line.rstrip())
-                self.textbox.see(Tkinter.END)
+                self.textbox.insert(Tk.END, "\nERROR: " + line.rstrip())
+                self.textbox.see(Tk.END)
             print "read a line"
 
             # we stop reading after 2s to give error messages a chance to display
@@ -472,16 +473,18 @@ class TkinterGUI(Tkinter.Frame):
             self.showAdvancedOptions = not self.showAdvancedOptions
         if self.showAdvancedOptions:
             self.advancedOptionsButton.config(text="Show advanced options")
-            for i in self.advancedOptionInputs:
-                i['frame'].pack_forget()
+            self.advanced_frame.pack_forget()
+            # for i in self.advancedOptionInputs:
+            #     i['frame'].pack_forget()
         else:
             self.advancedOptionsButton.config(text="Hide advanced options")
-            for i in self.advancedOptionInputs:
-                i['frame'].pack(**i['pack_opts'])
+            self.advanced_frame.pack()
+            # for i in self.advancedOptionInputs:
+            #     i['frame'].pack(**i['pack_opts'])
         pass
 
 
 if __name__ == '__main__':
-    root = Tkinter.Tk()
+    root = Tk.Tk()
     TkinterGUI(root).pack()
     root.mainloop()
