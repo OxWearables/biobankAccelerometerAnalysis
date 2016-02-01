@@ -479,7 +479,7 @@ public class AxivityAx3Epochs
                 //option to provide status update to user...
                 pageCount++;
                 if(verbose && pageCount % 10000 == 0)
-                    System.out.println((pageCount*100/memSizePages) + "%");
+                    System.out.print((pageCount*100/memSizePages) + "%\t");
             }   
             rawAccReader.close();
             epochFileWriter.close();
