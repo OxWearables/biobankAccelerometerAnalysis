@@ -126,6 +126,7 @@ def main():
             sys.exit(-1)
     
     args = parser.parse_args()
+    start = datetime.datetime.now()
 
     if os.path.isdir(args.rawFile):
         print "input is a directory, the marked .cwa files will be processed:"
@@ -149,10 +150,12 @@ def main():
         pool.map(processSingleFile, file_queue)
         pool.join()
         print "all workers have finished processing"
+
     else:
         args.fileNumber = 1
         processSingleFile(args)
-
+    end = datetime.datetime.now()
+    print "in total, processing took ", (end-start), "seconds" 
 
 def processSingleFile(args):
     # check file exists
@@ -168,15 +171,9 @@ def processSingleFile(args):
         sys.exit(-2)
     
     # get file extension
-    args.rawFileEnd = '.' + args.rawFile.split('.')[-1]
-    (rawFilePath, args.rawFileBegin) = os.path.split(args.rawFile[0:-len(args.rawFileEnd)])
+    args.rawFileExt = '.' + args.rawFile.split('.')[-1]
+    (rawFilePath, args.rawFileName) = os.path.split(args.rawFile[0:-len(args.rawFileExt)])
 
-    if args.fileNumber:
-        sleep(args.fileNumber)  # so workers don't print on top of each other
-    print "processing " + args.rawFile + " with these arguments:"
-    for key, value in vars(args).iteritems():
-        if not (isinstance(value, str) and len(value)==0):
-            print "  ", key.ljust(15), ':', value
 
     # check folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder,
@@ -189,20 +186,22 @@ def processSingleFile(args):
         if len(folderPath) == 0:
             # if no folder specified then use same folder as rawFile
             folderPath = rawFilePath
-        return os.path.normpath(os.path.join(folderPath, args.rawFileBegin + filename))
+        return os.path.normpath(os.path.join(folderPath, args.rawFileName + filename))
 
     # could check if folder exists? probably not necessary
-    summaryFile     = generatepath(args.summaryFolder, "OutputSummary.json")
-    nonWearFile     = generatepath(args.nonWearFolder, "NonWearBouts.csv")
-    epochFile       = generatepath(args.epochFolder, "Epoch.csv")
-    stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
-    tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
-    print "\nrawFile = " + str(args.rawFile)
-    print "summaryFile = ", summaryFile
-    print "nonWearFile = ", nonWearFile
-    print "epochFile = ", epochFile
-    print "stationaryFile = ", stationaryFile
-    print "tsFile = ", tsFile, "\n"
+    args.summaryFile     = generatepath(args.summaryFolder, "OutputSummary.json")
+    args.nonWearFile     = generatepath(args.nonWearFolder, "NonWearBouts.csv")
+    args.epochFile       = generatepath(args.epochFolder, "Epoch.csv")
+    args.stationaryFile  = generatepath(args.stationaryFolder, "Stationary.csv")
+    args.tsFile          = generatepath(args.timeSeriesFolder, "AccTimeSeries.csv")
+
+    if args.fileNumber:
+        sleep(args.fileNumber)  # so workers don't print on top of each other
+    print "processing '" + args.rawFile + "' with these arguments:\n"
+    for key, value in sorted(vars(args).items()):
+        if not (isinstance(value, str) and len(value)==0):
+            print "  ", key.ljust(15), ':', value
+    print "\n"
 
     # check source cwa file exists
     if args.processRawFile and not os.path.isfile(args.rawFile):
@@ -223,10 +222,10 @@ def processSingleFile(args):
             # calibrate axes scale/offset values
             if not args.skipCalibration:
                 # identify 10sec stationary epochs
-                print toScreen('calibrating to file: ' + stationaryFile)
+                print toScreen('calibrating to file: ' + args.stationaryFile)
                 commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1",
                                args.rawDataParser,args.rawFile, "outputFile:" +
-                               stationaryFile, "verbose:" + str(args.verbose),
+                               args.stationaryFile, "verbose:" + str(args.verbose),
                                "filter:true", "getStationaryBouts:true",
                                "epochPeriod:10", "stationaryStd:0.013"]
                 if len(args.javaHeapSpace) > 1:
@@ -240,7 +239,7 @@ def processSingleFile(args):
                 args.calibrationOffset, args.calibrationSlope, args.calibrationTemperature,\
                         args.meanTemperature, errPreCal, errPostCal, \
                         xMin, xMax, yMin, yMax, zMin, zMax, \
-                        nStatic = getCalibrationCoefs(stationaryFile)
+                        nStatic = getCalibrationCoefs(args.stationaryFile)
                 if args.verbose:
                     print "calibration results: ", args.calibrationOffset, \
                             args.calibrationSlope, args.calibrationTemperature, \
@@ -249,7 +248,7 @@ def processSingleFile(args):
 
             # calculate and write filtered avgVm epochs from raw file
             commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", args.rawDataParser,
-                    args.rawFile, "outputFile:" + epochFile, "verbose:" + str(args.verbose),
+                    args.rawFile, "outputFile:" + args.epochFile, "verbose:" + str(args.verbose),
                     "filter:true", "xIntercept:" + str(args.calibrationOffset[0]),
                     "yIntercept:" + str(args.calibrationOffset[1]), "zIntercept:" + str(args.calibrationOffset[2]),
                     "xSlope:" + str(args.calibrationSlope[0]), "ySlope:" + str(args.calibrationSlope[1]),
@@ -266,8 +265,8 @@ def processSingleFile(args):
 
         else:
             if not args.skipCalibration:
-                commandArgs = [args.rawDataParser, args.rawFile, "-svm-file", epochFile,
-                        "-info", stationaryFile, "-svm-extended", "3",
+                commandArgs = [args.rawDataParser, args.rawFile, "-svm-file", args.epochFile,
+                        "-info", args.stationaryFile, "-svm-extended", "3",
                         "-calibrate", "1", "-interpolate-mode", "2",
                         "-svm-mode", "1", "-svm-epoch", str(args.epochPeriod),
                         "-svm-filter", "2"]
@@ -277,8 +276,8 @@ def processSingleFile(args):
                 calArgs += str(args.calibrationOffset[1]) + ',' + str(args.calibrationOffset[2]) + ','
                 calArgs += str(args.calibrationTemperature[0]) + ',' + str(args.calibrationTemperature[1]) + ','
                 calArgs += str(args.calibrationTemperature[2]) + ',' + str(args.meanTemperature)
-                commandArgs = [args.rawDataParser, args.rawFile, "-svm-file", epochFile,
-                        "-info", stationaryFile, "-svm-extended", "3",
+                commandArgs = [args.rawDataParser, args.rawFile, "-svm-file", args.epochFile,
+                        "-info", args.stationaryFile, "-svm-extended", "3",
                         "-calibrate", "0", "-calibration", calArgs,
                         "-interpolate-mode", "2", "-svm-mode", "1",
                         "-svm-epoch", str(args.epochPeriod), "-svm-filter", "2"]
@@ -286,7 +285,7 @@ def processSingleFile(args):
             args.calibrationOffset, args.calibrationSlope, \
                     args.calibrationTemperature, args.meanTemperature,\
                     errPreCal, errPostCal, xMin, xMax, yMin, yMax, zMin, zMax, \
-                    nStatic = getOmconvertInfo(stationaryFile)
+                    nStatic = getOmconvertInfo(args.stationaryFile)
 
     # calculate average, median, stdev, min, max, count, & ecdf of sample score in
     # 1440 min diurnally adjusted day. Also get overall wear time minutes across
@@ -306,8 +305,8 @@ def processSingleFile(args):
             tempStd, tempMin, tempMax, accAvg, accStd, unadjustedAccAvg, \
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
-            accEcdf = getEpochSummary(epochFile, 0, 0, args.epochPeriod, ecdfXVals,
-                    nonWearFile, tsFile)
+            accEcdf = getEpochSummary(args.epochFile, 0, 0, args.epochPeriod, ecdfXVals,
+                    args.nonWearFile, args.tsFile)
 
     # min wear time
     minDiurnalHrs = 24
@@ -459,17 +458,17 @@ def processSingleFile(args):
     print toScreen(json.dumps(summaryDict, indent=4))
 
     # write detailed output to file
-    f = open(summaryFile,'w')
+    f = open(args.summaryFile,'w')
     json.dump(result, f, indent=4)
     f.close()
     if args.deleteIntermediateFiles:
         try:
-            os.remove(stationaryFile)
-            os.remove(epochFile)
+            os.remove(args.stationaryFile)
+            os.remove(args.epochFile)
         except:
             print 'could not delete helper file'
     if args.verbose:
-        print toScreen('see all variables at: ' + summaryFile)
+        print toScreen('see all variables at: ' + args.summaryFile)
 
 
 def getEpochSummary(epochFile,
