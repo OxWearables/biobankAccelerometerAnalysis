@@ -373,7 +373,7 @@ public class AxivityAx3Epochs
           //Read first page (& data-block) to get time, temp, measureFreq
           //start-epoch values
           try {
-            SESSION_START = headerLoggingStartTime(buf);
+            SESSION_START = cwaHeaderLoggingStartTime(buf);
             System.out.println("Session start:" + SESSION_START);
           }
           catch (Exception e) {
@@ -636,30 +636,8 @@ public class AxivityAx3Epochs
     }
   }
 
-  //Parse header HEX values, CWA format is described at:
+  //Parse HEX values, CWA format is described at:
   //https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
-  private static LocalDateTime headerLoggingStartTime(ByteBuffer buf) {
-    //deviceId = getUnsignedShort(buf,5);
-    //sessionId = getUnsignedInt(buf,7);
-    long delayedLoggingStartTime = getUnsignedInt(buf,13);
-    return getCwaTimestamp((int)delayedLoggingStartTime, 0);
-  }
-  
-  private static LocalDateTime headerLoggingEndTime(ByteBuffer buf) {
-    long delayedLoggingEndTime = getUnsignedInt(buf,17);
-    return getCwaTimestamp((int)delayedLoggingEndTime, 0);
-  }
-
-  //credit for next 2 methods goes to:
-  //http://stackoverflow.com/questions/9883472/is-it-possiable-to-have-an-unsigned-bytebuffer-in-java
-  private static long getUnsignedInt(ByteBuffer bb, int position) {
-    return ((long) bb.getInt(position) & 0xffffffffL);
-  }
-
-  private static int getUnsignedShort(ByteBuffer bb, int position) {
-    return (bb.getShort(position) & 0xffff);
-  }
-
   private static LocalDateTime getCwaTimestamp(
       int cwaTimestamp,
       int fractional) {
@@ -675,6 +653,22 @@ public class AxivityAx3Epochs
     tStamp = tStamp.plusNanos(secs2Nanos(fractional / 65536.0));
     return tStamp;
   }      
+  
+  private static LocalDateTime cwaHeaderLoggingStartTime(ByteBuffer buf) {
+    long delayedLoggingStartTime = getUnsignedInt(buf,13);
+    return getCwaTimestamp((int)delayedLoggingStartTime, 0);
+  }
+
+  //credit for next 2 methods goes to:
+  //http://stackoverflow.com/questions/9883472/is-it-possiable-to-have-an-unsigned-bytebuffer-in-java
+  private static long getUnsignedInt(ByteBuffer bb, int position) {
+    return ((long) bb.getInt(position) & 0xffffffffL);
+  }
+
+  private static int getUnsignedShort(ByteBuffer bb, int position) {
+    return (bb.getShort(position) & 0xffff);
+  }
+
     
   
   private static double getVectorMagnitude(double x, double y, double z) {
