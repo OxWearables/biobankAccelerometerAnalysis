@@ -777,7 +777,13 @@ def getOmconvertInfo(omconvertInfoFile):
             xMin, xMax, yMin, yMax, zMin, zMax, nStatic
 
 
-def getDeviceId(cwaFile):
+def getDeviceId(rawFile):
+    if rawFile.lower().endswith('.bin'):
+        return getGeneaDeviceId(rawFile)
+    else: # elif rawFile.lower().endswith('.cwa'):
+        return getAxivityDeviceId(rawFile)
+
+def getAxivityDeviceId(cwaFile):
     f = open(cwaFile, 'rb')
     header = f.read(2)
     if header == 'MD':
@@ -789,6 +795,13 @@ def getDeviceId(cwaFile):
         print """A deviceId value could not be found in input file header,
          this usually occurs when the file is not an Axivity .cwa accelerometer file. Exiting..."""
         sys.exit(-1)
+    f.close()
+    return deviceId
+
+def getGeneaDeviceId(binFile):
+    f = open(binFile, 'rU')
+    next(f) # Device Identity
+    deviceId = next(f).split(':')[1] # Device Unique Serial Code:011710
     f.close()
     return deviceId
 

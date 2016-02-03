@@ -137,10 +137,22 @@ public class AxivityAx3Epochs
     epochHeader += "dataErrors,clipsBeforeCalibr,clipsAfterCalibr,rawSamples";
     
     //process file if input parameters are all ok
-    writeGeneaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
+    if(accFile.toLowerCase().endsWith(".cwa")) {
+        writeCwaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
                     timeFormat, startEpochWholeMinute, startEpochWholeSecond,
                     range, swIntercept, swSlope, tempCoef, meanTemp,
-                    getStationaryBouts, stationaryStd, filter);   
+                    getStationaryBouts, stationaryStd, filter);  
+    }
+    else if(accFile.toLowerCase().endsWith(".bin")) {
+        writeGeneaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
+                    timeFormat, startEpochWholeMinute, startEpochWholeSecond,
+                    range, swIntercept, swSlope, tempCoef, meanTemp,
+                    getStationaryBouts, stationaryStd, filter);  
+    }
+    else {
+        System.err.println("Unrecognised file format");
+        System.exit(-1);
+    } 
     
     //if no errors then will reach this
     System.exit(0);
