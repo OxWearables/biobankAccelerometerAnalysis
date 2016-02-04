@@ -801,7 +801,7 @@ def getAxivityDeviceId(cwaFile):
 def getGeneaDeviceId(binFile):
     f = open(binFile, 'rU')
     next(f) # Device Identity
-    deviceId = next(f).split(':')[1] # Device Unique Serial Code:011710
+    deviceId = next(f).split(':')[1].rstrip() # Device Unique Serial Code:011710
     f.close()
     return deviceId
 
