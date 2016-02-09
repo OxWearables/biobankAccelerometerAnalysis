@@ -27,6 +27,7 @@ def check_module(moduleName, version):
 
 moduleChecks = []
 print "now checking for required python modules:"
+moduleChecks.append(check_module("argparse","1.4.0"))
 moduleChecks.append(check_module("numpy","1.9.0"))
 moduleChecks.append(check_module("pandas","0.15.0"))
 moduleChecks.append(check_module("patsy","0.3.0"))
