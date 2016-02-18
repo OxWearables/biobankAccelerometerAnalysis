@@ -159,6 +159,10 @@ def main():
     print "in total, processing took ", (endDate-beginDate).total_seconds(), "seconds" 
 
 def processSingleFile(args):
+    """
+    Checks the files exists, then processes a file into a summary statistics 
+    file, according to the arguments from the command line.
+    """
     # check file exists
     if args.processRawFile is False:
         if len(args.rawFile.split('.')) < 2:
@@ -778,12 +782,18 @@ def getOmconvertInfo(omconvertInfoFile):
 
 
 def getDeviceId(rawFile):
+    """
+    Decides which DeviceId parsing method to use for a given file
+    """
     if rawFile.lower().endswith('.bin'):
         return getGeneaDeviceId(rawFile)
     else: # elif rawFile.lower().endswith('.cwa'):
         return getAxivityDeviceId(rawFile)
 
 def getAxivityDeviceId(cwaFile):
+    """
+    Parses the unique serial code from the header of an Axivity accelerometer file
+    """
     f = open(cwaFile, 'rb')
     header = f.read(2)
     if header == 'MD':
@@ -799,7 +809,10 @@ def getAxivityDeviceId(cwaFile):
     return deviceId
 
 def getGeneaDeviceId(binFile):
-    f = open(binFile, 'rU')
+    """
+    Parses the unique serial code from the header of a GENEActiv accelerometer file
+    """
+    f = open(binFile, 'rU') # 'Universal' newline mode 
     next(f) # Device Identity
     deviceId = next(f).split(':')[1].rstrip() # Device Unique Serial Code:011710
     f.close()
@@ -817,6 +830,9 @@ def toScreen(msg):
 
 
 def str2bool(v):
+    """
+    Used to parse true/false values from the command line. E.g. "True" -> True
+    """
     return v.lower() in ("yes", "true", "t", "1")
 
 if __name__ == '__main__':
