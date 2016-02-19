@@ -40,9 +40,9 @@ class VerticalScrolledFrame(Tk.Frame):
         def _configure_interior(event):
             # update the scrollbars to match the size of the inner frame
             size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
-            print size
+            # print size
             canvas.config(scrollregion="0 0 %s %s" % size)
-            print "scrollregion = 0 0 %s %s" % size
+            # print "scrollregion = 0 0 %s %s" % size
             if interior.winfo_reqwidth() != canvas.winfo_width():
                 # update the canvas's width to fit the inner frame
                 canvas.config(width=interior.winfo_reqwidth())
@@ -61,8 +61,8 @@ class VerticalScrolledFrame(Tk.Frame):
                 canvas.yview_scroll(-1*(event.delta/120), "units")
         # Linux OS
         if _platform == "linux" or _platform == "linux2":
-            canvas.bind("<Button-4>", _on_mousewheel)
-            canvas.bind("<Button-5>", _on_mousewheel)
+            canvas.bind_all("<Button-4>", _on_mousewheel)
+            canvas.bind_all("<Button-5>", _on_mousewheel)
         # Windows
         elif _platform == "win32":
             canvas.bind_all("<MouseWheel>", _on_mousewheel)
@@ -164,29 +164,9 @@ class TkinterGUI(Tk.Frame):
                                         width=35)
         self.advancedOptionsButton.grid(row=0, column=2, padx=5, pady=5)
 
-        # Textbox
-        textnbframe = ttk.Notebook(frame)  # for tabs above textbox
-
-        # first tab
-        tab1 = ttk.Frame(textnbframe)
-        textnbframe.add(tab1, text='Command')
-
-        self.textbox = Tk.Text(tab1, height=10, width=70)
-        self.textbox.pack(expand=1, **pack_opts)
-        Tk.Grid.grid_rowconfigure(frame, index=1, weight=1)
-        Tk.Grid.grid_columnconfigure(frame, index=0, weight=1)
-        Tk.Grid.grid_columnconfigure(frame, index=1, weight=1)
-        Tk.Grid.grid_columnconfigure(frame, index=2, weight=1)
+        self.textbox = Tk.Text(frame, height=10, width=70)
         self.textbox.insert('insert', "Please select a file or folder")
-
-        # second tab
-        self.tab2 = ttk.Frame(textnbframe)
-        textnbframe.add(self.tab2, text='Files to process')#, state='disabled')
-
-        self.listbox = Tk.Listbox(self.tab2, height=10)
-        self.listbox.pack(expand=1, **pack_opts)
-
-        textnbframe.grid(row=1, column=0, columnspan=3,
+        self.textbox.grid(row=1, column=0, columnspan=3,
                               sticky=Tkconstants.N,# + Tkconstants.E + Tkconstants.S + Tkconstants.W,
                               padx=5, pady=5)
 
