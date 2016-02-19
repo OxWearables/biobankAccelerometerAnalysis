@@ -34,7 +34,6 @@ class VerticalScrolledFrame(Tk.Frame):
         self.interior = interior = Tk.Frame(canvas)
         interior_id = canvas.create_window(0, 0, window=interior,
                                            anchor="nw")
-
         # track changes to the canvas and frame width and sync them,
         # also updating the scrollbar
         def _configure_interior(event):
@@ -42,6 +41,7 @@ class VerticalScrolledFrame(Tk.Frame):
             size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
             print size
             canvas.config(scrollregion="0 0 %s %s" % size)
+            print "scrollregion = 0 0 %s %s" % size
             if interior.winfo_reqwidth() != canvas.winfo_width():
                 # update the canvas's width to fit the inner frame
                 canvas.config(width=interior.winfo_reqwidth())
@@ -53,6 +53,13 @@ class VerticalScrolledFrame(Tk.Frame):
                 canvas.itemconfigure(interior_id, width=canvas.winfo_width())
         canvas.bind('<Configure>', _configure_canvas)
 
+        def _on_mousewheel(event):
+            canvas.yview_scroll(-1*(event.delta/120), "units")
+        # Windows
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Linux OS
+        canvas.bind("<Button-4>", _on_mousewheel)
+        canvas.bind("<Button-5>", _on_mousewheel)
 
 class TkinterGUI(Tk.Frame):
 
