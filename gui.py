@@ -6,6 +6,7 @@ import ttk
 import subprocess
 from threading import Thread, Timer
 import time
+from sys import platform as _platform
 
 
 class VerticalScrolledFrame(Tk.Frame):
@@ -53,13 +54,21 @@ class VerticalScrolledFrame(Tk.Frame):
                 canvas.itemconfigure(interior_id, width=canvas.winfo_width())
         canvas.bind('<Configure>', _configure_canvas)
 
-        def _on_mousewheel(event):
-            canvas.yview_scroll(-1*(event.delta/120), "units")
-        # Windows
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        def _on_mousewheel(event, is_OSX=False):
+            if is_OSX:
+                canvas.yview_scroll(-1*(event.delta), "units")
+            else:
+                canvas.yview_scroll(-1*(event.delta/120), "units")
         # Linux OS
-        canvas.bind("<Button-4>", _on_mousewheel)
-        canvas.bind("<Button-5>", _on_mousewheel)
+        if _platform == "linux" or _platform == "linux2":
+            canvas.bind("<Button-4>", _on_mousewheel)
+            canvas.bind("<Button-5>", _on_mousewheel)
+        # Windows
+        elif _platform == "win32":
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # OSX
+        elif _platform == "darwin":
+            canvas.bind_all("<MouseWheel>", lambda evt: _on_mousewheel(evt, True))
 
 class TkinterGUI(Tk.Frame):
 
