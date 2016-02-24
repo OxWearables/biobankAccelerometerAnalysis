@@ -3,7 +3,7 @@ import java.util.List;
 
 // (This inner class should probably be in another file)
 // [dgj] Butterworth 4th-order bandpass filter
-class BandpassFilter {
+public class BandpassFilter {
 
 	public final static int BUTTERWORTH4_ORDER = 4;
 	public final static int BUTTERWORTH4_NUM_COEFFICIENTS = (BUTTERWORTH4_ORDER * 2 + 1);

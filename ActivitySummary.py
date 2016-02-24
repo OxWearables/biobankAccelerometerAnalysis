@@ -11,7 +11,9 @@ The application can be run as follows:
     python ActivitySummary.py <input_file.CWA> <options>
 e.g.
     python ActivitySummary.py p001.CWA 
-    python ActivitySummary.py p001.CWA min_freq:10 
+    python ActivitySummary.py p001.CWA -verbose True
+Type without any arguments to show help:
+    python ActivitySummary.py
 """
 
 import argparse
@@ -26,9 +28,9 @@ import statsmodels.api as sm
 import struct
 from subprocess import call
 from multiprocessing import Pool
+import time
 import sys
 import copy
-from time import sleep
 
 def main():
     """
@@ -202,7 +204,7 @@ def processSingleFile(args):
 
     if args.numWorkers > 1:
         # print "sleeping for ", args.fileNumber, " seconds"
-        sleep(args.fileNumber)  # stagger workers so they don't print at the exact same time
+        time.sleep(args.fileNumber)  # stagger workers so they don't print at the exact same time
 
     print "processing file " + str(args.fileNumber) + " '" + args.rawFile + "' with these arguments:\n"
     for key, value in sorted(vars(args).items()):
@@ -819,12 +821,16 @@ def getGeneaDeviceId(binFile):
     return deviceId
 
 
+
 def formatNum(num, decimalPlaces):
     fmt = '%.' + str(decimalPlaces) + 'f'
     return float(fmt % num)
 
 
 def toScreen(msg):
+    """
+    Prepend a string with the current time 
+    """
     timeFormat = '%Y-%m-%d %H:%M:%S'
     return datetime.datetime.now().strftime(timeFormat) +  ' ' + msg
 

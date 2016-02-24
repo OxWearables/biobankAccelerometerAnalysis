@@ -3,7 +3,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-class Resample{
+public class Resample{
 
     //inspired by http://www.java2s.com/Code/Java/Collections-Data-Structure/LinearInterpolation.htm
     //in small tests this method has matched python scipy.interpolate.interp1d
