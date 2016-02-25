@@ -33,7 +33,8 @@ public class AxivityAx3Epochs
   private static long START_OFFSET_NANOS = 0; 
 
   /**
-   * Parse command line args, then call method to identify & write epochs.
+   * Parse command line args, then call method to identify and write epochs.
+   * @param   args  An argument string  passed in by ActivitySummary.py. Contains "param:value" pairs.
    */
   public static void main(String[] args) {
     //variables to store default parameter options
