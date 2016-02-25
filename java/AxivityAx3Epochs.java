@@ -163,7 +163,7 @@ public class AxivityAx3Epochs
   /**
    * Read data block HEX values, store each raw reading, then continually test
    * if an epoch of data has been collected or not. Finally, write each epoch
-   * to <epochFileWriter>. Method also updates and returns <epochStartTime>.
+   * to epochFileWriter. Method also updates and returns epochStartTime.
    * CWA format is described at:
    * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
    */
