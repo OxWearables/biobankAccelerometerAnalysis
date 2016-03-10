@@ -117,7 +117,12 @@ def main():
                             help="""number of workers to use when processing
                             multiple files, has no effect on single files
                              (default : %(default)s)""")
-
+    parser.add_argument('-timeSeriesDateColumn',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""adds a date/time column to the timeSeries 
+                            file, so acceleration and imputation values can be 
+                            compared easily. This increases output filesize 
+                            (default : %(default)s)""")
 
     # check that enough command line arguments are entered
     if len(sys.argv) < 2:
@@ -659,7 +664,7 @@ def getEpochSummary(epochFile,
         e['vmFinal'] = e[paCol+'Adjusted'] * 1000
         e['imputed'] = np.isnan(e[paCol]).astype(int)
         e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
-                index=False,header=[tsHead,'imputed'])
+                index=args.timeSeriesDateColumn,header=[tsHead,'imputed'])
     else:
         f = open(tsFile,'w')
         f.write(tsHead + '\n')
