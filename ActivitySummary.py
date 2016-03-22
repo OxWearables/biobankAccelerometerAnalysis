@@ -319,7 +319,7 @@ def processSingleFile(args):
             tempStd, tempMin, tempMax, accAvg, accStd, unadjustedAccAvg, \
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
-            accEcdf = getEpochSummary(args.epochFile, 0, 0, args.epochPeriod, ecdfXVals,
+            accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod, ecdfXVals,
                     args.nonWearFile, args.tsFile)
 
     # min wear time
@@ -488,6 +488,7 @@ def processSingleFile(args):
 def getEpochSummary(epochFile,
         headerSize,
         dateColumn,
+        timeSeriesDateColumn,
         epochSec,
         ecdfXVals,
         nonWearFile,
@@ -664,7 +665,7 @@ def getEpochSummary(epochFile,
         e['vmFinal'] = e[paCol+'Adjusted'] * 1000
         e['imputed'] = np.isnan(e[paCol]).astype(int)
         e[['vmFinal','imputed']].to_csv(tsFile, float_format='%.1f',
-                index=args.timeSeriesDateColumn,header=[tsHead,'imputed'])
+                index=timeSeriesDateColumn,header=[tsHead,'imputed'])
     else:
         f = open(tsFile,'w')
         f.write(tsHead + '\n')
