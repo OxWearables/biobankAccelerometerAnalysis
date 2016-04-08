@@ -227,6 +227,12 @@ class TkinterGUI(Tk.Frame):
             'Multi-threading options': {
                 'numWorkers': {'text': 'Number of processing threads to execute simultaneously (for multiple files)',
                                 'default': 1}
+            },
+            'Start/end time options': {
+                'startTime': {'text': 'start date in format 2016-04-08T17:10',
+                                'default': ""},
+                'endTime': {'text': 'end date in format 2016-04-08T17:10',
+                                'default': ""}
             }
         }
         frame = Tk.Frame(self.advanced_frame.interior)
