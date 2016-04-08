@@ -299,7 +299,8 @@ public class AxivityAx3Epochs
         y = yResampled[c];
         z = zResampled[c];
         if (rawWriter!=null) {
-          rawWriter.println(epochStartTime.plusNanos(START_OFFSET_NANOS+timeResampled[c]*1000000).format(timeFormat) + "," + x + "," + y + "," + z+","+meanTemp);
+          // temperature does not change much, so we can use the mean
+          rawWriter.println(epochStartTime.plusNanos(START_OFFSET_NANOS+timeResampled[c]*1000000).format(timeFormat) + "," + x + "," + y + "," + z+","+mean(temperatureVals));
         }
 
         if(!Double.isNaN(x)) {
