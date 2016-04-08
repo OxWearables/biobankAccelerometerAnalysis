@@ -133,6 +133,10 @@ def main():
                             type=str2date, help="""removes data after this 
                             time in the final analysis
                             (default : %(default)s)""")
+    parser.add_argument('-rawOutput',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""output raw data to a .csv file? NOTE: 
+                            requires ~1GB per day. (default : %(default)s)""")
 
     # check that enough command line arguments are entered
     if len(sys.argv) < 2:
@@ -278,7 +282,8 @@ def processSingleFile(args):
                     "xSlope:" + str(args.calibrationSlope[0]), "ySlope:" + str(args.calibrationSlope[1]),
                     "zSlope:" + str(args.calibrationSlope[2]), "xTemp:" + str(args.calibrationTemperature[0]),
                     "yTemp:" + str(args.calibrationTemperature[1]), "zTemp:" + str(args.calibrationTemperature[2]),
-                    "meanTemp:" + str(args.meanTemperature), "epochPeriod:" + str(args.epochPeriod)]
+                    "meanTemp:" + str(args.meanTemperature), "epochPeriod:" + str(args.epochPeriod),
+                    "rawOutput:" + str(args.rawOutput)]
             print toScreen('epoch generation')
             if len(args.javaHeapSpace) > 1:
                 commandArgs.insert(1, args.javaHeapSpace)

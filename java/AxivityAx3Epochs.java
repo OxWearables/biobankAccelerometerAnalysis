@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -60,6 +61,7 @@ public class AxivityAx3Epochs
     double[] tempCoef = new double[]{0.0, 0.0, 0.0};
     double meanTemp = 0.0;
     int range = 8;
+    Boolean rawOutput = false;
     DF6.setRoundingMode(RoundingMode.CEILING);
     DF2.setRoundingMode(RoundingMode.CEILING);
     if (args.length < 1) {
@@ -126,6 +128,8 @@ public class AxivityAx3Epochs
           meanTemp = Double.parseDouble(funcParam);
         } else if (funcName.equals("range")) {
           range = Integer.parseInt(funcParam);
+        } else if (funcName.equals("rawOutput")) {
+          rawOutput = Boolean.parseBoolean(funcParam.toLowerCase());
         }
       }
     }  
@@ -142,13 +146,13 @@ public class AxivityAx3Epochs
         writeCwaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
                     timeFormat, startEpochWholeMinute, startEpochWholeSecond,
                     range, swIntercept, swSlope, tempCoef, meanTemp,
-                    getStationaryBouts, stationaryStd, filter);  
+                    getStationaryBouts, stationaryStd, filter, rawOutput);  
     }
     else if(accFile.toLowerCase().endsWith(".bin")) {
         writeGeneaEpochs(accFile, outputFile, epochHeader, verbose, epochPeriod,
                     timeFormat, startEpochWholeMinute, startEpochWholeSecond,
                     range, swIntercept, swSlope, tempCoef, meanTemp,
-                    getStationaryBouts, stationaryStd, filter);  
+                    getStationaryBouts, stationaryStd, filter, rawOutput);  
     }
     else {
         System.err.println("Unrecognised file format");
@@ -186,7 +190,9 @@ public class AxivityAx3Epochs
       double meanTemp,
       Boolean getStationaryBouts,
       double staticStd,
-      LowpassFilter filter) {
+      LowpassFilter filter,
+      PrintWriter rawWriter) {
+
     int[] clipsCounter = new int[]{0, 0}; //before, after (calibration)
     double x;
     double y;
@@ -292,6 +298,10 @@ public class AxivityAx3Epochs
         x = xResampled[c];
         y = yResampled[c];
         z = zResampled[c];
+        if (rawWriter!=null) {
+          rawWriter.println(epochStartTime.plusNanos(START_OFFSET_NANOS+timeResampled[c]*1000000).format(timeFormat) + "," + x + "," + y + "," + z+","+meanTemp);
+        }
+
         if(!Double.isNaN(x)) {
           double vm = getVectorMagnitude(x,y,z);
           paVals.add(vm-1);
@@ -350,7 +360,8 @@ public class AxivityAx3Epochs
       double meanTemp,
       Boolean getStationaryBouts,
       double staticStd,
-      LowpassFilter filter) {
+      LowpassFilter filter,
+      Boolean rawOutput) {
     //epoch creation support variables
     LocalDateTime epochStartTime = null;
     List<Long> timeVals = new ArrayList<Long>();
@@ -368,11 +379,16 @@ public class AxivityAx3Epochs
     //file read/write objects
     FileChannel rawAccReader = null;
     BufferedWriter epochFileWriter = null;
+    PrintWriter rawWriter = null;
     int bufSize = 512;
     ByteBuffer buf = ByteBuffer.allocate(bufSize);    
     try {
       rawAccReader = new FileInputStream(accFile).getChannel();
       epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
+      if (rawOutput) {
+        rawWriter = new PrintWriter(new BufferedWriter(new FileWriter(outputFile+"_raw.csv")));
+        rawWriter.println("time,x,y,z,meanTemp");
+      }
 
       //now read every page in CWA file
       int pageCount = 0;
@@ -601,7 +617,7 @@ public class AxivityAx3Epochs
                                   yVals, zVals, temperatureVals, range,
                                   errCounter, swIntercept, swSlope, tempCoef,
                                   meanTemp, getStationaryBouts, staticStd,
-                                  filter);
+                                  filter, rawWriter);
                 //reset target start time and reset arrays for next epoch
                 epochStartTime = epochStartTime.plusSeconds(epochPeriod);
                 timeVals.clear();
@@ -619,7 +635,6 @@ public class AxivityAx3Epochs
               yVals.add(y);
               zVals.add(z);
               temperatureVals.add(temperature);
-              //System.out.println(blockTime.format(timeFormat) + "," + x + "," + y + "," + z);
               if (!USE_PRECISE_TIME) {
                 // Moved this to recalculate at top (rather than potentially
                 // accumulate slight errors with repeated addition)
@@ -705,7 +720,9 @@ public class AxivityAx3Epochs
       double meanTemp,
       Boolean getStationaryBouts,
       double staticStd,
-      LowpassFilter filter) {
+      LowpassFilter filter,
+      Boolean rawOutput) {
+
     int fileHeaderSize = 59;
     int linesToAxesCalibration = 47;
     int pageHeaderSize = 9;
@@ -721,10 +738,14 @@ public class AxivityAx3Epochs
     //file read/write objects
     BufferedReader rawAccReader = null;
     BufferedWriter epochFileWriter = null;
+    PrintWriter rawWriter = null;
     try {
       rawAccReader = new BufferedReader(new FileReader(accFile));
       epochFileWriter = new BufferedWriter(new FileWriter(outputFile));
-
+      if (rawOutput) {
+        rawWriter = new PrintWriter(new BufferedWriter(new FileWriter(outputFile+"_raw.csv")));
+        rawWriter.println("time,x,y,z,meanTemp");
+      }
       //Read header to determine mfrGain and mfrOffset values
       double[] mfrGain = new double[3];
       int[] mfrOffset = new int[3];
@@ -832,7 +853,7 @@ public class AxivityAx3Epochs
                               epochPeriod, sampleFreq, timeVals, xVals, yVals,
                               zVals, temperatureVals, range, errCounter,
                               swIntercept, swSlope, tempCoef, meanTemp,
-                              getStationaryBouts, staticStd, filter);
+                              getStationaryBouts, staticStd, filter, rawWriter);
             //reset target start time and reset arrays for next epoch
             epochStartTime = epochStartTime.plusSeconds(epochPeriod);
             timeVals.clear();
