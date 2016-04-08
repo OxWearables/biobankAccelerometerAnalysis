@@ -16,7 +16,6 @@ Type without any arguments to show help:
     python ActivitySummary.py
 """
 
-import argparse
 import collections
 import datetime
 import json
@@ -31,6 +30,7 @@ from multiprocessing import Pool
 import time
 import sys
 import copy
+import argparse
 
 def main():
     """
@@ -122,6 +122,16 @@ def main():
                             help="""adds a date/time column to the timeSeries 
                             file, so acceleration and imputation values can be 
                             compared easily. This increases output filesize 
+                            (default : %(default)s)""")
+    parser.add_argument('-startTime',
+                            metavar='e.g. 1991-01-01T23:59', default=None, 
+                            type=str2date, help="""removes data before this 
+                            time in the final analysis
+                            (default : %(default)s)""")
+    parser.add_argument('-endTime',
+                            metavar='e.g 1991-01-01T23:59', default=None, 
+                            type=str2date, help="""removes data after this 
+                            time in the final analysis
                             (default : %(default)s)""")
 
     # check that enough command line arguments are entered
@@ -320,7 +330,7 @@ def processSingleFile(args):
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
             accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod, ecdfXVals,
-                    args.nonWearFile, args.tsFile)
+                    args.nonWearFile, args.tsFile, args.startTime, args.endTime)
 
     # min wear time
     minDiurnalHrs = 24
@@ -492,7 +502,9 @@ def getEpochSummary(epochFile,
         epochSec,
         ecdfXVals,
         nonWearFile,
-        tsFile):
+        tsFile, 
+        startTime, 
+        endTime):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -504,6 +516,12 @@ def getEpochSummary(epochFile,
     cols += ['xStd', 'yStd', 'zStd', 'temp', 'samples']
     cols += ['dataErrors', 'clipsBeforeCalibr', 'clipsAfterCalibr', 'rawSamples']
     e.columns = cols
+
+    # remove data before/after user specified start/end times
+    if startTime is not None:
+        e = e[e.index >= startTime]
+    if endTime is not None:
+        e = e[e.index <= endTime]
     # get start & end times
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
@@ -846,6 +864,33 @@ def str2bool(v):
     Used to parse true/false values from the command line. E.g. "True" -> True
     """
     return v.lower() in ("yes", "true", "t", "1")
+
+    
+def str2date(v):
+    """
+    Used to parse date values from the command line. E.g. "1994-11-30T12:00" -> time.datetime
+    """
+    eg = "1994-11-30T12:00" # example date
+    if v.count("-")!=eg.count("-"):
+        print "ERROR: not enough dashes in date"
+    elif v.count("T")!=eg.count("T"):
+        print "ERROR: no T seperator in date"
+    elif v.count(":")!=eg.count(":"):
+        print "ERROR: no ':' seperator in date"
+    elif len(v.split("-")[0])!=4:
+        print "ERROR: year in date must be 4 numbers"
+    elif len(v.split("-")[1])!=2 and len(v.split("-")[1])!=1:
+        print "ERROR: month in date must be 1-2 numbers"
+    elif len(v.split("-")[2].split("T")[0])!=2 and len(v.split("-")[2].split("T")[0])!=1:
+        print "ERROR: day in date must be 1-2 numbers"
+    else:
+        return pd.datetime.strptime(v, "%Y-%m-%dT%H:%M")
+    print "please change your input date:"
+    print '"'+v+'"'
+    print "to match the example date format:"
+    print '"'+eg+'"'
+    raise ValueError("date in incorrect format")
+
 
 if __name__ == '__main__':
     main()  # Standard boilerplate to call the main() function to begin the program.
