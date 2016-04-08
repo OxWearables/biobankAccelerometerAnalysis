@@ -70,6 +70,88 @@ class VerticalScrolledFrame(Tk.Frame):
         elif _platform == "darwin":
             canvas.bind_all("<MouseWheel>", lambda evt: _on_mousewheel(evt, True))
 
+
+class DateEntry(Tk.Frame):
+    def __init__(self, master, frame_look={}, **look):
+        args = dict(relief=Tk.SUNKEN, border=1)
+        args.update(frame_look)
+        Tk.Frame.__init__(self, master, **args)
+
+        args = {'relief': Tk.FLAT}
+        args.update(look)
+
+        self.entry_1 = Tk.Entry(self, width=4, **args)
+        self.label_1 = Tk.Label(self, text='-', **args)
+        self.entry_2 = Tk.Entry(self, width=2, **args)
+        self.label_2 = Tk.Label(self, text='-', **args)
+        self.entry_3 = Tk.Entry(self, width=2, **args)
+        self.label_3 = Tk.Label(self, text='T', **args)
+        self.entry_4 = Tk.Entry(self, width=2, **args)
+        self.label_4 = Tk.Label(self, text=':', **args)
+        self.entry_5 = Tk.Entry(self, width=2, **args)
+
+        self.entry_1.pack(side=Tk.LEFT)
+        self.label_1.pack(side=Tk.LEFT)
+        self.entry_2.pack(side=Tk.LEFT)
+        self.label_2.pack(side=Tk.LEFT)
+        self.entry_3.pack(side=Tk.LEFT)
+        self.label_3.pack(side=Tk.LEFT)
+        self.entry_4.pack(side=Tk.LEFT)
+        self.label_4.pack(side=Tk.LEFT)
+        self.entry_5.pack(side=Tk.LEFT)
+
+        self.entry_1.bind('<KeyRelease>', self._e1_check)
+        self.entry_2.bind('<KeyRelease>', self._e2_check)
+        self.entry_3.bind('<KeyRelease>', self._e3_check)
+        self.entry_4.bind('<KeyRelease>', self._e4_check)
+        self.entry_5.bind('<KeyRelease>', self._e5_check)
+
+    def _backspace(self, entry):
+        cont = entry.get()
+        entry.delete(0, Tk.END)
+        entry.insert(0, cont[:-1])
+
+    def _e1_check(self, e):
+        cont = self.entry_1.get()
+        if len(cont) >= 4:
+            self.entry_2.focus()
+        if len(cont) > 4 or (len(cont)>0 and not cont[-1].isdigit()):
+            self._backspace(self.entry_1)
+            self.entry_1.focus()
+
+    def _e2_check(self, e):
+        cont = self.entry_2.get()
+        if len(cont) >= 2:
+            self.entry_3.focus()
+        if len(cont) > 2 or (len(cont)>0 and not cont[-1].isdigit()):
+            self._backspace(self.entry_2)
+            self.entry_2.focus()
+
+    def _e3_check(self, e):
+        cont = self.entry_3.get()
+        if len(cont) >= 2:
+            self.entry_4.focus()
+        if len(cont) > 2 or (len(cont)>0 and not cont[-1].isdigit()):
+            self._backspace(self.entry_3)
+            self.entry_3.focus()
+
+    def _e4_check(self, e):
+        cont = self.entry_4.get()
+        if len(cont) >= 2:
+            self.entry_5.focus()
+        if len(cont) > 2 or (len(cont)>0 and not cont[-1].isdigit()):
+            self._backspace(self.entry_4)
+            self.entry_4.focus()
+
+    def _e5_check(self, e):
+        cont = self.entry_5.get()
+        if len(cont) > 2 or (len(cont)>0 and not cont[-1].isdigit()):
+            self._backspace(self.entry_5)
+
+    def get(self):
+        return self.entry_1.get()+"-"+self.entry_2.get()+"-"+self.entry_3.get()+"T"+self.entry_4.get()+":"+self.entry_5.get()
+
+
 class TkinterGUI(Tk.Frame):
 
     def __init__(self, root):
@@ -229,9 +311,9 @@ class TkinterGUI(Tk.Frame):
                                 'default': 1}
             },
             'Start/end time options': {
-                'startTime': {'text': 'start date in format 2016-04-08T17:10',
+                'startTime': {'text': 'Start date in format 2016-04-08T17:10',
                                 'default': ""},
-                'endTime': {'text': 'end date in format 2016-04-08T17:10',
+                'endTime': {'text': 'End date in format 2016-04-08T17:10',
                                 'default': ""}
             }
         }
