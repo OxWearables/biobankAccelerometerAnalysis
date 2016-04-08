@@ -177,7 +177,8 @@ class TkinterGUI(Tk.Frame):
             'skipCalibration': {'text': 'Skip calibration step', 'default': False},
             'verbose': {'text': 'Verbose mode', 'default': False},
             'deleteIntermediateFiles': {'text':'Delete intermediate files', 'default': True},
-            'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True}
+            'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True},
+            'rawOutput': {'text': 'Raw 100Hz data to (.csv) file', 'default': False}
         }
 
         frame = Tk.Frame(self.advanced_frame.interior)
