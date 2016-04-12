@@ -244,6 +244,8 @@ def processSingleFile(args):
         fileSize = os.path.getsize(args.rawFile)
         deviceId = getDeviceId(args.rawFile)
         useJava = True
+        # just in case script is called from another folder, 'java' folder will be relative to this python file 
+        javaClassPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "java")
         if 'omconvert' in args.rawDataParser:
             useJava = False
         if useJava:
@@ -251,7 +253,7 @@ def processSingleFile(args):
             if not args.skipCalibration:
                 # identify 10sec stationary epochs
                 print toScreen('calibrating to file: ' + args.stationaryFile)
-                commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1",
+                commandArgs = ["java", "-classpath", javaClassPath, "-XX:ParallelGCThreads=1",
                                args.rawDataParser,args.rawFile, "outputFile:" +
                                args.stationaryFile, "verbose:" + str(args.verbose),
                                "filter:true", "getStationaryBouts:true",
@@ -275,7 +277,7 @@ def processSingleFile(args):
                             xMin, xMax, yMin, yMax, zMin, zMax, nStatic
 
             # calculate and write filtered avgVm epochs from raw file
-            commandArgs = ["java", "-classpath", "java", "-XX:ParallelGCThreads=1", args.rawDataParser,
+            commandArgs = ["java", "-classpath", javaClassPath, "-XX:ParallelGCThreads=1", args.rawDataParser,
                     args.rawFile, "outputFile:" + args.epochFile, "verbose:" + str(args.verbose),
                     "filter:true", "xIntercept:" + str(args.calibrationOffset[0]),
                     "yIntercept:" + str(args.calibrationOffset[1]), "zIntercept:" + str(args.calibrationOffset[2]),
