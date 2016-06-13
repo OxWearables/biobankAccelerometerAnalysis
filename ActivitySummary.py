@@ -81,6 +81,11 @@ def main():
                             metavar='length', default=5, type=int,
                             help="""length in seconds of a single epoch (default
                              : %(default)ss)""")
+    parser.add_argument('-nonWearThreshold',
+                            metavar='mins', default=60, type=int,
+                            help="""number of consecutive minutes of inactivity 
+                            to classify as non-weartime (default: %(default)s
+                            minutes)""")
     parser.add_argument('-calibrationOffset',
                             metavar=('x', 'y', 'z'),default=[0.0, 0.0, 0.0],
                             type=float, nargs=3,
@@ -336,8 +341,8 @@ def processSingleFile(args):
             tempStd, tempMin, tempMax, accAvg, accStd, unadjustedAccAvg, \
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
-            accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod, ecdfXVals,
-                    args.nonWearFile, args.tsFile, args.startTime, args.endTime)
+            accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod,
+                        args.nonWearThreshold, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
 
     # min wear time
     minDiurnalHrs = 24
@@ -399,10 +404,11 @@ def processSingleFile(args):
         result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, 2)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
+    result['wearTime-nonWearThreshold(minutes)'] = args.nonWearThreshold
     try:
-        result['wearTime-numNonWearEpisodes(>1hr)'] = numNonWearEpisodes
+        result['wearTime-numNonWearEpisodes'] = numNonWearEpisodes
     except:
-        result['wearTime-numNonWearEpisodes(>1hr)'] = -1
+        result['wearTime-numNonWearEpisodes'] = -1
     # physical activity stats and intensity distribution (minus diurnalWeights)
     result['acc-noDiurnalAdjust-avg(mg)'] = formatNum(unadjustedAccAvg*1000, 2)
     result['acc-noDiurnalAdjust-std(mg)'] = formatNum(unadjustedAccStd*1000, 2)
@@ -507,6 +513,7 @@ def getEpochSummary(epochFile,
         dateColumn,
         timeSeriesDateColumn,
         epochSec,
+        nonWearThreshold,
         ecdfXVals,
         nonWearFile,
         tsFile, 
@@ -580,7 +587,7 @@ def getEpochSummary(epochFile,
         endTime = pd.to_datetime(e.index.values[-1])
 
     # calculate nonWear (nw) time
-    minDuration = 60  # minutes
+    minDuration = nonWearThreshold  # minutes
     maxStd = 0.013
     e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd), 1, 0)
