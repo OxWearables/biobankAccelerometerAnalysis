@@ -86,6 +86,12 @@ def main():
                             help="""number of consecutive minutes of inactivity 
                             to classify as non-weartime (default: %(default)s
                             minutes)""")
+    parser.add_argument('-nonWearMaxStd',
+                            metavar='', default=0.013, type=float, help="""an 
+                            epoch must have x/y/z standard deviations <= this
+                            value to classify as non-wear time (default: 
+                            %(default)s minutes) set to -1 to disable 
+                            non-wear imputation""")
     parser.add_argument('-calibrationOffset',
                             metavar=('x', 'y', 'z'),default=[0.0, 0.0, 0.0],
                             type=float, nargs=3,
@@ -342,7 +348,7 @@ def processSingleFile(args):
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
             accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod,
-                        args.nonWearThreshold, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
+                        args.nonWearThreshold, args.nonWearMaxStd, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
 
     # min wear time
     minDiurnalHrs = 24
@@ -405,6 +411,7 @@ def processSingleFile(args):
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
     result['wearTime-nonWearThreshold(minutes)'] = args.nonWearThreshold
+    result['wearTime-nonWearMaxStd'] = args.nonWearMaxStd
     try:
         result['wearTime-numNonWearEpisodes'] = numNonWearEpisodes
     except:
@@ -514,6 +521,7 @@ def getEpochSummary(epochFile,
         timeSeriesDateColumn,
         epochSec,
         nonWearThreshold,
+        nonWearMaxStd,
         ecdfXVals,
         nonWearFile,
         tsFile, 
@@ -588,7 +596,7 @@ def getEpochSummary(epochFile,
 
     # calculate nonWear (nw) time
     minDuration = nonWearThreshold  # minutes
-    maxStd = 0.013
+    maxStd = nonWearMaxStd
     e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd), 1, 0)
     starts = e.index[(e['nw']==True) & (e['nw'].shift(1).fillna(False)==False)]
