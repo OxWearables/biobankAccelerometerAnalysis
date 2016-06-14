@@ -81,17 +81,17 @@ def main():
                             metavar='length', default=5, type=int,
                             help="""length in seconds of a single epoch (default
                              : %(default)ss)""")
-    parser.add_argument('-nonWearThreshold',
+    parser.add_argument('-nonWearMinDuration',
                             metavar='mins', default=60, type=int,
                             help="""number of consecutive minutes of inactivity 
                             to classify as non-weartime (default: %(default)s
                             minutes)""")
     parser.add_argument('-nonWearMaxStd',
                             metavar='', default=0.013, type=float, help="""an 
-                            epoch must have x/y/z standard deviations <= this
+                            epoch must have standard deviations in x/y/z <= this
                             value to classify as non-wear time (default: 
-                            %(default)s minutes) set to -1 to disable 
-                            non-wear imputation""")
+                            %(default)s minutes) setting to -1 will disable 
+                            non-wear time calculation and imputation""")
     parser.add_argument('-calibrationOffset',
                             metavar=('x', 'y', 'z'),default=[0.0, 0.0, 0.0],
                             type=float, nargs=3,
@@ -348,7 +348,7 @@ def processSingleFile(args):
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
             accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod,
-                        args.nonWearThreshold, args.nonWearMaxStd, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
+                        args.nonWearMinDuration, args.nonWearMaxStd, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
 
     # min wear time
     minDiurnalHrs = 24
@@ -410,7 +410,7 @@ def processSingleFile(args):
         result['wearTime-hourOfDay' + str(i) + '-(hrs)'] = formatNum(wear24[i]/60.0, 2)
     result['wearTime-diurnalHrs'] = diurnalHrs
     result['wearTime-diurnalMins'] = diurnalMins
-    result['wearTime-nonWearThreshold(minutes)'] = args.nonWearThreshold
+    result['wearTime-nonWearMinDuration(minutes)'] = args.nonWearMinDuration
     result['wearTime-nonWearMaxStd'] = args.nonWearMaxStd
     try:
         result['wearTime-numNonWearEpisodes'] = numNonWearEpisodes
@@ -520,7 +520,7 @@ def getEpochSummary(epochFile,
         dateColumn,
         timeSeriesDateColumn,
         epochSec,
-        nonWearThreshold,
+        nonWearMinDuration,
         nonWearMaxStd,
         ecdfXVals,
         nonWearFile,
@@ -595,14 +595,12 @@ def getEpochSummary(epochFile,
         endTime = pd.to_datetime(e.index.values[-1])
 
     # calculate nonWear (nw) time
-    minDuration = nonWearThreshold  # minutes
-    maxStd = nonWearMaxStd
-    e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
-            (e['zStd']<maxStd), 1, 0)
+    e['nw'] = np.where((e['xStd']<nonWearMaxStd) & (e['yStd']<nonWearMaxStd) &
+            (e['zStd']<nonWearMaxStd), 1, 0)
     starts = e.index[(e['nw']==True) & (e['nw'].shift(1).fillna(False)==False)]
     ends = e.index[(e['nw']==True) & (e['nw'].shift(-1).fillna(False)==False)]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
-            if end > start + np.timedelta64(minDuration,'m')]
+            if end > start + np.timedelta64(nonWearMinDuration,'m')]
     # set nonWear data to nan and record to nonWearBouts file
     f = open(nonWearFile,'w')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n')
