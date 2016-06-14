@@ -27,18 +27,24 @@ def check_module(moduleName, version):
 
 moduleChecks = []
 print "now checking for required python modules:"
-moduleChecks.append(check_module("argparse","1.4.0"))
-moduleChecks.append(check_module("numpy","1.9.0"))
-moduleChecks.append(check_module("pandas","0.15.0"))
-moduleChecks.append(check_module("patsy","0.3.0"))
-# moduleChecks.append(check_module("python-dateutil","2.2"))
-moduleChecks.append(check_module("pytz","2014.7"))
-moduleChecks.append(check_module("scipy","0.15.1"))
-moduleChecks.append(check_module("simplejson","3.8.0"))
-moduleChecks.append(check_module("six","1.8.0"))
-moduleChecks.append(check_module("statsmodels","0.6.1"))
+try: 
+	requirements = open("./requirements.txt")
+	for line in requirements:
+		s = str.split(line,"==")
+		if len(s)==2:
+			moduleChecks.append(check_module(s[0],s[1]))
+
+except:
+	print "could not find/parse requirements.txt"
+	moduleChecks.append(check_module("argparse","1.4.0"))
+	moduleChecks.append(check_module("numpy","1.9.0"))
+	moduleChecks.append(check_module("pandas","0.15.0"))
+	moduleChecks.append(check_module("patsy","0.3.0"))
+	moduleChecks.append(check_module("pytz","2014.7"))
+	moduleChecks.append(check_module("scipy","0.15.1"))
+	moduleChecks.append(check_module("statsmodels","0.6.1"))
 # moduleChecks.append(check_module("virtualenv","13.1.0"))
-moduleChecks = filter(lambda x: len(x)>0, moduleChecks) # filter only modules that
+moduleChecks = filter(lambda x: len(x)>0, moduleChecks) # filter only modules that haven't been installed
 print ""
 print str(len(moduleChecks)) + " modules need installation/updating\n"
 
