@@ -124,7 +124,7 @@ def main():
                             raw .cwa binary file, must end with .class (omitted)
                              (default : %(default)s)""")
     parser.add_argument('-numWorkers',
-                            metavar="numWorkers", default=1,type=int,
+                            metavar=">=1", default=1,type=int,
                             help="""number of workers to use when processing
                             multiple files, has no effect on single files
                              (default : %(default)s)""")
@@ -137,13 +137,21 @@ def main():
     parser.add_argument('-startTime',
                             metavar='e.g. 1991-01-01T23:59', default=None, 
                             type=str2date, help="""removes data before this 
-                            time in the final analysis
-                            (default : %(default)s)""")
+                            time in the final analysis""")
     parser.add_argument('-endTime',
                             metavar='e.g 1991-01-01T23:59', default=None, 
                             type=str2date, help="""removes data after this 
-                            time in the final analysis
-                            (default : %(default)s)""")
+                            time in the final analysis""")
+    parser.add_argument('-startTimeTrim',
+                            metavar='mins', default=None, 
+                            type=lambda x: pd.Timedelta(minutes=int(x)), 
+                            help="""removes the first n minutes from the start 
+                            of the file in the final analysis""")
+    parser.add_argument('-endTimeTrim',
+                            metavar='mins', default=None, 
+                            type=lambda x: pd.Timedelta(minutes=int(x)), 
+                            help="""removes the last n minutes from the end 
+                            of the file in the final analysis""")
     parser.add_argument('-rawOutput',
                             metavar='True/False', default=False, type=str2bool,
                             help="""output raw data to a .csv file? NOTE: 
@@ -348,7 +356,8 @@ def processSingleFile(args):
             unadjustedAccStd, unadjustedAccMedian, unadjustedAccMin, \
             unadjustedAccMax, accDays, accHours, \
             accEcdf = getEpochSummary(args.epochFile, 0, 0, args.timeSeriesDateColumn, args.epochPeriod,
-                        args.nonWearMinDuration, args.nonWearMaxStd, ecdfXVals, args.nonWearFile, args.tsFile, args.startTime, args.endTime)
+                        args.nonWearMinDuration, args.nonWearMaxStd, ecdfXVals, args.nonWearFile, 
+                        args.tsFile, args.startTime, args.endTime, args.startTimeTrim, args.endTimeTrim)
 
     # min wear time
     minDiurnalHrs = 24
@@ -526,7 +535,9 @@ def getEpochSummary(epochFile,
         nonWearFile,
         tsFile, 
         startTime, 
-        endTime):
+        endTime,
+        startTimeTrim,
+        endTimeTrim):
     """
     Calculate diurnally adjusted average movement per minute from epoch file
     which has had nonWear episodes removed from it
@@ -540,6 +551,10 @@ def getEpochSummary(epochFile,
     e.columns = cols
 
     # remove data before/after user specified start/end times
+    if startTimeTrim is not None:
+        e = e[e.index >= (e.index.values[0]+startTimeTrim)]
+    if endTimeTrim is not None:
+        e = e[e.index <= (e.index.values[-1]-endTimeTrim)]
     if startTime is not None:
         e = e[e.index >= startTime]
     if endTime is not None:
