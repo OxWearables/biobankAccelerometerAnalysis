@@ -1,4 +1,4 @@
-argparse==1.4.0
+argparse==1.1
 numpy==1.9.0
 pandas==0.15.0
 patsy==0.3.0
