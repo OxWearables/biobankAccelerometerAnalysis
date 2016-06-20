@@ -2,9 +2,7 @@ import os.path, subprocess
 from distutils.version import LooseVersion
 import sys
 
-print(sys.executable)
 # check python modules
-
 import pip
 def install(package):
     pip.main(['install', package])
@@ -14,7 +12,8 @@ def check_module(moduleName, version):
 		module = __import__(moduleName,globals(), locals(), [], -1)
 		ver = module.__version__
 		del module
-		isGoodVersion = LooseVersion(ver) >= LooseVersion(version)
+		isGoodVersion = LooseVersion(ver.strip()) >= LooseVersion(version.strip())
+
 		if isGoodVersion:
 			print moduleName + " version :" + str(ver) + " >= " + version
 			return ""
@@ -26,7 +25,7 @@ def check_module(moduleName, version):
 		return moduleName + "==" + version
 
 moduleChecks = []
-print "now checking for required python modules:"
+print "checking that the required python modules are installed:"
 try: 
 	requirements = open("./requirements.txt")
 	for line in requirements:
@@ -36,7 +35,7 @@ try:
 
 except:
 	print "could not find/parse requirements.txt"
-	moduleChecks.append(check_module("argparse","1.4.0"))
+	moduleChecks.append(check_module("argparse","1.1"))
 	moduleChecks.append(check_module("numpy","1.9.0"))
 	moduleChecks.append(check_module("pandas","0.15.0"))
 	moduleChecks.append(check_module("patsy","0.3.0"))
@@ -45,15 +44,20 @@ except:
 	moduleChecks.append(check_module("statsmodels","0.6.1"))
 # moduleChecks.append(check_module("virtualenv","13.1.0"))
 moduleChecks = filter(lambda x: len(x)>0, moduleChecks) # filter only modules that haven't been installed
+
 print ""
-print str(len(moduleChecks)) + " modules need installation/updating\n"
+if len(moduleChecks) > 0:	
+	print str(len(moduleChecks)) + " modules need installation/updating"
+else:
+	print "all the required modules are already installed correctly"
+print ""
 
 python_is_ok = True
 if len(moduleChecks) > 0:	
-	print "would now run the following commands:"
-	for package in moduleChecks:
-		print "pip install " + package
-	print "do you want to install those " + str(len(moduleChecks)) + " modules? (type yes)"
+	# print "would now run the following commands:"
+	# for package in moduleChecks:
+	# 	print "pip install " + package
+	print "do you want to automatically install those " + str(len(moduleChecks)) + " modules? (type yes or no)"
 	ans = raw_input()
 	if not ans.lower() in ["yes"]:
 		print "\nyou chose not to, continuing.. "
@@ -95,15 +99,16 @@ except: # tested on windows (throws a WindowsError)
 	print "Error: %s: %s" % (sys.exc_info()[0] ,sys.exc_info()[1])
 	java_is_ok = False
 
-print "\nIn Summary:\n"
+print "\nThis program has finished running:\n"
 # final summary
 if python_is_ok and java_is_ok:
-	print "Your python and java setup should be able to run this program, to do so type \"python ActivitySummary.py\" into the command line."
+	print "Your python and java setup should be able to run this program, to do so either run gui.py, or type \"python ActivitySummary.py\" into the command line."
 else:
 	if not python_is_ok:
 		print "Your python installation is missing required modules. Either install them or use the \"Anaconda\" python distribution."
 	if not java_is_ok:
-		print """Your java installation is probably either undetected or is not a high enough version to run this program. You can download the latest version from https://www.java.com/en/download/"""
-
+		print """Your java installation is either undetected or is not a high enough version to run this program. You can download the latest version from https://www.java.com/en/download/"""
 print 
+
 raw_input("press any key to exit\n")
+print "you can now close this window"
