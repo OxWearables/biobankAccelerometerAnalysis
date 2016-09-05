@@ -456,13 +456,13 @@ class TkinterGUI(Tk.Frame):
             return
         # self.tab2.configure(state='enabled')
         dir = self.target_opts['dirname'].get()
-        self.target_opts['file_list'] = [f for f in os.listdir(dir) if f.lower().endswith('.cwa')]
+        self.target_opts['file_list'] = [f for f in os.listdir(dir) if any([f.lower().endswith(ext) for ext in ['.cwa','.bin']])]
 
-        print  self.target_opts['file_list']
-        self.listbox.delete(0, Tkconstants.END)
+        # print  self.target_opts['file_list']
+        # self.listbox.delete(0, Tkconstants.END)
 
-        for f in self.target_opts['file_list']:
-            self.listbox.insert(Tkconstants.END, f)
+        # for f in self.target_opts['file_list']:
+        #     self.listbox.insert(Tkconstants.END, f)
 
     def changed(self, obj):
         """Option button callback."""
