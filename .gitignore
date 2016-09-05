@@ -7,3 +7,5 @@
 /*.json
 /*.cwa
 /*.csv
+*.project
+*.classpath
