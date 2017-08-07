@@ -15,8 +15,7 @@ python ActivitySummary.py [input_file.CWA] [options]
 python ActivitySummary.py sample.cwa
 ```
 
-[Click here for a sample .CWA file.]
-(http://users.fmrib.ox.ac.uk/~adoherty/sample.cwa)
+[Click here for a sample .CWA file.](http://gas.ndph.ox.ac.uk/aidend/sample.cwa)
 
 The output will look like:
 ```
