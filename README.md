@@ -38,8 +38,7 @@ Dependancies include: java and python (numpy and pandas).
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
-information from accelerometer data. [Click here for detailed information on the 
-data processing methods on our wiki](https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview).
+information from accelerometer data. [Clicke here for information on the data processing methods on our wiki](https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview)
 
 ![Accelerometer data processing overview](http://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0169649.g001&type=large)
 
