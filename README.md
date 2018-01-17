@@ -41,8 +41,8 @@ We are using a combination of published methods to extract meaningful health
 information from accelerometer data. [Click here for detailed information on the 
 data processing methods on our wiki](https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview).
 
-![Accelerometer data processing overview](http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
+![Accelerometer data processing overview](http://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0169649.g001&type=large)
 
 
 <h6>Licence</h6>
-This project is released under a [BSD 2-Clause Licence](http://opensource.org/licenses/BSD-2-Clause) (see LICENCE file)
+This project is released under a [BSD 2 Clause Licence](http://opensource.org/licenses/BSD-2-Clause)
