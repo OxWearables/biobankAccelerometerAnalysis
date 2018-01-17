@@ -28,24 +28,20 @@ The output will look like:
     "nonWearTime-overall(days)": "0.04"
 }
 ```
-[Click here for customised usage options on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/1. Usage)
+[Click here for customised usage options on our wiki.](https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/1.-Usage)
 
 
 <h2>Installation</h2>
 Dependancies include: java and python (numpy and pandas).
 
-[Click here for detailed information on installing this software on our wiki.]
-(https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/2. Installation)
+[Click here for detailed information on installing this software on our wiki.](https://github.com/aidendoherty/biobankAcceleromerAnalysis/wiki/2.-Installation)
 
 <h2>Under the hood</h2>
 We are using a combination of published methods to extract meaningful health
 information from accelerometer data. [Click here for detailed information on the 
-data processing methods on our wiki.]
-(https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview)
+data processing methods on our wiki](https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview).
 
-![Accelerometer data processing overview]
-(http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
+![Accelerometer data processing overview](http://users.fmrib.ox.ac.uk/~adoherty/accProcessingOverviewDec2014.png)
 
 
 <h6>Licence</h6>
