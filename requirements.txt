@@ -1,7 +1,0 @@
-argparse==1.1
-numpy==1.9.0
-pandas==0.15.0
-patsy==0.3.0
-pytz==2014.7
-scipy==0.15.1
-statsmodels==0.6.1

@@ -1,6 +1,4 @@
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 public class Resample{
@@ -23,10 +21,10 @@ public class Resample{
         if (time.size() == 1) {
             throw new IllegalArgumentException("time must contain more than one value");
         }
-        double[] dtime = new double[time.size() - 1];
-        double[] dx = new double[time.size() - 1];
-        double[] dy = new double[time.size() - 1];
-        double[] dz = new double[time.size() - 1];
+        double dtime;
+        double dx;
+        double dy;
+        double dz;
         double[] xSlope = new double[time.size() - 1];
         double[] ySlope = new double[time.size() - 1];
         double[] zSlope = new double[time.size() - 1];
@@ -36,17 +34,17 @@ public class Resample{
 
         // Calculate the line equation (i.e. slope and intercept) between each point
         for (int i = time.size()-2; i >= 0; i--) {
-            dtime[i] = time.get(i + 1) - time.get(i);
-            if (dtime[i] <= 0){
+            dtime = time.get(i + 1) - time.get(i);
+            if (dtime <= 0){
                 time.set(i, time.get(i+1) - 1);
-                dtime[i] = 1;
+                dtime = 1;
             }
-            dx[i] = x.get(i + 1) - x.get(i);
-            dy[i] = y.get(i + 1) - y.get(i);
-            dz[i] = z.get(i + 1) - z.get(i);
-            xSlope[i] = dx[i] / dtime[i];
-            ySlope[i] = dy[i] / dtime[i];
-            zSlope[i] = dz[i] / dtime[i];
+            dx = x.get(i + 1) - x.get(i);
+            dy = y.get(i + 1) - y.get(i);
+            dz = z.get(i + 1) - z.get(i);
+            xSlope[i] = dx / dtime;
+            ySlope[i] = dy / dtime;
+            zSlope[i] = dz / dtime;
             xIntercept[i] = x.get(i) - time.get(i) * xSlope[i];
             yIntercept[i] = y.get(i) - time.get(i) * ySlope[i];
             zIntercept[i] = z.get(i) - time.get(i) * zSlope[i];
@@ -54,12 +52,15 @@ public class Resample{
         
         // Perform the interpolation here
         for (int i = 0; i < timeI.length; i++) {
-            if ((timeI[i] > time.get(time.size() - 1)) || (timeI[i] < time.get(0))) {
-                xNew[i] = Double.NaN;
-                yNew[i] = Double.NaN;
-                zNew[i] = Double.NaN;
-            }
-            else {
+            if (timeI[i] > time.get(time.size() - 1)) {
+                xNew[i] = x.get(time.size() - 1);
+                yNew[i] = y.get(time.size() - 1);
+                zNew[i] = z.get(time.size() - 1);
+            } else if (timeI[i] < time.get(0)) {
+                xNew[i] = x.get(0);
+                yNew[i] = y.get(0);
+                zNew[i] = z.get(0);
+            } else {
                 int loc = Collections.binarySearch(time, timeI[i]);
                 if (loc < -1) {
                     loc = -loc - 2;

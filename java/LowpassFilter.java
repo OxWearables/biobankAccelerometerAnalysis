@@ -1,4 +1,5 @@
 //BSD 2-Clause, (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
+import java.util.Arrays;
 import java.util.List;
 
 // (This inner class should probably be in another file)
@@ -116,7 +117,7 @@ public class LowpassFilter {
 	{
 		// Calculate normalised cut-off
 		double W = Fc / (Fs / 2);
-	
+
 		// Create coefficients
 		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
 		A = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
@@ -127,16 +128,8 @@ public class LowpassFilter {
 		// [debug] Dump coefficients
         Boolean debug = false;
 		if (debug) {
-			System.out.print("B = [ ");
-			for (int i = 0; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-			    System.out.print("" + B[i] + " ");
-			}
-			System.out.print("]\n");
-			System.out.print("A = [ ");
-			for (int i = 0; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-			    System.out.print("" + A[i] + " ");
-			}
-			System.out.print("]\n");
+			System.out.println("B = " + Arrays.toString(B));
+			System.out.println("A = " + Arrays.toString(A));
 		}
 		
 		// Create final/initial condition tracker
@@ -152,7 +145,7 @@ public class LowpassFilter {
 	}
 	
 	// Apply the filter to the specified data
-	public void filter(double X[], int offset, int count) {
+	public void filter(double[] X, int offset, int count) {
 		int m, i;
 		
 		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
@@ -164,34 +157,26 @@ public class LowpassFilter {
 			}
 			X[m] = newXm;
 		}
-		return;
+	}
+	
+	// Additionally, returns the filtered-out signal
+	public double[] filterWithRemainder(double[] X, int offset, int count) {
+		double[] remainder = X.clone();
+		filter(X, offset, count);
+		for (int m = 0; m < X.length; m++) {
+			if (m<offset || m>=offset+count) {
+				remainder[m] = 0;
+			} else {
+				remainder[m] = X[m] - remainder[m];
+			}
+		}
+		return remainder;
 	}
 	
 	// Apply the filter to the specified data
-	public void filter(double X[]) {
+	public void filter(double[] X) {
 		filter(X, 0, X.length);
 	}		
-	
-	// Apply the filter to the specified data
-	public void filter(List<Double> X, int offset, int count) {
-		int m, i;
-		
-		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
-		for (m = offset; m < offset + count; m++) {
-			double oldXm = X.get(m);
-			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
-			}
-			X.set(m, newXm);
-		}
-		return;
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(List<Double> X) {
-		filter(X, 0, X.size());
-		return;
-	}
+
 	
 }
