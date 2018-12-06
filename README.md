@@ -52,7 +52,7 @@ taken to extract summary physical activity information from raw accelerometer
 data. To minimise error and bias, our tool uses published methods to calibrate, 
 resample, and summarise the accelerometer data. [Click here for detailed 
 information on the 
-data processing methods on our wiki.](https://github.com/aidendoherty/biobankAccelerometerAnalysis/wiki/3.-Methods-Overview)
+data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html)
 
 ![Accelerometer data processing overview](accelerometer/docs/source/accMethodsOverview.png)
 
