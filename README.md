@@ -30,10 +30,11 @@ The main JSON output will look like:
 {
     "file-name": "sample.cwa", 
     "file-startTime": "2014-05-07 13:29:50", 
-    "file-endTime": "2014-05-13 09:50:25", 
-    "pa-overall-avg(mg)": "33.01", 
-    "wearTime-overall(days)": "5.80", 
-    "nonWearTime-overall(days)": "0.04"
+    "file-endTime": "2014-05-13 09:49:50", 
+    "acc-overall-avg(mg)": 33.23, 
+    "wearTime-overall(days)": 5.8, 
+    "nonWearTime-overall(days)": 0.04,
+    "quality-goodWearTime": 1
 }
 ```
 

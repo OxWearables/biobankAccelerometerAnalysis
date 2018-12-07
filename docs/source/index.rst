@@ -16,10 +16,10 @@ Installation
 Dependancies include: java 8 (`Java 8 JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_) and python 3 (`Anaconda's Python 3 <https://www.anaconda.com/download/>`_ or installation via `Brew <https://docs.python-guide.org/starting/install3/osx/>`_ should do the trick).
 ::
 	$ git clone git@github.com:activityMonitoring/biobankAccelerometerAnalysis.git
-    $ bash utilities/downloadDataModels.sh
-	$ pip3 install --user .
-	$ cd accelerometer/accelerometer/java/
-	$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+        $ bash utilities/downloadDataModels.sh
+        $ pip3 install --user .
+        $ cd accelerometer/accelerometer/java/
+        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
 
 
@@ -30,19 +30,20 @@ To extract a summary of movement (average sample vector magnitude) and
 (non)wear time from raw Axivity .CWA accelerometer files:
 ::
 	$ python3 accProcess.py data/sample.cwa
-    <output written to data/sample-outputSummary.json>
-    <time series output written to data/sample-timeSeries.csv.gz>
+        <output written to data/sample-outputSummary.json>
+        <time series output written to data/sample-timeSeries.csv.gz>
 
 The main output JSON will look like:
 ::
 	{
-		file-name: "sample.cwa",
-	    file-startTime: "2014-05-07 13:29:50",
-	    file-endTime: "2014-05-13 09:50:25",
-	    pa-overall-avg(mg): 33.01,
-	    wearTime-overall(days): 5.80,
-	    nonWearTime-overall(days): 0.04,
-    }
+            file-name: "sample.cwa",
+            file-startTime: "2014-05-07 13:29:50",
+            file-endTime: "2014-05-13 09:49:50",
+            acc-overall-avg(mg): 33.23,
+            wearTime-overall(days): 5.8,
+            nonWearTime-overall(days): 0.04,
+            quality-goodWearTime: 1
+        }
 
 To visualise the time output:
 ::

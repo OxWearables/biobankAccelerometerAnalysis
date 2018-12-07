@@ -119,13 +119,13 @@ Specify file in another folder (note: use "" for file names with spaces):
 
 Change epoch length to 60 seconds:
 ::
-    $ python3 accProcess.py data/sample.cwa -epochPeriod 60 
+    $ python3 accProcess.py data/sample.cwa --epochPeriod 60 
 
 Manually set calibration coefficients:
 ::
-    $ python3 accProcess.py data/sample.cwa -skipCalibration True
-        -calibrationOffset -0.2 -0.4 1.5  -calibrationSlope 0.7 0.8 0.7
-        -calibrationTemperature 0.2 0.2 0.2
+    $ python3 accProcess.py data/sample.cwa --skipCalibration True
+        --calOffset -0.2 -0.4 1.5  --calSlope 0.7 0.8 0.7
+        --calTemperature 0.2 0.2 0.2 --meanTemp 20.2
 
 
 The underlying modules can also be called in custom python scripts:

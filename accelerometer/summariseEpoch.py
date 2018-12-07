@@ -96,27 +96,26 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration, 
         nonWearFile, summary)
-
-    # calculate stat summaries (without imputation)
-    # enmo : Euclidean Norm Minus One
-    # Trunc :  negative values truncated to zero (i.e never negative)
-    # emmo = 1 - sqrt(x, y, z)
-    # enmoTrunc = max(enmo, 0)
-    e['enmoTrunc'] = e['enmoTrunc'] * 1000 # convert enmoTrunc to milli-G units
     
     # predict activity from features, and add label column
     if activityClassification:
         e, labels = accClassification.activityClassification(e, activityModel)
     else:
         labels = []
+
+    # enmo : Euclidean Norm Minus One
+    # Trunc :  negative values truncated to zero (i.e never negative)
+    # emmo = 1 - sqrt(x, y, z)
+    # enmoTrunc = max(enmo, 0)
+    e['acc'] = e['enmoTrunc'] * 1000 # convert enmoTrunc to milli-G units
     
     # calculate imputation values to replace nan PA metric values
     e = perform_wearTime_imputation(e, verbose)
-    e['MVPA'] = e['enmoTruncImputed'] >= mgMVPA
-    e['VPA'] = e['enmoTruncImputed'] >= mgVPA
+    e['MVPA'] = e['accImputed'] >= mgMVPA
+    e['VPA'] = e['accImputed'] >= mgVPA
 
     # calculate empirical cumulative distribution function of vector magnitudes
-    calculateECDF(e, 'enmoTrunc', summary)
+    calculateECDF(e, 'acc', summary)
 
     # main movement summaries
     writeMovementSummaries(e, labels, summary)
@@ -413,7 +412,7 @@ def writeMovementSummaries(e, labels, summary):
     """
 
     # identify activity types to summarise
-    activityTypes = ['enmoTrunc', 'MVPA', 'VPA']
+    activityTypes = ['acc', 'MVPA', 'VPA']
     activityTypes += labels
     if 'MET' in e.columns:
         activityTypes.append('MET')

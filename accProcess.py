@@ -272,7 +272,7 @@ def main():
 
     # print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
-            'enmoTrunc-overall-avg','wearTime-overall(days)', \
+            'acc-overall-avg','wearTime-overall(days)', \
             'nonWearTime-overall(days)', 'quality-goodWearTime']
     summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
     accelerometer.accUtils.toScreen(json.dumps(summaryDict, indent=4))

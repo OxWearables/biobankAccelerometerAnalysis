@@ -106,11 +106,11 @@ def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn = False,
     tsHead += 'sampleRate = ' + str(epochPeriod) + ' seconds'
     
     # write time series file
-    if len(e['enmoTruncImputed']) > 0:
+    if len(e['accImputed']) > 0:
         # fill with vm, imputed data used where needed, convert to mg units
-        e['vmFinal'] = e['enmoTruncImputed'] * 1000
+        e['vmFinal'] = e['accImputed'] * 1000
         # highlight any imputed values
-        e['imputed'] = np.isnan(e['enmoTrunc']).astype(int)
+        e['imputed'] = np.isnan(e['acc']).astype(int)
         # add activity prediction labels
         if activityClassification:
             if 'sleepDetected' in e.columns:
