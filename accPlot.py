@@ -1,9 +1,10 @@
 """Script to plot accelerometer traces."""
 
+import matplotlib
+matplotlib.use('Agg')
 from accelerometer import accUtils
 import argparse
 from datetime import datetime, timedelta, time
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.lines  as mlines 
 import matplotlib.patches as mpatches
