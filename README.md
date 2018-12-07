@@ -1,4 +1,4 @@
-![Accelerometer data processing overview](accelerometer/docs/source/accelerometerLogo.png)
+![Accelerometer data processing overview](docs/source/accelerometerLogo.png)
 
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
@@ -42,7 +42,7 @@ To visualise the time output:
 $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
  <output plot written to data/sample-plot.png>
 ```
-![Time series plot](accelerometer/docs/source/samplePlot.png)
+![Time series plot](docs/source/samplePlot.png)
 
 
 
@@ -54,7 +54,7 @@ resample, and summarise the accelerometer data. [Click here for detailed
 information on the 
 data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html)
 
-![Accelerometer data processing overview](accelerometer/docs/source/accMethodsOverview.png)
+![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
 
 
 
