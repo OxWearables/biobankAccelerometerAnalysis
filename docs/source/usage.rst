@@ -69,7 +69,7 @@ To process multiple files, we recommend the following directory structure be use
 
 This can be created calling our utility script:
 ::
-    $ bash createStudyDir.sh /myStudy/
+    $ bash utilities/createStudyDir.sh /myStudy/
 
 Next move relevant raw accelerometer files to the rawData folder:
 ::
