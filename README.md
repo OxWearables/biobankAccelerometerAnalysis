@@ -71,14 +71,13 @@ from your accelerometer data, please cite [Willetts2018] and [Doherty2018].
 Large scale population assessment of physical activity using wrist worn 
 accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
 
-
 [Willetts2018] Willetts M, Hollowell S, Aslett L, Holmes C, Doherty A. (2018) 
 Statistical machine learning of sleep and physical activity phenotypes from 
 sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
 
 [Doherty2018] Doherty A, Smith-Bryne K, Ferreira T, et al. (2018) 
 GWAS identifies 14 loci for device-measured physical activity and sleep 
-duration. Nature Communications (in press)
+duration. Nature Communications. 9(1):5257
 ```
 
 ###### Licence
