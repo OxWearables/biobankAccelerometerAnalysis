@@ -45,7 +45,7 @@ The main output JSON will look like:
             quality-goodWearTime: 1
         }
 
-To visualise the time output:
+To visualise the time series and activity classification output:
 ::
   python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
     <output plot written to data/sample-plot.png>

@@ -113,6 +113,17 @@ Scientific Reports paper:
 ::
     python3 accProcess.py --activityModel activityModels/willetts2018.tar
 
+To visualise the time series and new activity classification output:
+::
+  python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png 
+     --activityModel activityModels/willetts2018.tar
+    <output plot written to data/sample-plot.png>
+
+.. figure:: samplePlotWilletts.png
+    
+    Output plot of class predictions using Willetts 2018 classification model. 
+    Note different set of activity classes.
+
 
 **************
 Advanced usage

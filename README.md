@@ -38,7 +38,7 @@ The main JSON output will look like:
 }
 ```
 
-To visualise the time output:
+To visualise the time series and activity classification output:
 ```
 $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
  <output plot written to data/sample-plot.png>

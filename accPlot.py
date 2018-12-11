@@ -12,15 +12,12 @@ import numpy as np
 import pandas as pd
 import sys
 
-COLOUR_LIST = ['#27647B','#849FAD','#AECBC9','#57575F', "#C9C9BD","#FBEFEE",
-    "#68686F","#333C3E", '#1f77b4', '#ff7f0e', '#9467bd', '#8c564b', '#e377c2', 
-    '#7f7f7f', '#bcbd22', '#17becf', "#000000", "#FFFF00", "#1CE6FF", "#FF34FF", 
-    "#FF4A46", "#008941", "#006FA6", "#A30059", "#FFDBE5", "#7A4900", "#0000A6", 
-    "#63FFAC", "#B79762", "#004D43", "#8FB0FF", "#997D87", "#5A0007", "#809693", 
-    "#FEFFE6", "#1B4400", "#4FC601", "#3B5DFF", "#4A3B53", "#FF2F80", "#61615A", 
-    "#BA0900", "#6B7900", "#00C2A0", "#FFAA92", "#FF90C9", "#B903AA", "#D16100",
-    "#DDEFFF", "#000035", "#7B4F4B", "#A1C299", "#300018", "#0AA6D8", "#013349", 
-    "#00846F"]
+DOHERTY_NatComms_COLOURS = {'sleep':'blue', 'sedentary':'red',
+    'tasks-light':'darkorange', 'walking':'lightgreen', 'moderate':'green'}
+
+WILLETS_SciReports_COLOURS = {'sleep':'blue', 'sit.stand':'red',
+    'vehicle':'darkorange', 'walking':'lightgreen', 'mixed':'green',
+    'bicycling':'purple'}
 
 
 
@@ -36,6 +33,9 @@ def main():
                             help="input .csv.gz time series file to plot")
     parser.add_argument('plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
+    parser.add_argument('--activityModel', type=str,
+                            default="activityModels/doherty2018.tar",
+                            help="""trained activity model .tar file""")
     
     # check input is ok
     if len(sys.argv) < 3:
@@ -47,15 +47,18 @@ def main():
     args = parser.parse_args()
     
     # and then call plot function
-    plotTimeSeries(args.timeSeriesFile, args.plotFile)
+    plotTimeSeries(args.timeSeriesFile, args.plotFile, 
+        activityModel = args.activityModel)
 
 
 
-def plotTimeSeries(tsFile, plotFile):
+def plotTimeSeries(tsFile, plotFile, 
+    activityModel = "activityModels/doherty2018.tar"):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
+    :param str activityModel: Input tar model file used for activity classification
     
     :return: Writes plot to <plotFile>
     :rtype: void
@@ -79,10 +82,12 @@ def plotTimeSeries(tsFile, plotFile):
         if col not in [accUtils.TIME_SERIES_COL, 'imputed', 'acc', 'MET']:
             labels += [col]
     print(labels)
-    labels_as_col = {}
+    if activityModel.endswith("doherty2018.tar"):
+        labels_as_col = DOHERTY_NatComms_COLOURS
+    elif activityModel.endswith("willetts2018.tar"):
+        labels_as_col = WILLETS_SciReports_COLOURS
+    # add imputation label colour
     labels_as_col['imputed'] = '#fafc6f'
-    for i, label in enumerate(labels):
-        labels_as_col[label] = COLOUR_LIST[i]
 
     convert_date = np.vectorize(lambda day, x: matplotlib.dates.date2num(datetime.combine(day, x)))
 
