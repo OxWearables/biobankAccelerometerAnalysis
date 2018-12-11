@@ -238,6 +238,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, accExt="cwa", cmdOptions=""):
         txtWriter.write(' --stationaryFolder ' + studyDir + 'stationary/')
         if cmdOptions != "":
             txtWriter.write(' ' + cmdOptions)
+        txtWriter.write('\n')
     txtWriter.close()
     print('Processing list written to ', cmdsFile)
 
