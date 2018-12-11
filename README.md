@@ -56,7 +56,7 @@ information on the
 data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html)
 
 ![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
-![Hidden Markov models](docs/source/hmmOverview.png)
+![Activity classification](docs/source/accClassification.png)
 
 
 
