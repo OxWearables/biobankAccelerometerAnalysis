@@ -51,9 +51,9 @@ To visualise the time output:
 
 
 
-**************
+*************************
 Processing multiple files
-**************
+*************************
 
 To process multiple files, we recommend the following directory structure be used:
 ::
@@ -102,6 +102,16 @@ health analses:
     <summary CSV for all participants written to "/myStudy/sumamry-info.csv">
     """
 
+
+
+************************************
+Classifying different activity types
+************************************
+Different activity classification models can be specified to identify different 
+activity types. For example to use activity states from the Willetts 2018 
+Scientific Reports paper:
+::
+    python3 accProcess.py --activityModel activityModels/willetts2018.tar
 
 
 **************

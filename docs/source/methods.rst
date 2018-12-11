@@ -15,7 +15,7 @@ data. To minimise error and bias, our tool uses published methods to calibrate, 
 
 
 ****************
-Data Preparation
+Data preparation
 ****************
 
 
@@ -33,12 +33,12 @@ Clipped values, which occur when the sensor’s dynamic range of +-8g is exceede
 
 Resampling
 ==========
-While the accelerometer is setup to record data at 100Hz, the actual sample rate can fluctuate between 94-104Hz. Thus, valid data is resampled to 100 Hz using linear interpolation, except for interrupts lasting longer than 1 second which are set to missing.
+While the accelerometer is setup to record data at 100Hz, the actual sample rate can fluctuate between 94-104Hz. The implication of this is the introduction of differential effects between individuals when extracting frequency domain features for activity classification. Thus, valid data is resampled to 100 Hz using linear interpolation, except for interrupts lasting longer than 1 second which are set to missing.
 
 
 
 ***************************
-Vector Magnitude Processing
+Vector magnitude processing
 ***************************
 
 
@@ -58,6 +58,40 @@ To describe the overall level and distribution of physical activity intensity, w
 
 
 
+***************************
+Activity classification
+***************************
+
+
+Feature extraction
+================
+For every non-overlapping 30-second time window (default epoch period our model is trained on), we extracted a 126-dimensional feature vector. These time and frequency domain features includ: vector magniture, it’s mean, standard deviation, coefficient of variation, median, min, max, 25th & 75th percentiles, mean amplitude deviation, mean power deviation, kurtosis & skew, and Fast Fourier Transform (FFT) 1–15 Hz. Features also includ the following in each individual axis of movement: mean, range, standard deviation, covariance, and FFT 1–15 Hz. Roll, pitch, yaw, x/y/z correlations, frequency and power bands are also extracted [Willetts2018]_ [Doherty2018]_
+
+
+Classification
+==============
+For activity classification we use a two stage model consisting of balanced random forests and hidden markov models.
+
+
+Balanced random forests
+=======================
+Balanced random forests offer a powerful nonparametric discriminative method for multi-activity classification. Predictions of a random forest are an aggregate of individual CART trees (Classification And Regression Trees). CART trees are binary trees consisting of split nodes and terminal leaf nodes. In our case, each tree is constructed from a training set of feature data (just described above) along with ground truth activity classes (free living camera data in [Willetts2018]_ [Doherty2018]_).
+
+There is randomness in the model, as we only give each tree a subset of data and features. This ensures that the trees have low correlation and is necessary as the CART algorithm itself is deterministic. Given the unbalanced nature of our dataset, where some behaviours occur rarely, we use balanced Random Forests to train each tree with a balanced subset of training data. If we have n_rare instances of the rarest class, we pick n_rare samples, with replacement, of data of each of our classes to form our training set for each tree. As each tree is given only a small fraction of data, we make many more trees than in a standard random forest so that the same number of data points are sampled in training as with a standard application of random forests [Willetts2018]_. 
+
+
+Hidden Markov models
+====================
+Random forests are able to classify datapoints, but do not have an understanding of our data as having come from a time series. Therefore we use a hidden Markov model (HMM) to encode the temporal structure of the sequence of classes and thus obtain a more accurate sequence of predicted classes. The transition matrix (likelihood of moving from one activity type to another) and emission distribution (likelihood of random forest correctly classifying a given activity type) are empirically calculated. The transition matrix is calculated from the training set sequence of activity states. The calculation of emission probabilities comes from the out of bag class votes of the random forest. Recall that in a random forest each tree is trained on a subset of the training data. Thus by passing through each tree the training data that it was not trained on we get an estimate of the error of the forest. This gives us directly the probability of predicting each class given the true activity class [Willetts2018]_.
+
+With this empirically defined HMM, we can then run the Viterbi algorithm to find the most likely sequence of states given a sequence of observed emissions from the random forest. This smoothing corrects erroneous predictions from the random forest, such as where the error is a blip of one activity surrounded by another and the transitions between those two classes of activity are rare.  
+
+.. figure:: hmmOverview.png
+
+    Diagram of a Hidden Markov Model.
+
+
+
 **************************
 Physical activity analysis
 **************************
@@ -70,7 +104,7 @@ We remove non-wear time, defined as consecutive stationary episodes lasting for 
 
 Wear-time weighting
 ===================
-We impute non-wear data segments using the average of similar time-of-day vector magnitude and intensity distribution data points with one minute granularity on different days of the measurement, as in previous studies16. This imputation accounts for potential wear time diurnal bias where, for example, if the device was systematically not worn during sleep in an individual, the crude average vector magnitude during wear time would be a biased overestimate of the true average.
+We impute non-wear data segments using the average of similar time-of-day vector magnitude and intensity distribution data points with one minute granularity on different days of the measurement. This imputation accounts for potential wear time diurnal bias where, for example, if the device was systematically not worn during sleep in an individual, the crude average vector magnitude during wear time would be a biased overestimate of the true average.
 
 .. figure:: exampleImputation.png
 
@@ -80,7 +114,7 @@ We impute non-wear data segments using the average of similar time-of-day vector
 
 
 **********************************
-Summary Physical Activity Variable
+Summary physical activity variable
 **********************************
 
 
