@@ -39,6 +39,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :param str activityModel: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
+    :param bool intensityDistribution: Add intensity outputs to dict <summary>
     :param bool verbose: Print verbose output
     
     :return: Pandas dataframe of activity epoch data
