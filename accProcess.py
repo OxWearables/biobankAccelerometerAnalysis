@@ -159,6 +159,10 @@ def main():
                             metavar='True/False', default=True, type=str2bool,
                             help="""True will remove extra "helper" files created 
                                     by the program (default : %(default)s)""")
+    parser.add_argument('--intensityDistribution',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Save intensity distribution
+                             (default : %(default)s)""")
     
     #
     # check that enough command line arguments are entered
@@ -262,6 +266,7 @@ def main():
         endTime = args.endTime, epochPeriod = args.epochPeriod,
         stationaryStd = args.stationaryStd, mgMVPA = args.mgMVPA,
         mgVPA = args.mgVPA, activityModel = args.activityModel,
+        intensityDistribution = args.intensityDistribution,
         verbose = args.verbose)
 
     # generate time series file (note: this will also resample to epochData so do this last)

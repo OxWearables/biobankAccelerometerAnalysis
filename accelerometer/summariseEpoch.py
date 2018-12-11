@@ -13,7 +13,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification = True, startTime = None, endTime = None, 
     epochPeriod = 30, stationaryStd = 13, minNonWearDuration = 60, mgMVPA = 100, 
     mgVPA = 425, activityModel = "activityModels/doherty2018.tar", 
-    verbose = False):
+    intensityDistribution = False, verbose = False):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -115,7 +115,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     e['VPA'] = e['accImputed'] >= mgVPA
 
     # calculate empirical cumulative distribution function of vector magnitudes
-    calculateECDF(e, 'acc', summary)
+    if intensityDistribution:
+        calculateECDF(e, 'acc', summary)
 
     # main movement summaries
     writeMovementSummaries(e, labels, summary)
