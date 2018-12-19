@@ -78,13 +78,14 @@ Next move relevant raw accelerometer files to the rawData folder:
 Then use our python utility function to write processing cmds for all files:
 ::
     >>> from accelerometer import accUtils
-    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt")
+    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
+        runName="dec18")
     <list of processing commands written to "process-cmds.txt">
 
     >>> # if for some reason we wanted to use different thresholds for moderate
     >>> # and vigorous intensity activities, we could go with
     >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-    >>>     cmdOptions="--mgMVPA 90 --mvVPA 435")
+    >>>     runName="dec18", cmdOptions="--mgMVPA 90 --mvVPA 435")
     <list of processing commands written to "process-cmds.txt">
 
 We can then kick-start the processing of all accelerometer files. More advanced
@@ -98,8 +99,8 @@ individual processed .json summary files into a single large csv for subsequent
 health analses:
 ::
     >>> from accelerometer import accUtils
-    >>> accUtils.collateJSONfilesToSingleCSV("/myStudy/summary/", "myStudy/summary-info.csv")
-    <summary CSV for all participants written to "/myStudy/sumamry-info.csv">
+    >>> accUtils.collateJSONfilesToSingleCSV("/myStudy/summary/dec18/", "myStudy/dec18-summary-info.csv")
+    <summary CSV for all participants written to "/myStudy/dec18-sumamry-info.csv">
     """
 
 

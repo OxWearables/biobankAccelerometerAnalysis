@@ -179,7 +179,8 @@ def loadTimeSeriesCSV(tsFile):
 
 
 
-def writeStudyAccProcessCmds(studyDir, cmdsFile, accExt="cwa", cmdOptions=""):
+def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default", 
+        accExt="cwa", cmdOptions=""):
     """Read files to process and write out list of processing commands
 
     This method assumes that a study directory structure has been created by the
@@ -201,11 +202,13 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, accExt="cwa", cmdOptions=""):
 
     :param str studyDir: Root directory of study
     :param str cmdsFile: Output .txt file listing acc processing commands
+    :param str runName: Name to assign to this processing run. Supports processing
+        dataset in multiple different ways.
     :param str accExt: Acc file type e.g. cwa, CWA, bin, BIN, gt3x...
     :param str cmdOptions: String of processing options e.g. "--epochPeriod 10"
         Type 'python3 accProccess.py -h' for full list of options
 
-    :return: New file written to <outputCsvFile>
+    :return: New file written to <cmdsFile>
     :rtype: void
 
     :Example:
@@ -223,6 +226,20 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, accExt="cwa", cmdOptions=""):
             csvWriter.write(rawFile + ',\n')
         csvWriter.close()
 
+    # then create runName output directories
+    summaryDir = studyDir + 'summary/' + runName + '/'
+    epochDir = studyDir + 'epoch/' + runName + '/'
+    timeSeriesDir = studyDir + 'timeSeries/' + runName + '/'
+    nonWearDir = studyDir + 'nonWear/' + runName + '/'
+    stationaryDir = studyDir + 'stationary/' + runName + '/'
+    logsDir = studyDir + 'clusterLogs/' + runName + '/'
+    createDirIfNotExists(summaryDir)
+    createDirIfNotExists(epochDir)
+    createDirIfNotExists(timeSeriesDir)
+    createDirIfNotExists(nonWearDir)
+    createDirIfNotExists(stationaryDir)
+    createDirIfNotExists(logsDir)
+
     # next read files.csv
     fileList = pd.read_csv(filesCSV)
 
@@ -231,16 +248,17 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, accExt="cwa", cmdOptions=""):
     for ix, row in fileList.iterrows():
         txtWriter.write('python3 accProcess.py')
         txtWriter.write(' ' + row['fileName'])
-        txtWriter.write(' --summaryFolder ' + studyDir + 'summary/')
-        txtWriter.write(' --epochFolder ' + studyDir + 'epoch/')
-        txtWriter.write(' --timeSeriesFolder ' + studyDir + 'timeSeries/')
-        txtWriter.write(' --nonWearFolder ' + studyDir + 'nonWear/')
-        txtWriter.write(' --stationaryFolder ' + studyDir + 'stationary/')
+        txtWriter.write(' --summaryFolder ' + summaryDir)
+        txtWriter.write(' --epochFolder ' + epochDir)
+        txtWriter.write(' --timeSeriesFolder ' + timeSeriesDir)
+        txtWriter.write(' --nonWearFolder ' + nonWearDir)
+        txtWriter.write(' --stationaryFolder ' + stationaryDir)
         if cmdOptions != "":
             txtWriter.write(' ' + cmdOptions)
         txtWriter.write('\n')
     txtWriter.close()
     print('Processing list written to ', cmdsFile)
+    print('Suggested dir for log files: ', logsDir)
 
 
 
@@ -287,3 +305,22 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
     #remove tmpJsonFile
     os.remove(tmpJsonFile)
     print('Summary of', str(len(dAcc)), 'participants written to:', outputCsvFile)
+
+
+
+def createDirIfNotExists(folder):
+    """ Create directory if it doesn't currently exist
+
+    :param str folder: Directory to be checked/created 
+
+    :return: Dir now exists (created if didn't exist before, otherwise untouched)
+    :rtype: void
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.createDirIfNotExists("/myStudy/summary/dec18/")
+        <folder "/myStudy/summary/dec18/" now exists>
+    """
+
+    if not os.path.exists(folder):
+        os.makedirs(folder)
