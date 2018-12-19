@@ -59,7 +59,7 @@ To process multiple files, we recommend the following directory structure be use
 ::
     <studyName>/
         files.csv #listing all files in rawData directory
-        rawData/ #all raw .cwa .bin .gt3x files
+        rawData/ #all raw .cwa .bin .gt3x files (no spaces in filename)
         summary/ #to store outputSummary.json
         epoch/ #to store feature output for 30sec windows
         timeSeries/ #simple csv time series output (VMag, activity binary predictions)
@@ -85,7 +85,7 @@ Then use our python utility function to write processing cmds for all files:
     >>> # if for some reason we wanted to use different thresholds for moderate
     >>> # and vigorous intensity activities, we could go with
     >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-    >>>     runName="dec18", cmdOptions="--mgMVPA 90 --mvVPA 435")
+    >>>     runName="dec18", cmdOptions="--mgMVPA 90 --mgVPA 435")
     <list of processing commands written to "process-cmds.txt">
 
 We can then kick-start the processing of all accelerometer files. More advanced
