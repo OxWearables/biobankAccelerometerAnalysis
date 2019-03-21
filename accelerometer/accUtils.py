@@ -108,7 +108,7 @@ def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn = False,
     # write time series file
     if len(e['accImputed']) > 0:
         # fill with vm, imputed data used where needed, convert to mg units
-        e['vmFinal'] = e['accImputed'] * 1000
+        e['vmFinal'] = e['accImputed']
         # highlight any imputed values
         e['imputed'] = np.isnan(e['acc']).astype(int)
         # add activity prediction labels
