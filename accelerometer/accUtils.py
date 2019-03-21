@@ -117,7 +117,7 @@ def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn = False,
                 labels.append('sleepDetected')
             if 'MET' in e.columns:
                 labels.append('MET')
-            e[['vmFinal','imputed'] + labels].to_csv(tsFile,
+            e[['vmFinal','imputed'] + [l + 'Imputed' for l in labels]].to_csv(tsFile,
                 float_format='%.1f', index=timeSeriesDateColumn, 
                 header=[tsHead,'imputed']+labels, compression='gzip')
         else:
