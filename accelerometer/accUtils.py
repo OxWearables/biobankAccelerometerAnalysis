@@ -180,7 +180,7 @@ def loadTimeSeriesCSV(tsFile):
 
 
 def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default", 
-        accExt="cwa", cmdOptions=""):
+        accExt="cwa", cmdOptions="", filesID="files.csv"):
     """Read files to process and write out list of processing commands
 
     This method assumes that a study directory structure has been created by the
@@ -207,6 +207,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     :param str accExt: Acc file type e.g. cwa, CWA, bin, BIN, gt3x...
     :param str cmdOptions: String of processing options e.g. "--epochPeriod 10"
         Type 'python3 accProccess.py -h' for full list of options
+    :param str files: Name of .csv file listing acc files to process
 
     :return: New file written to <cmdsFile>
     :rtype: void
@@ -218,7 +219,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     """
     
     # firstly check if files.csv list exists (if not, create it)
-    filesCSV = studyDir + "files.csv"
+    filesCSV = studyDir + filesID
     if not os.path.exists(filesCSV):
         csvWriter = open(filesCSV, 'w')
         csvWriter.write('fileName,\n')
@@ -248,6 +249,8 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     for ix, row in fileList.iterrows():
         txtWriter.write('python3 accProcess.py')
         txtWriter.write(' ' + row['fileName'])
+        for col in fileList.columns[1:]:
+            txtWriter.write(' --' + col + ' ' + row[col])
         txtWriter.write(' --summaryFolder ' + summaryDir)
         txtWriter.write(' --epochFolder ' + epochDir)
         txtWriter.write(' --timeSeriesFolder ' + timeSeriesDir)
@@ -305,6 +308,119 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
     #remove tmpJsonFile
     os.remove(tmpJsonFile)
     print('Summary of', str(len(dAcc)), 'participants written to:', outputCsvFile)
+
+
+
+def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
+    """identify files that have not been processed
+
+    Look through all processed accelerometer files, and find participants who do 
+    not have records in the summary csv file. This indicates there was a problem
+    in processing their data. Therefore, output will be a new .csv file to 
+    support reprocessing of these files
+    
+    :param str filesCsv: CSV listing acc files in study directory
+    :param str summaryCsv: Summary CSV of processed dataset
+    :param str outputFilesCsv: Output csv listing files to be reprocessed
+
+    :return: New file written to <outputCsvFile>
+    :rtype: void
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.identifyUnprocessedFiles("study/files.csv", study/summary-all-files.csv", 
+        "study/files-reprocess.csv")
+    <Output csv listing files to be reprocessed written to "study/files-reprocess.csv">
+    """
+
+    fileList = pd.read_csv(filesCsv)
+    summary = pd.read_csv(summaryCsv)
+
+    output = fileList[~fileList['fileName'].isin(list(summary['file-name']))]
+    output = output.rename(columns={'Unnamed: 1': ''})
+    output.to_csv(outputFilesCsv, index=False)
+
+    print('Reprocessing for ', len(output), 'participants written to:', 
+        outputFilesCsv)
+
+
+
+def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
+    """read summary .csv file and update coefs for those with poor calibration
+
+    Look through all processed accelerometer files, and find participants that 
+    did not have good calibration data. Then assigns the calibration coefs from 
+    previous good use of a given device. Output will be a new .csv file to 
+    support reprocessing of uncalibrated files with new pre-specified calibration coefs.
+    
+    :param str inputCsvFile: Summary CSV of processed dataset
+    :param str outputCsvFile: Output CSV of files to be reprocessed with new 
+        calibraition into
+
+    :return: New file written to <outputCsvFile>
+    :rtype: void
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.updateCalibrationCoefs("data/summary-all-files.csv", "study/files-recalibration.csv")
+    <CSV of files to be reprocessed written to "study/files-recalibration.csv">
+    """
+
+    d = pd.read_csv(inputCsvFile)
+    #select participants with good spread of stationary values for calibration
+    goodCal = d.loc[(d['quality-calibratedOnOwnData']==1) & (d['quality-goodCalibration']==1)]
+    #now only select participants whose data was NOT calibrated on a good spread of stationary values
+    badCal = d.loc[(d['quality-calibratedOnOwnData']==1) & (d['quality-goodCalibration']==0)]
+
+    #sort files by start time, which makes selection of most recent value easier
+    goodCal = goodCal.sort_values(['file-startTime'])
+    badCal = badCal.sort_values(['file-startTime'])
+
+    calCols = ['calibration-xOffset(g)','calibration-yOffset(g)','calibration-zOffset(g)',
+               'calibration-xSlope(g)','calibration-ySlope(g)','calibration-zSlope(g)',
+               'calibration-xTemp(C)','calibration-yTemp(C)','calibration-zTemp(C)',
+               'calibration-meanDeviceTemp(C)']
+    
+    #print output CSV file with suggested calibration parameters
+    noOtherUses = 0
+    nextUses = 0
+    previousUses = 0
+    f = open(outputCsvFile,'w')
+    f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
+    for ix, row in badCal.iterrows():
+        #first get current 'bad' file
+        participant, device, startTime = row[['file-name','file-deviceID','file-startTime']]
+        device = int(device)
+        #get calibration values from most recent previous use of this device
+        # (when it had a 'good' calibration)
+        prevUse = goodCal[calCols][(goodCal['file-deviceID']==device) & (goodCal['file-startTime']<startTime)].tail(1)
+        try:
+            ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = prevUse.iloc[0] 
+            previousUses += 1
+        except:
+            nextUse = goodCal[calCols][(goodCal['file-deviceID']==device) & (goodCal['file-startTime']>startTime)].head(1)
+            if len(nextUse)<1:
+                print('no other uses for this device at all: ', str(device), 
+                    str(participant))
+                noOtherUses += 1
+                continue
+            nextUses += 1
+            ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = nextUse.iloc[0] 
+        
+        #now construct output
+        out = participant + ','
+        out += str(ofX) + ' ' + str(ofY) + ' ' + str(ofZ) + ','
+        out += str(slpX) + ' ' + str(slpY) + ' ' + str(slpZ) + ','
+        out += str(tmpX) + ' ' + str(tmpY) + ' ' + str(tmpZ) + ','
+        out += str(calTempAvg)
+        f.write(out + '\n')
+    f.close()
+    print('previousUses', previousUses)
+    print('nextUses', nextUses)
+    print('noOtherUses', noOtherUses)
+
+    print('Reprocessing for ', str(previousUses + nextUses), 
+        'participants written to:', outputCsvFile)
 
 
 

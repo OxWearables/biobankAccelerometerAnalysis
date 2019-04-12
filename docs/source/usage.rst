@@ -79,7 +79,7 @@ Then use our python utility function to write processing cmds for all files:
 ::
     >>> from accelerometer import accUtils
     >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-        runName="dec18")
+    >>>    runName="dec18")
     <list of processing commands written to "process-cmds.txt">
 
     >>> # if for some reason we wanted to use different thresholds for moderate
@@ -94,7 +94,7 @@ architecture of choice:
 ::
     $ bash process-cmds.txt
 
-Finally, using our python utility function, we would like to collate all 
+Next, using our python utility function, we would like to collate all 
 individual processed .json summary files into a single large csv for subsequent 
 health analses:
 ::
@@ -102,6 +102,39 @@ health analses:
     >>> accUtils.collateJSONfilesToSingleCSV("/myStudy/summary/dec18/", "myStudy/dec18-summary-info.csv")
     <summary CSV for all participants written to "/myStudy/dec18-sumamry-info.csv">
     """
+
+===============
+Quality control
+===============
+If is often necessary to check that all files have successfully processed. Our
+python utility function can write to file all participants' data that was not
+successfully processed:
+::
+    >>> from accelerometer import accUtils
+    >>> accUtils.identifyUnprocessedFiles("/myStudy/files.csv", "myStudy/dec18-summary-info.csv", \
+    >>>       "myStudy/files-unprocessed.csv")
+    <Output CSV listing files to be reprocessed written to "/myStudy/files-unprocessed.csv">
+    """
+
+On other occasions some participants' data may not have been calibrated properly.
+Our python utility function can assigns the calibration coefs from a previous 
+good use of a given device in the same study dataset:
+::
+    >>> from accelerometer import accUtils
+    >>> accUtils.updateCalibrationCoefs("myStudy/dec18-summary-info.csv", \
+    >>>        "myStudy/files-recalibration.csv")
+    <CSV of files to be reprocessed written to "/myStudy/files-recalibration.csv">
+    """
+
+Our python utility function can then re-write processing cmds as follows:
+::
+    >>> from accelerometer import accUtils
+    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds-recalibration.txt", \
+    >>>    runName="dec18", filesID="files-calibration.csv")
+    <list of processing commands written to "process-cmds-recalibration.txt">
+
+These 'reprocessed' files can then be processed as outlined in the section above.
+
 
 
 
