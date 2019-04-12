@@ -130,7 +130,7 @@ Our python utility function can then re-write processing cmds as follows:
 ::
     >>> from accelerometer import accUtils
     >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds-recalibration.txt", \
-    >>>    runName="dec18", filesID="files-calibration.csv")
+    >>>    runName="dec18", filesID="files-calibration.csv", cmdOptions="--skipCalibration True")
     <list of processing commands written to "process-cmds-recalibration.txt">
 
 These 'reprocessed' files can then be processed as outlined in the section above.

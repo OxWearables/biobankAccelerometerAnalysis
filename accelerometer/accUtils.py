@@ -250,7 +250,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
         txtWriter.write('python3 accProcess.py')
         txtWriter.write(' ' + row['fileName'])
         for col in fileList.columns[1:]:
-            txtWriter.write(' --' + col + ' ' + row[col])
+            txtWriter.write(' --' + col + ' ' + str(row[col]))
         txtWriter.write(' --summaryFolder ' + summaryDir)
         txtWriter.write(' --epochFolder ' + epochDir)
         txtWriter.write(' --timeSeriesFolder ' + timeSeriesDir)
