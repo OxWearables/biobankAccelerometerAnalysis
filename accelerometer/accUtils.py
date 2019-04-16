@@ -355,7 +355,7 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
     
     :param str inputCsvFile: Summary CSV of processed dataset
     :param str outputCsvFile: Output CSV of files to be reprocessed with new 
-        calibraition into
+        calibration info
 
     :return: New file written to <outputCsvFile>
     :rtype: void
@@ -420,6 +420,53 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
     print('noOtherUses', noOtherUses)
 
     print('Reprocessing for ', str(previousUses + nextUses), 
+        'participants written to:', outputCsvFile)
+
+
+
+def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
+    """read summary .csv file and write files.csv with calibration coefs
+
+    Look through all processed accelerometer files, and write a new .csv file to 
+    support reprocessing of files with pre-specified calibration coefs.
+    
+    :param str inputCsvFile: Summary CSV of processed dataset
+    :param str outputCsvFile: Output CSV of files to process with calibration info
+
+    :return: New file written to <outputCsvFile>
+    :rtype: void
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.writeFilesWithCalibrationCoefs("data/summary-all-files.csv",
+    >>>     "study/files-calibrated.csv")
+    <CSV of files to be reprocessed written to "study/files-calibrated.csv">
+    """
+
+    d = pd.read_csv(inputCsvFile)
+    
+    calCols = ['calibration-xOffset(g)','calibration-yOffset(g)','calibration-zOffset(g)',
+               'calibration-xSlope(g)','calibration-ySlope(g)','calibration-zSlope(g)',
+               'calibration-xTemp(C)','calibration-yTemp(C)','calibration-zTemp(C)',
+               'calibration-meanDeviceTemp(C)']
+    
+    #print output CSV file with suggested calibration parameters
+    f = open(outputCsvFile,'w')
+    f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
+    for ix, row in d.iterrows():
+        #first get current file information
+        participant = str(row['file-name'])
+        ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = row[calCols] 
+        #now construct output
+        out = participant + ','
+        out += str(ofX) + ' ' + str(ofY) + ' ' + str(ofZ) + ','
+        out += str(slpX) + ' ' + str(slpY) + ' ' + str(slpZ) + ','
+        out += str(tmpX) + ' ' + str(tmpY) + ' ' + str(tmpZ) + ','
+        out += str(calTempAvg)
+        f.write(out + '\n')
+    f.close()
+
+    print('Files with calibration coefficients for ', str(len(d)), 
         'participants written to:', outputCsvFile)
 
 
