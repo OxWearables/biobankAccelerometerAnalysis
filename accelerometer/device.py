@@ -110,6 +110,11 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             yTemp = summary['calibration-yTemp(C)']
             zTemp = summary['calibration-zTemp(C)']
             meanTemp = summary['calibration-meanDeviceTemp(C)']
+        else:
+            storeCalibrationParams(summary, xIntercept, yIntercept, zIntercept,
+                    xSlope, ySlope, zSlope, xTemp, yTemp, zTemp, meanTemp)
+            summary['quality-calibratedOnOwnData'] = 0
+            summary['quality-goodCalibration'] = 1
             
         # calculate and write filtered avgVm epochs from raw file
         commandArgs = ["java", "-classpath", javaClassPath,
@@ -338,16 +343,9 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
     # store output to summary dictionary
     summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initError*1000, 2)
     summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestError*1000, 2)
-    summary['calibration-xOffset(g)'] = accUtils.formatNum(bestIntercept[0], 4)
-    summary['calibration-yOffset(g)'] = accUtils.formatNum(bestIntercept[1], 4)
-    summary['calibration-zOffset(g)'] = accUtils.formatNum(bestIntercept[2], 4)
-    summary['calibration-xSlope(g)'] = accUtils.formatNum(bestSlope[0], 4)
-    summary['calibration-ySlope(g)'] = accUtils.formatNum(bestSlope[1], 4)
-    summary['calibration-zSlope(g)'] = accUtils.formatNum(bestSlope[2], 4)
-    summary['calibration-xTemp(C)'] = accUtils.formatNum(bestTemp[0], 4)
-    summary['calibration-yTemp(C)'] = accUtils.formatNum(bestTemp[1], 4)
-    summary['calibration-zTemp(C)'] = accUtils.formatNum(bestTemp[2], 4)
-    summary['calibration-meanDeviceTemp(C)'] = accUtils.formatNum(meanTemp, 2)
+    storeCalibrationParams(summary, bestIntercept[0], bestIntercept[1],
+            bestIntercept[2], bestSlope[0], bestSlope[1], bestSlope[2],
+            bestTemp[0], bestTemp[1], bestTemp[2], meanTemp)
     summary['calibration-numStaticPoints'] = nStatic
     summary['calibration-staticXmin(g)'] = accUtils.formatNum(xMin, 2)
     summary['calibration-staticXmax(g)'] = accUtils.formatNum(xMax, 2)
@@ -365,6 +363,40 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
             summary['quality-goodCalibration'] = 0
     except UnboundLocalError:
         summary['quality-goodCalibration'] = 0
+
+
+
+def storeCalibrationParams(summary, xOff, yOff, zOff, xSlope, ySlope, zSlope,
+        xTemp, yTemp, zTemp, meanTemp):
+    """Store calibration parameters to output summary dictionary
+
+    :param dict summary: Output dictionary containing all summary metrics
+    :param float xOff: x intercept
+    :param float yOff: y intercept
+    :param float zOff: z intercept
+    :param float xSlope: x slope
+    :param float ySlope: y slope
+    :param float zSlope: z slope
+    :param float xTemp: x temperature
+    :param float yTemp: y temperature
+    :param float zTemp: z temperature
+    :param float meanTemp: Calibration mean temperature in file
+
+    :return: Calibration summary values written to dict <summary>
+    :rtype: void
+    """
+
+    # store output to summary dictionary
+    summary['calibration-xOffset(g)'] = accUtils.formatNum(xOff, 4)
+    summary['calibration-yOffset(g)'] = accUtils.formatNum(yOff, 4)
+    summary['calibration-zOffset(g)'] = accUtils.formatNum(zOff, 4)
+    summary['calibration-xSlope(g)'] = accUtils.formatNum(xSlope, 4)
+    summary['calibration-ySlope(g)'] = accUtils.formatNum(ySlope, 4)
+    summary['calibration-zSlope(g)'] = accUtils.formatNum(zSlope, 4)
+    summary['calibration-xTemp(C)'] = accUtils.formatNum(xTemp, 4)
+    summary['calibration-yTemp(C)'] = accUtils.formatNum(yTemp, 4)
+    summary['calibration-zTemp(C)'] = accUtils.formatNum(zTemp, 4)
+    summary['calibration-meanDeviceTemp(C)'] = accUtils.formatNum(meanTemp, 2)
 
 
 
