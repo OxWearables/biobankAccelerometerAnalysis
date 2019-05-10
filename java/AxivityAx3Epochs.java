@@ -50,9 +50,9 @@ public class AxivityAx3Epochs {
 	private static Boolean verbose = true;
 	private static EpochWriter epochWriter;
 
-	/* 
+	/*
 	 * Parse command line args, then call method to identify and write epochs.
-	 * 
+	 *
 	 * @param args
 	 *            An argument string passed in by ActivitySummary.py. Contains
 	 *            "param:value" pairs.
@@ -62,7 +62,7 @@ public class AxivityAx3Epochs {
 
 		// variables to store default parameter options
 		String[] functionParameters = new String[0];
-		
+
 		String accFile = ""; // file to process
 		String outputFile = ""; // file name for epoch file
 		String rawOutputFile = ""; // file name for epoch file
@@ -98,24 +98,24 @@ public class AxivityAx3Epochs {
     	boolean getEachAxis = true;
     	boolean useAbs = false;
     	int numEachAxis = 15; // number of fft bins to print
-    	
-    	// Must supply additional information when loading from a .csv file 
+
+    	// Must supply additional information when loading from a .csv file
     	LocalDateTime csvStartTime = null; // start date of first sample
     	double csvSampleRate = -1; // must specify sample rate if time column and date format not given
     	int csvStartRow = 0;
     	// [0, 1, 2] = assume X is 1st column, Y is 2nd, Z is 3rd, and no time column.
     	// if list is longer than 3 elements the extra elements are the columns that make up a time value
-    	// e.g. [0,1,2,3,6] means use 1st three columns for X/Y/Z, and concatenate cols 3 & 6 to parse time 
+    	// e.g. [0,1,2,3,6] means use 1st three columns for X/Y/Z, and concatenate cols 3 & 6 to parse time
     	// (useful when time and date are in separate columns)
     	List<Integer> csvXYZTCols = Arrays.asList( 0,1,2 );
-    	
+
     	// file read/write objects
     	BufferedWriter epochFileWriter = null;
     	BufferedWriter rawWriter = null; // raw and fft are null if not used
     	BufferedWriter fftWriter = null; // else will be similar to epochFile name
     	NpyWriter npyWriter = null;
-    	
-    	
+
+
 		if (args.length < 1) {
 			String invalidInputMsg = "Invalid input, ";
 			invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
@@ -123,7 +123,7 @@ public class AxivityAx3Epochs {
 			System.out.println(invalidInputMsg);
 			System.exit(-1);
 		}
-		
+
 		if (args.length == 1) {
 			// single parameter needs to be accFile
 			accFile = args[0];
@@ -220,9 +220,9 @@ public class AxivityAx3Epochs {
 					System.out.println(csvXYZTCols.toString());
 					for( int i = 0; i<XYZT.length; i++ ) {
 						System.out.println(XYZT[i] + " - " + Integer.parseInt(XYZT[i]));
-						csvXYZTCols.add(Integer.parseInt(XYZT[i]));						
+						csvXYZTCols.add(Integer.parseInt(XYZT[i]));
 					}
-				
+
 				} else if (funcName.equals("csvStartRow")) {
 					csvStartRow = Integer.parseInt(funcParam);
 				} else if (funcName.equals("getSanDiegoFeatures")) {
@@ -352,7 +352,7 @@ public class AxivityAx3Epochs {
 		System.exit(0);
 	}
 
-	
+
 	private static void readCSVEpochs(
 			String accFile,
 			LocalDateTime startTime,
@@ -360,9 +360,9 @@ public class AxivityAx3Epochs {
 			DateTimeFormatter csvTimeFormat,
 			int csvStartRow,
 			List<Integer> csvXYZTCols) {
-		
+
 		try {
-			BufferedReader accStream =  new BufferedReader(new FileReader(accFile)); 
+			BufferedReader accStream =  new BufferedReader(new FileReader(accFile));
 			String line = "";
 			int lineNumber = 0;
 			String csvSplitBy = ",";
@@ -370,7 +370,7 @@ public class AxivityAx3Epochs {
 			System.out.println("This is a special .csv reading version made for Alex-Rowlands dataset!\n"
 								+ "parsing .csv file using:\n"
 								+ (startTime!=null ? "csvStartTime = " + startTime.toString() + "\n"
-								+ "csvSampleRate = " + csvSampleRate + "Hz" : "csvTimeFormat = " + csvTimeFormat.toString())+"\n" 
+								+ "csvSampleRate = " + csvSampleRate + "Hz" : "csvTimeFormat = " + csvTimeFormat.toString())+"\n"
 								+ "minimum number of columns per row: " + numColsRequired);
 			int xCol = csvXYZTCols.get(0);
 			int yCol = csvXYZTCols.get(1);
@@ -382,7 +382,7 @@ public class AxivityAx3Epochs {
 			} else {
 				time = getEpochMillis(startTime);
 			}
-			
+
 			while (true) {
 				line = accStream.readLine();
 				if (lineNumber++ <= csvStartRow) continue;
@@ -404,10 +404,10 @@ public class AxivityAx3Epochs {
 									timeStr += ",";
 								}
 							}
-							time = getEpochMillis(LocalDateTime.parse(timeStr, csvTimeFormat));							
+							time = getEpochMillis(LocalDateTime.parse(timeStr, csvTimeFormat));
 							// System.out.println(epochMillisToLocalDateTime(time).toString() + " - " + timeStr);
 						}
-						
+
 						double x = Double.parseDouble(cols[xCol]);
 						double y = Double.parseDouble(cols[yCol]);
 						double z = Double.parseDouble(cols[zCol]);
@@ -419,7 +419,7 @@ public class AxivityAx3Epochs {
 					System.err.println(".csv line " + lineNumber + " had too few columns :\n" + line);
 				}
 			}
-			
+
  		} catch (Exception excep) {
 			excep.printStackTrace(System.err);
 			System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
@@ -432,15 +432,15 @@ public class AxivityAx3Epochs {
  	 * it will then parse the header and begin processing the activity.bin file.
 	 */
 	private static void readG3TXEpochs(String accFile) {
-		
+
 		ZipFile zip = null;
 		// readers for the 'activity.bin' & 'info.txt' files inside the .zip
 		BufferedReader infoReader = null;
 		InputStream activityReader = null;
-		
+
 		try {
 			zip = new ZipFile( new File(accFile), ZipFile.OPEN_READ);
-			
+
 			if (!isGT3XV1(zip)) {
 				System.err.println("file " + accFile + " is not a V1 g3tx file");
 				System.exit(-2);
@@ -453,7 +453,7 @@ public class AxivityAx3Epochs {
 					activityReader = zip.getInputStream(entry);
 				}
 			}
-			
+
 			// underscored are unused for now
 			double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
 			long _LastSampleTime, firstSampleTime=-1;
@@ -464,7 +464,7 @@ public class AxivityAx3Epochs {
 					String[] tokens=line.split(":");
 					if ((tokens !=null)  && (tokens.length==2)){
 						if (tokens[0].trim().equals("Sample Rate")){
-							sampleFreq=Integer.parseInt(tokens[1].trim());						 
+							sampleFreq=Integer.parseInt(tokens[1].trim());
 						} else if (tokens[0].trim().equals("Last Sample Time"))
 							_LastSampleTime=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
 						else if (tokens[0].trim().equals("Acceleration Scale"))
@@ -480,18 +480,18 @@ public class AxivityAx3Epochs {
 					}
 				}
 			}
-			
+
 			// Set acceleration scale
-			
-			double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's) 
+
+			double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's)
 			double ACCELERATION_SCALE_FACTOR_MOS = 256.0; // == 2048/8?
-			
+
 			if((serialNumber.startsWith("NEO") || (serialNumber.startsWith("CLE")))) {
 				accelerationScale = ACCELERATION_SCALE_FACTOR_NEO_CLE;
 			} else if(serialNumber.startsWith("MOS")){
 				accelerationScale = ACCELERATION_SCALE_FACTOR_MOS;
 			}
-			
+
 			if (sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) {
 				System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
 				System.exit(-2);
@@ -513,30 +513,30 @@ public class AxivityAx3Epochs {
 		finally {
 			try {
 				zip.close();
-				activityReader.close();  
+				activityReader.close();
 				infoReader.close();
 			} catch (Exception ex) {
 				/* ignore */
 			}
 		}
 	}
-	
+
 
 	/**
 	 ** Helper method that converts .NET ticks that Actigraph GT3X uses to millisecond (local)
 	 ** method from: https://github.com/SPADES-PUBLIC/mHealth-GT3X-converter-public/blob/master/src/com/qmedic/data/converter/gt3x/GT3XUtils.java
 	 **/
 	private static long GT3XfromTickToMillisecond(final long ticks)
-	{		
+	{
 		Date date = new Date((ticks - 621355968000000000L) / 10000);
 		return date.getTime();
 	}
-	
+
 	// Convert LocalDateTime to epoch milliseconds (from 1970 epoch)
 	private static long getEpochMillis(LocalDateTime date) {
 		return date.toInstant(ZoneOffset.UTC).toEpochMilli();
 	}
-	
+
 	/**
 	 ** Method to read all the x/y/z data from a GT3X (V1) activity.bin file.
 	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
@@ -544,21 +544,21 @@ public class AxivityAx3Epochs {
 	 ** Each pair of readings occupies an awkward 9 bytes to conserve space, so must be read 2 at a time.
 	 ** The readings should range from -2046 to 2046, covering -6 to 6 G's,
 	 ** thus the maximum accuracy is 0.003 G's. The values -2048, -2047 & 2047 should never appear in the stream.
-	 **/			
+	 **/
 	private static void readG3TXEpochPairs(
 			InputStream activityReader,
 			double sampleDelta,
 			double sampleFreq,
 			double accelerationScale,
 			long firstSampleTime // in milliseconds
-			) {		
-		
+			) {
+
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 											// method (pass by reference using array?)
 		int samples = 0; // num samples collected so far
 
 		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
-		byte[] bytes=new byte[9];	
+		byte[] bytes=new byte[9];
 		int i=0;
 		int twoSampleCounter = 0;
 		int datum;
@@ -569,22 +569,22 @@ public class AxivityAx3Epochs {
 			while (( datum=activityReader.read())!=-1){
 				bytes[i]=(byte)datum;
 				totalBytes++;
-				
+
 
 				if (false && totalBytes%10000==0)
 					System.out.println("Converting sample.... "+(totalBytes/1000)+"K");
-				
+
 				// if we have enough bytes to read two 36 bit data samples
-				if (++i==9){						
+				if (++i==9){
 					twoSamples = readAccelPair(bytes, accelerationScale);
 					twoSampleCounter = 2;
 				}
-								
+
 				// read the two samples from the sample counter
 				while (twoSampleCounter>0) {
 					twoSampleCounter--;
 					i=0;
-										
+
 					long time = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
 					double x = twoSamples[3-twoSampleCounter*3];
 					double y = twoSamples[4-twoSampleCounter*3];
@@ -595,7 +595,7 @@ public class AxivityAx3Epochs {
 					samples += 1;
 
 				}
-			}	
+			}
 		}
 		catch (IOException ex) {
 			System.out.println("End of .g3tx file reached");
@@ -606,17 +606,17 @@ public class AxivityAx3Epochs {
 
 		int datum = 0;
 		datum=(bytes[0]&0xff);datum=datum<<4;datum|=(bytes[1]&0xff)>>>4;
-		short y1=(short)datum;						
+		short y1=(short)datum;
 		if (y1>2047)
 			y1+=61440;
 
 		datum=bytes[1]&0x0F;datum=datum<<8;datum|=(bytes[2]&0xff);
-		short x1=(short)datum;						
+		short x1=(short)datum;
 		if (x1>2047)
 			x1+=61440;
 
 		datum=bytes[3]&0xff;datum=datum<<4;datum|=(bytes[4]&0xff)>>>4;
-		short z1=(short)datum;						
+		short z1=(short)datum;
 		if (z1>2047)
 			z1+=61440;
 
@@ -634,7 +634,7 @@ public class AxivityAx3Epochs {
 		short z2=(short)datum;
 		if (z2>2047)
 			z2+=61440;
-		
+
 		// convert to 'g'
 		double gx1=x1/accelerationScale;
 		double gy1=y1/accelerationScale;
@@ -646,15 +646,15 @@ public class AxivityAx3Epochs {
 
 		return new double[] {gx1, gy1, gz1, gx2, gy2, gz2};
 	}
-	
-	
-	
+
+
+
 	/*
 	 * This method checks if a file is of GT3X format version 1 It returns true
 	 * if the file is of the correct format otherwise it returns false
 	 */
 	private static boolean isGT3XV1(final ZipFile zip) throws IOException {
-		
+
 		// Check if the file contains the necessary Actigraph files
 		boolean hasActivityData = false;
 		boolean hasLuxData = false;
@@ -682,11 +682,10 @@ public class AxivityAx3Epochs {
 	 * if an epoch of data has been collected or not. Finally, write each epoch
 	 * to epochFileWriter. Method also updates and returns epochStartTime. CWA
 	 * format is described at:
-	 * https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-
-	 * CWA-Format.txt
+     * https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
 	**/
 	private static void readCwaEpochs(String accFile) {
-		
+
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 											// method
 		// Inter-block timstamp tracking
@@ -695,7 +694,7 @@ public class AxivityAx3Epochs {
 
 		// data block support variables
 		String header = "";
-		
+
 		// Variables for tracking start offset of header
 		LocalDateTime SESSION_START = null;
 		long START_OFFSET_NANOS = 0;
@@ -848,7 +847,7 @@ public class AxivityAx3Epochs {
 							}
 						}
 						*/
-						
+
 						// raw reading values
 						long value = 0; // x/y/z vals
 						short xRaw = 0;
@@ -869,7 +868,7 @@ public class AxivityAx3Epochs {
 								// so that we don't accumulate any errors
 								blockTime = firstSampleTime.plusNanos((long) (i * (double) spanNanos / sampleCount));
 							} else {
-								
+
 								if (i == 0) {
 									blockTime = firstSampleTime; // emulate original
 																	// behaviour
@@ -877,7 +876,7 @@ public class AxivityAx3Epochs {
 									blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));
 								}
 							}
-							
+
 							if (bytesPerSample == 4) {
 								try {
 									value = getUnsignedInt(buf, 30 + 4 * i);
@@ -936,7 +935,7 @@ public class AxivityAx3Epochs {
 	}
 
 	// Parse HEX values, CWA format is described at:
-	// https://code.google.com/p/openmovement/source/browse/downloads/AX3/AX3-CWA-Format.txt
+    // https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
 	private static LocalDateTime getCwaTimestamp(int cwaTimestamp, int fractional) {
 		LocalDateTime tStamp;
 		int year = (int) ((cwaTimestamp >> 26) & 0x3f) + 2000;
@@ -950,11 +949,11 @@ public class AxivityAx3Epochs {
 		tStamp = tStamp.plusNanos(secs2Nanos(fractional / 65536.0));
 		return tStamp;
 	}
-	
+
 	private static LocalDateTime epochMillisToLocalDateTime(long m) {
 		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000), (int) TimeUnit.MILLISECONDS.toNanos((m % 1000)), ZoneOffset.UTC);
 	}
-	
+
 	private static LocalDateTime cwaHeaderLoggingStartTime(ByteBuffer buf) {
 		long delayedLoggingStartTime = getUnsignedInt(buf, 13);
 		return getCwaTimestamp((int) delayedLoggingStartTime, 0);
@@ -1021,10 +1020,10 @@ public class AxivityAx3Epochs {
 						continue; // to keep reading sequence correct
 					}
 				}
-				
+
 				// now process hex dataBlock
 				dataBlock = readLine(rawAccReader);
-				
+
 
 				// raw reading values
 				int hexPosition = 0;
@@ -1059,8 +1058,8 @@ public class AxivityAx3Epochs {
 					z = (zRaw * 100.0d - mfrOffset[2]) / mfrGain[2];
 
 					epochWriter.newValues(getEpochMillis(blockTime), x, y, z, temperature, errCounter);
-					
-					
+
+
 					hexPosition += 12;
 					blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));
 				}
