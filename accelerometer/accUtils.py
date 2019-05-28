@@ -243,6 +243,8 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
 
     # next read files.csv
     fileList = pd.read_csv(filesCSV)
+    # remove unnamed columns
+    fileList.drop(fileList.columns[fileList.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
 
     # and write commands text
     txtWriter = open(cmdsFile, 'w')
