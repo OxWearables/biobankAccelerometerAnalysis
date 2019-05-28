@@ -6,11 +6,15 @@ from accelerometer import accUtils
 import argparse
 from datetime import datetime, timedelta, time
 import matplotlib.pyplot as plt
-import matplotlib.lines  as mlines 
+import matplotlib.lines  as mlines
 import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 import sys
+
+# http://pandas-docs.github.io/pandas-docs-travis/whatsnew/v0.21.1.html#restore-matplotlib-datetime-converter-registration
+from pandas.plotting import register_matplotlib_converters
+register_matplotlib_converters()
 
 DOHERTY_NatComms_COLOURS = {'sleep':'blue', 'sedentary':'red',
     'tasks-light':'darkorange', 'walking':'lightgreen', 'moderate':'green'}
@@ -36,7 +40,7 @@ def main():
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/doherty2018.tar",
                             help="""trained activity model .tar file""")
-    
+
     # check input is ok
     if len(sys.argv) < 3:
             msg = "\nInvalid input, please enter at least 2 parameters, e.g."
@@ -45,21 +49,21 @@ def main():
             parser.print_help()
             sys.exit(-1)
     args = parser.parse_args()
-    
+
     # and then call plot function
-    plotTimeSeries(args.timeSeriesFile, args.plotFile, 
+    plotTimeSeries(args.timeSeriesFile, args.plotFile,
         activityModel = args.activityModel)
 
 
 
-def plotTimeSeries(tsFile, plotFile, 
+def plotTimeSeries(tsFile, plotFile,
     activityModel = "activityModels/doherty2018.tar"):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
     :param str activityModel: Input tar model file used for activity classification
-    
+
     :return: Writes plot to <plotFile>
     :rtype: void
 
@@ -110,42 +114,42 @@ def plotTimeSeries(tsFile, plotFile,
         for label in labels:
             group[label].values[0] = 0
             group[label].values[-1] = 0
-        
+
         # retrieve time series data for this day
-        timeSeries = convert_date( day, group['time'] ) 
+        timeSeries = convert_date( day, group['time'] )
         # and then plot time series data for this day
         plt.subplot(nrows, 1, i+1)
         plt.plot(timeSeries, group['acc'], c='k')
-        plt.fill(timeSeries, np.multiply(group['imputed'], ymax), 
+        plt.fill(timeSeries, np.multiply(group['imputed'], ymax),
             labels_as_col['imputed'], alpha=0.5)
-        
+
         # change display properties of this subplot
         ax = plt.gca()
         if len(labels)>0:
-            ax.stackplot(timeSeries, [np.multiply(group[l], ymax) for l in labels], 
+            ax.stackplot(timeSeries, [np.multiply(group[l], ymax) for l in labels],
                 colors=[labels_as_col[l] for l in labels], alpha=0.5, edgecolor="none")
         # add date label to left hand side of each day's activity plot
         plt.title(
             day.strftime("%A,\n%d %B"), weight='bold',
-            x=-.2, y=0.5, 
+            x=-.2, y=0.5,
             horizontalalignment='left',
             verticalalignment='center',
             rotation='horizontal',
             transform=ax.transAxes,
             fontsize='medium',
             color='k'
-            ) 
+            )
         # run gridlines for each hour bar
         ax.get_xaxis().grid(True, which='major', color='grey', alpha=0.5)
         ax.get_xaxis().grid(True, which='minor', color='grey', alpha=0.25)
         # set x and y-axes
-        ax.set_xlim((datetime.combine(day,time(0, 0, 0, 0)), 
+        ax.set_xlim((datetime.combine(day,time(0, 0, 0, 0)),
             datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0))))
-        ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)), 
-            end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)), 
+        ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)),
+            end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
             freq='4H'))
-        ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)), 
-            end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)), 
+        ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)),
+            end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
             freq='1H'), minor=True)
         ax.set_ylim((ymin, ymax))
         ax.get_yaxis().set_ticks([]) # hide y-axis lables
@@ -155,26 +159,26 @@ def plotTimeSeries(tsFile, plotFile,
         ax.spines['left'].set_visible(False)
         # set background colour to lightgray
         ax.set_facecolor('#d3d3d3')
-        
+
         # append to list and incrament list counter
         ax_list.append(ax)
         i += 1
-        
+
     # create new subplot to display legend
     plt.subplot(nrows, 1, i+1)
     ax = plt.gca()
     ax.axis('off') # don't display axis information
     # create a 'patch' for each legend entry
-    legend_patches = [mpatches.Patch(color= labels_as_col['imputed'], 
-                                     label='imputed', alpha=0.5), 
+    legend_patches = [mpatches.Patch(color= labels_as_col['imputed'],
+                                     label='imputed', alpha=0.5),
                       mlines.Line2D([],[],color='k',label='acceleration')]
     # create lengend entry for each label
     for label in labels:
         col = labels_as_col[label]
         legend_patches.append(mpatches.Patch(color=col, label=label, alpha=0.5))
-    # create overall legend 
-    plt.legend(handles=legend_patches, bbox_to_anchor=(0., 0., 1., 1.), 
-        loc='center', ncol=min(4,len(legend_patches)), mode="best", 
+    # create overall legend
+    plt.legend(handles=legend_patches, bbox_to_anchor=(0., 0., 1., 1.),
+        loc='center', ncol=min(4,len(legend_patches)), mode="best",
         borderaxespad=0, framealpha=0.6, frameon=True, fancybox=True)
 
     # remove legend border
@@ -188,7 +192,7 @@ def plotTimeSeries(tsFile, plotFile,
     plt.gcf().autofmt_xdate()
     # add hour labels to top of plot
     hours2Display = range(0, 24, 4)
-    hrLabels = [(str(hr) + 'am') if hr<=12 else (str(hr-12) + 'pm') for hr in hours2Display]  
+    hrLabels = [(str(hr) + 'am') if hr<=12 else (str(hr-12) + 'pm') for hr in hours2Display]
     ax_list[0].set_xticklabels(hrLabels)
     ax_list[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
 
