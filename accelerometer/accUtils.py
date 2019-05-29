@@ -54,8 +54,8 @@ def toScreen(msg):
 
 
 
-def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn = False,
-    epochPeriod = 30, activityClassification = None, labels = []):
+def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn=False,
+    epochPeriod=30, activityClassification=None, labels=[]):
     """Write .csv.gz time series file of <e> activity epoch data to <tsFile>
 
     These time-series files describe a participant's accelerometer measured
