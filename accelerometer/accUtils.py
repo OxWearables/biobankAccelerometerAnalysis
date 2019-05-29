@@ -259,13 +259,13 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
                 '--stationaryFolder "{:s}"'.format(stationaryDir)
             ]
 
-            # grab additional arguments provided in filesCSV; cmdCols is '' if nothing found
-            cmdCols = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
+            # grab additional arguments provided in filesCSV; cmdOptionsCSV is '' if nothing found
+            cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
 
             if cmdOptions:
                 cmd.append(cmdOptions)
-            if cmdCols:
-                cmd.append(cmdCols)
+            if cmdOptionsCSV:
+                cmd.append(cmdOptionsCSV)
 
             cmd = ' '.join(cmd)
             txtWriter.write(cmd)
