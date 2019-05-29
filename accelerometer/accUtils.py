@@ -250,7 +250,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     txtWriter = open(cmdsFile, 'w')
     for ix, row in fileList.iterrows():
         txtWriter.write('python3 accProcess.py')
-        txtWriter.write(' ' + row['fileName'])
+        txtWriter.write('"%s"' % row['fileName'])
         for col in fileList.columns[1:]:
             txtWriter.write(' --' + col + ' ' + str(row[col]))
         txtWriter.write(' --summaryFolder ' + summaryDir)
