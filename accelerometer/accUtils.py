@@ -247,20 +247,30 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     fileList.drop(fileList.columns[fileList.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
 
     # and write commands text
-    txtWriter = open(cmdsFile, 'w')
-    for ix, row in fileList.iterrows():
-        txtWriter.write('python3 accProcess.py "%s"' % row['fileName'])
-        for col in fileList.columns[1:]:
-            txtWriter.write(' --' + col + ' ' + str(row[col]))
-        txtWriter.write(' --summaryFolder ' + summaryDir)
-        txtWriter.write(' --epochFolder ' + epochDir)
-        txtWriter.write(' --timeSeriesFolder ' + timeSeriesDir)
-        txtWriter.write(' --nonWearFolder ' + nonWearDir)
-        txtWriter.write(' --stationaryFolder ' + stationaryDir)
-        if cmdOptions is not None:
-            txtWriter.write(' ' + cmdOptions)
-        txtWriter.write('\n')
-    txtWriter.close()
+    with open(cmdsFile, 'w') as txtWriter:
+        for ix, row in fileList.iterrows():
+
+            cmd = [
+                'python3 accProcess.py "{:s}"'.format(str(row['fileName'])),
+                '--summaryFolder "{:s}"'.format(summaryDir),
+                '--epochFolder "{:s}"'.format(epochDir),
+                '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
+                '--nonWearFolder "{:s}"'.format(nonWearDir),
+                '--stationaryFolder "{:s}"'.format(stationaryDir)
+            ]
+
+            # grab additional arguments provided in filesCSV; cmdCols is '' if nothing found
+            cmdCols = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
+
+            if cmdOptions:
+                cmd.append(cmdOptions)
+            if cmdCols:
+                cmd.append(cmdCols)
+
+            cmd = ' '.join(cmd)
+            txtWriter.write(cmd)
+            txtWriter.write('\n')
+
     print('Processing list written to ', cmdsFile)
     print('Suggested dir for log files: ', logsDir)
 
