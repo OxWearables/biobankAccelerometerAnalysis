@@ -1,0 +1,14 @@
+.gitignore
+.vscode
+*.class
+*.pyc
+*.gz
+*.tar
+*.png
+*.jpg
+*.pdf
+*.json
+*.cwa
+*.csv
+*.project
+*.classpath
