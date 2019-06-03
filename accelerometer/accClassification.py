@@ -24,7 +24,7 @@ def activityClassification(epochFile,
     :param str epochFile: Input csv file of processed epoch data
     :param str activityModel: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
-        of METS for each activity state
+        of METs for each activity state
 
     :return: Pandas dataframe of activity epoch data with one-hot encoded labels
     :rtype: pandas.DataFrame
@@ -34,7 +34,9 @@ def activityClassification(epochFile,
     """
     
     X = epochFile
-    featureCols = getListFromTxtFile(getFileFromTar(activityModel, 'featureCols.txt'))
+    featureColsFile = getFileFromTar(activityModel, 'featureCols.txt').getvalue()
+    featureColsList = featureColsFile.decode().split('\n')
+    featureCols = list( filter(None,featureColsList) )
 
     print(X[featureCols].isnull().any(axis=1).sum(), "NaN rows")
     with pd.option_context('mode.use_inf_as_null', True):
@@ -94,7 +96,7 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     :param str trainingFile: Input csv file of training data
     :param str tarArchive: Output tarfile object which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
-        of METS for each activity state
+        of METs for each activity state
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
     :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
@@ -142,15 +144,15 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     rfModel.oob_decision_function_ = None # out of bound errors are no longer needed
 
     # estimate usual METs-per-class
-    mets = []
+    METs = []
     for s in states:
-        met = train[train[labelCol]==s].groupby(atomicLabelCol)[metCol].mean().mean()
-        mets += [met]
+        MET = train[train[labelCol]==s].groupby(atomicLabelCol)[metCol].mean().mean()
+        METs += [MET]
 
     # now write out model (or it's performance on test participants)
     if testParticipants is None:
         saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions, 
-            emissions, mets)
+            emissions, METs)
     else:
         print('test on participant(s):, ', testParticipants)
         labels = rfModel.classes_.tolist()
@@ -333,9 +335,9 @@ def summary(y_true, y_pred):
 
 
 def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions, 
-    emissions, mets, featuresTxt="featureCols.txt", rfModelFile="rfModel.pkl",
+    emissions, METs, featuresTxt="featureCols.txt", rfModelFile="rfModel.pkl",
     hmmPriors="hmmPriors.npy", hmmEmissions="hmmEmissions.npy", 
-    hmmTransitions="hmmTransitions.npy", hmmMETs="METS.npy"):
+    hmmTransitions="hmmTransitions.npy", hmmMETs="METs.npy"):
     """Save random forest and hidden markov models to tarArchive file
 
     Note we must use the same version of python and scikit learn as in the
@@ -349,7 +351,7 @@ def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions,
         from one activity state to another
     :param numpy.array emissions: Input probability matrix of RF prediction 
         being true
-    :param numpy.array mets: Input array of average mets per activity state
+    :param numpy.array METs: Input array of average METs per activity state
     :param str featuresTxt: Intermediate output txt file of features
     :param str rfModelFile: Intermediate output random forest pickle model
     :param str hmmPriors: Intermediate output HMM priors npy
@@ -365,7 +367,7 @@ def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions,
     np.save(hmmPriors, priors)
     np.save(hmmEmissions, emissions)
     np.save(hmmTransitions, transitions)
-    np.save(hmmMETs, mets)
+    np.save(hmmMETs, METs)
     joblib.dump(rfModel, rfModelFile, compress=9)
 
     # create single .tar file...
