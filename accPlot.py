@@ -6,7 +6,7 @@ from accelerometer import accUtils
 import argparse
 from datetime import datetime, timedelta, time
 import matplotlib.pyplot as plt
-import matplotlib.lines  as mlines
+import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
@@ -43,21 +43,21 @@ def main():
 
     # check input is ok
     if len(sys.argv) < 3:
-            msg = "\nInvalid input, please enter at least 2 parameters, e.g."
-            msg += "\npython accPlot.py timeSeries.csv.gz plot.png \n"
-            accUtils.toScreen(msg)
-            parser.print_help()
-            sys.exit(-1)
+        msg = "\nInvalid input, please enter at least 2 parameters, e.g."
+        msg += "\npython accPlot.py timeSeries.csv.gz plot.png \n"
+        accUtils.toScreen(msg)
+        parser.print_help()
+        sys.exit(-1)
     args = parser.parse_args()
 
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
-        activityModel = args.activityModel)
+        activityModel=args.activityModel)
 
 
 
 def plotTimeSeries(tsFile, plotFile,
-    activityModel = "activityModels/doherty2018.tar"):
+    activityModel="activityModels/doherty2018.tar"):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
@@ -111,17 +111,14 @@ def plotTimeSeries(tsFile, plotFile,
         # set start and end to zero to avoid diagonal fill boxes
         group['imputed'].values[0] = 0
         group['imputed'].values[-1] = 0
-        for label in labels:
-            group[label].values[0] = 0
-            group[label].values[-1] = 0
 
         # retrieve time series data for this day
-        timeSeries = convert_date( day, group['time'] )
+        timeSeries = convert_date(day, group['time'])
         # and then plot time series data for this day
         plt.subplot(nrows, 1, i+1)
         plt.plot(timeSeries, group['acc'], c='k')
         plt.fill(timeSeries, np.multiply(group['imputed'], ymax),
-            labels_as_col['imputed'], alpha=0.5)
+            labels_as_col['imputed'], alpha=1.0)
 
         # change display properties of this subplot
         ax = plt.gca()
@@ -138,7 +135,7 @@ def plotTimeSeries(tsFile, plotFile,
             transform=ax.transAxes,
             fontsize='medium',
             color='k'
-            )
+        )
         # run gridlines for each hour bar
         ax.get_xaxis().grid(True, which='major', color='grey', alpha=0.5)
         ax.get_xaxis().grid(True, which='minor', color='grey', alpha=0.25)
@@ -169,8 +166,8 @@ def plotTimeSeries(tsFile, plotFile,
     ax = plt.gca()
     ax.axis('off') # don't display axis information
     # create a 'patch' for each legend entry
-    legend_patches = [mpatches.Patch(color= labels_as_col['imputed'],
-                                     label='imputed', alpha=0.5),
+    legend_patches = [mpatches.Patch(color=labels_as_col['imputed'],
+                                     label='imputed', alpha=1.0),
                       mlines.Line2D([],[],color='k',label='acceleration')]
     # create lengend entry for each label
     for label in labels:
@@ -198,7 +195,6 @@ def plotTimeSeries(tsFile, plotFile,
 
     plt.savefig(plotFile, dpi=200, bbox_inches='tight')
     print('Plot file written to:', plotFile)
-
 
 
 if __name__ == '__main__':
