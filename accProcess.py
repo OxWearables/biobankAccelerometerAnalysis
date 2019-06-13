@@ -27,23 +27,23 @@ def main():
                             If the file path contains spaces,it must be enclosed
                             in quote marks (e.g. \"../My Documents/sample.cwa\")
                             """)
-    
+
     #optional inputs
     parser.add_argument('--startTime',
-                            metavar='e.g. 1991-01-01T23:59', default=None, 
-                            type=str2date, help="""removes data before this 
+                            metavar='e.g. 1991-01-01T23:59', default=None,
+                            type=str2date, help="""removes data before this
                             time in the final analysis
                             (default : %(default)s)""")
     parser.add_argument('--endTime',
-                            metavar='e.g 1991-01-01T23:59', default=None, 
-                            type=str2date, help="""removes data after this 
+                            metavar='e.g 1991-01-01T23:59', default=None,
+                            type=str2date, help="""removes data after this
                             time in the final analysis
                             (default : %(default)s)""")
     parser.add_argument('--timeSeriesDateColumn',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""adds a date/time column to the timeSeries 
-                            file, so acceleration and imputation values can be 
-                            compared easily. This increases output filesize 
+                            help="""adds a date/time column to the timeSeries
+                            file, so acceleration and imputation values can be
+                            compared easily. This increases output filesize
                             (default : %(default)s)""")
     parser.add_argument('--processRawFile',
                             metavar='True/False', default=True, type=str2bool,
@@ -60,7 +60,7 @@ def main():
                              : %(default)ss, must be an integer)""")
     parser.add_argument('--useAbs',
                             metavar='useAbs', default=False, type=str2bool,
-                            help="""use abs(VM) instead of trunc(VM) 
+                            help="""use abs(VM) instead of trunc(VM)
                             (default : %(default)s)""")
     parser.add_argument('--skipFiltering',
                             metavar='True/False', default=False, type=str2bool,
@@ -120,7 +120,7 @@ def main():
     # activity classification arguments
     parser.add_argument('--activityClassification',
                             metavar='True/False', default=True, type=str2bool,
-                            help="""Use pre-trained random forest to predict 
+                            help="""Use pre-trained random forest to predict
                             activity type
                             (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
@@ -128,11 +128,11 @@ def main():
                             help="""trained activity model .tar file""")
     parser.add_argument('--rawOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output raw data to a .csv.gz file? NOTE: 
+                            help="""output raw data to a .csv.gz file? NOTE:
                             requires ~70MB per day. (default : %(default)s)""")
     parser.add_argument('--fftOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output FFT epochs to a .csv file? NOTE: 
+                            help="""output FFT epochs to a .csv file? NOTE:
                             requires ~0.1GB per day. (default : %(default)s)""")
     # optional outputs
     parser.add_argument('--outputFolder', metavar='filename',default="",
@@ -141,7 +141,7 @@ def main():
     parser.add_argument('--summaryFolder', metavar='filename',default="",
                         help="folder for -summary.json summary stats")
     parser.add_argument('--epochFolder', metavar='filename', default="",
-                            help="""folder -epoch.csv.gz - must be an existing 
+                            help="""folder -epoch.csv.gz - must be an existing
                             file if "-processRawFile" is set to False""")
     parser.add_argument('--timeSeriesFolder', metavar='filename', default="",
                             help="folder for -timeSeries.csv.gz file")
@@ -157,22 +157,22 @@ def main():
                             %(default)s)""")
     parser.add_argument('--deleteIntermediateFiles',
                             metavar='True/False', default=True, type=str2bool,
-                            help="""True will remove extra "helper" files created 
+                            help="""True will remove extra "helper" files created
                                     by the program (default : %(default)s)""")
     parser.add_argument('--intensityDistribution',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
                              (default : %(default)s)""")
-    
+
     #
     # check that enough command line arguments are entered
     #
     if len(sys.argv) < 2:
-            msg = "\nInvalid input, please enter at least 1 parameter, e.g."
-            msg += "\npython ActivitySummary.py inputFile.CWA \n"
-            accUtils.toScreen(msg)
-            parser.print_help()
-            sys.exit(-1)
+        msg = "\nInvalid input, please enter at least 1 parameter, e.g."
+        msg += "\npython ActivitySummary.py inputFile.CWA \n"
+        accUtils.toScreen(msg)
+        parser.print_help()
+        sys.exit(-1)
     processingStartTime = datetime.datetime.now()
     args = parser.parse_args()
 
@@ -250,11 +250,11 @@ def main():
             zSlope = args.calSlope[2], xTemp = args.calTemp[0],
             yTemp = args.calTemp[1], zTemp = args.calTemp[2],
             meanTemp = args.meanTemp, rawDataParser = args.rawDataParser,
-            javaHeapSpace = args.javaHeapSpace, skipFiltering = args.skipFiltering, 
-            sampleRate= args.sampleRate, epochPeriod = args.epochPeriod, 
+            javaHeapSpace = args.javaHeapSpace, skipFiltering = args.skipFiltering,
+            sampleRate= args.sampleRate, epochPeriod = args.epochPeriod,
             useAbs = args.useAbs, activityClassification = args.activityClassification,
             rawOutput = args.rawOutput, rawOutputFile = args.rawOutputFile,
-            fftOutput = args.fftOutput, startTime = args.startTime, 
+            fftOutput = args.fftOutput, startTime = args.startTime,
             endTime = args.endTime, verbose = args.verbose)
     else:
         summary['file-name'] = args.epochFile
@@ -271,7 +271,7 @@ def main():
 
     # generate time series file (note: this will also resample to epochData so do this last)
     accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
-        epochPeriod = args.epochPeriod, 
+        epochPeriod = args.epochPeriod,
         timeSeriesDateColumn = args.timeSeriesDateColumn,
         activityClassification = args.activityClassification, labels = labels)
 
@@ -281,7 +281,7 @@ def main():
             'nonWearTime-overall(days)', 'quality-goodWearTime']
     summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
     accelerometer.accUtils.toScreen(json.dumps(summaryDict, indent=4))
-    
+
     # write detailed output to file
     f = open(args.summaryFile,'w')
     json.dump(summary, f, indent=4)
@@ -303,7 +303,7 @@ def main():
     processingTime = (processingEndTime - processingStartTime).total_seconds()
     accelerometer.accUtils.toScreen("in total, processing took " + \
         str(processingTime) +  " seconds")
-    
+
 
 
 def str2bool(v):
