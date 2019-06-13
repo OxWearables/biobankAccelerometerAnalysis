@@ -309,7 +309,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
     file.close()
     # store output to summary dictionary
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
-        bestTemp, meanTemp, initError, bestError, Min, xMax, yMin, yMax, zMin,
+        bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
         zMax, nStatic)
 
 
