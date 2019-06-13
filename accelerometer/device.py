@@ -10,13 +10,13 @@ from subprocess import call
 import sys
 
 
-def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary, 
-    skipCalibration = False, stationaryStd = 13, xIntercept = 0.0, 
-    yIntercept = 0.0, zIntercept = 0.0, xSlope = 0.0, ySlope = 0.0, 
+def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
+    skipCalibration = False, stationaryStd = 13, xIntercept = 0.0,
+    yIntercept = 0.0, zIntercept = 0.0, xSlope = 0.0, ySlope = 0.0,
     zSlope = 0.0, xTemp = 0.0, yTemp = 0.0, zTemp = 0.0, meanTemp = 20.0,
     rawDataParser = "AxivityAx3Epochs", javaHeapSpace = None,
     skipFiltering = False, sampleRate= 100, epochPeriod = 30,
-    useAbs = False, activityClassification = True, 
+    useAbs = False, activityClassification = True,
     rawOutput = False, rawOutputFile = None, fftOutput = False,
     startTime = None, endTime = None,
     verbose = False):
@@ -25,9 +25,9 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     This is usually achieved by
         1) identify 10sec stationary epochs
         2) record calibrated axes scale/offset/temp vals + static point stats
-        3) use calibration coefficients and then write filtered avgVm epochs 
+        3) use calibration coefficients and then write filtered avgVm epochs
         to <epochFile> from <rawFile>
-        
+
     :param str rawFile: Input <cwa/bin/gt3x> raw accelerometer file
     :param str epochFile: Output csv.gz file of processed epoch data
     :param str stationaryFile: Output/temporary file for calibration
@@ -44,22 +44,22 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     :param float yTemp: Calbiration temperature coefficient y
     :param float zTemp: Calbiration temperature coefficient z
     :param float meanTemp: Calibration mean temperature in file
-    :param str rawDataParser: External helper process to read raw acc file. If a 
+    :param str rawDataParser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
-    :param str javaHeapSpace: Amount of heap space allocated to java subprocesses. 
+    :param str javaHeapSpace: Amount of heap space allocated to java subprocesses.
         Useful for limiting RAM usage.
     :param bool skipFiltering: Skip filtering stage
     :param int sampleRate: Resample data to n Hz
     :param int epochPeriod: Size of epoch time window (in seconds)
-    :param bool useAbs: Use abs(VM) instead of trunc(VM) 
+    :param bool useAbs: Use abs(VM) instead of trunc(VM)
     :param bool activityClassification: Extract features for machine learning
     :param bool rawOutput: Output raw data to a .csv.gz file? requires ~70MB/day.
     :param str rawOutputFile: Output raw data ".csv.gz" filename
     :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~0.1GB/day.
     :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis 
+    :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
-    
+
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
 
@@ -68,7 +68,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     >>> summary = {}
     >>> device.processRawFileToEpoch('rawFile.cwa', 'epochFile.csv.gz',
             'stationary.csv.gz', summary)
-    <epoch file written to "epochFile.csv.gz", and calibration points to 
+    <epoch file written to "epochFile.csv.gz", and calibration points to
         'stationary.csv.gz'>
     """
 
@@ -115,7 +115,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
                     xSlope, ySlope, zSlope, xTemp, yTemp, zTemp, meanTemp)
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
-            
+
         # calculate and write filtered avgVm epochs from raw file
         commandArgs = ["java", "-classpath", javaClassPath,
             "-XX:ParallelGCThreads=1", rawDataParser, rawFile,
@@ -146,7 +146,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             "useAbs:" + str(useAbs)]
         accUtils.toScreen('epoch generation')
         if javaHeapSpace:
-                commandArgs.insert(1, javaHeapSpace)
+            commandArgs.insert(1, javaHeapSpace)
         if startTime:
             commandArgs.append("startTime:" + startTime.strftime("%Y-%m-%dT%H:%M"))
         if endTime:
@@ -183,7 +183,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
         call(commandArgs)
         getOmconvertInfo(stationaryFile, summary)
 
-    
+
 
 def getCalibrationCoefs(staticBoutsFile, summary):
     """Identify calibration coefficients from java processed file
@@ -269,7 +269,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
         bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
         zMax, len(axesVals))
-    
+
 
 
 def getOmconvertInfo(omconvertInfoFile, summary):
@@ -406,7 +406,7 @@ def getDeviceId(rawFile):
     First decides which DeviceId parsing method to use for <rawFile>.
 
     :param str rawFile: Input raw accelerometer file
-    
+
     :return: Device ID
     :rtype: int
     """
@@ -418,7 +418,7 @@ def getDeviceId(rawFile):
     elif rawFile.lower().endswith('.gt3x'):
         return getGT3XDeviceId(rawFile)
     elif rawFile.lower().endswith('.csv'):
-        return "unknown (.csv)"    
+        return "unknown (.csv)"
     else:
         print("ERROR: cannot get deviceId for file: " + rawFile )
 
@@ -430,7 +430,7 @@ def getAxivityDeviceId(cwaFile):
     Parses the unique serial code from the header of an Axivity accelerometer file
 
     :param str cwaFile: Input raw .cwa accelerometer file
-    
+
     :return: Device ID
     :rtype: int
     """
@@ -444,7 +444,7 @@ def getAxivityDeviceId(cwaFile):
     else:
         print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
         print("""A deviceId value could not be found in input file header,
-         this usually occurs when the file is not an Axivity .cwa accelerometer 
+         this usually occurs when the file is not an Axivity .cwa accelerometer
          file. Exiting...""")
         sys.exit(-8)
     f.close()
@@ -458,12 +458,12 @@ def getGeneaDeviceId(binFile):
     Parses the unique serial code from the header of a GENEActiv accelerometer file
 
     :param str binFile: Input raw .bin accelerometer file
-    
+
     :return: Device ID
     :rtype: int
     """
 
-    f = open(binFile, 'rU') # 'Universal' newline mode 
+    f = open(binFile, 'rU') # 'Universal' newline mode
     next(f) # Device Identity
     deviceId = next(f).split(':')[1].rstrip() # Device Unique Serial Code:011710
     f.close()
@@ -477,7 +477,7 @@ def getGT3XDeviceId(cwaFile):
     Parses the unique serial code from the header of a GT3X accelerometer file
 
     :param str cwaFile: Input raw .gt3x accelerometer file
-    
+
     :return: Device ID
     :rtype: int
     """
@@ -502,6 +502,6 @@ def getGT3XDeviceId(cwaFile):
 
     print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
     print("""A deviceId value could not be found in input file header,
-     this usually occurs when the file is not an Actigraph .gt3x accelerometer 
+     this usually occurs when the file is not an Actigraph .gt3x accelerometer
      file. Exiting...""")
     sys.exit(-8)
