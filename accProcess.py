@@ -131,6 +131,9 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""output raw data to a .csv.gz file? NOTE:
                             requires ~70MB per day. (default : %(default)s)""")
+    parser.add_argument('--npyOutput',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""output raw data to as .npy file?""")
     parser.add_argument('--fftOutput',
                             metavar='True/False', default=False, type=str2bool,
                             help="""output FFT epochs to a .csv file? NOTE:
@@ -219,6 +222,7 @@ def main():
     args.stationaryFile = args.stationaryFolder + rawFileName + "-stationaryPoints.csv"
     args.tsFile = args.timeSeriesFolder + rawFileName + "-timeSeries.csv.gz"
     args.rawOutputFile = args.rawFolder + rawFileName + ".csv.gz"
+    args.npyOutputFile = args.rawFolder + rawFileName + ".npy"
 
     # check user specified end time is not before start time
     if args.startTime and args.endTime:
@@ -255,6 +259,7 @@ def main():
             sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
             useAbs=args.useAbs, activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawOutputFile=args.rawOutputFile,
+            npyOutput=args.npyOutput, npyOutputFile=args.npyOutputFile,
             fftOutput=args.fftOutput, startTime=args.startTime,
             endTime=args.endTime, verbose=args.verbose)
     else:

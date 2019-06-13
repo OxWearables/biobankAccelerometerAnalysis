@@ -66,6 +66,7 @@ public class AxivityAx3Epochs {
 		String accFile = ""; // file to process
 		String outputFile = ""; // file name for epoch file
 		String rawOutputFile = ""; // file name for epoch file
+		String npyOutputFile = ""; // file name for epoch file
 		Boolean rawOutput = false; // whether to output raw data
 		Boolean fftOutput = false; // whether to output fft data
 		Boolean npyOutput = false; // whether to output fft data
@@ -193,7 +194,9 @@ public class AxivityAx3Epochs {
 				} else if (funcName.equals("fftOutput")) {
 					fftOutput = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("npyOutput")) {
-					npyOutput = Boolean.parseBoolean(funcParam.toLowerCase());
+                    npyOutput = Boolean.parseBoolean(funcParam.toLowerCase());
+                } else if (funcName.equals("npyOutputFile")) {
+					npyOutputFile = funcParam;
 				} else if (funcName.equals("useAbs")) {
 					useAbs = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("startTime")) {
@@ -283,7 +286,11 @@ public class AxivityAx3Epochs {
 				fftWriter = new BufferedWriter(new FileWriter(fftFile));
 			}
 			if (npyOutput) {
-				npyWriter = new NpyWriter(outputFile);
+				if (npyOutputFile.trim().length() == 0) {
+					npyOutputFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate raw output filename
+						? outputFile.substring(0, outputFile.length() - ".csv.gz".length()) : outputFile) + "_raw.npy";
+                }
+                npyWriter = new NpyWriter(npyOutputFile);
 			}
 			epochWriter = new EpochWriter(
 					  epochFileWriter,

@@ -8,33 +8,34 @@ import java.util.ArrayList;
 
 
 public class NpyWriter {
-	
+
 	private RandomAccessFile file;
 	private int linesWritten = 0;
-	
+
 	private final static byte[] NPY_HEADER;
 	static {
 		byte[] hdr = "XNUMPY".getBytes(StandardCharsets.US_ASCII);
 		hdr[0] = (byte) 0x93;
 		NPY_HEADER = hdr;
 	}
-	
+
 	private final static byte NPY_MAJ_VERSION = 1;
 	private final static byte NPY_MIN_VERSION = 0;
 	private final static int BLOCK_SIZE = 16;
 	private final static int HEADER_SIZE = BLOCK_SIZE * 16;
-	
+
 	// buffer file output so it's faster
 	private int bufferLength = 1000; // number of lines to buffer
-	private int bytesPerLine = (Long.BYTES + Short.BYTES * 4);
+	// private int bytesPerLine = (Long.BYTES + Short.BYTES * 4);
+	private int bytesPerLine = (Long.BYTES + Double.BYTES * 4);
 //	private int bufferPosition = 0;
 	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
 	private char numpyByteOrder = nativeByteOrder==ByteOrder.BIG_ENDIAN ? '>' : '<';
 	private ByteBuffer lineBuffer = ByteBuffer.allocate(bufferLength * bytesPerLine).order(nativeByteOrder);
 	// column names and types (must remain the same after initialization)
-	private ArrayList<Class> itemTypes = new ArrayList<Class>(); 
+	private ArrayList<Class> itemTypes = new ArrayList<Class>();
 	private ArrayList<String> itemNames= new ArrayList<String>();
-	
+
 	/**
 	 * Opens a .npy file for writing (contents are erased) and initializes a dummy header.
 	 * @param outputFile filename for the .npy file
@@ -43,31 +44,40 @@ public class NpyWriter {
 		try {
 			file = new RandomAccessFile(new File(outputFile), "rw");
 			file.setLength(0); // clear file
-			
+
 			// generate dummy header (maybe just use real header?)
 			int hdrLen = NPY_HEADER.length + 3; // +3 for three extra bytes due to NPY_(MIN/MAX)_VERSION and \n
 			String filler = new String(new char[HEADER_SIZE + hdrLen]).replace("\0", " ") +"\n";
 			file.writeBytes(filler);
 			itemTypes.add(Long.class); itemNames.add("time");
-			itemTypes.add(Short.class);itemNames.add("x");
-			itemTypes.add(Short.class);itemNames.add("y");
-			itemTypes.add(Short.class);itemNames.add("z");
-			itemTypes.add(Short.class);itemNames.add("temperature");
+			// itemTypes.add(Short.class);itemNames.add("x");
+			// itemTypes.add(Short.class);itemNames.add("y");
+			// itemTypes.add(Short.class);itemNames.add("z");
+			// itemTypes.add(Short.class);itemNames.add("temperature");
+			itemTypes.add(Double.class);itemNames.add("x");
+			itemTypes.add(Double.class);itemNames.add("y");
+			itemTypes.add(Double.class);itemNames.add("z");
+			itemTypes.add(Double.class);itemNames.add("temperature");
 			System.out.println(itemNames.toString());
 			System.out.println(itemTypes.toString());
 			System.out.println("order = "+ lineBuffer.order().toString());
 			System.out.println("numpy order = "+ numpyByteOrder);
-			
+
 		} catch (IOException e) {
 			throw new RuntimeException("The .npy file " + outputFile +" could not be created");
 		}
 	}
-	public void writeData(long time, short x, short y, short z, short temperature) throws IOException {
+	// public void writeData(long time, short x, short y, short z, short temperature) throws IOException {
+	public void writeData(long time, Double x, Double y, Double z, Double temperature) throws IOException {
 		lineBuffer.putLong(time);
-		lineBuffer.putShort(x);
-		lineBuffer.putShort(y);
-		lineBuffer.putShort(z);
-		lineBuffer.putShort(temperature);
+		// lineBuffer.putShort(x);
+		// lineBuffer.putShort(y);
+		// lineBuffer.putShort(z);
+		// lineBuffer.putShort(temperature);
+		lineBuffer.putDouble(x);
+		lineBuffer.putDouble(y);
+		lineBuffer.putDouble(z);
+		lineBuffer.putDouble(temperature);
 		if (!lineBuffer.hasRemaining()) {
 			file.write(lineBuffer.array());
 			lineBuffer.clear();
@@ -85,21 +95,21 @@ public class NpyWriter {
 		try {
 
 			file.seek(0);
-		
+
 			file.write(NPY_HEADER);
 			file.write(NPY_MAJ_VERSION);
 			file.write(NPY_MIN_VERSION);
-			
+
 			// Describes the data to be written. Padded with space characters to be an even
 			// multiple of the block size. Terminated with a newline. Prefixed with a header length.
 			String dataHeader = "{ 'descr': [";
-			
+
 			// Now add to the description our predefined itemNames and itemTypes
 			for (int i=0; i < itemNames.size(); i++) {
 				dataHeader += "('"+ itemNames.get(i)+"','"+ toDataTypeStr (itemTypes.get(i)) + "')";
 				if (i+1!=itemNames.size()) dataHeader+=",";
 			}
-			
+
 			dataHeader	+= "]"
 						+ ", 'fortran_order': False"
 						+ ", 'shape': (" + linesWritten + ",), "
@@ -111,26 +121,26 @@ public class NpyWriter {
 				// Increase HEADER_SIZE if this happens
 			}
 			String filler = new String(new char[HEADER_SIZE - hdrLen]).replace("\0", " ");
-			
+
 			dataHeader = dataHeader + filler + '\n';
 
 			writeLEShort (file, (short) HEADER_SIZE);
-			
-			
+
+
 			file.writeBytes(dataHeader);
 			file.seek(file.length());
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException("The .npy file could not write a header created");
 		}
 	}
-	
+
 	/**
 	 * Writes a little-endian short to the given output stream
 	 * @param out the stream
 	 * @param value the short value
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	private void writeLEShort (RandomAccessFile out, short value) throws IOException
 	{
@@ -140,25 +150,24 @@ public class NpyWriter {
 
 		out.writeShort( value );
 
-	}	
+	}
 	/**
 	 * Writes a little-endian int to the given output stream
 	 * @param out the stream
 	 * @param value the short value
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public static void writeLEInt(RandomAccessFile out, int value) throws IOException
-	{		
+	{
 		System.out.println("writing:" + value);
 		out.writeByte(value & 0x00FF);
 		out.writeByte((value >> 8) & 0x00FF);
 		out.writeByte((value >> 16) & 0x00FF);
-		out.writeByte((value >> 24) & 0x00FF); 
+		out.writeByte((value >> 24) & 0x00FF);
 	}
-	
+
 	/**
-	 * Converts a Java class to a python datatype String. Currently only Integer
-	 * and Short are supported.
+	 * Converts a Java class to a python datatype String
 	 */
 	private String toDataTypeStr(Class<?> datatype)
 	{
@@ -168,12 +177,14 @@ public class NpyWriter {
 			return numpyByteOrder+"i2";
 		else if (datatype == Long.class || datatype == Long.TYPE)
 			return numpyByteOrder+"i8";
-		else if (datatype == Float.class || datatype == Float.TYPE || datatype == Double.class || datatype == Double.TYPE)
-			return numpyByteOrder+"f8";
+		else if (datatype == Float.class || datatype == Float.TYPE)
+            return numpyByteOrder+"f4";
+        else if (datatype == Double.class || datatype == Double.TYPE)
+            return numpyByteOrder+"f8";
 		else
 			throw new IllegalArgumentException("Don't know the corresponding Python datatype for " + datatype.getSimpleName());
 	}
-	
+
 	public void close() {
 		this.writeHeader(); // ensure header is correct length
 
@@ -184,7 +195,7 @@ public class NpyWriter {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		try {
 			this.file.close();
 		} catch (IOException e) {

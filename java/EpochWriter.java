@@ -4,7 +4,9 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +17,7 @@ import java.util.Locale;
 import org.jtransforms.fft.DoubleFFT_1D;
 
 public class EpochWriter {
-	
+
 	private static final DecimalFormatSymbols decimalFormatSymbol = new DecimalFormatSymbols(Locale.ENGLISH);
 	private static DecimalFormat DF8 = new DecimalFormat("0.00000000", decimalFormatSymbol);
 	private static DecimalFormat DF6 = new DecimalFormat("0.000000", decimalFormatSymbol);
@@ -23,21 +25,21 @@ public class EpochWriter {
 	private static DecimalFormat DF2 = new DecimalFormat("0.00", decimalFormatSymbol);
 	private final long UNUSED_DATE = -1;
 
-	
+
 	// Storage variables setup:
 	// store x/y/z values to pass into epochWriter
-	private List<Long> timeVals = new ArrayList<Long>(); // offset into the epoch in milliseconds 
+	private List<Long> timeVals = new ArrayList<Long>(); // offset into the epoch in milliseconds
 	private List<Double> xVals = new ArrayList<Double>();
 	private List<Double> yVals = new ArrayList<Double>();
 	private List<Double> zVals = new ArrayList<Double>();
 	private List<Double> temperatureVals = new ArrayList<Double>();
 	private final int minSamplesForEpoch = 10;
-	
+
 	private long prevTimeVal = -1;
 	private double[] prevXYZT = { -1, -1, -1, -1 }; // x, y, z, and temp at prevTimeVal
 	private boolean edgeInterpolation = true;
-	
-	// parameters to be initialised 
+
+	// parameters to be initialised
 	private long epochStartTime = UNUSED_DATE; // start point of current epoch (in milliseconds from 1970 epoch)
 	private int epochPeriod; // duration of epoch (seconds)
 	private DateTimeFormatter timeFormat;
@@ -63,19 +65,19 @@ public class EpochWriter {
 	private boolean getEachAxis;
 	private int numEachAxis;
 
-	
+
 	// file read/write objects
 	private BufferedWriter epochFileWriter;
 	private BufferedWriter rawWriter; // raw and fft are null if not used
-	private BufferedWriter fftWriter; // otherwise will be created (using epochFile 
-	private NpyWriter npyWriter; 
-	
+	private BufferedWriter fftWriter; // otherwise will be created (using epochFile
+	private NpyWriter npyWriter;
 
-	
+
+
 	// have we added the header to the FFT file? (so can generate one based on number of samples)
-	private Boolean fftWriterHasHeader = false; 
+	private Boolean fftWriterHasHeader = false;
 
-	
+
 	public EpochWriter(
 		      BufferedWriter epochFileWriter,
 		      BufferedWriter rawWriter,
@@ -129,13 +131,13 @@ public class EpochWriter {
 		this.getEachAxis = getEachAxis;
 		this.numEachAxis = numEachAxis;
 		this.useAbs = useAbs;
-		
-		/* edge interpolation is only useful for resampling. The San Diego features 
+
+		/* edge interpolation is only useful for resampling. The San Diego features
 		   do not use resampling so this results in a different number of samples for
 		   the first epoch which will result in slightly different FFT output.
 		*/
 //		if (this.getSanDiegoFeatures) this.edgeInterpolation = false;
-		
+
 		// NaN's and infinity normally display as non-ASCII characters
 		decimalFormatSymbol.setNaN("NaN");
 		decimalFormatSymbol.setInfinity("inf");
@@ -143,22 +145,22 @@ public class EpochWriter {
 		DF6.setDecimalFormatSymbols(decimalFormatSymbol);
 		DF3.setDecimalFormatSymbols(decimalFormatSymbol);
 		DF2.setDecimalFormatSymbols(decimalFormatSymbol);
-		
+
 		DF8.setRoundingMode(RoundingMode.HALF_UP);
 		DF6.setRoundingMode(RoundingMode.CEILING);
 		DF3.setRoundingMode(RoundingMode.HALF_UP); // To match the mHealth Gt3x implementation
 		DF2.setRoundingMode(RoundingMode.CEILING);
-		
+
 //    	System.out.println(DF6.format(Double.NEGATIVE_INFINITY));
 //    	System.out.println(DF6.format(Double.NaN));
 //    	System.out.println(DF6.format(Double.POSITIVE_INFINITY));
-		
+
     	/*// testing the new method:
     	double[] inputArray = new double[9];
     	Arrays.setAll(inputArray, p -> (double) p);
     	System.out.println(Arrays.toString(inputArray));
     	double [] percentiles = new double[] {-0.01, 0.0, 0.01,0.011, 0.25, 0.5, 0.75,0.965, 0.99, 1.0, 1.01};
-    	
+
     	System.out.println(Arrays.toString(percentiles(inputArray, percentiles)));
     	// [0.0, 0.0, 1.0, 1.0999999999999996, 25.0, 50.0, 75.0, 96.5, 99.0, 99.0, 99.0]
     	System.out.println(Arrays.toString(percentiles));
@@ -200,42 +202,42 @@ public class EpochWriter {
 			}
     	}
 		writeLine(epochFileWriter, epochHeader);
-    	
+
 		if (rawWriter!=null)
 			writeLine(rawWriter, "time,x,y,z,temperature");
 
-    	
+
 	}
-	
+
 	// Method which accepts raw values and writes them to an epoch (when enough values collected)
 	// Returns true to continue processing, or false if endTime has been reached
-	public boolean newValues( 
+	public boolean newValues(
 			long time /* milliseconds since start of 1970 epoch */,
 			double x, double y, double z, double temperature,
 			int[] errCounter) {
-		
-		// writes raw data to a .npy file instead of an Epoch.csv file if this variable is set
-		if (npyWriter!=null) {
-			try {
-				if (!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z) && !Double.isNaN(temperature)) {
-					// data is scaled to fit +/- 8g's, must be unscaled after reading
-					npyWriter.writeData(time, (short) (x *8192), (short) (y*8192), (short) (z*8192), (short) (temperature * 1024));
-				} else {
-					System.out.println("NaN at " + millisToTimestamp(time).format(timeFormat)+","+x+","+y+","+z+","+temperature );
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return true; // set to false to generate epoch.csv file as well
-		}
-		
+
+		// // writes raw data to a .npy file instead of an Epoch.csv file if this variable is set
+		// if (npyWriter!=null) {
+		// 	try {
+		// 		if (!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z) && !Double.isNaN(temperature)) {
+		// 			// data is scaled to fit +/- 8g's, must be unscaled after reading
+		// 			npyWriter.writeData(time, (short) (x *8192), (short) (y*8192), (short) (z*8192), (short) (temperature * 1024));
+		// 		} else {
+		// 			System.out.println("NaN at " + millisToTimestamp(time).format(timeFormat)+","+x+","+y+","+z+","+temperature );
+		// 		}
+		// 	} catch (IOException e) {
+		// 		// TODO Auto-generated catch block
+		// 		e.printStackTrace();
+		// 	}
+		// 	return true; // set to false to generate epoch.csv file as well
+		// }
+
 
 		if (startTime!=UNUSED_DATE && time<startTime) {
 			return true;
 		}
-		
-		
+
+
 		if (epochStartTime==UNUSED_DATE) { // if first good value start new epoch
 			if (startTime==UNUSED_DATE) {
 				epochStartTime = time;
@@ -248,11 +250,11 @@ public class EpochWriter {
 					numSkipped++;
 				}
 				System.out.println("first epochtime set to startTime" + (numSkipped>0 ? " + " + numSkipped + " epochs" : "") + " at " +  millisToTimestamp(epochStartTime).format(timeFormat));
-			}	
+			}
 		}
-		
+
 		//System.out.println("reading: " + millisToTimestamp(time).format(timeFormat) + " samples:" + xVals.size());
-		
+
 		if (time<prevTimeVal && prevTimeVal != UNUSED_DATE) {
 			//System.err.println("samples not in cronological order: " + time + " is before previous sample: "
 			//					+ prevTimeVal + " at epoch" + millisToTimestamp(epochStartTime).format(timeFormat));
@@ -262,16 +264,16 @@ public class EpochWriter {
 		}
 		// check for large discontinuities in time intervals
 		if (time-prevTimeVal >= epochPeriod * 2 * 1000 && prevTimeVal != UNUSED_DATE) {
-			System.err.println("interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch " 
+			System.err.println("interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch "
 								+ millisToTimestamp(epochStartTime).format(timeFormat) + " \nfrom:\n" +
-								millisToTimestamp(prevTimeVal).format(timeFormat) + "\nto\n" + 
+								millisToTimestamp(prevTimeVal).format(timeFormat) + "\nto\n" +
 								millisToTimestamp(time).format(timeFormat));
 			// log that an error occurred, and write epoch with previous values
 			errCounter[0] += 1;
 			if (timeVals.size()>minSamplesForEpoch) {
 				writeEpochSummary(millisToTimestamp(epochStartTime), timeVals, xVals, yVals, zVals, temperatureVals, errCounter);
 			} else {
-				System.err.println("not enough samples for an epoch.. discarding "+timeVals.size()+" samples"); 
+				System.err.println("not enough samples for an epoch.. discarding "+timeVals.size()+" samples");
 				timeVals.clear();
 				xVals.clear();
 				yVals.clear();
@@ -284,8 +286,8 @@ public class EpochWriter {
 				epochStartTime += epochPeriod * 1000;
 			}
 
-		}
-		
+        }
+
 		// check to see if we have collected enough values to form an epoch
 		if (time-epochStartTime >= epochPeriod * 1000 && xVals.size() > minSamplesForEpoch) {
 			if (edgeInterpolation) {
@@ -297,7 +299,7 @@ public class EpochWriter {
 				temperatureVals.add(temperature);
 			}
 			writeEpochSummary(millisToTimestamp(epochStartTime), timeVals, xVals, yVals, zVals, temperatureVals, errCounter);
-			
+
 			epochStartTime = epochStartTime + epochPeriod * 1000;
 
 			if (edgeInterpolation) {
@@ -331,7 +333,7 @@ public class EpochWriter {
 		prevXYZT = new double[]{x, y, z, temperature};
 		return true;
 	}
-	
+
 	/**
 	 * Method used by all different file-types, to write a single line to the epochWriter.
 	 * The method:
@@ -342,10 +344,10 @@ public class EpochWriter {
 	 *  -writes the fft output data to the global fftWriter (unless null)
 	 *  [the above does not apply if getSanDiegoFeatures is enabled]
 	 */
-	private void writeEpochSummary(LocalDateTime epochStartTime, 
+	private void writeEpochSummary(LocalDateTime epochStartTime,
 			List<Long> timeVals /* milliseconds since start of epochStartTime */,
 			List<Double> xVals, List<Double> yVals, List<Double> zVals, List<Double> temperatureVals,
-			int[] errCounter) {		
+			int[] errCounter) {
 
 		int[] clipsCounter = new int[] { 0, 0 }; // before, after (calibration)
 		double x;
@@ -392,17 +394,17 @@ public class EpochWriter {
 					z = range;
 				}
 			}
-			
+
 			xVals.set(c, x);
 			yVals.set(c, y);
 			zVals.set(c, z);
 		}
-		
+
 		long[] timeResampled = new long[epochPeriod * (int) intendedSampleRate];
 		double[] xResampled = new double[timeResampled.length];
 		double[] yResampled = new double[timeResampled.length];
 		double[] zResampled = new double[timeResampled.length];
-		
+
 		// resample values to epochSec * (intended) sampleRate
 		for (int c = 0; c < timeResampled.length; c++) {
 			timeResampled[c] = Math.round((epochPeriod * 1000d * c) / timeResampled.length);
@@ -433,7 +435,7 @@ public class EpochWriter {
 		if (zStd == 0 && (zMean < -stuckVal || zMean > stuckVal)) {
 			errCounter[0] += 1;
 		}
-		
+
 		// calculate summary vector magnitude based metrics
 		double[] paVals = new double[xResampled.length];
 		String MADFeatures = "";
@@ -466,8 +468,8 @@ public class EpochWriter {
 				filter.filter(paVals);
 			}
 			// run abs() or trunc() on summary variables after filtering
-			trunc(paVals);								
-			
+			trunc(paVals);
+
 			// calculate mean values for each outcome metric
 			accPA = mean(paVals);
 		}
@@ -479,7 +481,18 @@ public class EpochWriter {
 						epochStartTime.plusNanos(timeResampled[c] * 1000000).format(timeFormat)
 								+ "," + DF3.format(xResampled[c]) + "," + DF3.format(yResampled[c]) + "," + DF3.format(zResampled[c]) + "," + temp);
 			}
+        }
+		if (npyWriter!=null) {
+			// temperature does not change much, so we can use the mean
+			double temp = mean(temperatureVals);
+			for (int c = 0; c < xResampled.length; c++) {
+                // note: For .npy format, we store time in Unix nanoseconds
+                long time = (long) (timestampToMillis(epochStartTime.plusNanos(timeResampled[c] * 1000000)) * 1000000);
+                writeNpyLine(npyWriter, time, xResampled[c], yResampled[c], zResampled[c], temp);
+            }
+
 		}
+
 		if (fftWriter!=null && !getSanDiegoFeatures) {
 			writeFFTEpoch(epochStartTime, paVals);
 		}
@@ -512,16 +525,16 @@ public class EpochWriter {
 		epochSummary += "," + xResampled.length + "," + errCounter[0];
 		epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
 		epochSummary += "," + timeVals.size();
-		
+
 		if (getSanDiegoFeatures) {
 			epochSummary += "," + calculateSanDiegoFeatures(timeResampled, xResampled, yResampled, zResampled);
 		}
-		
+
 		if (getMADFeatures) {
 			epochSummary += "," + MADFeatures;
 		}
 		if (getUnileverFeatures) {
-			
+
 			epochSummary += "," + unileverFeatures(paVals);
 			if (get3DFourier) {
 				epochSummary += ","+getFFT3D(xResampled, yResampled, zResampled, paVals);
@@ -530,8 +543,8 @@ public class EpochWriter {
 		if (!getStationaryBouts || (xStd < stationaryStd && yStd < stationaryStd && zStd < stationaryStd)) {
 			writeLine(epochFileWriter, epochSummary);
 		}
-		
-		
+
+
 		timeVals.clear();
 		xVals.clear();
 		yVals.clear();
@@ -539,18 +552,18 @@ public class EpochWriter {
 		temperatureVals.clear();
 		errCounter[0] = 0;
 	}
-	
-	private String calculateSanDiegoFeatures( 
+
+	private String calculateSanDiegoFeatures(
 			long[] time /* milliseconds since start of epochStartTime */,
 			double[] xResampled, double[] yResampled, double[] zResampled) {
-		
-		
+
+
 		/*
 		 	This function aims to replicate the following R-code:
-		 	
+
 			  # v = vector magnitude
 			  v = sqrt(rowSums(w ^ 2))
-			  
+
 			  fMean = mean(v)
 			  fStd = sd(v)
 			  if (fMean > 0) {
@@ -563,25 +576,25 @@ public class EpochWriter {
 			  fMax = max(v)
 			  f25thP = quantile(v, 0.25)[[1]]
 			  f75thP = quantile(v, 0.75)[[1]]
-			  
+
 		*/
 
 		int n = xResampled.length;
-		
+
 		// San Diego g values
 		// the g matric contains the estimated gravity vector, which is essentially a low pass filter
 		double[] gg = sanDiegoGetAvgGravity(xResampled, yResampled, zResampled);
 		double gxMean = gg[0];
 		double gyMean = gg[1];
 		double gzMean = gg[2];
-	
-		
+
+
 		// subtract column means and get vector magnitude
 
 		double[] v = new double[n]; // vector magnitude
 		double[] wx = new double[n]; // gravity adjusted weights
 		double[] wy = new double[n];
-		double[] wz = new double[n];			
+		double[] wz = new double[n];
 		for (int i = 0; i < n; i++) {
 			wx[i] = xResampled[i]-gxMean;
 			wy[i] = yResampled[i]-gyMean;
@@ -597,7 +610,7 @@ public class EpochWriter {
 		double sdCoefVariation = 0.0;
 		if (sdMean!=0) sdCoefVariation = sdStd/sdMean;
 		double[] paQuartiles = percentiles(v, new double[] {0, 0.25, 0.5, 0.75, 1});
-		
+
 		String sanDiego = "";
 		sanDiego += DF8.format(sdMean) + ",";
 		sanDiego += DF8.format(sdStd) + ",";
@@ -607,7 +620,7 @@ public class EpochWriter {
 		sanDiego += DF8.format(paQuartiles[0]) + ",";
 		sanDiego += DF8.format(paQuartiles[4]) + ",";
 		sanDiego += DF8.format(paQuartiles[1]) + ",";
-		sanDiego += DF8.format(paQuartiles[3]) + ","; 
+		sanDiego += DF8.format(paQuartiles[3]) + ",";
 		double autoCorrelation = Correlation(v, v, intendedSampleRate);
 		sanDiego += DF8.format(autoCorrelation) + ",";
 		double xyCorrelation = Correlation(wx, wy);
@@ -616,23 +629,23 @@ public class EpochWriter {
 		sanDiego += DF8.format(xyCorrelation) + ",";
 		sanDiego += DF8.format(xzCorrelation) + ",";
 		sanDiego += DF8.format(yzCorrelation) + ",";
-		
+
 		// Roll, Pitch, Yaw
 		double [] angleAvgStdYZ = angleAvgStd(wy, wz);
 		double [] angleAvgStdZX = angleAvgStd(wz, wx);
 		double [] angleAvgStdYX = angleAvgStd(wy, wx);
 		sanDiego += DF8.format(angleAvgStdYZ[0]) + "," +  DF8.format(angleAvgStdZX[0]) + "," +  DF8.format(angleAvgStdYX[0]) + ",";
 		sanDiego += DF8.format(angleAvgStdYZ[1]) + "," +  DF8.format(angleAvgStdZX[1]) + "," +  DF8.format(angleAvgStdYX[1]) + ",";
-		
+
 		// gravity component angles
 		double gxyAngle = Math.atan2(gyMean,gzMean);
 		double gzxAngle = Math.atan2(gzMean,gxMean);
 		double gyxAngle = Math.atan2(gyMean,gxMean);
 		sanDiego += DF8.format(gxyAngle) + "," +  DF8.format(gzxAngle) + "," +  DF8.format(gyxAngle);
-		
+
 		// FFT
 		sanDiego += "," + sanDiegoFFT(v);
-		
+
 		// Finally, write our 'gravity-removed' values to our raw-data file
 //		if (rawWriter!=null) {
 //			for (int c = 0; c < n; c++) {
@@ -641,13 +654,13 @@ public class EpochWriter {
 //		}
 		return sanDiego;
 	}
-	
-	// returns { x, y, z } averages of gravity 
+
+	// returns { x, y, z } averages of gravity
 	private double[] sanDiegoGetAvgGravity(double[] xResampled, double[] yResampled, double[] zResampled) {
 		// San Diego paper 0.5Hz? low-pass filter approximation
 		// this code takes in w and returns gg
-		/*    R-code: (Fs is intendedSampleRate, w are x/y/z values) 
-		 
+		/*    R-code: (Fs is intendedSampleRate, w are x/y/z values)
+
 		  	  g = matrix(0, nrow(w), 3)
 			  x = 0.9
 			  g[1, ] = (1-x) * w[1, ]
@@ -656,7 +669,7 @@ public class EpochWriter {
 			  }
 			  g = g[Fs:nrow(g), ] # ignore beginning
 			  gg = colMeans(g)
-			  w = w - gg                         
+			  w = w - gg
 		*/
 		int n = xResampled.length;
 		int gn = n-(intendedSampleRate-1); // number of moving average values to estimate gravity direction with
@@ -668,13 +681,13 @@ public class EpochWriter {
 
 		{
 			// calculating moving average of signal
-			double x = 0.9; 
-			
+			double x = 0.9;
+
 			double xMovAvg = (1-x)*xResampled[0];
 			double yMovAvg = (1-x)*yResampled[0];
 			double zMovAvg = (1-x)*zResampled[0];
-			
-			
+
+
 			for (int c = 1; c < n; c++) {
 				if (c < gStartIdx) {
 					xMovAvg = xMovAvg * x + (1-x) * xResampled[c];
@@ -688,15 +701,15 @@ public class EpochWriter {
 					gx[c-gStartIdx] = xMovAvg;
 					gy[c-gStartIdx] = yMovAvg;
 					gz[c-gStartIdx] = zMovAvg;
-				}		
+				}
 			}
 		}
 		/*for (int c = 0; c < gx.length; c++) {
 			System.out.println(c + " - [" + gx[c] + ", " + gy[c]+ ", " + gz[c] + "]");
 		}*/
-		
+
 		//System.out.println("size:" + gx.length);
-		
+
 		// column means
 		double gxMean = mean(gx);
 		double gyMean = mean(gy);
@@ -704,13 +717,13 @@ public class EpochWriter {
 		/*System.out.println("xMean = " + gxMean + "");
 		System.out.println("yMean = " + gyMean + "");
 		System.out.println("zMean = " + gzMean + "");*/
-		
+
 		return new double[] {gxMean, gyMean, gzMean};
 	}
-	
+
 	private String sanDiegoFFT(double[] paVals) {
 
-		int n = paVals.length; 
+		int n = paVals.length;
 		// FFT frequency interval = sample frequency / num samples
 		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
 
@@ -723,24 +736,24 @@ public class EpochWriter {
         for (int c = 0; c < n; c++) {
         	vmFFT[c] = paVals[c];
         }
-        
+
         // Hanning window attenuates the signal to zero at it's start and end
         HanningWindow(vmFFT,n);
-        
+
         DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		transformer.realForward(vmFFT);
 		double max = max(vmFFT);
 
-		
+
 		// find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
-		double f1=-1, f33=-1; 
+		double f1=-1, f33=-1;
 		double p1=0, p33=0;
-		
-		double totalPLnP = 0.0; // sum of P * ln(P) 
+
+		double totalPLnP = 0.0; // sum of P * ln(P)
 		double magDC = vmFFT[0]/max;
 		totalPLnP += magDC * Math.log(magDC);
 //    	System.out.println(String.format("%d (%.2fHz bin %d) : % .6f + % .6fi = % .6f",0, 0.0, currBin, magDC, 0.0 , magDC));
-    	
+
 		for (int i = 1; i < n/2; i++) {
 			double freq = FFTinterval * i;
 			double Re = vmFFT[i*2];
@@ -748,7 +761,7 @@ public class EpochWriter {
 			double mag = Math.sqrt( Re * Re + Im * Im)/max;
 
         	totalPLnP += mag * Math.log(mag);
-        	
+
         	if (mag>p1) {
         		f1 = freq;
         		p1 = mag;
@@ -757,13 +770,13 @@ public class EpochWriter {
         		f33 = freq;
         		p33 = mag;
         	}
-        	
+
 		}
 		// entropy, AKA (Power) Spectral Entropy, measures 'peakyness' of the frequency spectrum
 		// This should be higher where there are periodic motions such as walking
 		double H = - totalPLnP;// / total - (n/2) * Math.log(total);
-		
-		
+
+
 		double[] binnedFFT = new double[numBins];
 
 		for (int i = 0; i < numBins; i++) {
@@ -802,9 +815,9 @@ public class EpochWriter {
 				binnedFFT[i] += mag;
 				max = Math.max(max, mag); // find max as we go
 			}
-				
-		} 
-		
+
+		}
+
 		// Divide by the number of windows (to get the mean value)
 		// Then divide by the maximum of the windowed FFT values (found before combination)
 		// Note this does not mean the new max of binnedFFT will be one, it will be less than one if one window is stronger than the others
@@ -812,7 +825,7 @@ public class EpochWriter {
 		/*for (int i=0; i < numBins; i++) {
 			System.out.println(String.format("F%d=% .6f",i, binnedFFT2[i]));
 		}*/
-		
+
 		String line = DF8.format(f1) + "," + DF8.format(p1);
 		line += "," + DF8.format(f33) + "," + DF8.format(p33);
 		line += "," + DF8.format(H); //entropy
@@ -823,21 +836,21 @@ public class EpochWriter {
 
 		return line;
 	}
-	
+
 	/* From table in paper:
-	 * A universal, accurate intensity-based classification of different physical 
+	 * A universal, accurate intensity-based classification of different physical
 	 * activities using raw data of accelerometer.
 	 * Henri Vaha-Ypya, Tommi Vasankari, Pauliina Husu, Jaana Suni and Harri Sievanen
 	 */
-	private String calculateMADFeatures( 
+	private String calculateMADFeatures(
 			double[] paVals) {
-		
+
 		// used in calculation
 		int n = paVals.length;
 		double N = (double) n; // avoid integer arithmetic
 		double vmMean = mean(paVals);
 		double vmStd = std(paVals, vmMean);
-		
+
 		// features from paper:
 		double MAD = 0; // Mean amplitude deviation (MAD) describes the typical distance of data points about the mean
 		double MPD = 0; // Mean power deviation (MPD) describes the dispersion of data points about the mean
@@ -852,7 +865,7 @@ public class EpochWriter {
 		}
 
 		MAD /= N;
-		MPD /= Math.pow(N, 1.5); 
+		MPD /= Math.pow(N, 1.5);
 		skew *= N / ((N-1)*(N-2));
 		kurt = kurt * N*(N+1)/((N-1)*(N-2)*(N-3)*(N-4)) - 3*(N-1)*(N-1)/((N-2)*(N-3));
 //		System.out.println(DF6.format(MAD)+","
@@ -870,30 +883,30 @@ public class EpochWriter {
 				+DF6.format(skew)+","
 				+DF6.format(kurt);
 	}
-	
+
 	public static void testFFTProperties(int n, double cycles, boolean useWindow, boolean debug, boolean showInput) {
 		System.out.println( String.format("n=%d, cycles=%.2f, useWindow=%b debug=%b",n, cycles, useWindow, debug));
 		double[] signal = new double[n];
 		for (int c = 0; c < n; c++) {
 			 signal[c] = Math.sin(c * 2 * cycles * Math.PI / n); //+ Math.cos(c * 2 * Math.PI * 2 / intendedSampleRate);
-			 
+
 			 int w = 20;
 			 int a = (int) Math.round(Math.abs(signal[c])*10);
-			 
+
 			 if (showInput) {
 				 if (signal[c]<0) System.out.println(String.format("[%2d]",c) + new String(new char[w-a]).replace("\0", " ") + new String(new char[a]).replace("\0", "=") + ":" +  new String(new char[w]).replace("\0", " "));
 				 else System.out.println(String.format("[%2d]",c) + " " + new String(new char[w]).replace("\0", " ") + ":" + new String(new char[a]).replace("\0", "="));
 			 }
 		}
 		if (debug) System.out.println(Arrays.toString(signal).replace(',', '\n'));
-		
+
 		if (useWindow) HanningWindow(signal, n);
-		
+
 		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		transformer.realForward(signal);
-		
+
 		if (debug) System.out.println(Arrays.toString(signal).replace(',', '\n'));
-		
+
 		int m = (int) Math.ceil(n/2); // output array size
 		double[] output = new double[m];
 		output[0] = Math.abs(signal[0])/m;
@@ -907,8 +920,8 @@ public class EpochWriter {
 		if (debug) System.out.println(Arrays.toString(output).replace(',', '\n'));
 
 	}
-	
-	
+
+
 	public static double[] HanningWindow(double[] signal_in, int size)
 	{
 	    for (int i = 0; i < size; i++)
@@ -917,54 +930,54 @@ public class EpochWriter {
 	    }
 	    return signal_in;
 	}
-	
-	
-	
+
+
+
 	public static double[] getFFTmagnitude(double[] FFT) {
 		return getFFTmagnitude(FFT, FFT.length);
 	}
-	
-	/* converts FFT library's complex output to only absolute magnitude */ 
+
+	/* converts FFT library's complex output to only absolute magnitude */
 	public static double[] getFFTmagnitude(double[] FFT, int n) {
 		if (n<1) {
 			System.err.println("cannot get FFT magnitude of array with zero elements");
 			return new double[] {0.0};
 		}
-		
+
 		/*
-		if n is even then 
+		if n is even then
 		 a[2*k] = Re[k], 0<=k<n/2
-		 a[2*k+1] = Im[k], 0<k<n/2 
+		 a[2*k+1] = Im[k], 0<k<n/2
 		 a[1] = Re[n/2]
 		e.g for n = 6: (yes there will be 7 array elements for 4 magnitudes)
 		a = { Re[0], Re[3], Re[1], Im[1], Re[2], Im[2], Im[3]}
-		 
-		if n is odd then  
-		 a[2*k] = Re[k], 0<=k<(n+1)/2 
+
+		if n is odd then
+		 a[2*k] = Re[k], 0<=k<(n+1)/2
 		 a[2*k+1] = Im[k], 0<k<(n-1)/2
 		 a[1] = Im[(n-1)/2]
 		e.g for n = 7: (again there will be 7 array elements for 4 magnitudes)
 		a = { Re[0], Im[3], Re[1], Im[1], Re[2], Im[2], Re[3]}
-		
+
 		*/
 		int m = 1 + (int) Math.floor(n/2); // output array size
 		double[] output = new double[m];
 		double Re, Im;
-		
-		
+
+
 		output[0] = FFT[0];
 		for (int i = 1; i < m-1; i++) {
 			Re = FFT[i*2];
 			Im = FFT[i*2 + 1];
 			output[i] = Math.sqrt(Re * Re + Im * Im);
 		}
-		// highest frequency will be 
+		// highest frequency will be
 		output[m-1] = Math.sqrt(FFT[1] * FFT[1] + FFT[m] * FFT[m]);
 		return output;
 	}
-	
-	/* 
-	 * Gets [numEachAxis] FFT bins for each of the 3 axes and combines them into 'mfft' column. 
+
+	/*
+	 * Gets [numEachAxis] FFT bins for each of the 3 axes and combines them into 'mfft' column.
 	 * If getEachAxis is true it will output the FFT bins for each axis separately
 	 */
 	private String getFFT3D(double[] x, double[] y, double[] z, double[] vm) {
@@ -972,10 +985,10 @@ public class EpochWriter {
 		int n = x.length;
 		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		double[] input = new double[n*2];
-		
+
 		int m = 1 + (int) Math.floor(n/2); // output array size
 		double[] output = new double[m];
-		
+
         for (int c = 0; c < n; c++) {
         	input[c] = x[c];
         }
@@ -987,7 +1000,7 @@ public class EpochWriter {
             	featureString += DF3.format(output[c])+",";
             }
         }
-        
+
 //        System.out.println(n + " < " + output.length + "?");
         input = new double[n*2];
         for (int c = 0; c < n; c++) {
@@ -1005,7 +1018,7 @@ public class EpochWriter {
 	        	output[c] += input[c];
 	        }
         }
-        
+
         input = new double[n*2];
         for (int c = 0; c < n; c++) {
         	input[c] = z[c];
@@ -1031,54 +1044,54 @@ public class EpochWriter {
 	        for (int c = 0; c < m; c++) {
 	        	output[c] = (output[c]+input[c])/3;
 	        }
-        
-        
+
+
 	        for (int c = 0; c < numEachAxis; c++) {
 	        	featureString += DF3.format(output[c])+",";
 	        }
         }
 //        System.out.println(input.length+" - " +Arrays.toString(input));
-        
+
 //        System.out.println(output.length+" - " +Arrays.toString(output));
-        // remove trailing ',' 
+        // remove trailing ','
         if (featureString.charAt(featureString.length()-1)==',') {
         	featureString = featureString.substring(0, featureString.length()-1);
         }
 		return featureString;
 	}
-	
+
 	/* Physical Activity Classification using the GENEA Wrist Worn Accelerometer
 		Shaoyan Zhang, Alex V. Rowlands, Peter Murray, Tina Hurst
 	*/
 	private String unileverFeatures(double[] paVals) {
 		String output = "";
-		
-		int n = paVals.length; 
+
+		int n = paVals.length;
 		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
 		double binSize = 0.1; // desired size of each FFT bin (Hz)
 		double maxFreq = 15; // min and max for searching for dominant frequency
-		double minFreq = 0.3; 
-		
-		int numBins = (int) Math.ceil((maxFreq-minFreq)/binSize); 
+		double minFreq = 0.3;
+
+		int numBins = (int) Math.ceil((maxFreq-minFreq)/binSize);
 //		System.out.println("samplerate" + intendedSampleRate + ", n =" + n +", interval " + FFTinterval);
 
 		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		double[] vmFFT = new double[n * 2];
 		// set input data array
         for (int c = 0; c < n; c++) {
-        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected). 
+        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected).
         	// Math.sin(c * 2 * Math.PI * 10 / intendedSampleRate) + Math.cos(c * 2 * Math.PI * 2 / intendedSampleRate);
         	vmFFT[c] = paVals[c];
         }
-        
+
 		HanningWindow(vmFFT, n);
         // FFT
 		transformer.realForward(vmFFT);
 
         // find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
- 		double f1=-1, f2=-1, f625=-1, f33=-1; 
- 		double p1=0, p2=0, p625=0, p33=0;	
- 		
+ 		double f1=-1, f2=-1, f625=-1, f33=-1;
+ 		double p1=0, p2=0, p625=0, p33=0;
+
  		double totalPower = 0;
 		int out_n = (int) Math.ceil(n/2); // output array size
 
@@ -1089,7 +1102,7 @@ public class EpochWriter {
 //
 //	    	System.out.println(DF3.format(freq) + ": " + mag);
 //		}
-		
+
  		for (int i = 1; i < out_n; i++) {
  			double freq = FFTinterval * i;
  			if (freq<minFreq || freq>maxFreq) continue;
@@ -1108,15 +1121,15 @@ public class EpochWriter {
         		f625 = freq;
         		p625 = mag;
         	}
-        	
+
         	int w = 20;
 			int a = (int) Math.round(Math.abs(mag)*10);
-			 
+
 //			if (mag<0) System.out.println(String.format("[% 4.1f]",freq) + new String(new char[w-a]).replace("\0", " ") + new String(new char[a]).replace("\0", "=") + ":" +  new String(new char[w]).replace("\0", " "));
 //			else System.out.println(String.format("[% 4.1f]",freq) + " " + new String(new char[w]).replace("\0", " ") + ":" + new String(new char[a]).replace("\0", "="));
-		 
+
  		}
- 		
+
 
 //		System.out.println("p1: " + DF3.format(p1) + " f1: " + DF2.format(f1));
 //		System.out.println("f1:   " + f1 + ", p1: " + p1);
@@ -1126,7 +1139,7 @@ public class EpochWriter {
 //
 // 		System.exit(0);
  		output = DF3.format(f1)+","+DF3.format(p1)+","+DF3.format(f2)+","+DF3.format(p2)+","+DF3.format(f625)+","+DF3.format(p625)+","+DF3.format(totalPower);
- 		
+
  		if (!get3DFourier) {
 	 		output += ",";
 	 		for(int i=0; i<numEachAxis; i++) {
@@ -1137,38 +1150,38 @@ public class EpochWriter {
  		}
  		return output;
 	}
-	
-	/* method to write FFT data to a separate _fft.csv file (not used anymore)  */ 
+
+	/* method to write FFT data to a separate _fft.csv file (not used anymore)  */
 	private void writeFFTEpoch(LocalDateTime epochStartTime, double[] paVals) {
 
-		// num samples 
-		int n = paVals.length; 
+		// num samples
+		int n = paVals.length;
 		// FFT frequency interval = sample frequency / num samples
 		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
 //		System.out.println("samplerate" + intendedSampleRate + ", n =" + n +", interval " + FFTinterval);
 		double binSize = 3; // desired size of each FFT bin (Hz)
 		int numBins = 15;
 		if (!fftWriterHasHeader) {
-			
-			// write the header for fft data (number of columns is dependent on sample frequency)
-			
-			String line = "Time";
-			// x axis is  x * sample-rate / num-samples 
 
-			line += ",mag,f1,p1,f2,p2,f625,p625"; 
+			// write the header for fft data (number of columns is dependent on sample frequency)
+
+			String line = "Time";
+			// x axis is  x * sample-rate / num-samples
+
+			line += ",mag,f1,p1,f2,p2,f625,p625";
 	        for (int i = 1; i < numBins + 1; i++) {
-				line += "," + (i * FFTinterval) + "Hz"; 
+				line += "," + (i * FFTinterval) + "Hz";
 	        }
-			
-	        writeLine(fftWriter,line); 
+
+	        writeLine(fftWriter,line);
 	        fftWriterHasHeader = true;
 		}
-		
+
 		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		double[] vmFFT = new double[n * 2];
 		// set input data array
         for (int c = 0; c < n; c++) {
-        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected). 
+        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected).
         	// Math.sin(c * 2 * Math.PI * 10 / intendedSampleRate) + Math.cos(c * 2 * Math.PI * 2 / intendedSampleRate);
         	vmFFT[c] = paVals[c];
         }
@@ -1177,14 +1190,14 @@ public class EpochWriter {
 		transformer.realForward(vmFFT);
 		// a useful explanation of output:
 		// http://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-a-fft
-		
+
 		// find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
-		double f1=-1, f2=-1, f625=-1, f33=-1; 
+		double f1=-1, f2=-1, f625=-1, f33=-1;
 		double p1=0, p2=0, p625=0, p33=0;
-		
+
 		double[] binnedFFT = new double[numBins];
 		double total = 0.0;     // sum of P
-		double totalPLnP = 0.0; // sum of P * ln(P) 
+		double totalPLnP = 0.0; // sum of P * ln(P)
 		int currBin = 0;
 		int numInBin = 0;
 //		for (int i = 1; i < n/2 + 1; i++) {
@@ -1214,11 +1227,11 @@ public class EpochWriter {
         		f33 = freq;
         		p33 = mag;
         	}
-        	
-        	
+
+
         	binnedFFT[currBin] += mag;
         	numInBin++;
-        	
+
         	if (freq > currBin * binSize) {
         		binnedFFT[currBin] /= numInBin; // get average
 //        		System.out.println(currBin + " "+currBin * binSize + "Hz: "+binnedFFT.length + ", " + binnedFFT[currBin]);
@@ -1226,16 +1239,16 @@ public class EpochWriter {
         		numInBin = 0;
         		if (currBin >= numBins) break;
         		else binnedFFT[currBin] = 0.0;
-        	} 
-        	
+        	}
+
 		}
-		
-		// Feature Extraction of EEG Signals Using Power Spectral Entropy (2008) 	
-		// normalized p = P / sum(P)   
+
+		// Feature Extraction of EEG Signals Using Power Spectral Entropy (2008)
+		// normalized p = P / sum(P)
 		// H = sum(p * ln(p))
 		// H = sum(P * ln(P) / sum(P)) - N * ln(sum(P))
 		double H = totalPLnP / total - (n/2) * Math.log(total);
-		
+
 //		System.out.println("p1: " + DF3.format(p1) + " f1: " + DF2.format(f1) + " H =" +H);
 //		System.out.println("f1:   " + f1 + ", p1: " + p1);
 //		System.out.println("f2:   " + f2 + ", p2: " + p2);
@@ -1248,11 +1261,11 @@ public class EpochWriter {
 		line += "," + DF6.format(f2) + "," + DF6.format(p2);
 		line += "," + DF6.format(f625) + "," + DF6.format(p625);
 		line += "," + DF6.format(f33) + "," + DF6.format(p33);
-		
+
 		for (int i=0; i < numBins; i++) {
 			line += "," + DF6.format(binnedFFT[i]);
         }
-        writeLine(fftWriter,line); 
+        writeLine(fftWriter,line);
 //        if (Math.random()<0.01)
 //        	System.exit(1);
         // this line can check that inverse is the same
@@ -1349,7 +1362,7 @@ public class EpochWriter {
 		}
 		return Math.sqrt(var / len);
 	}
-	
+
 	// same as above but matches R's (n-1) denominator (Bessel's correction)
 	private static double stdR(double[] vals, double mean) {
 		if (vals.length == 0) {
@@ -1364,7 +1377,7 @@ public class EpochWriter {
 		}
 		return Math.sqrt(var / (len-1));
 	}
-	
+
 	private static double Correlation(double[] vals1, double[] vals2) {
 		return Correlation(vals1, vals2, 0);
 	}
@@ -1392,7 +1405,7 @@ public class EpochWriter {
 			syy += y * y;
 			sxy += x * y;
 		}
-		
+
 		//System.out.println(sx + ", " + sy+", "+sxx+", "+ syy+", "+sxy);
 		// covariation
 		double cov = sxy / n - sx * sy / n / n;
@@ -1405,7 +1418,7 @@ public class EpochWriter {
 		return cov / sigmax / sigmay;
 	}
 
-	 
+
 	// covariance of two signals (with lag in samples)
 	private static double covariance(double[] vals1, double[] vals2, double mean1, double mean2, int lag) {
 		lag = Math.abs(lag); // should be identical
@@ -1421,13 +1434,13 @@ public class EpochWriter {
 		cov /= vals1.length+1-lag;
 		return cov;
 	}
-	
-	/* 
+
+	/*
 	 * Implementation of the following features aims to match the paper:
 	 * Hip and Wrist Accelerometer Algorithms for Free-Living Behavior Classification
 	 * Katherine Ellis, Jacqueline Kerr, Suneeta Godbole, John Staudenmayer, and Gert Lanckriet
 	 */
-	
+
 	// percentiles = {0.25, 0.5, 0.75}, to calculate 25th, median and 75th percentile
 	private static double[] percentiles(double[] vals, double[] percentiles) {
 		double[] output = new double[percentiles.length];
@@ -1443,14 +1456,14 @@ public class EpochWriter {
 		double[] sortedVals = vals.clone();
 		Arrays.sort(sortedVals);
 		for (int i = 0; i<percentiles.length; i++) {
-			// this follows the R default (R7) interpolation model 
+			// this follows the R default (R7) interpolation model
 			// https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample
 			double h = percentiles[i] * (n-1) + 1;
-			if (h<=1.0) { 
+			if (h<=1.0) {
 				output[i] = sortedVals[0];
 				continue;
 			}
-			if (h>=n) { 
+			if (h>=n) {
 				output[i] = sortedVals[n-1];
 				continue;
 			}
@@ -1463,7 +1476,7 @@ public class EpochWriter {
 		}
 		return output;
 	}
-	
+
 	// returns {mean, standard deviation} together to reduce processing time
 	private static double[] angleAvgStd(double[] vals1, double[] vals2) {
 		int len = vals1.length;
@@ -1482,14 +1495,14 @@ public class EpochWriter {
 			var += Math.pow(angles[c] - mean, 2);
 		}
 		double std = Math.sqrt(var/(len-1)); // uses R's (n-1) denominator standard deviation (Bessel's correction)
-		return new double[] {mean, std}; 
+		return new double[] {mean, std};
 	}
-	
-	
+
+
 	private static double correlation(double[] vals1, double[] vals2, double mean1, double mean2, int lag) {
 		return covariance(vals1, vals2, mean1, mean2, lag)/(mean1*mean2);
 	}
-	
+
 	private static double max(double[] vals) {
 		double max = Double.NEGATIVE_INFINITY;
 		for (int c = 0; c < vals.length; c++) {
@@ -1497,24 +1510,41 @@ public class EpochWriter {
 		}
 		return max;
 	}
-	
+
 	private static void scale(double[] vals, double scale) {
 		for (int c = 0; c < vals.length; c++) {
 			vals[c] = vals[c] * scale;
 		}
 	}
-	
+
 	private static LocalDateTime millisToTimestamp(double d) {
 		return LocalDateTime.ofInstant(new Date((long) d).toInstant(), ZoneOffset.UTC);
-		
-	}
-	
+    }
+
+    private static double timestampToMillis(LocalDateTime ldt) {
+        ZonedDateTime zdt = ldt.atZone(ZoneId.of("UTC"));
+        long millis = zdt.toInstant().toEpochMilli();
+        return millis;
+    }
+
 	private static void writeLine(BufferedWriter fileWriter, String line) {
 		try {
 			fileWriter.write(line + "\n");
 		} catch (Exception excep) {
 			System.err.println("line write error: " + excep.toString());
 		}
-	}
+    }
+
+    private static void writeNpyLine(NpyWriter npyWriter, long time, double x, double y, double z, double temp){
+        if (Double.isNaN(x) && Double.isNaN(y) && Double.isNaN(z) && Double.isNaN(temp)) {
+            System.err.println("NaN at "+time+","+x+","+y+","+z+","+temp);
+        }
+
+        try {
+            npyWriter.writeData(time, x, y, z, temp);
+        } catch (Exception excep) {
+			System.err.println("line write error: " + excep.toString());
+        }
+    }
 
 }
