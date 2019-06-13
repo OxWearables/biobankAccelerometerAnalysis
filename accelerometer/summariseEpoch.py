@@ -7,12 +7,13 @@ import gzip
 import numpy as np
 import pandas as pd
 import pytz
+import sys
 
 
 def getActivitySummary(epochFile, nonWearFile, summary,
-    activityClassification = True, startTime = None, endTime = None, 
-    epochPeriod = 30, stationaryStd = 13, minNonWearDuration = 60, mgMVPA = 100, 
-    mgVPA = 425, activityModel = "activityModels/doherty2018.tar", 
+    activityClassification = True, startTime = None, endTime = None,
+    epochPeriod = 30, stationaryStd = 13, minNonWearDuration = 60, mgMVPA = 100,
+    mgVPA = 425, activityModel = "activityModels/doherty2018.tar",
     intensityDistribution = False, verbose = False):
     """Calculate overall activity summary from <epochFile> data
 
@@ -30,7 +31,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :param dict summary: Output dictionary containing all summary metrics
     :param bool activityClassification: Perform machine learning of activity states
     :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis 
+    :param datetime endTime: Remove data after this time in analysis
     :param int epochPeriod: Size of epoch time window (in seconds)
     :param int stationaryStd: Threshold (in mg units) for stationary vs not
     :param int minNonWearDuration: Minimum duration of nonwear events (minutes)
@@ -41,7 +42,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         of METS for each activity state
     :param bool intensityDistribution: Add intensity outputs to dict <summary>
     :param bool verbose: Print verbose output
-    
+
     :return: Pandas dataframe of activity epoch data
     :rtype: pandas.DataFrame
 
@@ -57,7 +58,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :Example:
     >>> import summariseEpoch
     >>> summary = {}
-    >>> epochData, labels = summariseEpoch.getActivitySummary( "epoch.csv.gz", 
+    >>> epochData, labels = summariseEpoch.getActivitySummary( "epoch.csv.gz",
             "nonWear.csv.gz", summary)
     <nonWear file written to "nonWear.csv.gz" and dict "summary" update with outcomes>
     """
@@ -68,7 +69,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         # use python PANDAS framework to read in and store epochs
         e = pd.read_csv(epochFile, parse_dates=['time'], index_col=['time'],
             compression='gzip').sort_index()
-    
+
     # remove data before/after user specified start/end times
     rows = e.shape[0]
     if startTime:
@@ -93,11 +94,11 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # check if data occurs at a daylight savings crossover
     e = check_daylight_savings_crossover(e, startTime, endTime, summary)
-    
+
     # calculate wear-time statistics, and write nonWear episodes to file
-    get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration, 
+    get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
         nonWearFile, summary)
-    
+
     # predict activity from features, and add label column
     if activityClassification:
         e, labels = accClassification.activityClassification(e, activityModel)
@@ -109,7 +110,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # emmo = 1 - sqrt(x, y, z)
     # enmoTrunc = max(enmo, 0)
     e['acc'] = e['enmoTrunc'] * 1000 # convert enmoTrunc to milli-G units
-    
+
     # calculate imputation values to replace nan PA metric values
     e = perform_wearTime_imputation(e, verbose)
     e['MVPA'] = e['accImputed'] >= mgMVPA
@@ -121,10 +122,10 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # main movement summaries
     writeMovementSummaries(e, labels, summary)
-    
+
     # return physical activity summary
     return e, labels
-    
+
 
 
 def get_interrupts(e, epochPeriod, summary):
@@ -161,7 +162,7 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary):
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis 
+    :param datetime endTime: Remove data after this time in analysis
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> key 'quality-daylightSavingsCrossover'
@@ -226,7 +227,7 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
 
-    :return: Write dict <summary> keys 'wearTime-numNonWearEpisodes(>1hr)', 
+    :return: Write dict <summary> keys 'wearTime-numNonWearEpisodes(>1hr)',
         'wearTime-overall(days)', 'nonWearTime-overall(days)', 'wearTime-diurnalHrs',
         'wearTime-diurnalMins', 'quality-goodWearTime', 'wearTime-<day...>', and
         'wearTime-hourOfDay-<hr...>'
@@ -243,7 +244,7 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     ends = e.index[(e['nw']==True) & (e['nw'].shift(-1).fillna(False)==False)]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
             if end > start + np.timedelta64(minDuration,'m')]
-    
+
     # set nonWear data to nan and record to nonWearBouts file
     f = gzip.open(nonWearFile,'wb')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n'.encode())
@@ -261,7 +262,7 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     f.close()
     # write to summary
     summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearEpisodes))
-    
+
     # calculate wear statistics
     wearSamples = e['enmoTrunc'].count()
     nonWearSamples = len(e[np.isnan(e['enmoTrunc'])].index.values)
@@ -301,11 +302,11 @@ def perform_wearTime_imputation(e, verbose):
     """Calculate imputation values to replace nan PA metric values
 
     Impute non-wear data segments using the average of similar time-of-day values
-    with one minute granularity on different days of the measurement. This 
-    imputation accounts for potential wear time diurnal bias where, for example, 
-    if the device was systematically less worn during sleep in an individual, 
-    the crude average vector magnitude during wear time would be a biased 
-    overestimate of the true average. See 
+    with one minute granularity on different days of the measurement. This
+    imputation accounts for potential wear time diurnal bias where, for example,
+    if the device was systematically less worn during sleep in an individual,
+    the crude average vector magnitude during wear time would be a biased
+    overestimate of the true average. See
     https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0169649#sec013
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
@@ -317,7 +318,7 @@ def perform_wearTime_imputation(e, verbose):
 
     e['hour'] = e.index.hour
     e['minute'] = e.index.minute
-    
+
     wearTimeWeights = e.groupby(['hour', 'minute']).mean()
     # add the wearTimeWeights column to the other data as e.g. 'enmoTrunc_imputed'
     e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
@@ -345,7 +346,7 @@ def calculateECDF(e, inputCol, summary):
 
     The input data must not be imputed, as ECDF requires different imputation
     where nan/non-wear data segments are IMPUTED FOR EACH INTENSITY LEVEL. Here,
-    the average of similar time-of-day values is imputed with one minute 
+    the average of similar time-of-day values is imputed with one minute
     granularity on different days of the measurement. Following intensity levels
     are calculated
     1mg bins from 1-20mg
@@ -392,7 +393,7 @@ def calculateECDF(e, inputCol, summary):
     else:
         accEcdf = pd.Series(data=[0.0 for i in ecdfXVals],
                             index=[str(i)+'Adjusted' for i in ecdfXVals])
-    
+
     # and write to summary dict
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
@@ -408,7 +409,7 @@ def writeMovementSummaries(e, labels, summary):
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys for each activity type 'overall-<avg/sd>',
-        'week<day/end>-avg', '<day..>-avg', 'hourOfDay-<hr..>-avg', 
+        'week<day/end>-avg', '<day..>-avg', 'hourOfDay-<hr..>-avg',
         'hourOfWeek<day/end>-<hr..>-avg'
     :rtype: void
     """
@@ -424,7 +425,7 @@ def writeMovementSummaries(e, labels, summary):
         col = accType + 'Imputed'
         if accType in ['MVPA', 'VPA']:
             col = accType
-        
+
         # overall / weekday / weekend summaries
         summary[accType + '-overall-avg'] = accUtils.formatNum(e[col].mean(), 2)
         summary[accType + '-overall-sd'] = accUtils.formatNum(e[col].std(), 2)
@@ -432,12 +433,12 @@ def writeMovementSummaries(e, labels, summary):
             e[col][e.index.weekday<=4].mean(), 2)
         summary[accType + '-weekend-avg'] = accUtils.formatNum( \
             e[col][e.index.weekday>=5].mean(), 2)
-        
+
         # daily summary
         for i, day in zip(range(0, 7), accUtils.DAYS):
             summary[accType + '-' + day + '-avg'] = accUtils.formatNum( \
                 e[col][e.index.weekday == i].mean(), 2)
-        
+
         # hourly summaries
         for i in range(0, 24):
             hourOfDay = accUtils.formatNum(e[col][e.index.hour == i].mean(), 2)
