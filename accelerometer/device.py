@@ -11,15 +11,15 @@ import sys
 
 
 def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
-    skipCalibration = False, stationaryStd = 13, xIntercept = 0.0,
-    yIntercept = 0.0, zIntercept = 0.0, xSlope = 0.0, ySlope = 0.0,
-    zSlope = 0.0, xTemp = 0.0, yTemp = 0.0, zTemp = 0.0, meanTemp = 20.0,
-    rawDataParser = "AxivityAx3Epochs", javaHeapSpace = None,
-    skipFiltering = False, sampleRate= 100, epochPeriod = 30,
-    useAbs = False, activityClassification = True,
-    rawOutput = False, rawOutputFile = None, fftOutput = False,
-    startTime = None, endTime = None,
-    verbose = False):
+    skipCalibration=False, stationaryStd=13, xIntercept=0.0,
+    yIntercept=0.0, zIntercept=0.0, xSlope=0.0, ySlope=0.0,
+    zSlope=0.0, xTemp=0.0, yTemp=0.0, zTemp=0.0, meanTemp=20.0,
+    rawDataParser="AxivityAx3Epochs", javaHeapSpace=None,
+    skipFiltering=False, sampleRate=100, epochPeriod=30,
+    useAbs=False, activityClassification=True,
+    rawOutput=False, rawOutputFile=None, fftOutput=False,
+    startTime=None, endTime=None,
+    verbose=False):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -316,7 +316,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
 
 def storeCalibrationInformation(summary, bestIntercept, bestSlope,
         bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-        zMax, nStatic, calibrationSphereCriteria = 0.3):
+        zMax, nStatic, calibrationSphereCriteria=0.3):
     """Store calibration information to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
@@ -420,7 +420,7 @@ def getDeviceId(rawFile):
     elif rawFile.lower().endswith('.csv'):
         return "unknown (.csv)"
     else:
-        print("ERROR: cannot get deviceId for file: " + rawFile )
+        print("ERROR: cannot get deviceId for file: " + rawFile)
 
 
 
