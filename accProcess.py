@@ -244,37 +244,37 @@ def main():
     if args.processRawFile:
         summary['file-name'] = args.rawFile
         accelerometer.device.processRawFileToEpoch(args.rawFile, args.epochFile,
-            args.stationaryFile, summary, skipCalibration = args.skipCalibration,
-            stationaryStd = args.stationaryStd, xIntercept = args.calOffset[0],
-            yIntercept = args.calOffset[1], zIntercept = args.calOffset[2],
-            xSlope = args.calSlope[0], ySlope = args.calSlope[1],
-            zSlope = args.calSlope[2], xTemp = args.calTemp[0],
-            yTemp = args.calTemp[1], zTemp = args.calTemp[2],
-            meanTemp = args.meanTemp, rawDataParser = args.rawDataParser,
-            javaHeapSpace = args.javaHeapSpace, skipFiltering = args.skipFiltering,
-            sampleRate= args.sampleRate, epochPeriod = args.epochPeriod,
-            useAbs = args.useAbs, activityClassification = args.activityClassification,
-            rawOutput = args.rawOutput, rawOutputFile = args.rawOutputFile,
-            fftOutput = args.fftOutput, startTime = args.startTime,
-            endTime = args.endTime, verbose = args.verbose)
+            args.stationaryFile, summary, skipCalibration=args.skipCalibration,
+            stationaryStd=args.stationaryStd, xIntercept=args.calOffset[0],
+            yIntercept=args.calOffset[1], zIntercept=args.calOffset[2],
+            xSlope=args.calSlope[0], ySlope=args.calSlope[1],
+            zSlope=args.calSlope[2], xTemp=args.calTemp[0],
+            yTemp=args.calTemp[1], zTemp=args.calTemp[2],
+            meanTemp=args.meanTemp, rawDataParser=args.rawDataParser,
+            javaHeapSpace=args.javaHeapSpace, skipFiltering=args.skipFiltering,
+            sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
+            useAbs=args.useAbs, activityClassification=args.activityClassification,
+            rawOutput=args.rawOutput, rawOutputFile=args.rawOutputFile,
+            fftOutput=args.fftOutput, startTime=args.startTime,
+            endTime=args.endTime, verbose=args.verbose)
     else:
         summary['file-name'] = args.epochFile
 
     # summarise epoch
     epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
         args.epochFile, args.nonWearFile, summary,
-        activityClassification = args.activityClassification, startTime = args.startTime,
-        endTime = args.endTime, epochPeriod = args.epochPeriod,
-        stationaryStd = args.stationaryStd, mgMVPA = args.mgMVPA,
-        mgVPA = args.mgVPA, activityModel = args.activityModel,
-        intensityDistribution = args.intensityDistribution,
-        verbose = args.verbose)
+        activityClassification=args.activityClassification, startTime=args.startTime,
+        endTime=args.endTime, epochPeriod=args.epochPeriod,
+        stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
+        mgVPA=args.mgVPA, activityModel=args.activityModel,
+        intensityDistribution=args.intensityDistribution,
+        verbose=args.verbose)
 
     # generate time series file (note: this will also resample to epochData so do this last)
     accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
-        epochPeriod = args.epochPeriod,
-        timeSeriesDateColumn = args.timeSeriesDateColumn,
-        activityClassification = args.activityClassification, labels = labels)
+        epochPeriod=args.epochPeriod,
+        timeSeriesDateColumn=args.timeSeriesDateColumn,
+        activityClassification=args.activityClassification, labels=labels)
 
     # print basic output
     summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
@@ -303,7 +303,7 @@ def main():
     processingEndTime = datetime.datetime.now()
     processingTime = (processingEndTime - processingStartTime).total_seconds()
     accelerometer.accUtils.toScreen("in total, processing took " + \
-        str(processingTime) +  " seconds")
+        str(processingTime) + " seconds")
 
 
 
