@@ -10,6 +10,7 @@ import json
 import os
 import accelerometer.summariseEpoch
 import sys
+import pandas as pd
 
 
 def main():
@@ -170,7 +171,7 @@ def main():
     if len(sys.argv) < 2:
         msg = "\nInvalid input, please enter at least 1 parameter, e.g."
         msg += "\npython ActivitySummary.py inputFile.CWA \n"
-        accUtils.toScreen(msg)
+        accelerometer.accUtils.toScreen(msg)
         parser.print_help()
         sys.exit(-1)
     processingStartTime = datetime.datetime.now()
