@@ -1,15 +1,20 @@
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.zip.GZIPOutputStream;
 
 
 public class NpyWriter {
 
-	private RandomAccessFile file;
+    private static final Boolean COMPRESS = true;
+    private String outputFile;
+	private File file;
+    private RandomAccessFile raf;
 	private int linesWritten = 0;
 
 	private final static byte[] NPY_HEADER;
@@ -41,14 +46,17 @@ public class NpyWriter {
 	 * @param outputFile filename for the .npy file
 	 */
 	public NpyWriter(String outputFile) {
+        this.outputFile = outputFile;
+
 		try {
-			file = new RandomAccessFile(new File(outputFile), "rw");
-			file.setLength(0); // clear file
+            file = new File(outputFile);
+			raf = new RandomAccessFile(file, "rw");
+			raf.setLength(0); // clear file
 
 			// generate dummy header (maybe just use real header?)
 			int hdrLen = NPY_HEADER.length + 3; // +3 for three extra bytes due to NPY_(MIN/MAX)_VERSION and \n
 			String filler = new String(new char[HEADER_SIZE + hdrLen]).replace("\0", " ") +"\n";
-			file.writeBytes(filler);
+			raf.writeBytes(filler);
 			itemTypes.add(Long.class); itemNames.add("time");
 			// itemTypes.add(Short.class);itemNames.add("x");
 			// itemTypes.add(Short.class);itemNames.add("y");
@@ -79,12 +87,12 @@ public class NpyWriter {
 		lineBuffer.putDouble(z);
 		lineBuffer.putDouble(temperature);
 		if (!lineBuffer.hasRemaining()) {
-			file.write(lineBuffer.array());
+			raf.write(lineBuffer.array());
 			lineBuffer.clear();
 		}
 
 		linesWritten+=1;
-		if (linesWritten % 10000000 == 0) {this.writeHeader(); System.out.print(linesWritten +" ");}
+		if (linesWritten % 10000000 == 0) {writeHeader(); System.out.print(linesWritten +" ");}
 
 	}
 
@@ -94,11 +102,11 @@ public class NpyWriter {
 	public void writeHeader() {
 		try {
 
-			file.seek(0);
+			raf.seek(0);
 
-			file.write(NPY_HEADER);
-			file.write(NPY_MAJ_VERSION);
-			file.write(NPY_MIN_VERSION);
+			raf.write(NPY_HEADER);
+			raf.write(NPY_MAJ_VERSION);
+			raf.write(NPY_MIN_VERSION);
 
 			// Describes the data to be written. Padded with space characters to be an even
 			// multiple of the block size. Terminated with a newline. Prefixed with a header length.
@@ -124,11 +132,11 @@ public class NpyWriter {
 
 			dataHeader = dataHeader + filler + '\n';
 
-			writeLEShort (file, (short) HEADER_SIZE);
+			writeLEShort (raf, (short) HEADER_SIZE);
 
 
-			file.writeBytes(dataHeader);
-			file.seek(file.length());
+			raf.writeBytes(dataHeader);
+			raf.seek(raf.length());
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -183,24 +191,50 @@ public class NpyWriter {
             return numpyByteOrder+"f8";
 		else
 			throw new IllegalArgumentException("Don't know the corresponding Python datatype for " + datatype.getSimpleName());
-	}
+    }
+
+    private void compress() {
+        try {
+            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(outputFile+".gz")));
+            byte [] buff = new byte[1024];
+            int len;
+            raf.seek(0);
+            while((len=raf.read(buff)) != -1){
+                zip.write(buff, 0, len);
+            }
+            zip.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 	public void close() {
-		this.writeHeader(); // ensure header is correct length
+		writeHeader(); // ensure header is correct length
 
 		try {
 			// write any remaining data
-			this.file.write(lineBuffer.array());
+			raf.write(lineBuffer.array());
 			lineBuffer.clear();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+        }
+
+        if (COMPRESS) {
+            System.out.println("\ncompressing .npy file...");
+            compress();  // compress created file
+        }
 
 		try {
-			this.file.close();
+            raf.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+        }
+
+        if (COMPRESS) {
+            System.out.println("deleting uncompressed .npy file...");
+            file.delete();  // note: raf must be closed first
+        }
+
 		System.out.println("npyWriter was shut down correctly");
-	}
+    }
 }
