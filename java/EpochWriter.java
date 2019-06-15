@@ -216,23 +216,6 @@ public class EpochWriter {
 			double x, double y, double z, double temperature,
 			int[] errCounter) {
 
-		// // writes raw data to a .npy file instead of an Epoch.csv file if this variable is set
-		// if (npyWriter!=null) {
-		// 	try {
-		// 		if (!Double.isNaN(x) && !Double.isNaN(y) && !Double.isNaN(z) && !Double.isNaN(temperature)) {
-		// 			// data is scaled to fit +/- 8g's, must be unscaled after reading
-		// 			npyWriter.writeData(time, (short) (x *8192), (short) (y*8192), (short) (z*8192), (short) (temperature * 1024));
-		// 		} else {
-		// 			System.out.println("NaN at " + millisToTimestamp(time).format(timeFormat)+","+x+","+y+","+z+","+temperature );
-		// 		}
-		// 	} catch (IOException e) {
-		// 		// TODO Auto-generated catch block
-		// 		e.printStackTrace();
-		// 	}
-		// 	return true; // set to false to generate epoch.csv file as well
-		// }
-
-
 		if (startTime!=UNUSED_DATE && time<startTime) {
 			return true;
 		}

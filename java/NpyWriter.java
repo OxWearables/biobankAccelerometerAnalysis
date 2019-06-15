@@ -31,7 +31,6 @@ public class NpyWriter {
 
 	// buffer file output so it's faster
 	private int bufferLength = 1000; // number of lines to buffer
-	// private int bytesPerLine = (Long.BYTES + Short.BYTES * 4);
 	private int bytesPerLine = (Long.BYTES + Float.BYTES * 3);
 //	private int bufferPosition = 0;
 	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
@@ -58,10 +57,6 @@ public class NpyWriter {
 			String filler = new String(new char[HEADER_SIZE + hdrLen]).replace("\0", " ") +"\n";
 			raf.writeBytes(filler);
 			itemTypes.add(Long.class); itemNames.add("time");
-			// itemTypes.add(Short.class);itemNames.add("x");
-			// itemTypes.add(Short.class);itemNames.add("y");
-			// itemTypes.add(Short.class);itemNames.add("z");
-			// itemTypes.add(Short.class);itemNames.add("temperature");
 			itemTypes.add(Float.class);itemNames.add("x");
 			itemTypes.add(Float.class);itemNames.add("y");
 			itemTypes.add(Float.class);itemNames.add("z");
@@ -74,13 +69,8 @@ public class NpyWriter {
 			throw new RuntimeException("The .npy file " + outputFile +" could not be created");
 		}
 	}
-	// public void writeData(long time, short x, short y, short z, short temperature) throws IOException {
 	public void writeData(long time, Float x, Float y, Float z) throws IOException {
 		lineBuffer.putLong(time);
-		// lineBuffer.putShort(x);
-		// lineBuffer.putShort(y);
-		// lineBuffer.putShort(z);
-		// lineBuffer.putShort(temperature);
 		lineBuffer.putFloat(x);
 		lineBuffer.putFloat(y);
 		lineBuffer.putFloat(z);
