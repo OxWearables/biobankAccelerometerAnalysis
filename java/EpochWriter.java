@@ -204,7 +204,7 @@ public class EpochWriter {
 		writeLine(epochFileWriter, epochHeader);
 
 		if (rawWriter!=null)
-			writeLine(rawWriter, "time,x,y,z,temperature");
+			writeLine(rawWriter, "time,x,y,z");
 
 
 	}
@@ -474,21 +474,17 @@ public class EpochWriter {
 			accPA = mean(paVals);
 		}
 		if (rawWriter != null) {
-			// temperature does not change much, so we can use the mean
-			double temp = mean(temperatureVals);
 			for (int c = 0; c < xResampled.length; c++) {
 				writeLine(rawWriter,
 						epochStartTime.plusNanos(timeResampled[c] * 1000000).format(timeFormat)
-								+ "," + DF3.format(xResampled[c]) + "," + DF3.format(yResampled[c]) + "," + DF3.format(zResampled[c]) + "," + temp);
+								+ "," + DF3.format(xResampled[c]) + "," + DF3.format(yResampled[c]) + "," + DF3.format(zResampled[c]));
 			}
         }
 		if (npyWriter!=null) {
-			// temperature does not change much, so we can use the mean
-			double temp = mean(temperatureVals);
 			for (int c = 0; c < xResampled.length; c++) {
                 // note: For .npy format, we store time in Unix nanoseconds
                 long time = (long) (timestampToMillis(epochStartTime.plusNanos(timeResampled[c] * 1000000)) * 1000000);
-                writeNpyLine(npyWriter, time, xResampled[c], yResampled[c], zResampled[c], temp);
+                writeNpyLine(npyWriter, time, xResampled[c], yResampled[c], zResampled[c]);
             }
 
 		}
@@ -1535,13 +1531,13 @@ public class EpochWriter {
 		}
     }
 
-    private static void writeNpyLine(NpyWriter npyWriter, long time, double x, double y, double z, double temp){
-        if (Double.isNaN(x) && Double.isNaN(y) && Double.isNaN(z) && Double.isNaN(temp)) {
-            System.err.println("NaN at "+time+","+x+","+y+","+z+","+temp);
+    private static void writeNpyLine(NpyWriter npyWriter, long time, double x, double y, double z){
+        if (Double.isNaN(x) && Double.isNaN(y) && Double.isNaN(z)) {
+            System.err.println("NaN at "+time+","+x+","+y+","+z);
         }
 
         try {
-            npyWriter.writeData(time, x, y, z, temp);
+            npyWriter.writeData(time, (float) x, (float) y, (float) z);
         } catch (Exception excep) {
 			System.err.println("line write error: " + excep.toString());
         }

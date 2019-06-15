@@ -32,7 +32,7 @@ public class NpyWriter {
 	// buffer file output so it's faster
 	private int bufferLength = 1000; // number of lines to buffer
 	// private int bytesPerLine = (Long.BYTES + Short.BYTES * 4);
-	private int bytesPerLine = (Long.BYTES + Double.BYTES * 4);
+	private int bytesPerLine = (Long.BYTES + Float.BYTES * 3);
 //	private int bufferPosition = 0;
 	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
 	private char numpyByteOrder = nativeByteOrder==ByteOrder.BIG_ENDIAN ? '>' : '<';
@@ -62,10 +62,9 @@ public class NpyWriter {
 			// itemTypes.add(Short.class);itemNames.add("y");
 			// itemTypes.add(Short.class);itemNames.add("z");
 			// itemTypes.add(Short.class);itemNames.add("temperature");
-			itemTypes.add(Double.class);itemNames.add("x");
-			itemTypes.add(Double.class);itemNames.add("y");
-			itemTypes.add(Double.class);itemNames.add("z");
-			itemTypes.add(Double.class);itemNames.add("temperature");
+			itemTypes.add(Float.class);itemNames.add("x");
+			itemTypes.add(Float.class);itemNames.add("y");
+			itemTypes.add(Float.class);itemNames.add("z");
 			System.out.println(itemNames.toString());
 			System.out.println(itemTypes.toString());
 			System.out.println("order = "+ lineBuffer.order().toString());
@@ -76,16 +75,15 @@ public class NpyWriter {
 		}
 	}
 	// public void writeData(long time, short x, short y, short z, short temperature) throws IOException {
-	public void writeData(long time, Double x, Double y, Double z, Double temperature) throws IOException {
+	public void writeData(long time, Float x, Float y, Float z) throws IOException {
 		lineBuffer.putLong(time);
 		// lineBuffer.putShort(x);
 		// lineBuffer.putShort(y);
 		// lineBuffer.putShort(z);
 		// lineBuffer.putShort(temperature);
-		lineBuffer.putDouble(x);
-		lineBuffer.putDouble(y);
-		lineBuffer.putDouble(z);
-		lineBuffer.putDouble(temperature);
+		lineBuffer.putFloat(x);
+		lineBuffer.putFloat(y);
+		lineBuffer.putFloat(z);
 		if (!lineBuffer.hasRemaining()) {
 			raf.write(lineBuffer.array());
 			lineBuffer.clear();
