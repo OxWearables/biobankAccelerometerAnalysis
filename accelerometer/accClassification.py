@@ -84,7 +84,8 @@ def activityClassification(epochFile,
 MIN_TRAIN_CLASS_COUNT = 100
 def trainClassificationModel(trainingFile, tarArchive, labelCol="label", 
     participantCol="participant", atomicLabelCol="annotation", metCol="MET",
-    testParticipants=None, testMatrix="activityModels/confusionMatrix.txt", 
+    featuresTxt="activityModels/features.txt", testParticipants=None,
+    testMatrix="activityModels/confusionMatrix.txt",
     rfThreads=1, rfTrees = 1000):
     """Train model to classify activity states from epoch feature data
 
@@ -102,6 +103,7 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
         vs. 'walking'
     :param str metCol: Input MET column
+    :param str featuresTxt: Input txt file listing feature column names
     :param str testParticipants: Input comma separated list of participant IDs 
         to test on. Will only output trained model if this is null (i.e. train 
         on all possible data)
@@ -115,7 +117,7 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     """
 
     # load list of features to use in analysis
-    featureCols = getListFromTxtFile("activityModels/features.txt")
+    featureCols = getListFromTxtFile(featuresTxt)
 
     #load in participant information, and remove null/messy labels/features
     train = pd.read_csv(trainingFile)
