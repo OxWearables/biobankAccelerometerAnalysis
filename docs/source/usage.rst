@@ -12,7 +12,7 @@ Basic usage
 To extract a summary of movement (average sample vector magnitude) and
 (non)wear time from raw Axivity .CWA accelerometer files:
 ::
-    $ python3 accProcess.py data/sample.cwa
+    $ python3 accProcess.py data/sample.cwa.gz
     $ <summary output written to data/sample-outputSummary.json>
     $ <time series output written to data/sample-timeSeries.csv.gz>
     $ <non wear episodes output written to data/sample-nonWearEpisodes.csv.gz>
@@ -59,7 +59,7 @@ To process multiple files, we recommend the following directory structure be use
 ::
     <studyName>/
         files.csv #listing all files in rawData directory
-        rawData/ #all raw .cwa .bin .gt3x files (no spaces in filename)
+        rawData/ #all raw .cwa .cwa.gz .bin .gt3x files (no spaces in filename)
         summary/ #to store outputSummary.json
         epoch/ #to store feature output for 30sec windows
         timeSeries/ #simple csv time series output (VMag, activity binary predictions)
@@ -174,11 +174,11 @@ Specify file in another folder (note: use "" for file names with spaces):
 
 Change epoch length to 60 seconds:
 ::
-    $ python3 accProcess.py data/sample.cwa --epochPeriod 60 
+    $ python3 accProcess.py data/sample.cwa.gz --epochPeriod 60 
 
 Manually set calibration coefficients:
 ::
-    $ python3 accProcess.py data/sample.cwa --skipCalibration True
+    $ python3 accProcess.py data/sample.cwa.gz --skipCalibration True
         --calOffset -0.2 -0.4 1.5  --calSlope 0.7 0.8 0.7
         --calTemperature 0.2 0.2 0.2 --meanTemp 20.2
 

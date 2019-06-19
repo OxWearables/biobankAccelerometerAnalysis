@@ -26,16 +26,16 @@ Dependancies include: unix, java 8 (`Java 8 JDK <http://www.oracle.com/technetwo
 Getting started
 *****
 To extract a summary of movement (average sample vector magnitude) and
-(non)wear time from raw Axivity .CWA accelerometer files:
+(non)wear time from raw Axivity .CWA (or gzipped .cwa.gz) accelerometer files:
 ::
-	$ python3 accProcess.py data/sample.cwa
+	$ python3 accProcess.py data/sample.cwa.gz
         <output written to data/sample-outputSummary.json>
         <time series output written to data/sample-timeSeries.csv.gz>
 
 The main output JSON will look like:
 ::
 	{
-            file-name: "sample.cwa",
+            file-name: "sample.cwa.gz",
             file-startTime: "2014-05-07 13:29:50",
             file-endTime: "2014-05-13 09:49:50",
             acc-overall-avg(mg): 33.23,

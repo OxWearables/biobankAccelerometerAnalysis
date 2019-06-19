@@ -29,7 +29,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
         3) use calibration coefficients and then write filtered avgVm epochs
         to <epochFile> from <rawFile>
 
-    :param str rawFile: Input <cwa/bin/gt3x> raw accelerometer file
+    :param str rawFile: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
     :param str epochFile: Output csv.gz file of processed epoch data
     :param str stationaryFile: Output/temporary file for calibration
     :param dict summary: Output dictionary containing all summary metrics

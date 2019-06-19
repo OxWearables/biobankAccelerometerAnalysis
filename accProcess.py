@@ -24,9 +24,10 @@ def main():
     )
     # required
     parser.add_argument('rawFile', metavar='input file', type=str,
-                            help="""the .cwa file to process (e.g. sample.cwa).
-                            If the file path contains spaces,it must be enclosed
-                            in quote marks (e.g. \"../My Documents/sample.cwa\")
+                            help="""the <.cwa/.cwa.gz> file to process
+                            (e.g. sample.cwa.gz). If the file path contains
+                            spaces,it must be enclosed in quote marks 
+                            (e.g. \"../My Documents/sample.cwa\")
                             """)
 
     #optional inputs
@@ -173,7 +174,7 @@ def main():
     #
     if len(sys.argv) < 2:
         msg = "\nInvalid input, please enter at least 1 parameter, e.g."
-        msg += "\npython ActivitySummary.py inputFile.CWA \n"
+        msg += "\npython accProcess.py data/sample.cwa.gz \n"
         accelerometer.accUtils.toScreen(msg)
         parser.print_help()
         sys.exit(-1)
