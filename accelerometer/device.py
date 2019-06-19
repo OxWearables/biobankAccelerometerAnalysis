@@ -1,6 +1,7 @@
 """Module to process raw accelerometer files into epoch data."""
 
 from accelerometer import accUtils
+import gzip
 import numpy as np
 import os
 import pandas as pd
@@ -96,6 +97,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             # call process to identify stationary epochs
             exitCode = call(commandArgs)
             if exitCode != 0:
+                print(commandArgs)
                 print("Error: java calibration failed, exit ", exitCode)
                 sys.exit(-6)
             # record calibrated axes scale/offset/temp vals + static point stats
@@ -155,6 +157,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
         exitCode = call(commandArgs)
         if exitCode != 0:
+            print(commandArgs)
             print("Error: java epoch generation failed, exit ", exitCode)
             sys.exit(-7)
 
@@ -415,7 +418,7 @@ def getDeviceId(rawFile):
 
     if rawFile.lower().endswith('.bin'):
         return getGeneaDeviceId(rawFile)
-    elif rawFile.lower().endswith('.cwa'):
+    elif rawFile.lower().endswith('.cwa') or rawFile.lower().endswith('.cwa.gz'):
         return getAxivityDeviceId(rawFile)
     elif rawFile.lower().endswith('.gt3x'):
         return getGT3XDeviceId(rawFile)
@@ -436,8 +439,10 @@ def getAxivityDeviceId(cwaFile):
     :return: Device ID
     :rtype: int
     """
-
-    f = open(cwaFile, 'rb')
+    if cwaFile.lower().endswith('.cwa'):
+        f = open(cwaFile, 'rb')
+    elif cwaFile.lower().endswith('.cwa.gz'):
+        f = gzip.open(cwaFile,'rb')
     header = f.read(2)
     if header == b'MD':
         blockSize = struct.unpack('H', f.read(2))[0]

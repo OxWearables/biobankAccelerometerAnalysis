@@ -6,16 +6,20 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -322,7 +326,9 @@ public class AxivityAx3Epochs {
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
 				readCwaEpochs(accFile);
-			} else if (accFile.toLowerCase().endsWith(".bin")) {
+			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
+                readCwaGzEpochs(accFile);
+            } else if (accFile.toLowerCase().endsWith(".bin")) {
 				readGeneaEpochs(accFile);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
 				readG3TXEpochs(accFile);
@@ -732,6 +738,73 @@ public class AxivityAx3Epochs {
 		}
 	}
 
+	/**
+	 * Read and process Axivity CWA.gz gzipped file. Setup file reading 
+	 * infrastructure and then call readCwaBuffer() method
+	**/
+	private static void readCwaGzEpochs(String accFile) {
+
+        int[] errCounter = new int[] { 0 }; // store val if updated in other
+                                            // method
+        // Inter-block timstamp tracking
+        LocalDateTime[] lastBlockTime = { null };
+        int[] lastBlockTimeIndex = { 0 };
+
+        // data block support variables
+        String header = "";
+
+        // Variables for tracking start offset of header
+        LocalDateTime SESSION_START = null;
+        long START_OFFSET_NANOS = 0;
+
+
+        int bufSize = 512;
+        ByteBuffer buf = ByteBuffer.allocate(bufSize);
+        try ( FileInputStream accStream = new FileInputStream(accFile); ) {
+            GZIPInputStream in = new GZIPInputStream(accStream);
+            ReadableByteChannel rawAccReader = Channels.newChannel(in);
+
+            // now read every page in CWA file
+            int pageCount = 0;
+            long memSizePages = getUncompressedSizeofGzipFile(accFile) / bufSize;
+            boolean USE_PRECISE_TIME = true; // true uses block fractional time
+                                                // and
+                                                // interpolates timestamp
+                                                // between blocks.
+            while (rawAccReader.read(buf) != -1) {
+                readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS, 
+                    USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
+                    errCounter);
+                buf.clear();
+                // option to provide status update to user...
+                pageCount++;
+                if (verbose && pageCount % 10000 == 0) {
+                    System.out.print((pageCount * 100 / memSizePages) + "%\t");
+                }
+            }
+            rawAccReader.close();
+        } catch (Exception excep) {
+            excep.printStackTrace(System.err);
+            System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
+            System.exit(-2);
+        }
+    }
+
+    private static long getUncompressedSizeofGzipFile(String gzipFile){
+    	//credit to https://stackoverflow.com/questions/7317243/gets-the-uncompressed-size-of-this-gzipinputstream
+    	long val = 500000;
+    	try{
+    		RandomAccessFile raf = new RandomAccessFile(gzipFile, "r");
+			raf.seek(raf.length() - Integer.BYTES);
+	        int n = raf.readInt();
+	        val = Integer.toUnsignedLong(Integer.reverseBytes(n));
+		} catch(IOException excep){
+			excep.printStackTrace(System.err);
+            System.err.println("error reading gz size of file " + gzipFile + ": " + excep.toString());
+		}
+		System.out.println("hey I got " + val);
+		return val;
+    }
 
 	/**
 	 * Read Axivity CWA file, then call method to write epochs from raw data.
