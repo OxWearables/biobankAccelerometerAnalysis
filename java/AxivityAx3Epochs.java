@@ -802,7 +802,6 @@ public class AxivityAx3Epochs {
 			excep.printStackTrace(System.err);
             System.err.println("error reading gz size of file " + gzipFile + ": " + excep.toString());
 		}
-		System.out.println("hey I got " + val);
 		return val;
     }
 
