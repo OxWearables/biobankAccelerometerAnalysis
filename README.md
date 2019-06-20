@@ -45,7 +45,15 @@ $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
-
+The underlying modules can also be called in custom python scripts:
+```Python
+    from accelerometer import summariseEpoch
+    summary = {}
+    epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz", 
+            "sample-nonWear.csv.gz", summary)
+    # <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
+    # with outcomes>
+```
 
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be 

@@ -42,7 +42,7 @@ This may take a few minutes. When done, there will be four files (default in the
 
 To visualise the time output:
 ::
-  python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
+  $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
     <output plot written to data/sample-plot.png>
 
 .. figure:: samplePlot.png
@@ -77,16 +77,16 @@ Next move relevant raw accelerometer files to the rawData folder:
 
 Then use our python utility function to write processing cmds for all files:
 ::
-    >>> from accelerometer import accUtils
-    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-    >>>    runName="dec18")
-    <list of processing commands written to "process-cmds.txt">
+    from accelerometer import accUtils
+    accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
+       runName="dec18")
+    # <list of processing commands written to "process-cmds.txt">
 
-    >>> # if for some reason we wanted to use different thresholds for moderate
-    >>> # and vigorous intensity activities, we could go with
-    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-    >>>     runName="dec18", cmdOptions="--mgMVPA 90 --mgVPA 435")
-    <list of processing commands written to "process-cmds.txt">
+    # if for some reason we wanted to use different thresholds for moderate
+    # and vigorous intensity activities, we could go with
+    accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
+        runName="dec18", cmdOptions="--mgMVPA 90 --mgVPA 435")
+    # <list of processing commands written to "process-cmds.txt">
 
 We can then kick-start the processing of all accelerometer files. More advanced
 users will probably want to parallelise the below script using their HPC
@@ -98,10 +98,11 @@ Next, using our python utility function, we would like to collate all
 individual processed .json summary files into a single large csv for subsequent 
 health analses:
 ::
-    >>> from accelerometer import accUtils
-    >>> accUtils.collateJSONfilesToSingleCSV("/myStudy/summary/dec18/", "myStudy/dec18-summary-info.csv")
-    <summary CSV for all participants written to "/myStudy/dec18-sumamry-info.csv">
-    """
+    from accelerometer import accUtils
+    accUtils.collateJSONfilesToSingleCSV("/myStudy/summary/dec18/", \
+        "myStudy/dec18-summary-info.csv")
+    # <summary CSV for all participants written to "/myStudy/dec18-sumamry-info.csv">
+
 
 ===============
 Quality control
@@ -110,28 +111,28 @@ If is often necessary to check that all files have successfully processed. Our
 python utility function can write to file all participants' data that was not
 successfully processed:
 ::
-    >>> from accelerometer import accUtils
-    >>> accUtils.identifyUnprocessedFiles("/myStudy/files.csv", "myStudy/dec18-summary-info.csv", \
-    >>>       "myStudy/files-unprocessed.csv")
-    <Output CSV listing files to be reprocessed written to "/myStudy/files-unprocessed.csv">
-    """
+    from accelerometer import accUtils
+    accUtils.identifyUnprocessedFiles("/myStudy/files.csv", "myStudy/dec18-summary-info.csv", \
+          "myStudy/files-unprocessed.csv")
+    # <Output CSV listing files to be reprocessed written to "/myStudy/files-unprocessed.csv">
+
 
 On other occasions some participants' data may not have been calibrated properly.
 Our python utility function can assigns the calibration coefs from a previous 
 good use of a given device in the same study dataset:
 ::
-    >>> from accelerometer import accUtils
-    >>> accUtils.updateCalibrationCoefs("myStudy/dec18-summary-info.csv", \
-    >>>        "myStudy/files-recalibration.csv")
-    <CSV of files to be reprocessed written to "/myStudy/files-recalibration.csv">
-    """
+    from accelerometer import accUtils
+    accUtils.updateCalibrationCoefs("myStudy/dec18-summary-info.csv", \
+           "myStudy/files-recalibration.csv")
+    # <CSV of files to be reprocessed written to "/myStudy/files-recalibration.csv">
+
 
 Our python utility function can then re-write processing cmds as follows:
 ::
-    >>> from accelerometer import accUtils
-    >>> accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds-recalibration.txt", \
-    >>>    runName="dec18", filesID="files-calibration.csv", cmdOptions="--skipCalibration True")
-    <list of processing commands written to "process-cmds-recalibration.txt">
+    from accelerometer import accUtils
+    accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds-recalibration.txt", \
+       runName="dec18", filesID="files-calibration.csv", cmdOptions="--skipCalibration True")
+    # <list of processing commands written to "process-cmds-recalibration.txt">
 
 These 'reprocessed' files can then be processed as outlined in the section above.
 
@@ -145,13 +146,13 @@ Different activity classification models can be specified to identify different
 activity types. For example, to use activity states from the Willetts 2018 
 Scientific Reports paper:
 ::
-    python3 accProcess.py --activityModel activityModels/willetts2018.tar \
+    $ python3 accProcess.py --activityModel activityModels/willetts2018.tar \
         data/sample.cwa.gz
 
 To visualise the time series and new activity classification output:
 ::
-  python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png 
-     --activityModel activityModels/willetts2018.tar
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png \
+        --activityModel activityModels/willetts2018.tar
     <output plot written to data/sample-plot.png>
 
 .. figure:: samplePlotWilletts.png
@@ -181,7 +182,7 @@ the model's performance on unseen data:
         testParticipants="4,5", \ 
         testMatrix="activityModels/confusionMatrix.txt", \ 
         rfTrees=100, rfThreads=4) 
-    <Confusion matrix written to:  activityModels/confusionMatrix.txt>
+    # <Confusion matrix written to:  activityModels/confusionMatrix.txt>
 
 After evaluating the performance of our model on unseen data, we then re-train 
 a final model that includes all possible data. We therefore set the
@@ -194,12 +195,12 @@ testParticipants variable to 'None', which then results in an output .tar model:
         featuresTxt="activityModels/features.txt", \
         testParticipants=None, \
         rfTrees=100, rfThreads=4)
-    <Model saved to activityModels/new-model.tar>
-    """
+    # <Model saved to activityModels/new-model.tar>
+
 
 This new model can be deployed as follows:
 ::
-    python3 accProcess.py --activityModel activityModels/new-model.tar \
+    $ python3 accProcess.py --activityModel activityModels/new-model.tar \
         data/sample.cwa.gz
 
 
@@ -208,7 +209,7 @@ Advanced usage
 **************
 To list all available processing options and their defaults, simply type:
 ::
-    python3 accProcess.py -h
+    $ python3 accProcess.py -h
 
 Some example usages:
 
@@ -222,16 +223,16 @@ Change epoch length to 60 seconds:
 
 Manually set calibration coefficients:
 ::
-    $ python3 accProcess.py data/sample.cwa.gz --skipCalibration True
-        --calOffset -0.2 -0.4 1.5  --calSlope 0.7 0.8 0.7
+    $ python3 accProcess.py data/sample.cwa.gz --skipCalibration True \
+        --calOffset -0.2 -0.4 1.5  --calSlope 0.7 0.8 0.7 \
         --calTemperature 0.2 0.2 0.2 --meanTemp 20.2
 
 
 The underlying modules can also be called in custom python scripts:
 ::
-    >>> from accelerometer import summariseEpoch
-    >>> summary = {}
-    >>> epochData, labels = summariseEpoch.getActivitySummary("data/sample-epoch.csv.gz", 
-            "data/sample-nonWear.csv.gz", summary)
-    <nonWear file written to "data/sample-nonWear.csv.gz" and dict "summary" updated
-    with outcomes>
+    from accelerometer import summariseEpoch
+    summary = {}
+    epochData, labels = summariseEpoch.getActivitySummary( \
+        "data/sample-epoch.csv.gz", "data/sample-nonWear.csv.gz", summary)
+    # <nonWear file written to "data/sample-nonWear.csv.gz" and dict "summary" \
+    #    updated with outcomes>

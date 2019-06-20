@@ -55,12 +55,12 @@ To visualise the time series and activity classification output:
 
 The underlying modules can also be called in custom python scripts:
 ::
-    >>> from accelerometer import summariseEpoch
-    >>> summary = {}
-    >>> epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz", 
+    from accelerometer import summariseEpoch
+    summary = {}
+    epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz", 
             "sample-nonWear.csv.gz", summary)
-    <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
-    with outcomes>
+    # <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
+    # with outcomes>
 
 
 
