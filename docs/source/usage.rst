@@ -227,7 +227,7 @@ Manually set calibration coefficients:
         --calOffset -0.2 -0.4 1.5  --calSlope 0.7 0.8 0.7 \
         --calTemperature 0.2 0.2 0.2 --meanTemp 20.2
 
-Extract calibrated and filtered raw data .csv.gz file from raw .cwa file:
+Extract calibrated and resampled raw data .csv.gz file from raw .cwa file:
 ::
     $ python3 accProcess.py data/sample.cwa.gz --rawOutput True \
         --activityClassification False
