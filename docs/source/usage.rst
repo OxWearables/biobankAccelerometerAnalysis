@@ -142,10 +142,11 @@ These 'reprocessed' files can then be processed as outlined in the section above
 Classifying different activity types
 ************************************
 Different activity classification models can be specified to identify different 
-activity types. For example to use activity states from the Willetts 2018 
+activity types. For example, to use activity states from the Willetts 2018 
 Scientific Reports paper:
 ::
-    python3 accProcess.py --activityModel activityModels/willetts2018.tar
+    python3 accProcess.py --activityModel activityModels/willetts2018.tar \
+        data/sample.cwa.gz
 
 To visualise the time series and new activity classification output:
 ::
@@ -157,6 +158,49 @@ To visualise the time series and new activity classification output:
     
     Output plot of class predictions using Willetts 2018 classification model. 
     Note different set of activity classes.
+
+========================
+Training a bespoke model
+========================
+It is also possible to train a bespoke activity classification model. This 
+requires a labelled dataset (.csv file) and a list of features (.txt file) to 
+include from the epoch file.
+
+First we need to evaluate how well the model works on unseen data. We therefore 
+train a model on a 'training set' of participants, and then test how well that
+model works on a 'test set' of participant. The command below allows us to achieve
+this by specifying the test participant IDs (all other IDs will automatically go
+to the training set). This will output a confusion matrix to allow us assess
+the model's performance on unseen data:
+::
+    import accelerometer
+    accelerometer.accClassification.trainClassificationModel( \
+        "activityModels/labelled-acc-epochs.csv", \
+        "activityModels/new-model.tar", \ 
+        featuresTxt="activityModels/features.txt", \ 
+        testParticipants="4,5", \ 
+        testMatrix="activityModels/confusionMatrix.txt", \ 
+        rfTrees=100, rfThreads=4) 
+    <Confusion matrix written to:  activityModels/confusionMatrix.txt>
+
+After evaluating the performance of our model on unseen data, we then re-train 
+a final model that includes all possible data. We therefore set the
+testParticipants variable to 'None', which then results in an output .tar model:
+::
+    import accelerometer
+    accelerometer.accClassification.trainClassificationModel( \
+        "activityModels/labelled-acc-epochs.csv", \
+        "activityModels/new-model.tar", \
+        featuresTxt="activityModels/features.txt", \
+        testParticipants=None, \
+        rfTrees=100, rfThreads=4)
+    <Model saved to activityModels/new-model.tar>
+    """
+
+This new model can be deployed as follows:
+::
+    python3 accProcess.py --activityModel activityModels/new-model.tar \
+        data/sample.cwa.gz
 
 
 **************
