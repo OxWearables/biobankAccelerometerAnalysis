@@ -54,9 +54,13 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     :param int epochPeriod: Size of epoch time window (in seconds)
     :param bool useAbs: Use abs(VM) instead of trunc(VM)
     :param bool activityClassification: Extract features for machine learning
-    :param bool rawOutput: Output raw data to a .csv.gz file? requires ~70MB/day.
+    :param bool rawOutput: Output calibrated and filtered raw data to a .csv.gz 
+        file? requires ~50MB/day.
     :param str rawOutputFile: Output raw data ".csv.gz" filename
-    :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~0.1GB/day.
+    :param bool npyOutput: Output calibrated and filtered raw data to a .npy 
+        file? requires ~60MB/day.
+    :param str npyOutputFile: Output raw data ".npy" filename
+    :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~100MB/day.
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output

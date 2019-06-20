@@ -130,11 +130,14 @@ def main():
                             help="""trained activity model .tar file""")
     parser.add_argument('--rawOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output raw data to a .csv.gz file? NOTE:
-                            requires ~70MB per day. (default : %(default)s)""")
+                            help="""output calibrated and filtered raw data to 
+                            a .csv.gz file? NOTE: requires ~50MB per day. 
+                            (default : %(default)s)""")
     parser.add_argument('--npyOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output raw data to as .npy file?""")
+                            help="""output calibrated and filtered raw data to 
+                            .npy file? NOTE: requires ~60MB per day. 
+                            (default : %(default)s)""")
     parser.add_argument('--fftOutput',
                             metavar='True/False', default=False, type=str2bool,
                             help="""output FFT epochs to a .csv file? NOTE:
