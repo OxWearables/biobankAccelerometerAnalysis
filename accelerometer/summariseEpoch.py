@@ -11,10 +11,10 @@ import sys
 
 
 def getActivitySummary(epochFile, nonWearFile, summary,
-    activityClassification = True, startTime = None, endTime = None,
-    epochPeriod = 30, stationaryStd = 13, minNonWearDuration = 60, mgMVPA = 100,
-    mgVPA = 425, activityModel = "activityModels/doherty2018.tar",
-    intensityDistribution = False, verbose = False):
+    activityClassification=True, startTime=None, endTime=None,
+    epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
+    mgVPA=425, activityModel="activityModels/doherty2018.tar",
+    intensityDistribution=False, verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -144,8 +144,8 @@ def get_interrupts(e, epochPeriod, summary):
     # get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
-        interruptMins.append( np.diff(np.array(e[i:i+2].index)) /
-                np.timedelta64(1, 'm') )
+        interruptMins.append(np.diff(np.array(e[i:i+2].index)) /
+                np.timedelta64(1, 'm'))
     # record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
