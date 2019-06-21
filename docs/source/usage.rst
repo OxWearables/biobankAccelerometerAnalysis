@@ -103,7 +103,6 @@ health analses:
         "myStudy/dec18-summary-info.csv")
     # <summary CSV for all participants written to "/myStudy/dec18-sumamry-info.csv">
 
-
 ===============
 Quality control
 ===============
@@ -202,6 +201,48 @@ This new model can be deployed as follows:
 ::
     $ python3 accProcess.py --activityModel activityModels/new-model.tar \
         data/sample.cwa.gz
+
+============================
+Leave one out classification
+============================
+To rigorously test a model with training data from <200 participants, leave one
+participant out evaluation can be helpful. Building on the above 
+examples of training a bespoke model, we use python to create a list of commands
+to test the performance of a model trained on unseen data for each participant:
+::
+    import pandas as pd
+    d = pd.read_csv("activityModels/labelled-acc-epochs.csv", \
+        usecols=['participant'])
+    pts = sorted(d['participant'].unique())
+
+    w = open('training-cmds.txt','w')
+    for p in pts:
+        cmd = "import accelerometer;"
+        cmd += "accelerometer.accClassification.trainClassificationModel("
+        cmd += "'activityModels/labelled-acc-epochs.csv', "
+        cmd += "'activityModels/new-model.tar',"
+        cmd += "featuresTxt='activityModels/features.txt',"
+        cmd += "testParticipants='" + str(p) + "',"
+        cmd += "testMatrix='activityModels/confusionMatrix-" + str(p) + ".txt',"
+        cmd += "rfTrees=100, rfThreads=4)"
+        w.write('python -c $"' + cmd + '"\n')
+    w.close() 
+    # <list of processing commands written to "training-cmds.txt">
+
+These commands can be executed as follows:
+::
+    $ bash training-cmds.txt
+
+After processing these commands, their resulting confusion matrices can be 
+collated using the below utility script:
+::
+    $ python3 utilities/collateConfusionMatrices.py --matrixDir activityModels/ \
+        --outCSV "activityModels/collatedMatrix.csv"
+
+This results in a printed overall `confusion matrix, where a number of metrics
+can be calculated <http://www.marcovanetti.com/pages/cfmatrix/>`_ such as 
+the Cohen's Kappa statistic.
+
 
 
 **************
