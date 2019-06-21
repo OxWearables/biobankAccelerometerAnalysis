@@ -90,7 +90,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     summary['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
 
     # get interrupt and data error summary vals
-    interruptMins = get_interrupts(e, epochPeriod, summary)
+    e = get_interrupts(e, epochPeriod, summary)
 
     # check if data occurs at a daylight savings crossover
     e = check_daylight_savings_crossover(e, startTime, endTime, summary)
@@ -139,8 +139,6 @@ def get_interrupts(e, epochPeriod, summary):
     :rtype: void
     """
 
-    e.dropna(subset=['enmoTrunc', 'xStd', 'yStd', 'zStd'], how='all',
-        inplace=True)
     epochNs = epochPeriod * np.timedelta64(1, 's')
     interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
     # get duration of each interrupt in minutes
@@ -152,6 +150,13 @@ def get_interrupts(e, epochPeriod, summary):
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
 
+    for i in interrupts:
+        start, end = e[i:i+2].index
+        dti = pd.date_range(start=start, end=end, freq=str(epochPeriod)+'s')[1:-1]
+        e = e.append(dti.to_frame())
+    e = e.sort_index()
+
+    return e
 
 
 def check_daylight_savings_crossover(e, startTime, endTime, summary):
