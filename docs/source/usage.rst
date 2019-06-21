@@ -211,7 +211,8 @@ examples of training a bespoke model, we use python to create a list of commands
 to test the performance of a model trained on unseen data for each participant:
 ::
     import pandas as pd
-    d = pd.read_csv("activityModels/labelled-acc-epochs.csv", \
+    trainingFile = "activityModels/labelled-acc-epochs.csv"
+    d = pd.read_csv(trainingFile, \
         usecols=['participant'])
     pts = sorted(d['participant'].unique())
 
@@ -219,12 +220,12 @@ to test the performance of a model trained on unseen data for each participant:
     for p in pts:
         cmd = "import accelerometer;"
         cmd += "accelerometer.accClassification.trainClassificationModel("
-        cmd += "'activityModels/labelled-acc-epochs.csv', "
+        cmd += "'" + trainingFile + "', "
         cmd += "'activityModels/new-model.tar',"
         cmd += "featuresTxt='activityModels/features.txt',"
         cmd += "testParticipants='" + str(p) + "',"
         cmd += "testMatrix='activityModels/confusionMatrix-" + str(p) + ".txt',"
-        cmd += "rfTrees=100, rfThreads=4)"
+        cmd += "rfTrees=1000, rfThreads=1)"
         w.write('python -c $"' + cmd + '"\n')
     w.close() 
     # <list of processing commands written to "training-cmds.txt">
@@ -236,7 +237,7 @@ These commands can be executed as follows:
 After processing these commands, their resulting confusion matrices can be 
 collated using the below utility script:
 ::
-    $ python3 utilities/collateConfusionMatrices.py --matrixDir activityModels/ \
+    $ python3 utilities/collateConfusionMatrices.py --matrixDIR activityModels/ \
         --outCSV "activityModels/collatedMatrix.csv"
 
 This results in a printed overall `confusion matrix, where a number of metrics
