@@ -402,7 +402,7 @@ def calculateECDF(e, inputCol, summary):
     # and write to summary dict
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
-            accUtils.formatNum(ecdf, 4)
+            accUtils.formatNum(ecdf, 5)
 
 
 
@@ -432,7 +432,7 @@ def writeMovementSummaries(e, labels, summary):
             col = accType
 
         # overall / weekday / weekend summaries
-        summary[accType + '-overall-avg'] = accUtils.formatNum(e[col].mean(), 2)
+        summary[accType + '-overall-avg'] = accUtils.formatNum(e[col].mean(), 5)
         summary[accType + '-overall-sd'] = accUtils.formatNum(e[col].std(), 2)
         summary[accType + '-weekday-avg'] = accUtils.formatNum( \
             e[col][e.index.weekday<=4].mean(), 2)
