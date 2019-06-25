@@ -150,11 +150,12 @@ def get_interrupts(e, epochPeriod, summary):
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
 
+    frames = [e]
     for i in interrupts:
         start, end = e[i:i+2].index
         dti = pd.date_range(start=start, end=end, freq=str(epochPeriod)+'s')[1:-1]
-        e = e.append(dti.to_frame())
-    e = e.sort_index()
+        frames.append(dti.to_frame().drop(columns=0))
+    e = pd.concat(frames).sort_index()
 
     return e
 
