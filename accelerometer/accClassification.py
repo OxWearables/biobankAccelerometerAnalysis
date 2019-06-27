@@ -137,7 +137,7 @@ def trainClassificationModel(trainingFile,
         train = train[~train[participantCol].isin(testPIDs)]
     if trainParticipants is not None:
         trainPIDs = trainParticipants.split(',')
-        train = train[train[participantCol].isin(testPIDs)]
+        train = train[train[participantCol].isin(trainPIDs)]
 
     #train Random Forest model
     # first "monkeypatch" RF function to perform per-class balancing
