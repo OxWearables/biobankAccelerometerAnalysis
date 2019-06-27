@@ -6,7 +6,7 @@ import os
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 import sklearn.ensemble.forest as forest
-from sklearn.externals import joblib
+import joblib
 import tarfile
 from time import sleep
 import warnings
@@ -82,11 +82,14 @@ def activityClassification(epochFile,
 
 
 MIN_TRAIN_CLASS_COUNT = 100
-def trainClassificationModel(trainingFile, tarArchive, labelCol="label", 
-    participantCol="participant", atomicLabelCol="annotation", metCol="MET",
-    featuresTxt="activityModels/features.txt", testParticipants=None,
-    testMatrix="activityModels/confusionMatrix.txt",
-    rfThreads=1, rfTrees = 1000):
+def trainClassificationModel(trainingFile, 
+    labelCol="label",  participantCol="participant",
+    atomicLabelCol="annotation", metCol="MET",
+    featuresTxt="activityModels/features.txt",
+    trainParticipants=None, testParticipants=None,
+    rfThreads=1, rfTrees = 1000,
+    outputPredict="activityModels/test-predictions.csv",
+    outputModel="activityModels/sample-model.tar"):
     """Train model to classify activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing 
@@ -94,25 +97,27 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     the input training file to identify pre-defined classes of behaviour from 
     accelerometer data.
 
-    :param str trainingFile: Input csv file of training data
-    :param str tarArchive: Output tarfile object which contains random forest
-        pickle model, HMM priors/transitions/emissions npy files, and npy file
-        of METs for each activity state
+    :param str trainingFile: Input csv file of training data, pre-sorted by time
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
     :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
         vs. 'walking'
     :param str metCol: Input MET column
     :param str featuresTxt: Input txt file listing feature column names
+    :param str trainParticipants: Input comma separated list of participant IDs 
+        to train on.
     :param str testParticipants: Input comma separated list of participant IDs 
         to test on. Will only output trained model if this is null (i.e. train 
         on all possible data)
     :param int rfThreads: Input num threads to use when training random forest
     :param int rfTrees: Input num decision trees to include in random forest
-    :param str testMatrix: Output confusion matrix (on test participants)
-
-    :return: New model written to <tarArchive> OR confusion matrix in test
-        dataset written to <testMatrix>
+    :param str outputPredict: Output CSV of person, label, predicted
+    :param str outputModel: Output tarfile object which contains random forest
+        pickle model, HMM priors/transitions/emissions npy files, and npy file
+        of METs for each activity state
+    
+    :return: New model written to <outputModel> OR csv of test predictions 
+        written to <outputPredict>
     :rtype: void
     """
 
@@ -125,11 +130,14 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
     allCols = [participantCol, labelCol, atomicLabelCol, metCol] + featureCols
     train = train[allCols].dropna(axis=0, how='any')
 
-    # reduce size of training set if we are testing on some participants
+    # reduce size of train/test sets if we are training/testing on some people
     if testParticipants is not None:
         testPIDs = testParticipants.split(',')
         test = train[train[participantCol].isin(testPIDs)]
         train = train[~train[participantCol].isin(testPIDs)]
+    if trainParticipants is not None:
+        trainPIDs = trainParticipants.split(',')
+        train = train[train[participantCol].isin(testPIDs)]
 
     #train Random Forest model
     # first "monkeypatch" RF function to perform per-class balancing
@@ -153,7 +161,7 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
 
     # now write out model (or it's performance on test participants)
     if testParticipants is None:
-        saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions, 
+        saveModelsToTar(outputModel, featureCols, rfModel, priors, transitions, 
             emissions, METs)
     else:
         print('test on participant(s):, ', testParticipants)
@@ -161,16 +169,11 @@ def trainClassificationModel(trainingFile, tarArchive, labelCol="label",
         rfPredictions = rfModel.predict(test[featureCols])
         hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors, 
             transitions, emissions)
-        test['prediction'] = hmmPredictions
-        w = open(testMatrix, 'w')
-        w.write("y_true," + ",".join(states))
-        for i in states:
-            w.write('\n' + i)
-            for j in states:
-                n = len(test[(test[labelCol]==i) & (test['prediction']==j)])
-                w.write(',' + str(n))
-        w.close()
-        print('confusion matrix written to: ', testMatrix)
+        test['predicted'] = hmmPredictions
+        # and write out to file
+        outCols = [participantCol, labelCol, 'predicted']
+        test[outCols].to_csv(outputPredict, index=False)
+        print('Output predictions written to: ', outputPredict)
 
 
 

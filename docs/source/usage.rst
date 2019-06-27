@@ -170,18 +170,34 @@ First we need to evaluate how well the model works on unseen data. We therefore
 train a model on a 'training set' of participants, and then test how well that
 model works on a 'test set' of participant. The command below allows us to achieve
 this by specifying the test participant IDs (all other IDs will automatically go
-to the training set). This will output a confusion matrix to allow us assess
-the model's performance on unseen data:
+to the training set). This will output <participant, time, actual, predicted> 
+predictions for each instance of data in the test set to a CSV file to help
+assess the model:
 ::
     import accelerometer
     accelerometer.accClassification.trainClassificationModel( \
         "activityModels/labelled-acc-epochs.csv", \
-        "activityModels/new-model.tar", \ 
         featuresTxt="activityModels/features.txt", \ 
         testParticipants="4,5", \ 
-        testMatrix="activityModels/confusionMatrix.txt", \ 
-        rfTrees=100, rfThreads=4) 
-    # <Confusion matrix written to:  activityModels/confusionMatrix.txt>
+        outputPredict="activityModels/test-predictions.csv", \ 
+        rfTrees=100, rfThreads=1) 
+    # <Test predictions written to:  activityModels/test-predictions.csv>
+
+A number of `metrics <https://scikit-learn.org/stable/modules/model_evaluation.html#model-evaluation>`_ 
+can then be calculated from the test predictions csv file:
+::
+    import pandas as pd
+    import sklearn
+
+    # load data
+    d = pd.read_csv("test-predictions.csv")
+    y_true = d['label']
+    y_pred = d['predicted']
+    
+    # print metrics
+    print('kappa = ', metrics.cohen_kappa_score(y_true, y_pred))
+    print('accuracy = ', metrics.accuracy_score(y_true, y_pred))
+    print(metrics.classification_report(y_true, y_pred))
 
 After evaluating the performance of our model on unseen data, we then re-train 
 a final model that includes all possible data. We therefore set the
@@ -190,16 +206,16 @@ testParticipants variable to 'None', which then results in an output .tar model:
     import accelerometer
     accelerometer.accClassification.trainClassificationModel( \
         "activityModels/labelled-acc-epochs.csv", \
-        "activityModels/new-model.tar", \
         featuresTxt="activityModels/features.txt", \
+        rfTrees=100, rfThreads=1, \
         testParticipants=None, \
-        rfTrees=100, rfThreads=4)
-    # <Model saved to activityModels/new-model.tar>
+        outputModel="activityModels/sample-model.tar")
+    # <Model saved to activityModels/sample-model.tar>
 
 
 This new model can be deployed as follows:
 ::
-    $ python3 accProcess.py --activityModel activityModels/new-model.tar \
+    $ python3 accProcess.py --activityModel activityModels/sample-model.tar \
         data/sample.cwa.gz
 
 ============================
@@ -212,8 +228,7 @@ to test the performance of a model trained on unseen data for each participant:
 ::
     import pandas as pd
     trainingFile = "activityModels/labelled-acc-epochs.csv"
-    d = pd.read_csv(trainingFile, \
-        usecols=['participant'])
+    d = pd.read_csv(trainingFile, usecols=['participant'])
     pts = sorted(d['participant'].unique())
 
     w = open('training-cmds.txt','w')
@@ -221,10 +236,9 @@ to test the performance of a model trained on unseen data for each participant:
         cmd = "import accelerometer;"
         cmd += "accelerometer.accClassification.trainClassificationModel("
         cmd += "'" + trainingFile + "', "
-        cmd += "'activityModels/new-model.tar',"
         cmd += "featuresTxt='activityModels/features.txt',"
         cmd += "testParticipants='" + str(p) + "',"
-        cmd += "testMatrix='activityModels/confusionMatrix-" + str(p) + ".txt',"
+        cmd += "outputPredict='activityModels/testPredict-" + str(p) + ".csv',"
         cmd += "rfTrees=1000, rfThreads=1)"
         w.write('python -c $"' + cmd + '"\n')
     w.close() 
@@ -234,15 +248,19 @@ These commands can be executed as follows:
 ::
     $ bash training-cmds.txt
 
-After processing these commands, their resulting confusion matrices can be 
-collated using the below utility script:
+After processing the train/test commands, the resulting predictions for each 
+test participant can be collated as follows:
 ::
-    $ python3 utilities/collateConfusionMatrices.py --matrixDIR activityModels/ \
-        --outCSV "activityModels/collatedMatrix.csv"
+    $ head -1 activityModels/testPredict-1.csv > header.csv
+    $ awk 'FNR > 1' activityModels/testPredict-*.csv > tmp.csv
+    $ cat header.csv tmp.csv > testPredict-all.csv
+    $ rm header.csv
+    $ rm tmp.csv
 
-This results in a printed overall `confusion matrix, where a number of metrics
-can be calculated <http://www.marcovanetti.com/pages/cfmatrix/>`_ such as 
-the Cohen's Kappa statistic.
+As indicated just above (under 'Training a bespoke model'), a number of metrics 
+can be calculated for the 'testPredict-all.csv' file.
+
+
 
 
 
