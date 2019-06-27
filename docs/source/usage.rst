@@ -187,7 +187,7 @@ A number of `metrics <https://scikit-learn.org/stable/modules/model_evaluation.h
 can then be calculated from the test predictions csv file:
 ::
     import pandas as pd
-    import sklearn
+    import sklearn.metrics as metrics
 
     # load data
     d = pd.read_csv("test-predictions.csv")
