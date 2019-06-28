@@ -145,8 +145,9 @@ Different activity classification models can be specified to identify different
 activity types. For example, to use activity states from the Willetts 2018 
 Scientific Reports paper:
 ::
-    $ python3 accProcess.py --activityModel activityModels/willetts2018.tar \
-        data/sample.cwa.gz
+    $ python3 accProcess.py data/sample.cwa.gz \
+        --activityModel activityModels/willetts2018.tar
+
 
 To visualise the time series and new activity classification output:
 ::
