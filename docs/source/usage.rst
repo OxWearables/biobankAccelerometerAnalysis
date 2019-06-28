@@ -200,8 +200,9 @@ can then be calculated from the test predictions csv file:
     print(metrics.classification_report(y_true, y_pred))
 
 After evaluating the performance of our model on unseen data, we then re-train 
-a final model that includes all possible data. We therefore set the
-testParticipants variable to 'None', which then results in an output .tar model:
+a final model that includes all possible data. We therefore specify the 
+outputModel parameter, and also set testParticipants to 'None' so as to maximise
+the amount of training data for the final model. This results in an output .tar model:
 ::
     import accelerometer
     accelerometer.accClassification.trainClassificationModel( \

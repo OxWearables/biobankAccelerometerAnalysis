@@ -107,14 +107,14 @@ def trainClassificationModel(trainingFile,
     :param str trainParticipants: Input comma separated list of participant IDs 
         to train on.
     :param str testParticipants: Input comma separated list of participant IDs 
-        to test on. Will only output trained model if this is null (i.e. train 
-        on all possible data)
+        to test on.
     :param int rfThreads: Input num threads to use when training random forest
     :param int rfTrees: Input num decision trees to include in random forest
     :param str outputPredict: Output CSV of person, label, predicted
     :param str outputModel: Output tarfile object which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
-        of METs for each activity state
+        of METs for each activity state. Will only output trained model if this 
+        is not null
     
     :return: New model written to <outputModel> OR csv of test predictions 
         written to <outputPredict>
@@ -159,11 +159,13 @@ def trainClassificationModel(trainingFile,
         MET = train[train[labelCol]==s].groupby(atomicLabelCol)[metCol].mean().mean()
         METs += [MET]
 
-    # now write out model (or it's performance on test participants)
-    if testParticipants is None:
+    # now write out model
+    if outputModel is not None:
         saveModelsToTar(outputModel, featureCols, rfModel, priors, transitions, 
             emissions, METs)
-    else:
+    
+    # assess model performance on test participants
+    if testParticipants is not None:
         print('test on participant(s):, ', testParticipants)
         labels = rfModel.classes_.tolist()
         rfPredictions = rfModel.predict(test[featureCols])
