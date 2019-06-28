@@ -444,7 +444,7 @@ def getListFromTxtFile(inputFile):
     """
 
     items = []
-    f = open(inputFile,'rU')
+    f = open(inputFile,'r')
     for l in f:
         items.append(l.strip())
     f.close()

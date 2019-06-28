@@ -293,7 +293,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
     :rtype: void
     """
 
-    file = open(omconvertInfoFile,'rU')
+    file = open(omconvertInfoFile,'r')
     for line in file:
         elements = line.split(':')
         name, value = elements[0], elements[1]
@@ -474,7 +474,7 @@ def getGeneaDeviceId(binFile):
     :rtype: int
     """
 
-    f = open(binFile, 'rU') # 'Universal' newline mode
+    f = open(binFile, 'r') # 'Universal' newline mode
     next(f) # Device Identity
     deviceId = next(f).split(':')[1].rstrip() # Device Unique Serial Code:011710
     f.close()
