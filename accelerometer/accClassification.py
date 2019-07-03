@@ -89,7 +89,7 @@ def trainClassificationModel(trainingFile,
     trainParticipants=None, testParticipants=None,
     rfThreads=1, rfTrees = 1000,
     outputPredict="activityModels/test-predictions.csv",
-    outputModel="activityModels/sample-model.tar"):
+    outputModel=None):
     """Train model to classify activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing 
@@ -114,7 +114,7 @@ def trainClassificationModel(trainingFile,
     :param str outputModel: Output tarfile object which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METs for each activity state. Will only output trained model if this 
-        is not null
+        is not null e.g. "activityModels/sample-model.tar"
     
     :return: New model written to <outputModel> OR csv of test predictions 
         written to <outputPredict>
