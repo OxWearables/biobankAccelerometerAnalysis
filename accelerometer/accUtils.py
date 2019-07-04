@@ -299,6 +299,7 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
     count = 0
     with open(tmpJsonFile,'w') as fSummary:
         for fStr in glob.glob(inputJsonDir + "*.json"):
+            if fStr == tmpJsonFile: continue
             with open(fStr) as f:
                 if count == 0:
                     fSummary.write('[')
