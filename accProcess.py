@@ -26,7 +26,7 @@ def main():
     parser.add_argument('rawFile', metavar='input file', type=str,
                             help="""the <.cwa/.cwa.gz> file to process
                             (e.g. sample.cwa.gz). If the file path contains
-                            spaces,it must be enclosed in quote marks 
+                            spaces,it must be enclosed in quote marks
                             (e.g. \"../My Documents/sample.cwa\")
                             """)
 
@@ -130,13 +130,13 @@ def main():
                             help="""trained activity model .tar file""")
     parser.add_argument('--rawOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output calibrated and resampled raw data to 
-                            a .csv.gz file? NOTE: requires ~50MB per day. 
+                            help="""output calibrated and resampled raw data to
+                            a .csv.gz file? NOTE: requires ~50MB per day.
                             (default : %(default)s)""")
     parser.add_argument('--npyOutput',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output calibrated and resampled raw data to 
-                            .npy file? NOTE: requires ~60MB per day. 
+                            help="""output calibrated and resampled raw data to
+                            .npy file? NOTE: requires ~60MB per day.
                             (default : %(default)s)""")
     parser.add_argument('--fftOutput',
                             metavar='True/False', default=False, type=str2bool,
@@ -188,6 +188,7 @@ def main():
     # check input/output files/dirs exist and validate input args
     ##########################
     if args.processRawFile is False:
+        #! TODO: this breaks for .cwa.gz files
         if len(args.rawFile.split('.')) < 2:
             args.rawFile += ".cwa"  # TODO edge case since we still need a name?
     elif not os.path.isfile(args.rawFile):
@@ -197,8 +198,8 @@ def main():
             print("error: no file specified. Exiting..")
         sys.exit(-2)
     # get file extension
-    rawFileNoExt = ('.').join(args.rawFile.split('.')[:-1])
-    (rawFilePath, rawFileName) = os.path.split(rawFileNoExt)
+    rawFilePath, rawFileName = os.path.split(args.rawFile)
+    rawFileName = rawFileName.split('.')[0]  # remove any extension
     # check target output folders exist
     for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder,
                  args.stationaryFolder, args.timeSeriesFolder, args.outputFolder]:
