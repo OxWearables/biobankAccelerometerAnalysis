@@ -60,10 +60,10 @@ public class NpyWriter {
 			itemTypes.add(Float.class);itemNames.add("x");
 			itemTypes.add(Float.class);itemNames.add("y");
 			itemTypes.add(Float.class);itemNames.add("z");
-			System.out.println(itemNames.toString());
-			System.out.println(itemTypes.toString());
-			System.out.println("order = "+ lineBuffer.order().toString());
-			System.out.println("numpy order = "+ numpyByteOrder);
+			// System.out.println(itemNames.toString());
+			// System.out.println(itemTypes.toString());
+			// System.out.println("order = "+ lineBuffer.order().toString());
+			// System.out.println("numpy order = "+ numpyByteOrder);
 
 		} catch (IOException e) {
 			throw new RuntimeException("The .npy file " + outputFile +" could not be created");
