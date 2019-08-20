@@ -105,6 +105,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
                 print("Error: java calibration failed, exit ", exitCode)
                 sys.exit(-6)
             # record calibrated axes scale/offset/temp vals + static point stats
+            #! TODO: *bug* getCalibrationCoefs returns stuff and summary doesn't get filled
             getCalibrationCoefs(stationaryFile, summary)
             xIntercept = summary['calibration-xOffset(g)']
             yIntercept = summary['calibration-yOffset(g)']

@@ -336,6 +336,7 @@ def summary(y_true, y_pred):
     :rtype: void
     """
 
+    #! TODO: *bug* undefined variable 'metrics'
     print('kappa = ', metrics.cohen_kappa_score(y_true, y_pred))
     print('accuracy = ', metrics.accuracy_score(y_true, y_pred))
     print(metrics.classification_report(y_true, y_pred))
