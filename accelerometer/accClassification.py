@@ -64,11 +64,12 @@ def activityClassification(epochFile,
     X.loc[~null_rows, 'label'] = hmmPredictions
 
     # perform MET prediction...
+    #! pandas .replace method has a small bug
+    #! see https://github.com/pandas-dev/pandas/issues/23305
+    #! we need to force type
     met_vals = np.load(getFileFromTar(activityModel, 'METs.npy'))
-    met_dict = {}
-    for l, m in zip(labels, met_vals):
-        met_dict[l] = m
-    X.loc[~null_rows, 'MET'] = X.loc[~null_rows, 'label'].replace(met_dict)
+    met_dict = dict(zip(labels, met_vals))
+    X.loc[~null_rows, 'MET'] = X.loc[~null_rows, 'label'].replace(met_dict).astype('float')
 
     # apply one-hot encoding
     for l in labels:
