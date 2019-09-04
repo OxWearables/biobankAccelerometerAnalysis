@@ -1,0 +1,10 @@
+enmoTrunc
+temp
+mean
+sd
+median
+75thp
+MAD
+MPD
+p625
+mfft0
