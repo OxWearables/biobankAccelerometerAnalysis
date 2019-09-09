@@ -171,6 +171,20 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
                              (default : %(default)s)""")
+    parser.add_argument('--psd',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate power spectral density for 24 hour 
+                                    circadian period
+                             (default : %(default)s)""")
+    parser.add_argument('--fourierFrequency',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate dominant frequency of sleep
+                             (default : %(default)s)""")
+    parser.add_argument('--m10l5',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate relative amplitude of most and 
+                                    least active acceleration periods
+                             (default : %(default)s)""")
 
     #
     # check that enough command line arguments are entered
@@ -277,7 +291,8 @@ def main():
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
-        intensityDistribution=args.intensityDistribution,
+        intensityDistribution=args.intensityDistribution, psd=args.psd, 
+        fourierFrequency=args.fourierFrequency, m10l5=args.m10l5,
         verbose=args.verbose)
 
     # generate time series file (note: this will also resample to epochData so do this last)

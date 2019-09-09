@@ -8,13 +8,15 @@ import numpy as np
 import pandas as pd
 import pytz
 import sys
-
+import scipy as sp
+from scipy import fftpack
+from datetime import timedelta
 
 def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
     mgVPA=425, activityModel="activityModels/doherty2018.tar",
-    intensityDistribution=False, verbose=False):
+    intensityDistribution=False, psd=False, fourierFrequency=False, m10l5=False, verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -119,9 +121,15 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
         calculateECDF(e, 'acc', summary)
-
     # main movement summaries
     writeMovementSummaries(e, labels, summary)
+
+    if psd:
+        calculatePSD(e, summary)
+    if fourierFrequency:
+        calculateFourierFreq(e, summary)
+    if m10l5:
+        calculateM10L5(e, summary)
 
     # return physical activity summary
     return e, labels
@@ -405,8 +413,91 @@ def calculateECDF(e, inputCol, summary):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
 
+def calculatePSD(e, summary):
+    """Calculate the power spectral density from fourier analysis of a 1 day frequency
+    
+    :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param dict summary: Output dictionary containing all summary metrics
 
+    :return: Write dict <summary> keys 'PSD-<W/Hz>'
+    """
+    # collects the sleep column from data frame assumes sleep if it is the highest imputed value
+    y = (np.argmax(e[['sleepImputed', 'moderateImputed', 'sedentaryImputed',
+                       'tasks-lightImputed', 'walkingImputed']].values, axis=1) == 0).astype('int')*2-1
+    n = len(y)
+    k = len(y)*30/(60*60*24)
+    e = -2.j * np.pi * k * np.arange(n) / n
+    # finds the power spectral density for a one day cycle using frouier analysis 
+    res = np.sum(np.exp(e) * y, axis=-1)/n
+    PSD = np.abs(res)**2
+    summary['PSD'] = PSD
 
+def calculateFourierFreq(e, summary):
+    """Calculate the most prevalent frequency in a fourier analysis 
+    
+    :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param dict summary: Output dictionary containing all summary metrics
+
+    :return: Write dict <summary> keys 'fourier frequency-<1/days>'
+    """
+    y = (np.argmax(e[['sleepImputed', 'moderateImputed', 'sedentaryImputed',
+                       'tasks-lightImputed', 'walkingImputed']].values, axis=1) == 0).astype('int')*2-1
+    # fast fourier transform of the sleep column 
+    fft_y = np.abs(fftpack.fft(y))
+    
+    i =  np.arange(1,len(fft_y)) 
+    k_max = np.argmax(fft_y[i]) + 1
+    n = len(y)
+    # maximises the fourier transform function using the fft_y as a first esitmate 
+    res = sp.optimize.minimize_scalar(lambda k: -np.abs(np.sum(np.exp(-2.j * np.pi * k * np.arange(n) / n) * y, axis=-1)/n),
+                                      bracket = (k_max-1,k_max+1)) 
+    #adjusts the frequency to have the units 1/days
+    freq_mx = float(res.x)/(len(y)*30/(60*60*24))
+    summary['fourier-frequency'] = freq_mx
+    
+def calculateM10L5(e, summary):
+    """Calculates the M10 L5 relatice amplitude from the average acceleration from
+    the ten most active hours and 5 least most active hours 
+    
+    :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param dict summary: Output dictionary containing all summary metrics
+
+    :return: Write dict <summary> keys 'M10 L5-<rel amp>'
+    """
+    TEN_HOURS = 10*60*2
+    FIVE_HOURS = 5*60*2
+    num_days = (e.index[-1] - e.index[0]).days
+           
+    days_split = []
+    for n in range(num_days):
+        #creates a new list which is used to identify the 24 hour periods in the data frame
+        days_split += [n for x in e.index if e.index[0] + timedelta(days=n) <= x <= e.index[0] + timedelta(days=n+1)]
+    dct = {}
+    for i in range(num_days):
+        #create new lists with the accleration data from each 24 hour period
+        dct['day_%s' % i] = [e.iloc[n,-3] for n in range(len(days_split)) if days_split[n]==i]    
+    dct_10 = {}
+    dct_5 = {}
+    for i in dct:
+        #  sums each 10 or 5 hour window with steps of 30s for each day
+        dct_10['%s' %i] = [sum(dct['%s' %i][j:j+TEN_HOURS]) for j in range(len(dct['%s' %i])-TEN_HOURS)]
+        dct_5['%s' %i] = [sum(dct['%s' %i][j:j+FIVE_HOURS]) for j in range(len(dct['%s' %i])-FIVE_HOURS)]
+    avg_10 = {}
+    avg_5 = {}
+    #   average acceleration (for each 30s) for the max and min windows        
+    for i in dct_10:
+        avg_10['%s' %i ] = (np.max(dct_10['%s' %i]))/TEN_HOURS
+    for i in dct_5:
+        avg_5['%s' %i] = (np.min(dct_5['%s' %i]))/FIVE_HOURS
+
+    if num_days > 0:
+        M10 = sum(avg_10.values())/num_days
+        L5 = sum(avg_5.values())/num_days
+        rel_amp = (M10-L5)/(M10+L5)
+    summary['M10L5'] = rel_amp
+    
+
+    
 def writeMovementSummaries(e, labels, summary):
     """Write overall summary stats for each activity type to summary dict
 
@@ -456,3 +547,7 @@ def writeMovementSummaries(e, labels, summary):
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
+
+
+    
+    
