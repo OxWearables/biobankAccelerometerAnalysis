@@ -16,7 +16,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
     mgVPA=425, activityModel="activityModels/doherty2018.tar",
-    intensityDistribution=False, psd=False, fourierFrequency=False, m10l5=False, verbose=False):
+    intensityDistribution=False, psd=False, fourierFrequency=False, m10l5=False, 
+    verbose=False, fourierWithAcc=False):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -71,7 +72,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         # use python PANDAS framework to read in and store epochs
         e = pd.read_csv(epochFile, parse_dates=['time'], index_col=['time'],
             compression='gzip').sort_index()
-
+        
     # remove data before/after user specified start/end times
     rows = e.shape[0]
     if startTime:
@@ -121,15 +122,15 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
         calculateECDF(e, 'acc', summary)
+    
+    if psd:
+        calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary)
+    if fourierFrequency:
+        calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary)
+    if m10l5:
+        calculateM10L5(e, epochPeriod, summary)
     # main movement summaries
     writeMovementSummaries(e, labels, summary)
-
-    if psd:
-        calculatePSD(e, summary)
-    if fourierFrequency:
-        calculateFourierFreq(e, summary)
-    if m10l5:
-        calculateM10L5(e, summary)
 
     # return physical activity summary
     return e, labels
@@ -413,59 +414,89 @@ def calculateECDF(e, inputCol, summary):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
 
-def calculatePSD(e, summary):
+def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
     """Calculate the power spectral density from fourier analysis of a 1 day frequency
     
     :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param int epochPeriod: Size of epoch time window (in seconds)
+    :paran bool fourierWithAcc:True calculates fourier done with acceleration data instead of sleep data
+    :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys 'PSD-<W/Hz>'
     """
-    # collects the sleep column from data frame assumes sleep if it is the highest imputed value
-    y = (np.argmax(e[['sleepImputed', 'moderateImputed', 'sedentaryImputed',
-                       'tasks-lightImputed', 'walkingImputed']].values, axis=1) == 0).astype('int')*2-1
+    if fourierWithAcc:
+        y = (e['accImputed'])
+    else:
+        cols = []
+        # get imputed variable names for each activity type
+        # NB - make sure sleep comes first
+        for accType in labels:
+            col = accType + 'Imputed'
+            cols += [col]
+      
+        idx = cols.index('sleepImputed') #gets index of sleep label
+        # collects the sleep column from data frame assumes sleep if it is the highest imputed value
+        y = (np.argmax(e[cols].values, axis=1) == idx).astype('int')*2-1
+        
     n = len(y)
-    k = len(y)*30/(60*60*24)
+    k = len(y)*epochPeriod/(60*60*24)
     e = -2.j * np.pi * k * np.arange(n) / n
     # finds the power spectral density for a one day cycle using frouier analysis 
     res = np.sum(np.exp(e) * y, axis=-1)/n
     PSD = np.abs(res)**2
     summary['PSD'] = PSD
 
-def calculateFourierFreq(e, summary):
+def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
     """Calculate the most prevalent frequency in a fourier analysis 
     
     :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param int epochPeriod: Size of epoch time window (in seconds)
+    :paran bool fourierWithAcc:True calculates fourier done with acceleration data instead of sleep data
+    :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys 'fourier frequency-<1/days>'
     """
-    y = (np.argmax(e[['sleepImputed', 'moderateImputed', 'sedentaryImputed',
-                       'tasks-lightImputed', 'walkingImputed']].values, axis=1) == 0).astype('int')*2-1
+    if fourierWithAcc:
+        y = (e['accImputed'])
+    else:
+        cols = []
+        # get imputed variable names for each activity type
+        # NB - make sure sleep comes first
+        for accType in labels:
+            col = accType + 'Imputed'
+            cols += [col]
+            
+        idx = cols.index('sleepImputed') #gets index of sleep label
+        # collects the sleep column from data frame assumes sleep if it is the highest imputed value
+        y = (np.argmax(e[cols].values, axis=1) == idx).astype('int')*2-1
+        
     # fast fourier transform of the sleep column 
     fft_y = np.abs(fftpack.fft(y))
     
     i =  np.arange(1,len(fft_y)) 
     k_max = np.argmax(fft_y[i]) + 1
     n = len(y)
-    # maximises the fourier transform function using the fft_y as a first esitmate 
-    res = sp.optimize.minimize_scalar(lambda k: -np.abs(np.sum(np.exp(-2.j * np.pi * k * np.arange(n) / n) * y, axis=-1)/n),
-                                      bracket = (k_max-1,k_max+1)) 
+    # maximises the fourier transform function (func) using the fft_y as a first esitmate 
+    func = lambda k: -np.abs(np.sum(np.exp(-2.j * np.pi * k * np.arange(n) / n) * y, axis=-1)/n)
+    res = sp.optimize.minimize_scalar(func, bracket = (k_max-1,k_max+1)) 
     #adjusts the frequency to have the units 1/days
-    freq_mx = float(res.x)/(len(y)*30/(60*60*24))
+    freq_mx = float(res.x)/(len(y)*epochPeriod/(60*60*24))
     summary['fourier-frequency'] = freq_mx
     
-def calculateM10L5(e, summary):
+def calculateM10L5(e, epochPeriod, summary):
     """Calculates the M10 L5 relatice amplitude from the average acceleration from
     the ten most active hours and 5 least most active hours 
     
     :param pandas.DataFrame e: Pandas dataframe of epoch data
+    :param int epochPeriod: Size of epoch time window (in seconds)
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys 'M10 L5-<rel amp>'
     """
-    TEN_HOURS = 10*60*2
-    FIVE_HOURS = 5*60*2
+    TEN_HOURS = int(10*60*60/epochPeriod)
+    FIVE_HOURS = int(5*60*60/epochPeriod)
     num_days = (e.index[-1] - e.index[0]).days
            
     days_split = []

@@ -185,6 +185,11 @@ def main():
                             help="""Calculate relative amplitude of most and 
                                     least active acceleration periods
                              (default : %(default)s)""")
+    parser.add_argument('--fourierWithAcc',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""True will do the fourier analysis with 
+                                    acceleration data instead of sleep signal
+                             (default : %(default)s)""")
 
     #
     # check that enough command line arguments are entered
@@ -292,8 +297,8 @@ def main():
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution, psd=args.psd, 
-        fourierFrequency=args.fourierFrequency, m10l5=args.m10l5,
-        verbose=args.verbose)
+        fourierFrequency=args.fourierFrequency, m10l5=args.m10l5, 
+        fourierWithAcc=args.fourierWithAcc, verbose=args.verbose)
 
     # generate time series file (note: this will also resample to epochData so do this last)
     accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
