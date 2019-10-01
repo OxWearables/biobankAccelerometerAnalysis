@@ -71,7 +71,7 @@ public class AxivityAx3Epochs {
 		String npyOutputFile = ""; // file name for epoch file
 		Boolean rawOutput = false; // whether to output raw data
 		Boolean fftOutput = false; // whether to output fft data
-		Boolean npyOutput = false; // whether to output fft data
+		Boolean npyOutput = false; // whether to output npy data
 
 		DF6.setRoundingMode(RoundingMode.CEILING);
 		DF2.setRoundingMode(RoundingMode.CEILING);
@@ -289,7 +289,7 @@ public class AxivityAx3Epochs {
 			}
 			if (npyOutput) {
 				if (npyOutputFile.trim().length() == 0) {
-					npyOutputFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate raw output filename
+					npyOutputFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
 						? outputFile.substring(0, outputFile.length() - ".csv.gz".length()) : outputFile) + "_raw.npy";
                 }
                 npyWriter = new NpyWriter(npyOutputFile);
@@ -353,7 +353,7 @@ public class AxivityAx3Epochs {
 				epochFileWriter.close();
 				if (rawOutput) rawWriter.close();
 				if (fftOutput) fftWriter.close();
-				if (npyWriter != null) npyWriter.close();
+				if (npyOutput) npyWriter.close();
 			} catch (Exception ex) {
 				/* ignore */
 			}
@@ -720,7 +720,7 @@ public class AxivityAx3Epochs {
 												// interpolates timestamp
 												// between blocks.
 			while (rawAccReader.read(buf) != -1) {
-				readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS, 
+				readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
 					USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
 					errCounter);
 				buf.clear();
@@ -739,7 +739,7 @@ public class AxivityAx3Epochs {
 	}
 
 	/**
-	 * Read and process Axivity CWA.gz gzipped file. Setup file reading 
+	 * Read and process Axivity CWA.gz gzipped file. Setup file reading
 	 * infrastructure and then call readCwaBuffer() method
 	**/
 	private static void readCwaGzEpochs(String accFile) {
@@ -772,7 +772,7 @@ public class AxivityAx3Epochs {
                                                 // interpolates timestamp
                                                 // between blocks.
             while (rawAccReader.read(buf) != -1) {
-                readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS, 
+                readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
                     errCounter);
                 buf.clear();
@@ -814,7 +814,7 @@ public class AxivityAx3Epochs {
      * https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
 	**/
 	private static void readCwaBuffer(ByteBuffer buf, LocalDateTime SESSION_START,
-		long START_OFFSET_NANOS, boolean USE_PRECISE_TIME, 
+		long START_OFFSET_NANOS, boolean USE_PRECISE_TIME,
 		LocalDateTime[] lastBlockTime, int[] lastBlockTimeIndex, String header,
 		int[] errCounter)
 	{
