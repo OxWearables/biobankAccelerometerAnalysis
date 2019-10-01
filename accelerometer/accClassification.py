@@ -88,7 +88,7 @@ def trainClassificationModel(trainingFile,
     atomicLabelCol="annotation", metCol="MET",
     featuresTxt="activityModels/features.txt",
     trainParticipants=None, testParticipants=None,
-    rfThreads=1, rfTrees=1000,
+    rfThreads=1, rfTrees=1000, rfFeats=None, rfDepth=None,
     outputPredict="activityModels/test-predictions.csv",
     outputModel=None):
     """Train model to classify activity states from epoch feature data
@@ -146,7 +146,11 @@ def trainClassificationModel(trainingFile,
     forest._parallel_build_trees = _parallel_build_trees
     # then train RF model (which include per-class balancing)
     rfClassifier = RandomForestClassifier(n_estimators=rfTrees,
-                                            n_jobs=rfThreads, oob_score=True)
+                                            n_jobs=rfThreads,
+                                            max_features=rfFeats,
+                                            max_depth=rfDepth,
+                                            oob_score=True)
+
     rfModel = rfClassifier.fit(train[featureCols], train[labelCol].tolist())
 
     # train Hidden Markov Model
