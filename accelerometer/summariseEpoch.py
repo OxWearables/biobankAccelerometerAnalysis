@@ -505,7 +505,7 @@ def calculateM10L5(e, epochPeriod, summary):
     days_split = []
     for n in range(num_days):
         #creates a new list which is used to identify the 24 hour periods in the data frame
-        days_split += [n for x in e.index if e.index[0] + timedelta(days=n) <= x <= e.index[0] + timedelta(days=n+1)]
+        days_split += [n for x in e.index if e.index[0] + timedelta(days=n) <= x < e.index[0] + timedelta(days=n+1)]
     dct = {}
     for i in range(num_days):
         #create new lists with the accleration data from each 24 hour period
@@ -528,6 +528,8 @@ def calculateM10L5(e, epochPeriod, summary):
         M10 = sum(avg_10.values())/num_days
         L5 = sum(avg_5.values())/num_days
         rel_amp = (M10-L5)/(M10+L5)
+    if num_days < 1: 
+        rel_amp = 'NA'
     summary['M10L5'] = rel_amp
     
 
