@@ -508,8 +508,8 @@ def calculateM10L5(e, epochPeriod, summary):
         days_split += [n for x in e.index if e.index[0] + timedelta(days=n) <= x < e.index[0] + timedelta(days=n+1)]
     dct = {}
     for i in range(num_days):
-        #create new lists with the accleration data from each 24 hour period
-        dct['day_%s' % i] = [e.loc[n,'enmoTrunc'] for n in range(len(days_split)) if days_split[n]==i]    
+        #create new lists with the acceleration data from each 24 hour period
+        dct['day_%s' % i] = [e.loc[n,'accImputed'] for n in range(len(days_split)) if days_split[n]==i]    
     dct_10 = {}
     dct_5 = {}
     for i in dct:
@@ -519,9 +519,9 @@ def calculateM10L5(e, epochPeriod, summary):
     avg_10 = {}
     avg_5 = {}
     #   average acceleration (for each 30s) for the max and min windows        
-    for i in dct_10:
+    for i in dct:
         avg_10['%s' %i ] = (np.max(dct_10['%s' %i]))/TEN_HOURS
-    for i in dct_5:
+    for i in dct:
         avg_5['%s' %i] = (np.min(dct_5['%s' %i]))/FIVE_HOURS
 
     if num_days > 0:
