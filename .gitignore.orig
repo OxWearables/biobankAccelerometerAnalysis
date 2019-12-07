@@ -1,0 +1,24 @@
+.gitignore
+.vscode
+*.class
+*.pyc
+*.gz
+*.tar
+*.png
+*.jpg
+*.pdf
+*.json
+debugging.py
+*.cwa
+*.csv
+*.project
+*.classpath
+*cmds.sh
+*cmds.txt
+dataBeforeChanges
+plots
+<<<<<<< HEAD
+accelerometer/OLDsummariseEpoch.py
+=======
+*.pywq
+>>>>>>> 2b6711b14637589b476e259e97ae57d9682907f1

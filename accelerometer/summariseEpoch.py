@@ -529,7 +529,7 @@ def calculateM10L5(e, epochPeriod, summary):
         L5 = sum(avg_5.values())/num_days
         rel_amp = (M10-L5)/(M10+L5)
     if num_days < 1:
-        rel_amp = 'NA'
+        rel_amp = 'NA_too_few_days'
     summary['M10L5'] = rel_amp
     
 
