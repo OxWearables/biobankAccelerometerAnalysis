@@ -305,7 +305,7 @@ def main():
         try:
             os.remove(args.stationaryFile)
             os.remove(args.epochFile)
-        except:
+        except OSError:
             accelerometer.accUtils.toScreen('could not delete helper file')
     # finally, print out processing summary message
     processingEndTime = datetime.datetime.now()
