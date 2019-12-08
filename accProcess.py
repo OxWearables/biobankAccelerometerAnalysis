@@ -244,7 +244,6 @@ def main():
             print(key.ljust(15), ':', value)
     print("\n")
 
-
     ##########################
     # start processing file
     ##########################
@@ -287,8 +286,8 @@ def main():
         activityClassification=args.activityClassification, labels=labels)
 
     # print basic output
-    summaryVals = ['file-name', 'file-startTime', 'file-endTime', \
-            'acc-overall-avg','wearTime-overall(days)', \
+    summaryVals = ['file-name', 'file-startTime', 'file-endTime',
+            'acc-overall-avg','wearTime-overall(days)',
             'nonWearTime-overall(days)', 'quality-goodWearTime']
     summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
     accelerometer.accUtils.toScreen(json.dumps(summaryDict, indent=4))
@@ -298,7 +297,6 @@ def main():
     json.dump(summary, f, indent=4)
     f.close()
     accelerometer.accUtils.toScreen('Summary file written to: ' + args.summaryFile)
-
 
     ##########################
     # remove helper files and close program
@@ -312,9 +310,9 @@ def main():
     # finally, print out processing summary message
     processingEndTime = datetime.datetime.now()
     processingTime = (processingEndTime - processingStartTime).total_seconds()
-    accelerometer.accUtils.toScreen("in total, processing took " + \
-        str(processingTime) + " seconds")
-
+    accelerometer.accUtils.toScreen(
+        "in total, processing took " + str(processingTime) + " seconds"
+    )
 
 
 def str2bool(v):
@@ -330,7 +328,7 @@ def str2date(v):
     Used to parse date values from the command line. E.g. "1994-11-30T12:00" -> time.datetime
     """
 
-    eg = "1994-11-30T12:00" # example date
+    eg = "1994-11-30T12:00"  # example date
     if v.count("-")!=eg.count("-"):
         print("ERROR: not enough dashes in date")
     elif v.count("T")!=eg.count("T"):
@@ -350,6 +348,7 @@ def str2date(v):
     print("to match the example date format:")
     print('"'+eg+'"')
     raise ValueError("date in incorrect format")
+
 
 if __name__ == '__main__':
     main()  # Standard boilerplate to call the main() function to begin the program.
