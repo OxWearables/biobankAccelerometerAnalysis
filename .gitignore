@@ -1,8 +1,13 @@
 .gitignore
+__pycache__
 .vscode
 *.class
 *.pyc
 *.gz
+*.xz
+*.zip
+*.rar
+*.bz
 *.tar
 *.png
 *.jpg
@@ -12,3 +17,5 @@
 *.csv
 *.project
 *.classpath
+*.npz
+*.npy
