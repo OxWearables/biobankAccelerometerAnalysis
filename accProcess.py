@@ -9,8 +9,8 @@ import accelerometer.device
 import json
 import os
 import accelerometer.summariseEpoch
-import sys
 import pandas as pd
+import atexit
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
             raw accelerometer files.""", add_help=True
     )
     # required
-    parser.add_argument('rawFile', metavar='input file', type=str,
+    parser.add_argument('inputFile', metavar='input file', type=str,
                             help="""the <.cwa/.cwa.gz> file to process
                             (e.g. sample.cwa.gz). If the file path contains
                             spaces,it must be enclosed in quote marks
@@ -47,7 +47,7 @@ def main():
                             file, so acceleration and imputation values can be
                             compared easily. This increases output filesize
                             (default : %(default)s)""")
-    parser.add_argument('--processRawFile',
+    parser.add_argument('--processInputFile',
                             metavar='True/False', default=True, type=str2bool,
                             help="""False will skip processing of the .cwa file
                              (the epoch.csv file must already exist for this to
@@ -150,7 +150,7 @@ def main():
                         help="folder for -summary.json summary stats")
     parser.add_argument('--epochFolder', metavar='filename', default="",
                             help="""folder -epoch.csv.gz - must be an existing
-                            file if "-processRawFile" is set to False""")
+                            file if "-processInputFile" is set to False""")
     parser.add_argument('--timeSeriesFolder', metavar='filename', default="",
                             help="folder for -timeSeries.csv.gz file")
     parser.add_argument('--nonWearFolder', metavar='filename',default="",
@@ -159,6 +159,8 @@ def main():
                             help="folder -stationaryPoints.csv.gz file")
     parser.add_argument('--rawFolder', metavar='filename', default="",
                             help="folder for raw .csv.gz file")
+    parser.add_argument('--npyFolder', metavar='filename', default="",
+                            help="folder for raw .npy.gz file")
     parser.add_argument('--verbose',
                             metavar='True/False', default=False, type=str2bool,
                             help="""enable verbose logging? (default :
@@ -171,44 +173,28 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
                              (default : %(default)s)""")
-
-    #
-    # check that enough command line arguments are entered
-    #
-    if len(sys.argv) < 2:
-        msg = "\nInvalid input, please enter at least 1 parameter, e.g."
-        msg += "\npython accProcess.py data/sample.cwa.gz \n"
-        accelerometer.accUtils.toScreen(msg)
-        parser.print_help()
-        sys.exit(-1)
-    processingStartTime = datetime.datetime.now()
     args = parser.parse_args()
 
+    processingStartTime = datetime.datetime.now()
+
     ##########################
-    # check input/output files/dirs exist and validate input args
+    # Check input/output files/dirs exist and validate input args
     ##########################
-    if args.processRawFile is False:
-        #! TODO: this breaks for .cwa.gz files
-        if len(args.rawFile.split('.')) < 2:
-            args.rawFile += ".cwa"  # TODO edge case since we still need a name?
-    elif not os.path.isfile(args.rawFile):
-        if args.rawFile:
-            print("error: specified file " + args.rawFile + " does not exist. Exiting..")
-        else:
-            print("error: no file specified. Exiting..")
-        sys.exit(-2)
-    # get file extension
-    rawFilePath, rawFileName = os.path.split(args.rawFile)
-    rawFileName = rawFileName.split('.')[0]  # remove any extension
-    # check target output folders exist
-    for path in [args.summaryFolder, args.nonWearFolder, args.epochFolder,
-                 args.stationaryFolder, args.timeSeriesFolder, args.outputFolder]:
-        if len(path) > 0 and not os.access(path, os.F_OK):
-            print("error: " + path + " is not a valid directory")
-            sys.exit(-3)
-    # assign output file names
-    if args.outputFolder == "" and rawFilePath != "":
-        args.outputFolder = rawFilePath + '/'
+    if args.processInputFile:
+        assert os.path.isfile(args.inputFile), f"File '{args.inputFile}' does not exist"
+    else:
+        if len(args.inputFile.split('.')) < 2:
+            #TODO: edge case since we still need a name?
+            #TODO: does this work for cwa.gz files?
+            args.inputFile += '.cwa'
+
+    # Folder and basename of raw input file
+    inputFileFolder, inputFileName = os.path.split(args.inputFile)
+    inputFileName = inputFileName.split('.')[0]  # remove any extension
+
+    # Set default output folders if not user-specified
+    if args.outputFolder == "":
+        args.outputFolder = inputFileFolder
     if args.summaryFolder == "":
         args.summaryFolder = args.outputFolder
     if args.nonWearFolder == "":
@@ -221,37 +207,62 @@ def main():
         args.timeSeriesFolder = args.outputFolder
     if args.rawFolder == "":
         args.rawFolder = args.outputFolder
-    args.summaryFile = args.summaryFolder + rawFileName + "-summary.json"
-    args.nonWearFile = args.nonWearFolder + rawFileName + "-nonWearBouts.csv.gz"
-    args.epochFile = args.epochFolder + rawFileName + "-epoch.csv.gz"
-    args.stationaryFile = args.stationaryFolder + rawFileName + "-stationaryPoints.csv"
-    args.tsFile = args.timeSeriesFolder + rawFileName + "-timeSeries.csv.gz"
-    args.rawOutputFile = args.rawFolder + rawFileName + ".csv.gz"
-    args.npyOutputFile = args.rawFolder + rawFileName + ".npy"
+    if args.npyFolder == "":
+        args.npyFolder = args.outputFolder
+    # Set default output filenames
+    args.summaryFile = os.path.join(args.summaryFolder, inputFileName + "-summary.json")
+    args.nonWearFile = os.path.join(args.nonWearFolder, inputFileName + "-nonWearBouts.csv.gz")
+    args.epochFile = os.path.join(args.epochFolder, inputFileName + "-epoch.csv.gz")
+    args.stationaryFile = os.path.join(args.stationaryFolder, inputFileName + "-stationaryPoints.csv")
+    args.tsFile = os.path.join(args.timeSeriesFolder, inputFileName + "-timeSeries.csv.gz")
+    args.rawFile = os.path.join(args.rawFolder, inputFileName + ".csv.gz")
+    args.npyFile = os.path.join(args.npyFolder, inputFileName + ".npy")
 
-    # check user specified end time is not before start time
+    # Check if we can write to the output folders
+    for path in [
+        args.summaryFolder, args.nonWearFolder, args.epochFolder,
+        args.stationaryFolder, args.timeSeriesFolder,
+        args.rawFolder, args.npyFolder, args.outputFolder
+    ]:
+        assert os.access(path, os.W_OK), (
+            f"Either folder '{path}' does not exist "
+            "or you do not have write permission"
+        )
+
+    # Schedule to delete intermediate files at program exit
+    if args.deleteIntermediateFiles:
+        @atexit.register
+        def deleteIntermediateFiles():
+            try:
+                if os.path.exists(args.stationaryFile):
+                    os.remove(args.stationaryFile)
+                if os.path.exists(args.epochFile):
+                    os.remove(args.epochFile)
+            except OSError:
+                accelerometer.accUtils.toScreen('Could not delete intermediate files')
+
+    # Check user-specified end time is not before start time
     if args.startTime and args.endTime:
-        if args.startTime >= args.endTime:
-            print("start and end time arguments are invalid!")
-            print("startTime:", args.startTime.strftime("%Y-%m-%dT%H:%M"))
-            print("endTime:", args.endTime.strftime("%Y-%m-%dT%H:%M"))
-            sys.exit(-4)
+        assert args.startTime <= args.endTime, (
+            "startTime and endTime arguments are invalid!\n"
+            f"startTime: {args.startTime.strftime('%Y-%m-%dT%H:%M')}\n"
+            f"endTime:, {args.endTime.strftime('%Y-%m-%dT%H:%M')}\n"
+        )
 
-    # print processing options to screen
-    print("processing file " + args.rawFile + "' with these arguments:\n")
+    # Print processing options to screen
+    print(f"Processing file '{args.inputFile}' with these arguments:\n")
     for key, value in sorted(vars(args).items()):
         if not (isinstance(value, str) and len(value)==0):
             print(key.ljust(15), ':', value)
-    print("\n")
 
     ##########################
-    # start processing file
+    # Start processing file
     ##########################
     summary = {}
-    # now process the .CWA file
-    if args.processRawFile:
-        summary['file-name'] = args.rawFile
-        accelerometer.device.processRawFileToEpoch(args.rawFile, args.epochFile,
+    # Now process the .CWA file
+    if args.processInputFile:
+        summary['file-name'] = args.inputFile
+        accelerometer.device.processInputFileToEpoch(args.inputFile, args.epochFile,
             args.stationaryFile, summary, skipCalibration=args.skipCalibration,
             stationaryStd=args.stationaryStd, xIntercept=args.calOffset[0],
             yIntercept=args.calOffset[1], zIntercept=args.calOffset[2],
@@ -262,14 +273,14 @@ def main():
             javaHeapSpace=args.javaHeapSpace, skipFiltering=args.skipFiltering,
             sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
             useAbs=args.useAbs, activityClassification=args.activityClassification,
-            rawOutput=args.rawOutput, rawOutputFile=args.rawOutputFile,
-            npyOutput=args.npyOutput, npyOutputFile=args.npyOutputFile,
+            rawOutput=args.rawOutput, rawFile=args.rawFile,
+            npyOutput=args.npyOutput, npyFile=args.npyFile,
             fftOutput=args.fftOutput, startTime=args.startTime,
             endTime=args.endTime, verbose=args.verbose)
     else:
         summary['file-name'] = args.epochFile
 
-    # summarise epoch
+    # Summarise epoch
     epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
         args.epochFile, args.nonWearFile, summary,
         activityClassification=args.activityClassification, startTime=args.startTime,
@@ -279,39 +290,32 @@ def main():
         intensityDistribution=args.intensityDistribution,
         verbose=args.verbose)
 
-    # generate time series file (note: this will also resample to epochData so do this last)
+    # Generate time series file (note: this will also resample to epochData so do this last)
     accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
         epochPeriod=args.epochPeriod,
         timeSeriesDateColumn=args.timeSeriesDateColumn,
         activityClassification=args.activityClassification, labels=labels)
 
-    # print basic output
+    # Print short summary
+    accelerometer.accUtils.toScreen("=== Short summary ===")
     summaryVals = ['file-name', 'file-startTime', 'file-endTime',
             'acc-overall-avg','wearTime-overall(days)',
             'nonWearTime-overall(days)', 'quality-goodWearTime']
     summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
-    accelerometer.accUtils.toScreen(json.dumps(summaryDict, indent=4))
+    print(json.dumps(summaryDict, indent=4))
 
-    # write detailed output to file
-    f = open(args.summaryFile,'w')
-    json.dump(summary, f, indent=4)
-    f.close()
-    accelerometer.accUtils.toScreen('Summary file written to: ' + args.summaryFile)
+    # Write summary to file
+    with open(args.summaryFile,'w') as f:
+        json.dump(summary, f, indent=4)
+    print('Full summary written to: ' + args.summaryFile)
 
     ##########################
-    # remove helper files and close program
+    # Closing
     ##########################
-    if args.deleteIntermediateFiles:
-        try:
-            os.remove(args.stationaryFile)
-            os.remove(args.epochFile)
-        except OSError:
-            accelerometer.accUtils.toScreen('could not delete helper file')
-    # finally, print out processing summary message
     processingEndTime = datetime.datetime.now()
     processingTime = (processingEndTime - processingStartTime).total_seconds()
     accelerometer.accUtils.toScreen(
-        "in total, processing took " + str(processingTime) + " seconds"
+        "In total, processing took " + str(processingTime) + " seconds"
     )
 
 
@@ -330,24 +334,24 @@ def str2date(v):
 
     eg = "1994-11-30T12:00"  # example date
     if v.count("-")!=eg.count("-"):
-        print("ERROR: not enough dashes in date")
+        print("ERROR: Not enough dashes in date")
     elif v.count("T")!=eg.count("T"):
-        print("ERROR: no T seperator in date")
+        print("ERROR: No T seperator in date")
     elif v.count(":")!=eg.count(":"):
-        print("ERROR: no ':' seperator in date")
+        print("ERROR: No ':' seperator in date")
     elif len(v.split("-")[0])!=4:
-        print("ERROR: year in date must be 4 numbers")
+        print("ERROR: Year in date must be 4 numbers")
     elif len(v.split("-")[1])!=2 and len(v.split("-")[1])!=1:
-        print("ERROR: month in date must be 1-2 numbers")
+        print("ERROR: Month in date must be 1-2 numbers")
     elif len(v.split("-")[2].split("T")[0])!=2 and len(v.split("-")[2].split("T")[0])!=1:
-        print("ERROR: day in date must be 1-2 numbers")
+        print("ERROR: Day in date must be 1-2 numbers")
     else:
         return pd.datetime.strptime(v, "%Y-%m-%dT%H:%M")
-    print("please change your input date:")
+    print("Please change your input date:")
     print('"'+v+'"')
     print("to match the example date format:")
     print('"'+eg+'"')
-    raise ValueError("date in incorrect format")
+    raise ValueError("Date in incorrect format")
 
 
 if __name__ == '__main__':

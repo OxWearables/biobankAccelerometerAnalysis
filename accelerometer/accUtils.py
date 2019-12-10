@@ -50,7 +50,7 @@ def toScreen(msg):
     """
 
     timeFormat = '%Y-%m-%d %H:%M:%S'
-    print(datetime.datetime.now().strftime(timeFormat), '\t', msg)
+    print(f"\n{datetime.datetime.now().strftime(timeFormat)}\t{msg}")
 
 
 
@@ -223,8 +223,8 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     if not os.path.exists(filesCSV):
         csvWriter = open(filesCSV, 'w')
         csvWriter.write('fileName,\n')
-        for rawFile in glob.glob(studyDir+"rawData/*." + accExt):
-            csvWriter.write(rawFile + ',\n')
+        for inputFile in glob.glob(studyDir+"rawData/*." + accExt):
+            csvWriter.write(inputFile + ',\n')
         csvWriter.close()
 
     # then create runName output directories

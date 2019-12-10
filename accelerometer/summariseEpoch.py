@@ -2,7 +2,6 @@
 
 from accelerometer import accUtils
 from accelerometer import accClassification
-import datetime
 import gzip
 import numpy as np
 import pandas as pd
@@ -63,43 +62,45 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     <nonWear file written to "nonWear.csv.gz" and dict "summary" update with outcomes>
     """
 
+    accUtils.toScreen("=== Summarizing ===")
+
     if isinstance(epochFile, pd.DataFrame):
         e = epochFile
     else:
-        # use python PANDAS framework to read in and store epochs
+        # Use python PANDAS framework to read in and store epochs
         e = pd.read_csv(epochFile, parse_dates=['time'], index_col=['time'],
             compression='gzip').sort_index()
 
-    # remove data before/after user specified start/end times
+    # Remove data before/after user specified start/end times
     rows = e.shape[0]
     if startTime:
         e = e[e.index >= startTime]
     if endTime:
         e = e[e.index <= endTime]
-    # quit if no data left
+    # Quit if no data left
     if e.shape[0] == 0:
-        print("no rows remaining after start/end time removal")
-        print("previously there were %d rows, now shape: %s" % (rows, str(e.shape)))
+        print("No rows remaining after start/end time removal")
+        print("Previously there were %d rows, now shape: %s" % (rows, str(e.shape)))
         sys.exit(-9)
 
-    # get start & end times
+    # Get start & end times
     startTime = pd.to_datetime(e.index.values[0])
     endTime = pd.to_datetime(e.index.values[-1])
     summary['file-startTime'] = startTime.strftime('%Y-%m-%d %H:%M:%S')
     summary['file-endTime'] = endTime.strftime('%Y-%m-%d %H:%M:%S')
     summary['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
 
-    # get interrupt and data error summary vals
+    # Get interrupt and data error summary vals
     e = get_interrupts(e, epochPeriod, summary)
 
-    # check if data occurs at a daylight savings crossover
+    # Check if data occurs at a daylight savings crossover
     e = check_daylight_savings_crossover(e, startTime, endTime, summary)
 
-    # calculate wear-time statistics, and write nonWear episodes to file
+    # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
         nonWearFile, summary)
 
-    # predict activity from features, and add label column
+    # Predict activity from features, and add label column
     if activityClassification:
         e, labels = accClassification.activityClassification(e, activityModel)
     else:
@@ -111,19 +112,19 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # enmoTrunc = max(enmo, 0)
     e['acc'] = e['enmoTrunc'] * 1000 # convert enmoTrunc to milli-G units
 
-    # calculate imputation values to replace nan PA metric values
+    # Calculate imputation values to replace nan PA metric values
     e = perform_wearTime_imputation(e, verbose)
     e['MVPA'] = e['accImputed'] >= mgMVPA
     e['VPA'] = e['accImputed'] >= mgVPA
 
-    # calculate empirical cumulative distribution function of vector magnitudes
+    # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
         calculateECDF(e, 'acc', summary)
 
-    # main movement summaries
+    # Main movement summaries
     writeMovementSummaries(e, labels, summary)
 
-    # return physical activity summary
+    # Return physical activity summary
     return e, labels
 
 
@@ -141,12 +142,12 @@ def get_interrupts(e, epochPeriod, summary):
 
     epochNs = epochPeriod * np.timedelta64(1, 's')
     interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
-    # get duration of each interrupt in minutes
+    # Get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
         interruptMins.append(np.diff(np.array(e[i:i+2].index)) /
                 np.timedelta64(1, 'm'))
-    # record to output summary
+    # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
 
@@ -180,40 +181,40 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary):
 
     daylightSavingsCrossover = 0
     localTime = pytz.timezone('Europe/London')
-    # convert because pytz can error if not using python datetime type
+    # Convert because pytz can error if not using python datetime type
     startTimeZone = localTime.localize(startTime.to_pydatetime())
     endTimeZone = localTime.localize(endTime.to_pydatetime())
     if startTimeZone.dst() != endTimeZone.dst():
         daylightSavingsCrossover = 1
-        # find whether clock needs to go forward or back
+        # Find whether clock needs to go forward or back
         if endTimeZone.dst() > startTimeZone.dst():
             offset = 1
         else:
             offset = -1
         print('different timezones, offset = ', str(offset))
-        # find actual crossover time
+        # Find actual crossover time
         for t in localTime._utc_transition_times:
             if t>startTime:
                 transition = t
                 break
-        # if Autumn crossover time, adjust transition time plus remove 1hr chunk
+        # If Autumn crossover time, adjust transition time plus remove 1hr chunk
         if offset == -1:
             # pytz stores dst crossover at 1am, but clocks change at 2am local
             transition = transition + pd.DateOffset(hours=1)
-            # remove last hr before DST cut, which will be subsequently overwritten
+            # Remove last hr before DST cut, which will be subsequently overwritten
             e = e[(e.index < transition - pd.DateOffset(hours=1)) |
                     (e.index >= transition)]
         print('day light savings transition at:', str(transition))
-        # now update datetime index to 'fix' values after DST crossover
+        # Now update datetime index to 'fix' values after DST crossover
         e['newTime'] = e.index
         e['newTime'] = np.where(e.index >= transition,
                 e.index + np.timedelta64(offset,'h'), e.index)
         e['newTime'] = np.where(e['newTime'].isnull(), e.index, e['newTime'])
         e = e.set_index('newTime')
-        # reset startTime and endTime variables
+        # Reset startTime and endTime variables
         startTime = pd.to_datetime(e.index.values[0])
         endTime = pd.to_datetime(e.index.values[-1])
-        # and record to output summary
+        # And record to output summary
         summary['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
     return e
 
@@ -246,12 +247,12 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     maxStd = maxStd / 1000.0 # java uses Gravity units (not mg)
     e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd), 1, 0)
-    starts = e.index[(e['nw']==True) & (e['nw'].shift(1).fillna(False)==False)]
-    ends = e.index[(e['nw']==True) & (e['nw'].shift(-1).fillna(False)==False)]
+    starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1, fill_value=0).astype('bool'))]
+    ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1, fill_value=0).astype('bool'))]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
             if end > start + np.timedelta64(minDuration,'m')]
 
-    # set nonWear data to nan and record to nonWearBouts file
+    # Set nonWear data to nan and record to nonWearBouts file
     f = gzip.open(nonWearFile,'wb')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n'.encode())
     timeFormat = '%Y-%m-%d %H:%M:%S'
@@ -263,30 +264,30 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
         nonWearBout += str(tmp['yStd'].mean()) + ','
         nonWearBout += str(tmp['zStd'].mean()) + '\n'
         f.write(nonWearBout.encode())
-        # set main dataframe values to nan
+        # Set main dataframe values to nan
         e[episode[0]:episode[1]] = np.nan
     f.close()
-    # write to summary
+    # Write to summary
     summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearEpisodes))
 
-    # calculate wear statistics
+    # Calculate wear statistics
     wearSamples = e['enmoTrunc'].count()
     nonWearSamples = len(e[np.isnan(e['enmoTrunc'])].index.values)
     wearTimeMin = wearSamples * epochPeriod / 60.0
     nonWearTimeMin = nonWearSamples * epochPeriod / 60.0
-    # write to summary
+    # Write to summary
     summary['wearTime-overall(days)'] = accUtils.formatNum(wearTimeMin/1440.0, 2)
     summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTimeMin/1440.0, 2)
 
-    # get wear time in each of 24 hours across week
+    # Get wear time in each of 24 hours across week
     epochsInMin = 60.0 / epochPeriod
     for i, day in zip(range(0, 7), accUtils.DAYS):
         dayWear = e['enmoTrunc'][e.index.weekday == i].count() / epochsInMin
-        # write to summary
+        # Write to summary
         summary['wearTime-' + day + '(hrs)'] = accUtils.formatNum(dayWear/60.0, 2)
     for i in range(0, 24):
         hourWear = e['enmoTrunc'][e.index.hour == i].count() / epochsInMin
-        # write to summary
+        # Write to summary
         summary['wearTime-hourOfDay' + str(i) + '-(hrs)'] = \
             accUtils.formatNum(hourWear/60.0, 2)
     summary['wearTime-diurnalHrs'] = accUtils.formatNum( \
@@ -294,7 +295,7 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     summary['wearTime-diurnalMins'] = accUtils.formatNum( \
         e['enmoTrunc'].groupby([e.index.hour, e.index.minute]).mean().count(), 2)
 
-    # write binary decision on whether weartime was good or not
+    # Write binary decision on whether weartime was good or not
     minDiurnalHrs = 24
     minWearDays = 3
     summary['quality-goodWearTime'] = 1
@@ -326,23 +327,23 @@ def perform_wearTime_imputation(e, verbose):
     e['minute'] = e.index.minute
 
     wearTimeWeights = e.groupby(['hour', 'minute']).mean()
-    # add the wearTimeWeights column to the other data as e.g. 'enmoTrunc_imputed'
+    # Add the wearTimeWeights column to the other data as e.g. 'enmoTrunc_imputed'
     e = e.join(wearTimeWeights, on=['hour', 'minute'], rsuffix='_imputed')
 
-    # now wearTime weight values
+    # Now wearTime weight values
     for col in wearTimeWeights:
         e[col+'Imputed'] = e[col].fillna(e[col+'_imputed'])
 
     if verbose:
-        # features averaged over epochs - use imputed version of features for this.
-        # this ignores rows with NaN and infinities
+        # Features averaged over epochs - use imputed version of features for this.
+        # This ignores rows with NaN and infinities
         imputedCols = e.filter(regex='Imputed').columns
         print(e[imputedCols].isnull().any(axis=1).sum(), \
             "NaN rows in imputed features")
         with pd.option_context('mode.use_inf_as_null', True):
             null_rows = e[imputedCols].isnull().any(axis=1)
-        print(null_rows.sum(), " NaN or inf rows in imputed features out of ",\
-            len(e.index))
+        print(null_rows.sum(), " NaN or Inf rows in imputed features out of ",\
+            len(e))
     return e
 
 
@@ -374,10 +375,10 @@ def calculateECDF(e, inputCol, summary):
     ecdf4, step = np.linspace(600, 2000, 15, retstep=True)  # 100mg bins from 500-2000mg
     ecdfXVals = np.concatenate([ecdf1, ecdf2, ecdf3, ecdf4])
 
-    # remove NaNs (necessary for statsmodels.api)
+    # Remove NaNs (necessary for statsmodels.api)
     ecdfData = e[['hour', 'minute', inputCol]][~np.isnan(e[inputCol])]
     if len(ecdfData) > 0:
-        # set column names for actual, imputed, and adjusted intensity dist. vals
+        # Set column names for actual, imputed, and adjusted intensity dist. vals
         cols = []
         colsImputed = []
         colsAdjusted = []
@@ -387,11 +388,11 @@ def calculateECDF(e, inputCol, summary):
             colsImputed.append(col + 'Imputed')
             colsAdjusted.append(col + 'Adjusted')
             ecdfData[col] = (ecdfData[inputCol] <= xVal) * 1.0
-        # calculate imputation values to replace nan metric values
+        # Calculate imputation values to replace nan metric values
         wearTimeWeights = ecdfData.groupby(['hour', 'minute'])[cols].mean()
         ecdfData = ecdfData.join(wearTimeWeights, on=['hour', 'minute'],
                                 rsuffix='Imputed')
-        # for each ecdf xVal column, apply missing data imputation
+        # For each ecdf xVal column, apply missing data imputation
         for col, imputed, adjusted in zip(cols, colsImputed, colsAdjusted):
             ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
 
@@ -400,7 +401,7 @@ def calculateECDF(e, inputCol, summary):
         accEcdf = pd.Series(data=[0.0 for i in ecdfXVals],
                             index=[str(i)+'Adjusted' for i in ecdfXVals])
 
-    # and write to summary dict
+    # And write to summary dict
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
@@ -420,19 +421,19 @@ def writeMovementSummaries(e, labels, summary):
     :rtype: void
     """
 
-    # identify activity types to summarise
+    # Identify activity types to summarise
     activityTypes = ['acc', 'MVPA', 'VPA']
     activityTypes += labels
     if 'MET' in e.columns:
         activityTypes.append('MET')
 
-    # sumarise each type by: overall, week day/end, day, and hour of day
+    # Sumarise each type by: overall, week day/end, day, and hour of day
     for accType in activityTypes:
         col = accType + 'Imputed'
         if accType in ['MVPA', 'VPA']:
             col = accType
 
-        # overall / weekday / weekend summaries
+        # Overall / weekday / weekend summaries
         summary[accType + '-overall-avg'] = accUtils.formatNum(e[col].mean(), 5)
         summary[accType + '-overall-sd'] = accUtils.formatNum(e[col].std(), 2)
         summary[accType + '-weekday-avg'] = accUtils.formatNum( \
@@ -440,19 +441,19 @@ def writeMovementSummaries(e, labels, summary):
         summary[accType + '-weekend-avg'] = accUtils.formatNum( \
             e[col][e.index.weekday>=5].mean(), 2)
 
-        # daily summary
+        # Daily summary
         for i, day in zip(range(0, 7), accUtils.DAYS):
             summary[accType + '-' + day + '-avg'] = accUtils.formatNum( \
                 e[col][e.index.weekday == i].mean(), 2)
 
-        # hourly summaries
+        # Hourly summaries
         for i in range(0, 24):
             hourOfDay = accUtils.formatNum(e[col][e.index.hour == i].mean(), 2)
             hourOfWeekday = accUtils.formatNum( \
                 e[col][(e.index.weekday<=4) & (e.index.hour == i)].mean(), 2)
             hourOfWeekend = accUtils.formatNum( \
                 e[col][(e.index.weekday>=5) & (e.index.hour == i)].mean(), 2)
-            # write derived hourly values to summary dictionary
+            # Write derived hourly values to summary dictionary
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend

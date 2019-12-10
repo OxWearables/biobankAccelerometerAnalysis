@@ -67,8 +67,8 @@ public class AxivityAx3Epochs {
 
 		String accFile = ""; // file to process
 		String outputFile = ""; // file name for epoch file
-		String rawOutputFile = ""; // file name for epoch file
-		String npyOutputFile = ""; // file name for epoch file
+		String rawFile = ""; // file name for epoch file
+		String npyFile = ""; // file name for epoch file
 		Boolean rawOutput = false; // whether to output raw data
 		Boolean fftOutput = false; // whether to output fft data
 		Boolean npyOutput = false; // whether to output npy data
@@ -191,14 +191,14 @@ public class AxivityAx3Epochs {
 					range = Integer.parseInt(funcParam);
 				} else if (funcName.equals("rawOutput")) {
 					rawOutput = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("rawOutputFile")) {
-					rawOutputFile = funcParam;
+				} else if (funcName.equals("rawFile")) {
+					rawFile = funcParam;
 				} else if (funcName.equals("fftOutput")) {
 					fftOutput = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("npyOutput")) {
                     npyOutput = Boolean.parseBoolean(funcParam.toLowerCase());
-                } else if (funcName.equals("npyOutputFile")) {
-					npyOutputFile = funcParam;
+                } else if (funcName.equals("npyFile")) {
+					npyFile = funcParam;
 				} else if (funcName.equals("useAbs")) {
 					useAbs = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("startTime")) {
@@ -262,7 +262,7 @@ public class AxivityAx3Epochs {
 
 
 		try {
-			System.out.println("outputFile:" + outputFile);
+			System.out.println("Intermediate file: " + outputFile);
             if (outputFile.endsWith(".gz")) {
                 GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(outputFile)));
                 epochFileWriter = new BufferedWriter(new OutputStreamWriter(zip, "UTF-8"));
@@ -274,12 +274,12 @@ public class AxivityAx3Epochs {
 				filter = new LowpassFilter(20 /* = lowPassCutFrequency*/, sampleRate /* = sampleRate*/);
 			}
 			if (rawOutput) {
-				if (rawOutputFile.trim().length() == 0) {
-					rawOutputFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate raw output filename
+				if (rawFile.trim().length() == 0) {
+					rawFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate raw output filename
 						? outputFile.substring(0, outputFile.length() - ".csv.gz".length()) : outputFile) + "_raw.csv.gz";
 				}
                 GZIPOutputStream zipRaw = new GZIPOutputStream(
-                                    new FileOutputStream(new File(rawOutputFile)));
+                                    new FileOutputStream(new File(rawFile)));
                 rawWriter = new BufferedWriter(new OutputStreamWriter(zipRaw, "UTF-8"));
 			}
 			if (fftOutput && !getSanDiegoFeatures) {
@@ -288,11 +288,11 @@ public class AxivityAx3Epochs {
 				fftWriter = new BufferedWriter(new FileWriter(fftFile));
 			}
 			if (npyOutput) {
-				if (npyOutputFile.trim().length() == 0) {
-					npyOutputFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
+				if (npyFile.trim().length() == 0) {
+					npyFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
 						? outputFile.substring(0, outputFile.length() - ".csv.gz".length()) : outputFile) + "_raw.npy";
                 }
-                npyWriter = new NpyWriter(npyOutputFile);
+                npyWriter = new NpyWriter(npyFile);
 			}
 			epochWriter = new EpochWriter(
 					  epochFileWriter,
