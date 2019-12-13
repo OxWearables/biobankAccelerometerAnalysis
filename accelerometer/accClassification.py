@@ -141,8 +141,8 @@ def trainClassificationModel(trainingFile,
 
     # Train Random Forest model
     # First "monkeypatch" RF function to perform per-class balancing
-    #TODO: The following local variable is not used?
-    # MIN_TRAIN_CLASS_COUNT = train[labelCol].value_counts().min()
+    global MIN_TRAIN_CLASS_COUNT
+    MIN_TRAIN_CLASS_COUNT = train[labelCol].value_counts().min()
     forest._parallel_build_trees = _parallel_build_trees
     # Then train RF model (which include per-class balancing)
     rfClassifier = RandomForestClassifier(n_estimators=rfTrees,
