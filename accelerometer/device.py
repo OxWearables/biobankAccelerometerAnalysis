@@ -219,8 +219,9 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,
                 usecols=(2,3,4,11,13))
         if len(d)<=5:
-            return [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan, \
-                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d)
+            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan,
+                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
+            return
         stationaryPoints = d[d[:,4] == 0] # don't consider episodes with data errors
         axesVals = stationaryPoints[:,[0,1,2]]
         tempVals = stationaryPoints[:,[3]]
