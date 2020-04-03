@@ -31,6 +31,11 @@ def main():
                             """)
 
     #optional inputs
+    parser.add_argument('--timeZoneOffset',
+                            metavar='e.g. -180', default=0,
+                            type=int, help="""timezone minutes offset induced 
+                            by timezone difference from configure timezone and
+                            deployment timezone""")
     parser.add_argument('--startTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
                             type=str2date, help="""removes data before this
@@ -276,7 +281,8 @@ def main():
             rawOutput=args.rawOutput, rawFile=args.rawFile,
             npyOutput=args.npyOutput, npyFile=args.npyFile,
             fftOutput=args.fftOutput, startTime=args.startTime,
-            endTime=args.endTime, verbose=args.verbose)
+            endTime=args.endTime, verbose=args.verbose, 
+            timeZoneOffset = args.timeZoneOffset)
     else:
         summary['file-name'] = args.epochFile
 

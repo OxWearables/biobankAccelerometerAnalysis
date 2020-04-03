@@ -20,7 +20,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     useAbs=False, activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     fftOutput=False, startTime=None, endTime=None,
-    verbose=False):
+    verbose=False, timeZoneOffset = 0):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -64,6 +64,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
+    :param int timeZoneOffset: timezone difference between configure and deployment
 
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
@@ -158,6 +159,8 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             commandArgs.append("startTime:" + startTime.strftime("%Y-%m-%dT%H:%M"))
         if endTime:
             commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
+        if timeZoneOffset:
+            commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
         exitCode = call(commandArgs)
         if exitCode != 0:
             print(commandArgs)
