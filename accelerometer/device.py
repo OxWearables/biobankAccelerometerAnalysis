@@ -20,7 +20,8 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     useAbs=False, activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     fftOutput=False, startTime=None, endTime=None,
-    verbose=False, timeZoneOffset = 0):
+    verbose=False, timeZoneOffset=0,
+    csvStartTime=None, csvSampleRate=None, csvTimeFormat=None, csvStartRow=None, csvXYZTCols=None):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -64,7 +65,12 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
-    :param int timeZoneOffset: timezone difference between configure and deployment
+    :param int timeZoneOffset: timezone difference between configure and deployment (in minutes)
+    :param datetime csvStartTime: start time for csv file when time column is not available
+    :param float csvSampleRate: sample rate for csv file when time column is not available
+    :param str csvTimeFormat: time format for csv file when time column is available
+    :param int csvStartRow: start row for accelerometer data in csv file
+    :param str csvXYZTCols: index of column positions for XYZT columns, e.g. "0,1,2,3"
 
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
@@ -99,6 +105,18 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
                 "stationaryStd:" + str(staticStdG)]
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
+            if timeZoneOffset:
+                commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
+            if csvStartTime:
+                commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
+            if csvSampleRate:
+                commandArgs.append("csvSampleRate:" + str(csvSampleRate))
+            if csvTimeFormat:
+                commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
+            if csvStartRow:
+                commandArgs.append("csvStartRow:" + str(csvStartRow))
+            if csvXYZTCols:
+                commandArgs.append("csvXYZTCols:" + str(csvXYZTCols))
             # call process to identify stationary epochs
             exitCode = call(commandArgs)
             if exitCode != 0:
@@ -161,6 +179,16 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
         if timeZoneOffset:
             commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
+        if csvStartTime:
+            commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
+        if csvSampleRate:
+            commandArgs.append("csvSampleRate:" + str(csvSampleRate))
+        if csvTimeFormat:
+            commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
+        if csvStartRow:
+            commandArgs.append("csvStartRow:" + str(csvStartRow))
+        if csvXYZTCols:
+            commandArgs.append("csvXYZTCols:" + str(csvXYZTCols))
         exitCode = call(commandArgs)
         if exitCode != 0:
             print(commandArgs)
