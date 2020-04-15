@@ -94,6 +94,7 @@ public class AxivityAx3Epochs {
     	boolean useFilter = true;
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
+    	int timeZoneOffset = 0;
     	boolean getSanDiegoFeatures = false;
     	boolean getMADFeatures = false;
     	boolean getUnileverFeatures = false;
@@ -147,6 +148,8 @@ public class AxivityAx3Epochs {
 				String funcParam = param.substring(param.indexOf(":") + 1);
 				if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
+				} else if (funcName.equals("timeZoneOffset")) {
+					timeZoneOffset = Integer.parseInt(funcParam);
 				} else if (funcName.equals("verbose")) {
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
@@ -325,9 +328,9 @@ public class AxivityAx3Epochs {
 
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
-				readCwaEpochs(accFile);
+				readCwaEpochs(accFile, timeZoneOffset);
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
-                readCwaGzEpochs(accFile);
+                readCwaGzEpochs(accFile, timeZoneOffset);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				readGeneaEpochs(accFile);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
@@ -691,7 +694,7 @@ public class AxivityAx3Epochs {
 	 * Read and process Axivity CWA file. Setup file reading infrastructure
 	 * and then call readCwaBuffer() method
 	**/
-	private static void readCwaEpochs(String accFile) {
+	private static void readCwaEpochs(String accFile, int timeZoneOffset) {
 
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 											// method
@@ -722,7 +725,7 @@ public class AxivityAx3Epochs {
 			while (rawAccReader.read(buf) != -1) {
 				readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
 					USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
-					errCounter);
+					errCounter, timeZoneOffset);
 				buf.clear();
 				// option to provide status update to user...
 				pageCount++;
@@ -742,7 +745,7 @@ public class AxivityAx3Epochs {
 	 * Read and process Axivity CWA.gz gzipped file. Setup file reading
 	 * infrastructure and then call readCwaBuffer() method
 	**/
-	private static void readCwaGzEpochs(String accFile) {
+	private static void readCwaGzEpochs(String accFile, int timeZoneOffset) {
 
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
@@ -774,7 +777,7 @@ public class AxivityAx3Epochs {
             while (rawAccReader.read(buf) != -1) {
                 readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
-                    errCounter);
+                    errCounter, timeZoneOffset);
                 buf.clear();
                 // option to provide status update to user...
                 pageCount++;
@@ -816,7 +819,7 @@ public class AxivityAx3Epochs {
 	private static void readCwaBuffer(ByteBuffer buf, LocalDateTime SESSION_START,
 		long START_OFFSET_NANOS, boolean USE_PRECISE_TIME,
 		LocalDateTime[] lastBlockTime, int[] lastBlockTimeIndex, String header,
-		int[] errCounter)
+		int[] errCounter, int timeZoneOffset)
 	{
 		buf.flip();
 		buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -827,7 +830,7 @@ public class AxivityAx3Epochs {
 			// measureFreq
 			// start-epoch values
 			try {
-				SESSION_START = cwaHeaderLoggingStartTime(buf);
+				SESSION_START = cwaHeaderLoggingStartTime(buf, timeZoneOffset);
 				System.out.println("Session start:" + SESSION_START);
 			} catch (Exception e) {
 				System.err.println("No preset start time");
@@ -902,7 +905,7 @@ public class AxivityAx3Epochs {
 				}
 
 				// determine time for indexed sample within block
-				LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp, fractional);
+				LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp, fractional, timeZoneOffset);
 				// first & last sample. Actually, last = first sample in
 				// next block
 				LocalDateTime firstSampleTime, lastSampleTime;
@@ -1012,7 +1015,7 @@ public class AxivityAx3Epochs {
 
 	// Parse HEX values, CWA format is described at:
     // https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
-	private static LocalDateTime getCwaTimestamp(int cwaTimestamp, int fractional) {
+	private static LocalDateTime getCwaTimestamp(int cwaTimestamp, int fractional, int timeZoneOffset) {
 		LocalDateTime tStamp;
 		int year = (int) ((cwaTimestamp >> 26) & 0x3f) + 2000;
 		int month = (int) ((cwaTimestamp >> 22) & 0x0f);
@@ -1021,6 +1024,7 @@ public class AxivityAx3Epochs {
 		int mins = (int) ((cwaTimestamp >> 6) & 0x3f);
 		int secs = (int) ((cwaTimestamp) & 0x3f);
 		tStamp = LocalDateTime.of(year, month, day, hours, mins, secs);
+		tStamp = tStamp.plusMinutes(timeZoneOffset);
 		// add 1/65536th fractions of a second
 		tStamp = tStamp.plusNanos(secs2Nanos(fractional / 65536.0));
 		return tStamp;
@@ -1030,9 +1034,9 @@ public class AxivityAx3Epochs {
 		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000), (int) TimeUnit.MILLISECONDS.toNanos((m % 1000)), ZoneOffset.UTC);
 	}
 
-	private static LocalDateTime cwaHeaderLoggingStartTime(ByteBuffer buf) {
+	private static LocalDateTime cwaHeaderLoggingStartTime(ByteBuffer buf, int timeZoneOffset) {
 		long delayedLoggingStartTime = getUnsignedInt(buf, 13);
-		return getCwaTimestamp((int) delayedLoggingStartTime, 0);
+		return getCwaTimestamp((int) delayedLoggingStartTime, 0, timeZoneOffset);
 	}
 
 	// credit for next 2 methods goes to:
