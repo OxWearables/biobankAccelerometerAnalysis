@@ -48,6 +48,9 @@ public class AxivityAx3Epochs {
 	private static final DecimalFormat DF6 = new DecimalFormat("0.000000");
 	private static final DecimalFormat DF3 = new DecimalFormat("0.000");
 	private static final DecimalFormat DF2 = new DecimalFormat("0.00");
+	public static final int INVALID_GT3_FILE = 0;
+	public static final int VALID_GT3_V1_FILE = 1;
+	public static final int VALID_GT3_V2_FILE = 2;
 
 	private static Boolean verbose = true;
 	private static EpochWriter epochWriter;
@@ -440,10 +443,38 @@ public class AxivityAx3Epochs {
 			System.exit(-2);
 		}
 	}
+
+	private static double setAccelerationScale(String serialNumber) {
+		double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's)
+		double ACCELERATION_SCALE_FACTOR_MOS = 256.0; // == 2048/8?
+		double accelerationScale = -1;
+
+		if((serialNumber.startsWith("NEO") || (serialNumber.startsWith("CLE")))) {
+			accelerationScale = ACCELERATION_SCALE_FACTOR_NEO_CLE;
+		} else if(serialNumber.startsWith("MOS")){
+			accelerationScale = ACCELERATION_SCALE_FACTOR_MOS;
+		}
+		return accelerationScale;
+	}
+
+	private static double setSampleDelta(double sampleFreq) {
+		System.out.println("sampleFreq:" + sampleFreq);
+		double sampleDelta_old = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+		System.out.println("sampleDelta before rounding:" + sampleDelta_old);
+		double sampleDelta = 1000.0/sampleFreq;  // don't round the delta to its fourth decimal
+		System.out.println("sampleDelta after rounding:" + sampleDelta);
+		//	sampleDelta = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+
+		return sampleDelta;
+	}
+
 	/**
-	 * Reads a .gt3x file (actually a .zip archive containing at least 3 files).
-	 * This method first verifies it is a valid version 1 file (currently V2 not supported)
- 	 * it will then parse the header and begin processing the activity.bin file.
+	 * Reads a .gt3x file
+	 * For v1, the .zip archive should contain least 3 files.
+	 * For v2, the .zip arhive should contain only 2 files.
+	 * This method first verifies it is a valid v1/v2 file
+ 	 * it will then parse the header and begin processing the activity.bin file for v1
+	 * and log.bin file for v2.
 	 */
 	private static void readG3TXEpochs(String accFile) {
 
@@ -455,15 +486,19 @@ public class AxivityAx3Epochs {
 		try {
 			zip = new ZipFile( new File(accFile), ZipFile.OPEN_READ);
 
-			if (!isGT3XV1(zip)) {
-				System.err.println("file " + accFile + " is not a V1 g3tx file");
+			int gt3Version = getGT3XVersion(zip);
+			if (gt3Version == INVALID_GT3_FILE) {
+				System.err.println("file " + accFile + " is not a valid V1 or V2 g3tx file");
 				System.exit(-2);
 			}
+
 			for (Enumeration<?> e = zip.entries(); e.hasMoreElements();) {
 				ZipEntry entry = (ZipEntry) e.nextElement();
 				if (entry.toString().equals("info.txt")) {
 					infoReader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-				} else if (entry.toString().equals("activity.bin")) {
+				} else if (entry.toString().equals("activity.bin") && gt3Version == VALID_GT3_V1_FILE) {
+					activityReader = zip.getInputStream(entry);
+				} else if (entry.toString().equals("log.bin") && gt3Version == VALID_GT3_V2_FILE) {
 					activityReader = zip.getInputStream(entry);
 				}
 			}
@@ -495,30 +530,28 @@ public class AxivityAx3Epochs {
 				}
 			}
 
-			// Set acceleration scale
-
-			double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's)
-			double ACCELERATION_SCALE_FACTOR_MOS = 256.0; // == 2048/8?
-
-			if((serialNumber.startsWith("NEO") || (serialNumber.startsWith("CLE")))) {
-				accelerationScale = ACCELERATION_SCALE_FACTOR_NEO_CLE;
-			} else if(serialNumber.startsWith("MOS")){
-				accelerationScale = ACCELERATION_SCALE_FACTOR_MOS;
-			}
+			accelerationScale = setAccelerationScale(serialNumber);
 
 			if (sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) {
 				System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
 				System.exit(-2);
 			}
-			System.out.println("sampleFreq:" + sampleFreq);
-			double sampleDelta_old = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
-			System.out.println("sampleDelta before rounding:" + sampleDelta_old);
-			double sampleDelta = 1000.0/sampleFreq;  // don't round the delta to its fourth decimal
-			System.out.println("sampleDelta after rounding:" + sampleDelta);
-//			sampleDelta = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+
+			double sampleDelta = setSampleDelta(sampleFreq);
 
 			// else leave as specified in info.txt?
-			readG3TXEpochPairs(activityReader, sampleDelta, sampleFreq, accelerationScale, firstSampleTime);
+			if (gt3Version == VALID_GT3_V1_FILE) readG3TXV1EpochPairs(
+					activityReader,
+					sampleDelta,
+					sampleFreq,
+					accelerationScale,
+					firstSampleTime);
+			if (gt3Version == VALID_GT3_V2_FILE)  readG3TXV2Epoch(
+					activityReader,
+					sampleDelta,
+					sampleFreq,
+					accelerationScale,
+					firstSampleTime);
 		} catch (IOException excep) {
 			excep.printStackTrace(System.err);
 			System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
@@ -559,7 +592,7 @@ public class AxivityAx3Epochs {
 	 ** The readings should range from -2046 to 2046, covering -6 to 6 G's,
 	 ** thus the maximum accuracy is 0.003 G's. The values -2048, -2047 & 2047 should never appear in the stream.
 	 **/
-	private static void readG3TXEpochPairs(
+	private static void readG3TXV1EpochPairs(
 			InputStream activityReader,
 			double sampleDelta,
 			double sampleFreq,
@@ -569,6 +602,71 @@ public class AxivityAx3Epochs {
 
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 											// method (pass by reference using array?)
+		int samples = 0; // num samples collected so far
+
+		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
+		byte[] bytes=new byte[9];
+		int i=0;
+		int twoSampleCounter = 0;
+		int datum;
+		int totalBytes = 0;
+		double[] twoSamples = null;
+
+		try {
+			while (( datum=activityReader.read())!=-1){
+				bytes[i]=(byte)datum;
+				totalBytes++;
+
+
+				if (false && totalBytes%10000==0)
+					System.out.println("Converting sample.... "+(totalBytes/1000)+"K");
+
+				// if we have enough bytes to read two 36 bit data samples
+				if (++i==9){
+					twoSamples = readAccelPair(bytes, accelerationScale);
+					twoSampleCounter = 2;
+				}
+
+				// read the two samples from the sample counter
+				while (twoSampleCounter>0) {
+					twoSampleCounter--;
+					i=0;
+
+					long time = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
+					double x = twoSamples[3-twoSampleCounter*3];
+					double y = twoSamples[4-twoSampleCounter*3];
+					double z = twoSamples[5-twoSampleCounter*3];
+					double temp = 1.0d; // don't know temp yet
+					epochWriter.newValues(time, x, y, z, temp, errCounter);
+
+					samples += 1;
+
+				}
+			}
+		}
+		catch (IOException ex) {
+			System.out.println("End of .g3tx file reached");
+		}
+	}
+
+	/**
+	 ** Method to read all the x/y/z data from a GT3X (V1) activity.bin file.
+	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
+	 ** Data is stored sequentially at the sample rate specified in the header (1/f = sampleDelta in milliseconds)
+	 ** Each pair of readings occupies an awkward 9 bytes to conserve space, so must be read 2 at a time.
+	 ** The readings should range from -2046 to 2046, covering -6 to 6 G's,
+	 ** thus the maximum accuracy is 0.003 G's. The values -2048, -2047 & 2047 should never appear in the stream.
+	 **/
+	private static void readG3TXV2Epoch(
+			InputStream activityReader,
+			double sampleDelta,
+			double sampleFreq,
+			double accelerationScale,
+			long firstSampleTime // in milliseconds
+	) {
+
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+		// method (pass by reference using array?)
 		int samples = 0; // num samples collected so far
 
 		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
@@ -663,15 +761,16 @@ public class AxivityAx3Epochs {
 
 
 	/*
-	 * This method checks if a file is of GT3X format version 1 It returns true
-	 * if the file is of the correct format otherwise it returns false
+	 * This method checks which GT3 version the zipfile contains.
+	 * Return 1 for v1, 2 for v2, 0 for invalid GT3 file
 	 */
-	private static boolean isGT3XV1(final ZipFile zip) throws IOException {
+	private static int getGT3XVersion(final ZipFile zip) throws IOException {
 
 		// Check if the file contains the necessary Actigraph files
 		boolean hasActivityData = false;
 		boolean hasLuxData = false;
 		boolean hasInfoData = false;
+		boolean hasLogData = false;
 		for (Enumeration<?> e = zip.entries(); e.hasMoreElements();) {
 			ZipEntry entry = (ZipEntry) e.nextElement();
 			if (entry.toString().equals("activity.bin"))
@@ -680,12 +779,17 @@ public class AxivityAx3Epochs {
 				hasLuxData = true;
 			if (entry.toString().equals("info.txt"))
 				hasInfoData = true;
+			if (entry.toString().equals("log.bin"))
+				hasLogData = true;
 		}
 
-		if (hasActivityData && hasLuxData && hasInfoData)
-			return true;
+		if (hasActivityData && hasLuxData && hasInfoData) {
+			return VALID_GT3_V1_FILE;
+		} else if (hasInfoData && hasLogData) {
+			return VALID_GT3_V2_FILE;
+		}
 
-		return false;
+		return INVALID_GT3_FILE;
 	}
 
 
