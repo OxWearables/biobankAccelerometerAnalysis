@@ -657,7 +657,7 @@ public class AxivityAx3Epochs {
 	 */
 	private static void checkChecksum(int i,
 									  int separator,
-			                          int type,
+									  int type,
 									  int size,
 									  int date,
 									  int checkSum,
@@ -794,19 +794,6 @@ public class AxivityAx3Epochs {
 				totalBytes++;
 				i++;
 
-//
-//				if (size == currentPayloadRead) {
-//					if (checkSum == header[i]) {
-//						System.out.println("Packet verified.");
-//					} else {
-//						System.out.println("Packet verfication failed.");
-//					}
-//				} else {
-//					checkSum ^= (byte) (header[i] & 0xFF);
-//				}
-
-
-				// verify check sum
 //
 //
 //				if (false && totalBytes%10000==0)
