@@ -48,9 +48,11 @@ public class AxivityAx3Epochs {
 	private static final DecimalFormat DF6 = new DecimalFormat("0.000000");
 	private static final DecimalFormat DF3 = new DecimalFormat("0.000");
 	private static final DecimalFormat DF2 = new DecimalFormat("0.00");
-	public static final int INVALID_GT3_FILE = 0;
-	public static final int VALID_GT3_V1_FILE = 1;
-	public static final int VALID_GT3_V2_FILE = 2;
+	private static final int INVALID_GT3_FILE = 0;
+	private static final int VALID_GT3_V1_FILE = 1;
+	private static final int VALID_GT3_V2_FILE = 2;
+	private static final int GT3_HEADER_SIZE = 8;
+
 
 	private static Boolean verbose = true;
 	private static EpochWriter epochWriter;
@@ -649,6 +651,51 @@ public class AxivityAx3Epochs {
 		}
 	}
 
+
+	/**
+	 * check checksum with payload and header info
+	 */
+	private static void checkChecksum(int i,
+									  int separator,
+			                          int type,
+									  int size,
+									  int date,
+									  int checkSum,
+									  int target_value) {
+		checkSum ^= (byte)separator;
+		checkSum ^= (byte)type;
+		checkSum ^= (byte)(size & 0xFF);
+		checkSum ^= (byte)((size >> 8) & 0xFF);
+		checkSum ^= (byte)(date & 0xFF);
+		checkSum ^= (byte)((date >> 8) & 0xFF);
+		checkSum ^= (byte)((date >> 16) & 0xFF);
+		checkSum ^= (byte)((date >> 24) & 0xFF);
+		System.out.println(String.format("Date 0x%08X", date));
+
+		// to convert to one's complement as the checksum is one's complement
+		checkSum = (byte)~checkSum;
+		System.out.println("Verifying ooutput");
+		if (checkSum != target_value) {
+			System.err.println("Packet parsing failed at byte "+ i);
+			System.err.println("Checksum does not match!");
+			System.err.println(String.format("Expected 0x%08X", target_value));
+			System.err.println(String.format("Obtained 0x%08X", checkSum));
+			System.exit(-1);
+		} else {
+			System.out.println("Verification succeeds");
+		}
+	}
+
+	/**
+	 ** Payload should between the initIndex and InitIndex+size. Upper bound is
+	 *  exclusive.
+	 **
+	 */
+	private static boolean isPayload(int i, int size, int initIndex) {
+		if (i >= initIndex+GT3_HEADER_SIZE && i < (initIndex+GT3_HEADER_SIZE+size)) return true;
+		else return false;
+	}
+
 	/**
 	 ** Method to read all the x/y/z data from a GT3X (V1) activity.bin file.
 	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
@@ -670,43 +717,122 @@ public class AxivityAx3Epochs {
 		int samples = 0; // num samples collected so far
 
 		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
-		byte[] bytes=new byte[9];
-		int i=0;
+		byte[] bytes = new byte[9];
+		byte[] header = new byte[8];
+		int checkSum = 0, type=0;
+		int i = 0, date = 0;
 		int twoSampleCounter = 0;
 		int datum;
 		int totalBytes = 0;
+		int separator = 0;
+		int currentPayloadRead = 0;
+		int size = 0;
+		int initIndex = 0; // starting index of a parket
 		double[] twoSamples = null;
+		boolean isHeader = true;
 
+		// TODO: 1. process header for each record type. Try to standarlise this.
+		// 2. Look through all the relavent records.
 		try {
-			while (( datum=activityReader.read())!=-1){
-				bytes[i]=(byte)datum;
+			while ((datum=activityReader.read())!=-1){
+				// 1. Process header
+				byte current = (byte)datum;
+				if (isHeader) {
+					switch (i-initIndex) {
+						case 0:
+							separator = current;
+							break;
+						case 1:
+							type = current;
+							break;
+						case 2:
+							// not sure why this is needed but without casting, this might
+							// result in leading ones during type conversion
+							date = (int)(current & 0xFF);
+							break;
+						case 3:
+							date = (int)(((current & 0xFF) << 8) ^ date);
+							break;
+						case 4:
+							date = (int)(((current & 0xFF) << 16) ^ date);
+							break;
+						case 5:
+							date = (int)(((current & 0xFF) << 24) ^ date);
+							break;
+						case 6:
+							size = (int)(current & 0xFF);
+							break;
+						case 7:
+							size = (int)(((current & 0xFF) << 8) ^ size);
+					}
+
+					if (i == initIndex+GT3_HEADER_SIZE-1) {
+						isHeader = false;
+						System.out.println("Header info:");
+						System.out.println("type: "+ type);
+						System.out.println("date: "+ date);
+						System.out.println("size: "+ size);
+						System.out.println("Starting index: "+ initIndex);
+					}
+
+				} else if (isPayload(i, size, initIndex)) {
+					//process payload depending on the type of record
+					// https://github.com/actigraph/GT3X-File-Format
+					checkSum ^= (byte)current;
+				} else {
+					checkChecksum(i, separator, type, size, date, checkSum, current);
+					checkSum = 0;
+					date = 0;
+					size = 0;
+					type = 0;
+					separator = 0;
+					// allow reading header after checksum is done checking
+					isHeader = true;
+					initIndex = i+1;
+				}
+
 				totalBytes++;
+				i++;
+
+//
+//				if (size == currentPayloadRead) {
+//					if (checkSum == header[i]) {
+//						System.out.println("Packet verified.");
+//					} else {
+//						System.out.println("Packet verfication failed.");
+//					}
+//				} else {
+//					checkSum ^= (byte) (header[i] & 0xFF);
+//				}
 
 
-				if (false && totalBytes%10000==0)
-					System.out.println("Converting sample.... "+(totalBytes/1000)+"K");
-
-				// if we have enough bytes to read two 36 bit data samples
-				if (++i==9){
-					twoSamples = readAccelPair(bytes, accelerationScale);
-					twoSampleCounter = 2;
-				}
-
-				// read the two samples from the sample counter
-				while (twoSampleCounter>0) {
-					twoSampleCounter--;
-					i=0;
-
-					long time = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
-					double x = twoSamples[3-twoSampleCounter*3];
-					double y = twoSamples[4-twoSampleCounter*3];
-					double z = twoSamples[5-twoSampleCounter*3];
-					double temp = 1.0d; // don't know temp yet
-					epochWriter.newValues(time, x, y, z, temp, errCounter);
-
-					samples += 1;
-
-				}
+				// verify check sum
+//
+//
+//				if (false && totalBytes%10000==0)
+//					System.out.println("Converting sample.... "+(totalBytes/1000)+"K");
+//
+//				// if we have enough bytes to read two 36 bit data samples
+//				if (++i==9){
+//					twoSamples = readAccelPair(bytes, accelerationScale);
+//					twoSampleCounter = 2;
+//				}
+//
+//				// read the two samples from the sample counter
+//				while (twoSampleCounter>0) {
+//					twoSampleCounter--;
+//					i=0;
+//
+//					long time = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
+//					double x = twoSamples[3-twoSampleCounter*3];
+//					double y = twoSamples[4-twoSampleCounter*3];
+//					double z = twoSamples[5-twoSampleCounter*3];
+//					double temp = 1.0d; // don't know temp yet
+//					epochWriter.newValues(time, x, y, z, temp, errCounter);
+//
+//					samples += 1;
+//
+//				}
 			}
 		}
 		catch (IOException ex) {
