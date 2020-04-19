@@ -175,6 +175,8 @@ def loadTimeSeriesCSV(tsFile):
     if header.columns[0] != TIME_SERIES_COL:
         tsData.index = pd.date_range(start=startDate, end=endDate,
             freq=str(sampleRate) + 's')
+    else:
+        tsData = tsData.set_index(pd.to_datetime(tsData[TIME_SERIES_COL]))
     return tsData
 
 
