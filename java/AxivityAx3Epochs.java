@@ -655,13 +655,14 @@ public class AxivityAx3Epochs {
 	/**
 	 * check checksum with payload and header info
 	 */
-	private static void checkChecksum(int i,
-									  int separator,
-									  int type,
-									  int size,
-									  int date,
-									  int checkSum,
-									  int target_value) {
+	private static void checkChecksum(
+			int i,
+			int separator,
+			int type,
+			int size,
+			int date,
+			int checkSum,
+			int target_value) {
 		checkSum ^= (byte)separator;
 		checkSum ^= (byte)type;
 		checkSum ^= (byte)(size & 0xFF);
