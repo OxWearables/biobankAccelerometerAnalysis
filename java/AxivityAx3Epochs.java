@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.math.RoundingMode;
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.Channels;
@@ -37,7 +38,8 @@ import java.time.ZoneOffset;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Calculates epoch summaries from an AX3 .CWA file. Class/application can be
@@ -56,6 +58,15 @@ public class AxivityAx3Epochs {
 
 	private static Boolean verbose = true;
 	private static EpochWriter epochWriter;
+	private static Logger logger;
+
+	static {
+		String path = AxivityAx3Epochs.class.getClassLoader()
+				.getResource("logging.properties")
+				.getFile();
+		System.setProperty("java.util.logging.config.file", path);
+		logger = Logger.getLogger(AxivityAx3Epochs.class.getName());
+	}
 
 	/*
 	 * Parse command line args, then call method to identify and write epochs.
@@ -65,8 +76,6 @@ public class AxivityAx3Epochs {
 	 *            "param:value" pairs.
 	 */
 	public static void main(String[] args) {
-
-
 		// variables to store default parameter options
 		String[] functionParameters = new String[0];
 
@@ -156,6 +165,7 @@ public class AxivityAx3Epochs {
 				} else if (funcName.equals("timeZoneOffset")) {
 					timeZoneOffset = Integer.parseInt(funcParam);
 				} else if (funcName.equals("verbose")) {
+					logger.setLevel(Level.ALL);
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
 					epochPeriod = Integer.parseInt(funcParam);
@@ -663,6 +673,7 @@ public class AxivityAx3Epochs {
 			int date,
 			int checkSum,
 			int target_value) {
+
 		checkSum ^= (byte)separator;
 		checkSum ^= (byte)type;
 		checkSum ^= (byte)(size & 0xFF);
@@ -671,19 +682,18 @@ public class AxivityAx3Epochs {
 		checkSum ^= (byte)((date >> 8) & 0xFF);
 		checkSum ^= (byte)((date >> 16) & 0xFF);
 		checkSum ^= (byte)((date >> 24) & 0xFF);
-		System.out.println(String.format("Date 0x%08X", date));
 
 		// to convert to one's complement as the checksum is one's complement
 		checkSum = (byte)~checkSum;
-		System.out.println("Verifying ooutput");
 		if (checkSum != target_value) {
-			System.err.println("Packet parsing failed at byte "+ i);
-			System.err.println("Checksum does not match!");
-			System.err.println(String.format("Expected 0x%08X", target_value));
-			System.err.println(String.format("Obtained 0x%08X", checkSum));
+			logger.log(Level.SEVERE, String.format("Date 0x%08X", date));
+			logger.log(Level.SEVERE, "Packet parsing failed at byte "+ i);
+			logger.log(Level.SEVERE, "Checksum does not match!");
+			logger.log(Level.SEVERE, String.format("Expected 0x%08X", target_value));
+			logger.log(Level.SEVERE, String.format("Obtained 0x%08X", checkSum));
 			System.exit(-1);
 		} else {
-			System.out.println("Verification succeeds");
+			logger.log(Level.FINER, "Verification succeeds");
 		}
 	}
 
@@ -694,6 +704,55 @@ public class AxivityAx3Epochs {
 	 */
 	private static boolean isPayload(int i, int size, int initIndex) {
 		if (i >= initIndex+GT3_HEADER_SIZE && i < (initIndex+GT3_HEADER_SIZE+size)) return true;
+		else return false;
+	}
+
+	/**
+	 * This was translated into Java from
+	 * https://github.com/actigraph/GT3X-File-Format/blob/master/LogRecords/Parameters.md
+	 */
+	public static double decodePara(int value) {
+		final double FLOAT_MINIMUM = 0.00000011920928955078125;  /* 2^-23 */
+		final double FLOAT_MAXIMUM = 8388608.0;                  /* 2^23  */
+		final int ENCODED_MINIMUM = 0x00800000;
+		final int ENCODED_MAXIMUM = 0x007FFFFF;
+		final int SIGNIFICAND_MASK = 0x00FFFFFF;
+		final int EXPONENT_MINIMUM = -128;
+		final int EXPONENT_MAXIMUM = 127;
+		final int EXPONENT_MASK = 0xFF000000;
+		final int EXPONENT_OFFSET = 24;
+
+		double significand;
+		int exponent;
+		int i32;
+
+		/* handle numbers that are too big */
+		if (ENCODED_MAXIMUM == value)
+			return Integer.MAX_VALUE;
+		else if (ENCODED_MAXIMUM == value)
+			return -Integer.MAX_VALUE;
+
+		/* extract the exponent */
+		i32 = (int) ((value & EXPONENT_MASK) >>> EXPONENT_OFFSET);
+		if (0 != (i32 & 0x80))
+			i32 = (int)((int)i32 | 0xFFFFFF00);
+		exponent = (int)i32;
+
+		/* extract the significand */
+		i32 = (int)(value & SIGNIFICAND_MASK);
+		if (0 != (i32 & ENCODED_MINIMUM))
+			i32 = (int)((int)i32 | 0xFF000000);
+
+		significand = (double) i32 / FLOAT_MAXIMUM;
+
+		/* calculate the floating point value */
+		return significand * Math.pow(2.0, exponent);
+	}
+
+	private static boolean isAccelScale(byte[] keyPairs) {
+		int addressSpace = keyPairs[0];
+		int identifier = keyPairs[2];
+		if (addressSpace == 0 && identifier == 55) return true;
 		else return false;
 	}
 
@@ -713,6 +772,7 @@ public class AxivityAx3Epochs {
 			long firstSampleTime // in milliseconds
 	) {
 
+		final int PARAMETER_ID = 21;
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 		// method (pass by reference using array?)
 		int samples = 0; // num samples collected so far
@@ -770,17 +830,48 @@ public class AxivityAx3Epochs {
 
 					if (i == initIndex+GT3_HEADER_SIZE-1) {
 						isHeader = false;
-						System.out.println("Header info:");
-						System.out.println("type: "+ type);
-						System.out.println("date: "+ date);
-						System.out.println("size: "+ size);
-						System.out.println("Starting index: "+ initIndex);
+						logger.log(Level.FINEST, "\nHeader info: \n" +
+								"\ntype: "+ type +
+								String.format("Date 0x%08X: ", date) +
+								"\nsize: "+ size +
+								"\nStarting index: "+ initIndex);
 					}
 
 				} else if (isPayload(i, size, initIndex)) {
 					// process payload depending on the type of record
-					// TODO: implement payload processing based on TYPE
+					// There exist various packet types. Currently, we are
+					// only processing packets of type ACTIVITY
 					// https://github.com/actigraph/GT3X-File-Format
+
+					if (type == PARAMETER_ID) {
+						logger.log(Level.INFO, "Processing parameter packet...");
+						// process parameters Keyvale pair. Each pair is of 8 bytes.
+						byte [] keyPair = new byte[8];
+						byte mydatum;
+						keyPair[0] = current;
+
+						int k = 1;
+						while (k < 8) {
+							mydatum= (byte) activityReader.read();
+							keyPair[k] = (byte) mydatum;
+							checkSum ^= (byte) mydatum;
+							k++;
+						}
+
+						// set acceleration scale if present
+						if (isAccelScale(keyPair)) {
+							int keyval = keyPair[4];
+							keyval = (int)(((keyPair[5] & 0xFF) << 8) ^ keyval);
+							keyval = (int)(((keyPair[6] & 0xFF) << 16) ^ keyval);
+							keyval = (int)(((keyPair[7] & 0xFF) << 24) ^ keyval);
+							accelerationScale = decodePara(keyval);
+							logger.log(Level.INFO, "accelerationScale changed to "+accelerationScale);
+						}
+
+						i += 7;
+						totalBytes += 7;
+					}
+
 					checkSum ^= (byte)current;
 				} else {
 					checkChecksum(i, separator, type, size, date, checkSum, current);
@@ -799,7 +890,7 @@ public class AxivityAx3Epochs {
 			}
 		}
 		catch (IOException ex) {
-			System.out.println("End of .g3tx file reached");
+			logger.log(Level.INFO, "End of .g3tx file reached");
 		}
 	}
 
