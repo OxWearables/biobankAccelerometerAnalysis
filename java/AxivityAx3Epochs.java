@@ -474,7 +474,7 @@ public class AxivityAx3Epochs {
 	 * Reads a .gt3x file
 	 * For v1, the .zip archive should contain least 3 files.
 	 * For v2, the .zip arhive should contain only 2 files.
-	 * This method first verifies it is a valid v1/v2 file
+	 * This method first verifies if it is a valid v1/v2 file,
  	 * it will then parse the header and begin processing the activity.bin file for v1
 	 * and log.bin file for v2.
 	 */
@@ -548,7 +548,7 @@ public class AxivityAx3Epochs {
 					sampleFreq,
 					accelerationScale,
 					firstSampleTime);
-			if (gt3Version == VALID_GT3_V2_FILE)  readG3TXV2Epoch(
+			if (gt3Version == VALID_GT3_V2_FILE) readG3TXV2Epoch(
 					activityReader,
 					sampleDelta,
 					sampleFreq,
@@ -697,7 +697,7 @@ public class AxivityAx3Epochs {
 	}
 
 	/**
-	 ** Method to read all the x/y/z data from a GT3X (V1) activity.bin file.
+	 ** Method to read all the x/y/z data from a GT3X (V2) activity.bin file.
 	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
 	 ** Data is stored sequentially at the sample rate specified in the header (1/f = sampleDelta in milliseconds)
 	 ** Each pair of readings occupies an awkward 9 bytes to conserve space, so must be read 2 at a time.
@@ -731,8 +731,9 @@ public class AxivityAx3Epochs {
 		double[] twoSamples = null;
 		boolean isHeader = true;
 
-		// TODO: 1. process header for each record type. Try to standarlise this.
-		// 2. Look through all the relavent records.
+		// 1. process header
+		// 2. process payload based on type for each packet
+		// 3. validate checksum for each packet
 		try {
 			while ((datum=activityReader.read())!=-1){
 				// 1. Process header
@@ -776,7 +777,8 @@ public class AxivityAx3Epochs {
 					}
 
 				} else if (isPayload(i, size, initIndex)) {
-					//process payload depending on the type of record
+					// process payload depending on the type of record
+					// TODO: implement payload processing based on TYPE
 					// https://github.com/actigraph/GT3X-File-Format
 					checkSum ^= (byte)current;
 				} else {
@@ -793,33 +795,6 @@ public class AxivityAx3Epochs {
 
 				totalBytes++;
 				i++;
-
-//
-//
-//				if (false && totalBytes%10000==0)
-//					System.out.println("Converting sample.... "+(totalBytes/1000)+"K");
-//
-//				// if we have enough bytes to read two 36 bit data samples
-//				if (++i==9){
-//					twoSamples = readAccelPair(bytes, accelerationScale);
-//					twoSampleCounter = 2;
-//				}
-//
-//				// read the two samples from the sample counter
-//				while (twoSampleCounter>0) {
-//					twoSampleCounter--;
-//					i=0;
-//
-//					long time = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
-//					double x = twoSamples[3-twoSampleCounter*3];
-//					double y = twoSamples[4-twoSampleCounter*3];
-//					double z = twoSamples[5-twoSampleCounter*3];
-//					double temp = 1.0d; // don't know temp yet
-//					epochWriter.newValues(time, x, y, z, temp, errCounter);
-//
-//					samples += 1;
-//
-//				}
 			}
 		}
 		catch (IOException ex) {
