@@ -165,7 +165,6 @@ public class AxivityAx3Epochs {
 				} else if (funcName.equals("timeZoneOffset")) {
 					timeZoneOffset = Integer.parseInt(funcParam);
 				} else if (funcName.equals("verbose")) {
-					logger.setLevel(Level.ALL);
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
 					epochPeriod = Integer.parseInt(funcParam);
