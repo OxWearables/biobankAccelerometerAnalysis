@@ -686,11 +686,8 @@ public class AxivityAx3Epochs {
 		// to convert to one's complement as the checksum is one's complement
 		checkSum = (byte)~checkSum;
 		if (checkSum != target_value) {
-			logger.log(Level.SEVERE, String.format("Date 0x%08X", date));
-			logger.log(Level.SEVERE, "Packet parsing failed at byte "+ i);
-			logger.log(Level.SEVERE, "Checksum does not match!");
-			logger.log(Level.SEVERE, String.format("Expected 0x%08X", target_value));
-			logger.log(Level.SEVERE, String.format("Obtained 0x%08X", checkSum));
+			logger.log(Level.SEVERE, "Packet parsing failed at byte "+ i + "\nChecksum does not match!"
+					+ String.format("\nExpected 0x%08X", target_value) +String.format("\nObtained 0x%08X", checkSum));
 			System.exit(-1);
 		} else {
 			logger.log(Level.FINER, "Verification succeeds");
@@ -773,6 +770,8 @@ public class AxivityAx3Epochs {
 	) {
 
 		final int PARAMETER_ID = 21;
+		final int ACTIVITY_ID = 0;
+
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 		// method (pass by reference using array?)
 		int samples = 0; // num samples collected so far
@@ -830,7 +829,7 @@ public class AxivityAx3Epochs {
 
 					if (i == initIndex+GT3_HEADER_SIZE-1) {
 						isHeader = false;
-						logger.log(Level.FINEST, "\nHeader info: \n" +
+						logger.log(Level.FINER, "\nHeader info: \n" +
 								"\ntype: "+ type +
 								String.format("Date 0x%08X: ", date) +
 								"\nsize: "+ size +
@@ -842,6 +841,7 @@ public class AxivityAx3Epochs {
 					// There exist various packet types. Currently, we are
 					// only processing packets of type ACTIVITY
 					// https://github.com/actigraph/GT3X-File-Format
+					checkSum ^= (byte)current;
 
 					if (type == PARAMETER_ID) {
 						logger.log(Level.INFO, "Processing parameter packet...");
@@ -869,10 +869,51 @@ public class AxivityAx3Epochs {
 						}
 
 						i += 7;
-						totalBytes += 7;
-					}
+					} else if (type == ACTIVITY_ID && size > 1) {
+						// when Size = 1, it is a USB connection event thus ignore.
+						double [] sample = new double[3];
+						int offset = 0;
+						int shifter;
+						short axis_val;
+						i++;
 
-					checkSum ^= (byte)current;
+						while (isPayload(i, size, initIndex)) {
+							for (int axis = 0; axis < 3; axis++) {
+								if (0 == (offset & 0x07)) {
+									if (i != initIndex+8) {
+										current = (byte) activityReader.read();
+										checkSum ^= (byte) current;
+										i++;
+									}
+									shifter = ((current & 0xFF) << 4);
+
+									current = (byte) activityReader.read();
+									checkSum ^= (byte) current;
+									i++;
+
+									shifter |= ((current & 0xF0) >>> 4);
+									offset += 4;
+
+								} else {
+									shifter = ((current & 0x0F) << 8);
+									offset += 4;
+
+									current = (byte) activityReader.read();
+									checkSum ^= (byte) current;
+									i++;
+									shifter |= (current & 0xFF);
+									offset += 8;
+								}
+								if (shifter > 2047)
+									shifter += 61440;
+								axis_val = (short) shifter;
+								sample[axis] = axis_val / accelerationScale;
+								sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
+								logger.log(Level.FINER, "i: "+i);
+								logger.log(Level.FINER, "x y z: "+sample[0] + " "  + sample[1] + " " + sample[2]);
+							}
+						}
+					}
 				} else {
 					checkChecksum(i, separator, type, size, date, checkSum, current);
 					checkSum = 0;
@@ -885,7 +926,6 @@ public class AxivityAx3Epochs {
 					initIndex = i+1;
 				}
 
-				totalBytes++;
 				i++;
 			}
 		}
