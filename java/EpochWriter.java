@@ -247,9 +247,9 @@ public class EpochWriter {
 		}
 		// check for large discontinuities in time intervals
 		if (time-prevTimeVal >= epochPeriod * 2 * 1000 && prevTimeVal != UNUSED_DATE) {
-			System.err.println("interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch "
-								+ millisToTimestamp(epochStartTime).format(timeFormat) + " \nfrom:\n" +
-								millisToTimestamp(prevTimeVal).format(timeFormat) + "\nto\n" +
+			System.err.println("Interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch "
+								+ millisToTimestamp(epochStartTime).format(timeFormat) + " \n from: " +
+								millisToTimestamp(prevTimeVal).format(timeFormat) + "\n to  : " +
 								millisToTimestamp(time).format(timeFormat));
 			// log that an error occurred, and write epoch with previous values
 			errCounter[0] += 1;

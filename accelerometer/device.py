@@ -11,25 +11,26 @@ from subprocess import call
 import sys
 
 
-def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
+def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xIntercept=0.0,
     yIntercept=0.0, zIntercept=0.0, xSlope=0.0, ySlope=0.0,
     zSlope=0.0, xTemp=0.0, yTemp=0.0, zTemp=0.0, meanTemp=20.0,
     rawDataParser="AxivityAx3Epochs", javaHeapSpace=None,
     skipFiltering=False, sampleRate=100, epochPeriod=30,
     useAbs=False, activityClassification=True,
-    rawOutput=False, rawOutputFile=None, npyOutput=False, npyOutputFile=None,
+    rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     fftOutput=False, startTime=None, endTime=None,
-    verbose=False):
+    verbose=False, timeZoneOffset=0,
+    csvStartTime=None, csvSampleRate=None, csvTimeFormat=None, csvStartRow=None, csvXYZTCols=None):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
         1) identify 10sec stationary epochs
         2) record calibrated axes scale/offset/temp vals + static point stats
         3) use calibration coefficients and then write filtered avgVm epochs
-        to <epochFile> from <rawFile>
+        to <epochFile> from <inputFile>
 
-    :param str rawFile: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
+    :param str inputFile: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
     :param str epochFile: Output csv.gz file of processed epoch data
     :param str stationaryFile: Output/temporary file for calibration
     :param dict summary: Output dictionary containing all summary metrics
@@ -56,14 +57,20 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     :param bool activityClassification: Extract features for machine learning
     :param bool rawOutput: Output calibrated and resampled raw data to a .csv.gz
         file? requires ~50MB/day.
-    :param str rawOutputFile: Output raw data ".csv.gz" filename
+    :param str rawFile: Output raw data ".csv.gz" filename
     :param bool npyOutput: Output calibrated and resampled raw data to a .npy
         file? requires ~60MB/day.
-    :param str npyOutputFile: Output raw data ".npy" filename
+    :param str npyFile: Output raw data ".npy" filename
     :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~100MB/day.
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
+    :param int timeZoneOffset: timezone difference between configure and deployment (in minutes)
+    :param datetime csvStartTime: start time for csv file when time column is not available
+    :param float csvSampleRate: sample rate for csv file when time column is not available
+    :param str csvTimeFormat: time format for csv file when time column is available
+    :param int csvStartRow: start row for accelerometer data in csv file
+    :param str csvXYZTCols: index of column positions for XYZT columns, e.g. "0,1,2,3"
 
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
@@ -71,33 +78,45 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
     :Example:
     >>> import device
     >>> summary = {}
-    >>> device.processRawFileToEpoch('rawFile.cwa', 'epochFile.csv.gz',
+    >>> device.processInputFileToEpoch('inputFile.cwa', 'epochFile.csv.gz',
             'stationary.csv.gz', summary)
     <epoch file written to "epochFile.csv.gz", and calibration points to
         'stationary.csv.gz'>
     """
 
-    summary['file-size'] = os.path.getsize(rawFile)
-    summary['file-deviceID'] = getDeviceId(rawFile)
+    summary['file-size'] = os.path.getsize(inputFile)
+    summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
     javaClassPath = "java:java/JTransforms-3.1-with-dependencies.jar"
     staticStdG = stationaryStd / 1000.0 #java expects units of G (not mg)
 
     if 'omconvert' in rawDataParser:
         useJava = False
+
     if useJava:
-        # calibrate axes scale/offset/temp values
         if not skipCalibration:
             # identify 10sec stationary epochs
-            accUtils.toScreen('calibrating to file: ' + stationaryFile)
+            accUtils.toScreen("=== Calibrating ===")
             commandArgs = ["java", "-classpath", javaClassPath,
-                "-XX:ParallelGCThreads=1", rawDataParser, rawFile,
+                "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                 "outputFile:" + stationaryFile,
                 "verbose:" + str(verbose), "filter:true",
                 "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:" + str(staticStdG)]
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
+            if timeZoneOffset:
+                commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
+            if csvStartTime:
+                commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
+            if csvSampleRate:
+                commandArgs.append("csvSampleRate:" + str(csvSampleRate))
+            if csvTimeFormat:
+                commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
+            if csvStartRow:
+                commandArgs.append("csvStartRow:" + str(csvStartRow))
+            if csvXYZTCols:
+                commandArgs.append("csvXYZTCols:" + str(csvXYZTCols))
             # call process to identify stationary epochs
             exitCode = call(commandArgs)
             if exitCode != 0:
@@ -105,7 +124,6 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
                 print("Error: java calibration failed, exit ", exitCode)
                 sys.exit(-6)
             # record calibrated axes scale/offset/temp vals + static point stats
-            #! TODO: *bug* getCalibrationCoefs returns stuff and summary doesn't get filled
             getCalibrationCoefs(stationaryFile, summary)
             xIntercept = summary['calibration-xOffset(g)']
             yIntercept = summary['calibration-yOffset(g)']
@@ -123,11 +141,11 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
-        # calculate and write filtered avgVm epochs from raw file
+        accUtils.toScreen('=== Extracting features ===')
         commandArgs = ["java", "-classpath", javaClassPath,
-            "-XX:ParallelGCThreads=1", rawDataParser, rawFile,
+            "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
             "outputFile:" + epochFile, "verbose:" + str(verbose),
-            "filter:"+str(skipFiltering),
+            "filter:"+str(not skipFiltering),
             "sampleRate:" + str(sampleRate),
             "xIntercept:" + str(xIntercept),
             "yIntercept:" + str(yIntercept),
@@ -141,9 +159,9 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             "meanTemp:" + str(meanTemp),
             "epochPeriod:" + str(epochPeriod),
             "rawOutput:" + str(rawOutput),
-            "rawOutputFile:" + str(rawOutputFile),
+            "rawFile:" + str(rawFile),
             "npyOutput:" + str(npyOutput),
-            "npyOutputFile:" + str(npyOutputFile),
+            "npyFile:" + str(npyFile),
             "fftOutput:" + str(fftOutput),
             "getEpochCovariance:True",
             "getSanDiegoFeatures:" + str(activityClassification),
@@ -153,22 +171,33 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             "getEachAxis:" + str(activityClassification),
             "get3DFourier:" + str(activityClassification),
             "useAbs:" + str(useAbs)]
-        accUtils.toScreen('epoch generation')
         if javaHeapSpace:
             commandArgs.insert(1, javaHeapSpace)
         if startTime:
             commandArgs.append("startTime:" + startTime.strftime("%Y-%m-%dT%H:%M"))
         if endTime:
             commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
+        if timeZoneOffset:
+            commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
+        if csvStartTime:
+            commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
+        if csvSampleRate:
+            commandArgs.append("csvSampleRate:" + str(csvSampleRate))
+        if csvTimeFormat:
+            commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
+        if csvStartRow:
+            commandArgs.append("csvStartRow:" + str(csvStartRow))
+        if csvXYZTCols:
+            commandArgs.append("csvXYZTCols:" + str(csvXYZTCols))
         exitCode = call(commandArgs)
         if exitCode != 0:
             print(commandArgs)
-            print("Error: java epoch generation failed, exit ", exitCode)
+            print("Error: Java epoch generation failed, exit ", exitCode)
             sys.exit(-7)
 
     else:
         if not skipCalibration:
-            commandArgs = [rawDataParser, rawFile, "-svm-file", epochFile,
+            commandArgs = [rawDataParser, inputFile, "-svm-file", epochFile,
                     "-info", stationaryFile, "-svm-extended", "3",
                     "-calibrate", "1", "-interpolate-mode", "2",
                     "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
@@ -184,7 +213,7 @@ def processRawFileToEpoch(rawFile, epochFile, stationaryFile, summary,
             calArgs += str(yTemp) + ','
             calArgs += str(zTemp) + ','
             calArgs += str(meanTemp)
-            commandArgs = [rawDataParser, rawFile, "-svm-file",
+            commandArgs = [rawDataParser, inputFile, "-svm-file",
                 epochFile, "-info", stationaryFile,
                 "-svm-extended", "3", "-calibrate", "0",
                 "-calibration", calArgs, "-interpolate-mode", "2",
@@ -220,8 +249,9 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,
                 usecols=(2,3,4,11,13))
         if len(d)<=5:
-            return [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan, \
-                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d)
+            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan,
+                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
+            return
         stationaryPoints = d[d[:,4] == 0] # don't consider episodes with data errors
         axesVals = stationaryPoints[:,[0,1,2]]
         tempVals = stationaryPoints[:,[3]]
@@ -274,7 +304,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         # highlight problem with regression, and exit
         xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
         xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
-        sys.stderr.write('WARNING: calibration error\n ' + exceptStr)
+        sys.stderr.write('WARNING: Calibration error\n ' + exceptStr)
     # store output to summary dictionary
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
         bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
@@ -410,27 +440,27 @@ def storeCalibrationParams(summary, xOff, yOff, zOff, xSlope, ySlope, zSlope,
 
 
 
-def getDeviceId(rawFile):
+def getDeviceId(inputFile):
     """Get serial number of device
 
-    First decides which DeviceId parsing method to use for <rawFile>.
+    First decides which DeviceId parsing method to use for <inputFile>.
 
-    :param str rawFile: Input raw accelerometer file
+    :param str inputFile: Input raw accelerometer file
 
     :return: Device ID
     :rtype: int
     """
 
-    if rawFile.lower().endswith('.bin'):
-        return getGeneaDeviceId(rawFile)
-    elif rawFile.lower().endswith('.cwa') or rawFile.lower().endswith('.cwa.gz'):
-        return getAxivityDeviceId(rawFile)
-    elif rawFile.lower().endswith('.gt3x'):
-        return getGT3XDeviceId(rawFile)
-    elif rawFile.lower().endswith('.csv'):
+    if inputFile.lower().endswith('.bin'):
+        return getGeneaDeviceId(inputFile)
+    elif inputFile.lower().endswith('.cwa') or inputFile.lower().endswith('.cwa.gz'):
+        return getAxivityDeviceId(inputFile)
+    elif inputFile.lower().endswith('.gt3x'):
+        return getGT3XDeviceId(inputFile)
+    elif inputFile.lower().endswith('.csv'):
         return "unknown (.csv)"
     else:
-        print("ERROR: cannot get deviceId for file: " + rawFile)
+        print("ERROR: Cannot get deviceId for file: " + inputFile)
 
 
 
@@ -450,8 +480,8 @@ def getAxivityDeviceId(cwaFile):
         f = gzip.open(cwaFile,'rb')
     header = f.read(2)
     if header == b'MD':
-        blockSize = struct.unpack('H', f.read(2))[0]
-        performClear = struct.unpack('B', f.read(1))[0]
+        # blockSize = struct.unpack('H', f.read(2))[0]
+        # performClear = struct.unpack('B', f.read(1))[0]
         deviceId = struct.unpack('H', f.read(2))[0]
     else:
         print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
@@ -510,7 +540,7 @@ def getGT3XDeviceId(cwaFile):
                     if line.startswith("Serial Number:"):
                         return line.split("Serial Number:")
             else:
-                print("could not find info.txt file")
+                print("Could not find info.txt file")
 
     print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
     print("""A deviceId value could not be found in input file header,

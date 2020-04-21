@@ -181,7 +181,7 @@ assess the model:
         featuresTxt="activityModels/features.txt", \ 
         testParticipants="4,5", \ 
         outputPredict="activityModels/test-predictions.csv", \ 
-        rfTrees=100, rfThreads=1) 
+        rfTrees=1000, rfThreads=1) 
     # <Test predictions written to:  activityModels/test-predictions.csv>
 
 A number of `metrics <https://scikit-learn.org/stable/modules/model_evaluation.html#model-evaluation>`_ 
@@ -209,7 +209,7 @@ the amount of training data for the final model. This results in an output .tar 
     accelerometer.accClassification.trainClassificationModel( \
         "activityModels/labelled-acc-epochs.csv", \
         featuresTxt="activityModels/features.txt", \
-        rfTrees=100, rfThreads=1, \
+        rfTrees=1000, rfThreads=1, \
         testParticipants=None, \
         outputModel="activityModels/sample-model.tar")
     # <Model saved to activityModels/sample-model.tar>

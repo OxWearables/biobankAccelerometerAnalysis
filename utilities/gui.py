@@ -17,7 +17,7 @@ class VerticalScrolledFrame(Tk.Frame):
 
     """
     def __init__(self, parent, *args, **kw):
-        Tk.Frame.__init__(self, parent, *args, **kw)            
+        Tk.Frame.__init__(self, parent, *args, **kw)
 
         # create a canvas object and a vertical scrollbar for scrolling it
         vscrollbar = Tk.Scrollbar(self, orient="vertical")
@@ -259,7 +259,7 @@ class TkinterGUI(Tk.Frame):
             'skipCalibration': {'text': 'Skip calibration step', 'default': False},
             'verbose': {'text': 'Verbose mode', 'default': False},
             'deleteIntermediateFiles': {'text':'Delete intermediate files', 'default': True},
-            'processRawFile': {'text': 'Process the raw (.cwa) file', 'default': True},
+            'processInputFile': {'text': 'Process the raw (.cwa) file', 'default': True},
             'rawOutput': {'text': 'Raw 100Hz data to (.csv) file', 'default': False},
             'timeSeriesDateColumn': {'text': 'dateTime column', 'default': False}
         }
@@ -468,7 +468,7 @@ class TkinterGUI(Tk.Frame):
     def changed(self, obj):
         """Option button callback."""
         print 'obj',obj
-        # args = self.vargs[key] 
+        # args = self.vargs[key]
         val_type = obj['type']
         val = obj['variable'].get()
         print val_type, val, obj
