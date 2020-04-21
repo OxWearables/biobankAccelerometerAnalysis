@@ -754,9 +754,6 @@ public class AxivityAx3Epochs {
 		else return false;
 	}
 
-	// TODO:
-	// add timestamp
-	// add npy writer
 	private static int [] processActivity(
 			double sampleFreq,
 			long firstSampleTime,
