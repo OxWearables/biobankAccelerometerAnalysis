@@ -305,6 +305,7 @@ public class AxivityAx3Epochs {
 						? outputFile.substring(0, outputFile.length() - ".csv".length()) : outputFile) + "_fft.csv";
 				fftWriter = new BufferedWriter(new FileWriter(fftFile));
 			}
+
 			if (npyOutput) {
 				if (npyFile.trim().length() == 0) {
 					npyFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
@@ -670,7 +671,7 @@ public class AxivityAx3Epochs {
 			int separator,
 			int type,
 			int size,
-			int date,
+			long date,
 			int checkSum,
 			int target_value) {
 
@@ -753,6 +754,78 @@ public class AxivityAx3Epochs {
 		else return false;
 	}
 
+	// TODO:
+	// add timestamp
+	// add npy writer
+	private static int [] processActivity(
+			double sampleFreq,
+			long firstSampleTime,
+			byte current,
+			int i,
+			int size,
+			int checkSum,
+			int initIndex,
+			double accelerationScale,
+			InputStream activityReader) {
+		// when Size = 1, it is a USB connection event thus ignore.
+
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+
+		double [] sample = new double[3];
+		int offset = 0;
+		int shifter;
+		short axis_val;
+		int samples = 0;
+		try {
+			while (isPayload(i, size, initIndex)) {
+				for (int axis = 0; axis < 3; axis++) {
+					if (0 == (offset & 0x07)) {
+						if (i != initIndex + GT3_HEADER_SIZE) {
+							current = (byte) activityReader.read();
+							checkSum ^= (byte) current;
+						}
+						i++;
+
+						shifter = ((current & 0xFF) << 4);
+
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+						i++;
+
+						shifter |= ((current & 0xF0) >>> 4);
+						offset += 4;
+					} else {
+						shifter = ((current & 0x0F) << 8);
+						offset += 4;
+
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+						i++;
+						shifter |= (current & 0xFF);
+						offset += 8;
+					}
+					if (shifter > 2047)
+						shifter += 61440;
+					axis_val = (short) shifter;
+					sample[axis] = axis_val / accelerationScale;
+					sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
+					logger.log(Level.FINER, "i: " + i);
+					logger.log(Level.FINER, "x y z: " + sample[0] + " " + sample[1] + " " + sample[2]);
+
+					double temp = 1.0d; // don't know temp yet
+					samples += 1;
+					long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
+					epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
+				}
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace(System.err);
+			System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
+			System.exit(-2);
+		}
+
+		return new int[] {i, checkSum};
+	}
 	/**
 	 ** Method to read all the x/y/z data from a GT3X (V2) activity.bin file.
 	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
@@ -780,7 +853,8 @@ public class AxivityAx3Epochs {
 		byte[] bytes = new byte[9];
 		byte[] header = new byte[8];
 		int checkSum = 0, type=0;
-		int i = 0, date = 0;
+		int i = 0;
+		long date = 0;
 		int twoSampleCounter = 0;
 		int datum;
 		int totalBytes = 0;
@@ -790,6 +864,7 @@ public class AxivityAx3Epochs {
 		int initIndex = 0; // starting index of a parket
 		double[] twoSamples = null;
 		boolean isHeader = true;
+		int packetCount = 0;
 
 		// 1. process header
 		// 2. process payload based on type for each packet
@@ -809,16 +884,16 @@ public class AxivityAx3Epochs {
 						case 2:
 							// not sure why this is needed but without casting, this might
 							// result in leading ones during type conversion
-							date = (int)(current & 0xFF);
+							date = (long)(current & 0xFF);
 							break;
 						case 3:
-							date = (int)(((current & 0xFF) << 8) ^ date);
+							date = (long)(((current & 0xFF) << 8) ^ date);
 							break;
 						case 4:
-							date = (int)(((current & 0xFF) << 16) ^ date);
+							date = (long)(((current & 0xFF) << 16) ^ date);
 							break;
 						case 5:
-							date = (int)(((current & 0xFF) << 24) ^ date);
+							date = (long)(((current & 0xFF) << 24) ^ date);
 							break;
 						case 6:
 							size = (int)(current & 0xFF);
@@ -829,9 +904,9 @@ public class AxivityAx3Epochs {
 
 					if (i == initIndex+GT3_HEADER_SIZE-1) {
 						isHeader = false;
-						logger.log(Level.FINER, "\nHeader info: \n" +
+						logger.log(Level.FINER, "\nHeader info" +
 								"\ntype: "+ type +
-								String.format("Date 0x%08X: ", date) +
+								String.format("\nDate 0x%08X: ", date) +
 								"\nsize: "+ size +
 								"\nStarting index: "+ initIndex);
 					}
@@ -870,49 +945,18 @@ public class AxivityAx3Epochs {
 
 						i += 7;
 					} else if (type == ACTIVITY_ID && size > 1) {
-						// when Size = 1, it is a USB connection event thus ignore.
-						double [] sample = new double[3];
-						int offset = 0;
-						int shifter;
-						short axis_val;
-						i++;
-
-						while (isPayload(i, size, initIndex)) {
-							for (int axis = 0; axis < 3; axis++) {
-								if (0 == (offset & 0x07)) {
-									if (i != initIndex+8) {
-										current = (byte) activityReader.read();
-										checkSum ^= (byte) current;
-										i++;
-									}
-									shifter = ((current & 0xFF) << 4);
-
-									current = (byte) activityReader.read();
-									checkSum ^= (byte) current;
-									i++;
-
-									shifter |= ((current & 0xF0) >>> 4);
-									offset += 4;
-
-								} else {
-									shifter = ((current & 0x0F) << 8);
-									offset += 4;
-
-									current = (byte) activityReader.read();
-									checkSum ^= (byte) current;
-									i++;
-									shifter |= (current & 0xFF);
-									offset += 8;
-								}
-								if (shifter > 2047)
-									shifter += 61440;
-								axis_val = (short) shifter;
-								sample[axis] = axis_val / accelerationScale;
-								sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
-								logger.log(Level.FINER, "i: "+i);
-								logger.log(Level.FINER, "x y z: "+sample[0] + " "  + sample[1] + " " + sample[2]);
-							}
-						}
+						int [] res = processActivity(
+								sampleFreq,
+								date,
+								current,
+								i,
+								size,
+								checkSum,
+								initIndex,
+								accelerationScale,
+								activityReader);
+						i = res[0];
+						checkSum = res[1];
 					}
 				} else {
 					checkChecksum(i, separator, type, size, date, checkSum, current);
@@ -924,6 +968,11 @@ public class AxivityAx3Epochs {
 					// allow reading header after checksum is done checking
 					isHeader = true;
 					initIndex = i+1;
+					packetCount++;
+
+					if (packetCount % 10000 == 0) {
+						logger.log(Level.INFO, "Done processing "+packetCount+" packets.");
+					}
 				}
 
 				i++;
