@@ -214,7 +214,7 @@ def main():
                              (default : %(default)s)""")
     parser.add_argument('--fourierWithAcc',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""True will do the fourier analysis with 
+                            help="""True will do the Fourier analysis of circadian rhythms with 
                                     acceleration data instead of sleep signal
                              (default : %(default)s)""") 
     parser.add_argument('--m10l5',
