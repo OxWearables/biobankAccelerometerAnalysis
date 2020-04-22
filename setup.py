@@ -18,6 +18,7 @@ setuptools.setup(
         'joblib',
         'matplotlib',
         'numpy',
+        'scipy', 
         'pandas',
         'sklearn',
         'sphinx',
