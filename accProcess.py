@@ -212,16 +212,17 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Calculate dominant frequency of sleep
                              (default : %(default)s)""")
+    parser.add_argument('--fourierWithAcc',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""True will do the fourier analysis with 
+                                    acceleration data instead of sleep signal
+                             (default : %(default)s)""") 
     parser.add_argument('--m10l5',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Calculate relative amplitude of most and 
                                     least active acceleration periods
                              (default : %(default)s)""")
-    parser.add_argument('--fourierWithAcc',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""True will do the fourier analysis with 
-                                    acceleration data instead of sleep signal
-                             (default : %(default)s)""")
+
 
     args = parser.parse_args()
 
