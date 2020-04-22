@@ -783,30 +783,30 @@ public class AxivityAx3Epochs {
 						i++;
 
 						shifter |= ((current & 0xF0) >>> 4);
-						offset += 4;
+						offset += 12;
 					} else {
 						shifter = ((current & 0x0F) << 8);
-						offset += 4;
 
 						current = (byte) activityReader.read();
 						checkSum ^= (byte) current;
 						i++;
 						shifter |= (current & 0xFF);
-						offset += 8;
+						offset += 12;
 					}
 					if (shifter > 2047)
 						shifter += 61440;
+
 					axis_val = (short) shifter;
 					sample[axis] = axis_val / accelerationScale;
 					sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
-					logger.log(Level.FINER, "i: " + i);
-					logger.log(Level.FINER, "x y z: " + sample[0] + " " + sample[1] + " " + sample[2]);
-
-					double temp = 1.0d; // don't know temp yet
-					samples += 1;
-					long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
-					epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
 				}
+				logger.log(Level.FINER, "i: " + i);
+				logger.log(Level.FINER, "x y z: " + sample[1] + " " + sample[0] + " " + sample[2]);
+
+				double temp = 1.0d; // don't know temp yet
+				samples += 1;
+				long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
+				epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
 			}
 		} catch (IOException ex) {
 			ex.printStackTrace(System.err);
