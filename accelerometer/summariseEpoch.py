@@ -2,6 +2,7 @@
 
 from accelerometer import accUtils
 from accelerometer import accClassification
+from accelerometer import circadianRhythms
 import gzip
 import numpy as np
 import pandas as pd
