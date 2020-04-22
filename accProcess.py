@@ -210,7 +210,7 @@ def main():
                              (default : %(default)s)""")
     parser.add_argument('--fourierFrequency',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate dominant frequency of sleep
+                            help="""Calculate dominant frequency of sleep for circadian rhythm analysis
                              (default : %(default)s)""")
     parser.add_argument('--fourierWithAcc',
                             metavar='True/False', default=False, type=str2bool,
