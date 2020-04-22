@@ -519,6 +519,8 @@ public class AxivityAx3Epochs {
 			double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
 			long _LastSampleTime, firstSampleTime=-1;
 			String serialNumber = "";
+			accelerationScale = setAccelerationScale(serialNumber);
+
 			while (infoReader.ready()) {
 				String line = infoReader.readLine();
 				if (line!=null){
@@ -542,8 +544,6 @@ public class AxivityAx3Epochs {
 				}
 			}
 
-			accelerationScale = setAccelerationScale(serialNumber);
-
 			if (sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) {
 				System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
 				System.exit(-2);
@@ -562,8 +562,7 @@ public class AxivityAx3Epochs {
 					activityReader,
 					sampleDelta,
 					sampleFreq,
-					accelerationScale,
-					firstSampleTime);
+					accelerationScale);
 		} catch (IOException excep) {
 			excep.printStackTrace(System.err);
 			System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
@@ -709,13 +708,10 @@ public class AxivityAx3Epochs {
 	 * https://github.com/actigraph/GT3X-File-Format/blob/master/LogRecords/Parameters.md
 	 */
 	public static double decodePara(int value) {
-		final double FLOAT_MINIMUM = 0.00000011920928955078125;  /* 2^-23 */
 		final double FLOAT_MAXIMUM = 8388608.0;                  /* 2^23  */
 		final int ENCODED_MINIMUM = 0x00800000;
 		final int ENCODED_MAXIMUM = 0x007FFFFF;
 		final int SIGNIFICAND_MASK = 0x00FFFFFF;
-		final int EXPONENT_MINIMUM = -128;
-		final int EXPONENT_MAXIMUM = 127;
 		final int EXPONENT_MASK = 0xFF000000;
 		final int EXPONENT_OFFSET = 24;
 
@@ -763,8 +759,6 @@ public class AxivityAx3Epochs {
 			int initIndex,
 			double accelerationScale,
 			InputStream activityReader) {
-		// when Size = 1, it is a USB connection event thus ignore.
-
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 
 		double [] sample = new double[3];
@@ -822,6 +816,62 @@ public class AxivityAx3Epochs {
 
 		return new int[] {i, checkSum};
 	}
+
+
+	private static int [] processActivity2(
+			double sampleFreq,
+			long firstSampleTime,
+			byte current,
+			int i,
+			int size,
+			int checkSum,
+			int initIndex,
+			double accelerationScale,
+			InputStream activityReader) {
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+
+		double [] sample = new double[3];
+		int shifter;
+		short axis_val;
+		int samples = 0;
+		try {
+			while (isPayload(i, size, initIndex)) {
+				for (int axis = 0; axis < 3; axis++) {
+					if (i != initIndex + GT3_HEADER_SIZE) {
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+					}
+
+					shifter = current & 0xff;
+					current = (byte) activityReader.read();
+					checkSum ^= (byte) current;
+					shifter |= ((current & 0xff) << 8);
+					i += 2;
+
+					axis_val = (short) shifter;
+
+					sample[axis] = axis_val / accelerationScale;
+					sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
+				}
+
+				double temp = 1.0d; // don't know temp yet
+				samples += 1;
+
+				long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
+
+				logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
+						"\nTime:" + myTime);
+				epochWriter.newValues(myTime, sample[0], sample[1], sample[2], temp, errCounter);
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace(System.err);
+			System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
+			System.exit(-2);
+		}
+
+		return new int[] {i, checkSum};
+	}
+
 	/**
 	 ** Method to read all the x/y/z data from a GT3X (V2) activity.bin file.
 	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
@@ -834,31 +884,24 @@ public class AxivityAx3Epochs {
 			InputStream activityReader,
 			double sampleDelta,
 			double sampleFreq,
-			double accelerationScale,
-			long firstSampleTime // in milliseconds
+			double accelerationScale
 	) {
 
 		final int PARAMETER_ID = 21;
 		final int ACTIVITY_ID = 0;
+		final int ACTIVITY2_ID = 26;
 
 		int[] errCounter = new int[] { 0 }; // store val if updated in other
 		// method (pass by reference using array?)
-		int samples = 0; // num samples collected so far
 
 		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
-		byte[] bytes = new byte[9];
-		byte[] header = new byte[8];
 		int checkSum = 0, type=0;
 		int i = 0;
 		long date = 0;
-		int twoSampleCounter = 0;
 		int datum;
-		int totalBytes = 0;
 		int separator = 0;
-		int currentPayloadRead = 0;
 		int size = 0;
 		int initIndex = 0; // starting index of a parket
-		double[] twoSamples = null;
 		boolean isHeader = true;
 		int packetCount = 0;
 
@@ -941,7 +984,22 @@ public class AxivityAx3Epochs {
 
 						i += 7;
 					} else if (type == ACTIVITY_ID && size > 1) {
+						// when Size = 1, it is a USB connection event thus ignore.
 						int [] res = processActivity(
+								sampleFreq,
+								date,
+								current,
+								i,
+								size,
+								checkSum,
+								initIndex,
+								accelerationScale,
+								activityReader);
+						i = res[0];
+						checkSum = res[1];
+					} else if (type == ACTIVITY2_ID && size > 1) {
+						// when Size = 1, it is a USB connection event thus ignore.
+						int [] res = processActivity2(
 								sampleFreq,
 								date,
 								current,
