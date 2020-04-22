@@ -544,7 +544,7 @@ public class AxivityAx3Epochs {
 				}
 			}
 
-			if (sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) {
+			if ((sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) && gt3Version != VALID_GT3_V2_FILE) {
 				System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
 				System.exit(-2);
 			}
