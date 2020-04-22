@@ -9,6 +9,8 @@ import scipy as sp
 from scipy import fftpack
 from datetime import timedelta
 
+
+
 def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
     """Calculate the power spectral density from fourier analysis of a 1 day frequency
     
@@ -41,6 +43,8 @@ def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
     res = np.sum(np.exp(e) * y, axis=-1)/n
     PSD = np.abs(res)**2
     summary['PSD'] = PSD
+
+
 
 def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
     """Calculate the most prevalent frequency in a fourier analysis 
@@ -79,7 +83,9 @@ def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
     #adjusts the frequency to have the units 1/days
     freq_mx = float(res.x)/(len(y)*epochPeriod/(60*60*24))
     summary['fourier-frequency'] = freq_mx
-    
+
+
+   
 def calculateM10L5(e, epochPeriod, summary):
     """Calculates the M10 L5 relative amplitude from the average acceleration from
     the ten most active hours and 5 least most active hours 
