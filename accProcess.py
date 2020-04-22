@@ -343,8 +343,8 @@ def main():
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution, psd=args.psd, 
-        fourierFrequency=args.fourierFrequency, m10l5=args.m10l5, 
-        fourierWithAcc=args.fourierWithAcc, verbose=args.verbose)
+        fourierFrequency=args.fourierFrequency, fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5, 
+        verbose=args.verbose)
 
     # Generate time series file (note: this will also resample to epochData so do this last)
     accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
