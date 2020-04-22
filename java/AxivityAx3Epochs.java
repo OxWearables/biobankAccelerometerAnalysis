@@ -810,7 +810,7 @@ public class AxivityAx3Epochs {
 
 					double temp = 1.0d; // don't know temp yet
 					samples += 1;
-					long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime;
+					long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
 					epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
 				}
 			}
