@@ -220,7 +220,7 @@ def main():
     parser.add_argument('--m10l5',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Calculate relative amplitude of most and 
-                                    least active acceleration periods
+                                    least active acceleration periods for circadian rhythm analysis
                              (default : %(default)s)""")
 
 
