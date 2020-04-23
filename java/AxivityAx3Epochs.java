@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.math.RoundingMode;
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.Channels;
@@ -37,7 +38,8 @@ import java.time.ZoneOffset;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Calculates epoch summaries from an AX3 .CWA file. Class/application can be
@@ -48,9 +50,23 @@ public class AxivityAx3Epochs {
 	private static final DecimalFormat DF6 = new DecimalFormat("0.000000");
 	private static final DecimalFormat DF3 = new DecimalFormat("0.000");
 	private static final DecimalFormat DF2 = new DecimalFormat("0.00");
+	private static final int INVALID_GT3_FILE = 0;
+	private static final int VALID_GT3_V1_FILE = 1;
+	private static final int VALID_GT3_V2_FILE = 2;
+	private static final int GT3_HEADER_SIZE = 8;
+
 
 	private static Boolean verbose = true;
 	private static EpochWriter epochWriter;
+	private static Logger logger;
+
+	static {
+		String path = AxivityAx3Epochs.class.getClassLoader()
+				.getResource("logging.properties")
+				.getFile();
+		System.setProperty("java.util.logging.config.file", path);
+		logger = Logger.getLogger(AxivityAx3Epochs.class.getName());
+	}
 
 	/*
 	 * Parse command line args, then call method to identify and write epochs.
@@ -60,8 +76,6 @@ public class AxivityAx3Epochs {
 	 *            "param:value" pairs.
 	 */
 	public static void main(String[] args) {
-
-
 		// variables to store default parameter options
 		String[] functionParameters = new String[0];
 
@@ -290,6 +304,7 @@ public class AxivityAx3Epochs {
 						? outputFile.substring(0, outputFile.length() - ".csv".length()) : outputFile) + "_fft.csv";
 				fftWriter = new BufferedWriter(new FileWriter(fftFile));
 			}
+
 			if (npyOutput) {
 				if (npyFile.trim().length() == 0) {
 					npyFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
@@ -440,10 +455,38 @@ public class AxivityAx3Epochs {
 			System.exit(-2);
 		}
 	}
+
+	private static double setAccelerationScale(String serialNumber) {
+		double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's)
+		double ACCELERATION_SCALE_FACTOR_MOS = 256.0; // == 2048/8?
+		double accelerationScale = -1;
+
+		if((serialNumber.startsWith("NEO") || (serialNumber.startsWith("CLE")))) {
+			accelerationScale = ACCELERATION_SCALE_FACTOR_NEO_CLE;
+		} else if(serialNumber.startsWith("MOS")){
+			accelerationScale = ACCELERATION_SCALE_FACTOR_MOS;
+		}
+		return accelerationScale;
+	}
+
+	private static double setSampleDelta(double sampleFreq) {
+		System.out.println("sampleFreq:" + sampleFreq);
+		double sampleDelta_old = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+		System.out.println("sampleDelta before rounding:" + sampleDelta_old);
+		double sampleDelta = 1000.0/sampleFreq;  // don't round the delta to its fourth decimal
+		System.out.println("sampleDelta after rounding:" + sampleDelta);
+		//	sampleDelta = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+
+		return sampleDelta;
+	}
+
 	/**
-	 * Reads a .gt3x file (actually a .zip archive containing at least 3 files).
-	 * This method first verifies it is a valid version 1 file (currently V2 not supported)
- 	 * it will then parse the header and begin processing the activity.bin file.
+	 * Reads a .gt3x file
+	 * For v1, the .zip archive should contain least 3 files.
+	 * For v2, the .zip arhive should contain only 2 files.
+	 * This method first verifies if it is a valid v1/v2 file,
+ 	 * it will then parse the header and begin processing the activity.bin file for v1
+	 * and log.bin file for v2.
 	 */
 	private static void readG3TXEpochs(String accFile) {
 
@@ -455,15 +498,19 @@ public class AxivityAx3Epochs {
 		try {
 			zip = new ZipFile( new File(accFile), ZipFile.OPEN_READ);
 
-			if (!isGT3XV1(zip)) {
-				System.err.println("file " + accFile + " is not a V1 g3tx file");
+			int gt3Version = getGT3XVersion(zip);
+			if (gt3Version == INVALID_GT3_FILE) {
+				System.err.println("file " + accFile + " is not a valid V1 or V2 g3tx file");
 				System.exit(-2);
 			}
+
 			for (Enumeration<?> e = zip.entries(); e.hasMoreElements();) {
 				ZipEntry entry = (ZipEntry) e.nextElement();
 				if (entry.toString().equals("info.txt")) {
 					infoReader = new BufferedReader(new InputStreamReader(zip.getInputStream(entry)));
-				} else if (entry.toString().equals("activity.bin")) {
+				} else if (entry.toString().equals("activity.bin") && gt3Version == VALID_GT3_V1_FILE) {
+					activityReader = zip.getInputStream(entry);
+				} else if (entry.toString().equals("log.bin") && gt3Version == VALID_GT3_V2_FILE) {
 					activityReader = zip.getInputStream(entry);
 				}
 			}
@@ -472,6 +519,8 @@ public class AxivityAx3Epochs {
 			double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
 			long _LastSampleTime, firstSampleTime=-1;
 			String serialNumber = "";
+			accelerationScale = setAccelerationScale(serialNumber);
+
 			while (infoReader.ready()) {
 				String line = infoReader.readLine();
 				if (line!=null){
@@ -495,30 +544,25 @@ public class AxivityAx3Epochs {
 				}
 			}
 
-			// Set acceleration scale
-
-			double ACCELERATION_SCALE_FACTOR_NEO_CLE = 341.0; // == 2046 (range of data) / 6 (range of G's)
-			double ACCELERATION_SCALE_FACTOR_MOS = 256.0; // == 2048/8?
-
-			if((serialNumber.startsWith("NEO") || (serialNumber.startsWith("CLE")))) {
-				accelerationScale = ACCELERATION_SCALE_FACTOR_NEO_CLE;
-			} else if(serialNumber.startsWith("MOS")){
-				accelerationScale = ACCELERATION_SCALE_FACTOR_MOS;
-			}
-
-			if (sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) {
+			if ((sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) && gt3Version != VALID_GT3_V2_FILE) {
 				System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
 				System.exit(-2);
 			}
-			System.out.println("sampleFreq:" + sampleFreq);
-			double sampleDelta_old = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
-			System.out.println("sampleDelta before rounding:" + sampleDelta_old);
-			double sampleDelta = 1000.0/sampleFreq;  // don't round the delta to its fourth decimal
-			System.out.println("sampleDelta after rounding:" + sampleDelta);
-//			sampleDelta = Math.round(1000.0/sampleFreq * 100d) / 100d;  // round the delta to its fourth decimal
+
+			double sampleDelta = setSampleDelta(sampleFreq);
 
 			// else leave as specified in info.txt?
-			readG3TXEpochPairs(activityReader, sampleDelta, sampleFreq, accelerationScale, firstSampleTime);
+			if (gt3Version == VALID_GT3_V1_FILE) readG3TXV1EpochPairs(
+					activityReader,
+					sampleDelta,
+					sampleFreq,
+					accelerationScale,
+					firstSampleTime);
+			if (gt3Version == VALID_GT3_V2_FILE) readG3TXV2Epoch(
+					activityReader,
+					sampleDelta,
+					sampleFreq,
+					accelerationScale);
 		} catch (IOException excep) {
 			excep.printStackTrace(System.err);
 			System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
@@ -559,7 +603,7 @@ public class AxivityAx3Epochs {
 	 ** The readings should range from -2046 to 2046, covering -6 to 6 G's,
 	 ** thus the maximum accuracy is 0.003 G's. The values -2048, -2047 & 2047 should never appear in the stream.
 	 **/
-	private static void readG3TXEpochPairs(
+	private static void readG3TXV1EpochPairs(
 			InputStream activityReader,
 			double sampleDelta,
 			double sampleFreq,
@@ -616,6 +660,383 @@ public class AxivityAx3Epochs {
 		}
 	}
 
+
+	/**
+	 * check checksum with payload and header info
+	 */
+	private static void checkChecksum(
+			int i,
+			int separator,
+			int type,
+			int size,
+			long date,
+			int checkSum,
+			int target_value) {
+
+		checkSum ^= (byte)separator;
+		checkSum ^= (byte)type;
+		checkSum ^= (byte)(size & 0xFF);
+		checkSum ^= (byte)((size >> 8) & 0xFF);
+		checkSum ^= (byte)(date & 0xFF);
+		checkSum ^= (byte)((date >> 8) & 0xFF);
+		checkSum ^= (byte)((date >> 16) & 0xFF);
+		checkSum ^= (byte)((date >> 24) & 0xFF);
+
+		// to convert to one's complement as the checksum is one's complement
+		checkSum = (byte)~checkSum;
+		if (checkSum != target_value) {
+			logger.log(Level.SEVERE, "Packet parsing failed at byte "+ i + "\nChecksum does not match!"
+					+ String.format("\nExpected 0x%08X", target_value) +String.format("\nObtained 0x%08X", checkSum));
+			System.exit(-1);
+		} else {
+			logger.log(Level.FINER, "Verification succeeds");
+		}
+	}
+
+	/**
+	 ** Payload should between the initIndex and InitIndex+size. Upper bound is
+	 *  exclusive.
+	 **
+	 */
+	private static boolean isPayload(int i, int size, int initIndex) {
+		if (i >= initIndex+GT3_HEADER_SIZE && i < (initIndex+GT3_HEADER_SIZE+size)) return true;
+		else return false;
+	}
+
+	/**
+	 * This was translated into Java from
+	 * https://github.com/actigraph/GT3X-File-Format/blob/master/LogRecords/Parameters.md
+	 */
+	public static double decodePara(int value) {
+		final double FLOAT_MAXIMUM = 8388608.0;                  /* 2^23  */
+		final int ENCODED_MINIMUM = 0x00800000;
+		final int ENCODED_MAXIMUM = 0x007FFFFF;
+		final int SIGNIFICAND_MASK = 0x00FFFFFF;
+		final int EXPONENT_MASK = 0xFF000000;
+		final int EXPONENT_OFFSET = 24;
+
+		double significand;
+		int exponent;
+		int i32;
+
+		/* handle numbers that are too big */
+		if (ENCODED_MAXIMUM == value)
+			return Integer.MAX_VALUE;
+		else if (ENCODED_MAXIMUM == value)
+			return -Integer.MAX_VALUE;
+
+		/* extract the exponent */
+		i32 = (int) ((value & EXPONENT_MASK) >>> EXPONENT_OFFSET);
+		if (0 != (i32 & 0x80))
+			i32 = (int)((int)i32 | 0xFFFFFF00);
+		exponent = (int)i32;
+
+		/* extract the significand */
+		i32 = (int)(value & SIGNIFICAND_MASK);
+		if (0 != (i32 & ENCODED_MINIMUM))
+			i32 = (int)((int)i32 | 0xFF000000);
+
+		significand = (double) i32 / FLOAT_MAXIMUM;
+
+		/* calculate the floating point value */
+		return significand * Math.pow(2.0, exponent);
+	}
+
+	private static boolean isAccelScale(byte[] keyPairs) {
+		int addressSpace = keyPairs[0];
+		int identifier = keyPairs[2];
+		if (addressSpace == 0 && identifier == 55) return true;
+		else return false;
+	}
+
+	private static int [] processActivity(
+			double sampleFreq,
+			long firstSampleTime,
+			byte current,
+			int i,
+			int size,
+			int checkSum,
+			int initIndex,
+			double accelerationScale,
+			InputStream activityReader) {
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+
+		double [] sample = new double[3];
+		int offset = 0;
+		int shifter;
+		short axis_val;
+		int samples = 0;
+		try {
+			while (isPayload(i, size, initIndex)) {
+				for (int axis = 0; axis < 3; axis++) {
+					if (0 == (offset & 0x07)) {
+						if (i != initIndex + GT3_HEADER_SIZE) {
+							current = (byte) activityReader.read();
+							checkSum ^= (byte) current;
+						}
+						i++;
+
+						shifter = ((current & 0xFF) << 4);
+
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+						i++;
+
+						shifter |= ((current & 0xF0) >>> 4);
+						offset += 12;
+					} else {
+						shifter = ((current & 0x0F) << 8);
+
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+						i++;
+						shifter |= (current & 0xFF);
+						offset += 12;
+					}
+					if (shifter > 2047)
+						shifter += 61440;
+
+					axis_val = (short) shifter;
+					sample[axis] = axis_val / accelerationScale;
+					sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
+				}
+				logger.log(Level.FINER, "i: " + i);
+				logger.log(Level.FINER, "x y z: " + sample[1] + " " + sample[0] + " " + sample[2]);
+
+				double temp = 1.0d; // don't know temp yet
+				samples += 1;
+				long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
+				epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace(System.err);
+			System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
+			System.exit(-2);
+		}
+
+		return new int[] {i, checkSum};
+	}
+
+
+	private static int [] processActivity2(
+			double sampleFreq,
+			long firstSampleTime,
+			byte current,
+			int i,
+			int size,
+			int checkSum,
+			int initIndex,
+			double accelerationScale,
+			InputStream activityReader) {
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+
+		double [] sample = new double[3];
+		int shifter;
+		short axis_val;
+		int samples = 0;
+		try {
+			while (isPayload(i, size, initIndex)) {
+				for (int axis = 0; axis < 3; axis++) {
+					if (i != initIndex + GT3_HEADER_SIZE) {
+						current = (byte) activityReader.read();
+						checkSum ^= (byte) current;
+					}
+
+					shifter = current & 0xff;
+					current = (byte) activityReader.read();
+					checkSum ^= (byte) current;
+					shifter |= ((current & 0xff) << 8);
+					i += 2;
+
+					axis_val = (short) shifter;
+
+					sample[axis] = axis_val / accelerationScale;
+					sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
+				}
+
+				double temp = 1.0d; // don't know temp yet
+				samples += 1;
+
+				long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
+
+				logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
+						"\nTime:" + myTime);
+				epochWriter.newValues(myTime, sample[0], sample[1], sample[2], temp, errCounter);
+			}
+		} catch (IOException ex) {
+			ex.printStackTrace(System.err);
+			System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
+			System.exit(-2);
+		}
+
+		return new int[] {i, checkSum};
+	}
+
+	/**
+	 ** Method to read all the x/y/z data from a GT3X (V2) activity.bin file.
+	 ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
+	 ** Data is stored sequentially at the sample rate specified in the header (1/f = sampleDelta in milliseconds)
+	 ** Each pair of readings occupies an awkward 9 bytes to conserve space, so must be read 2 at a time.
+	 ** The readings should range from -2046 to 2046, covering -6 to 6 G's,
+	 ** thus the maximum accuracy is 0.003 G's. The values -2048, -2047 & 2047 should never appear in the stream.
+	 **/
+	private static void readG3TXV2Epoch(
+			InputStream activityReader,
+			double sampleDelta,
+			double sampleFreq,
+			double accelerationScale
+	) {
+
+		final int PARAMETER_ID = 21;
+		final int ACTIVITY_ID = 0;
+		final int ACTIVITY2_ID = 26;
+
+		int[] errCounter = new int[] { 0 }; // store val if updated in other
+		// method (pass by reference using array?)
+
+		// Read 2 XYZ samples at a time, each sample consists of 36 bits ... 2 full samples will be 9 bytes
+		int checkSum = 0, type=0;
+		int i = 0;
+		long date = 0;
+		int datum;
+		int separator = 0;
+		int size = 0;
+		int initIndex = 0; // starting index of a parket
+		boolean isHeader = true;
+		int packetCount = 0;
+
+		// 1. process header
+		// 2. process payload based on type for each packet
+		// 3. validate checksum for each packet
+		try {
+			while ((datum=activityReader.read())!=-1){
+				// 1. Process header
+				byte current = (byte)datum;
+				if (isHeader) {
+					switch (i-initIndex) {
+						case 0:
+							separator = current;
+							break;
+						case 1:
+							type = current;
+							break;
+						case 2:
+							// not sure why this is needed but without casting, this might
+							// result in leading ones during type conversion
+							date = (long)(current & 0xFF);
+							break;
+						case 3:
+							date = (long)(((current & 0xFF) << 8) ^ date);
+							break;
+						case 4:
+							date = (long)(((current & 0xFF) << 16) ^ date);
+							break;
+						case 5:
+							date = (long)(((current & 0xFF) << 24) ^ date);
+							break;
+						case 6:
+							size = (int)(current & 0xFF);
+							break;
+						case 7:
+							size = (int)(((current & 0xFF) << 8) ^ size);
+					}
+
+					if (i == initIndex+GT3_HEADER_SIZE-1) {
+						isHeader = false;
+						logger.log(Level.FINER, "\nHeader info" +
+								"\ntype: "+ type +
+								String.format("\nDate 0x%08X: ", date) +
+								"\nsize: "+ size +
+								"\nStarting index: "+ initIndex);
+					}
+
+				} else if (isPayload(i, size, initIndex)) {
+					// process payload depending on the type of record
+					// There exist various packet types. Currently, we are
+					// only processing packets of type ACTIVITY
+					// https://github.com/actigraph/GT3X-File-Format
+					checkSum ^= (byte)current;
+
+					if (type == PARAMETER_ID) {
+						logger.log(Level.INFO, "Processing parameter packet...");
+						// process parameters Keyvale pair. Each pair is of 8 bytes.
+						byte [] keyPair = new byte[8];
+						byte mydatum;
+						keyPair[0] = current;
+
+						int k = 1;
+						while (k < 8) {
+							mydatum= (byte) activityReader.read();
+							keyPair[k] = (byte) mydatum;
+							checkSum ^= (byte) mydatum;
+							k++;
+						}
+
+						// set acceleration scale if present
+						if (isAccelScale(keyPair)) {
+							int keyval = keyPair[4];
+							keyval = (int)(((keyPair[5] & 0xFF) << 8) ^ keyval);
+							keyval = (int)(((keyPair[6] & 0xFF) << 16) ^ keyval);
+							keyval = (int)(((keyPair[7] & 0xFF) << 24) ^ keyval);
+							accelerationScale = decodePara(keyval);
+							logger.log(Level.INFO, "accelerationScale changed to "+accelerationScale);
+						}
+
+						i += 7;
+					} else if (type == ACTIVITY_ID && size > 1) {
+						// when Size = 1, it is a USB connection event thus ignore.
+						int [] res = processActivity(
+								sampleFreq,
+								date,
+								current,
+								i,
+								size,
+								checkSum,
+								initIndex,
+								accelerationScale,
+								activityReader);
+						i = res[0];
+						checkSum = res[1];
+					} else if (type == ACTIVITY2_ID && size > 1) {
+						// when Size = 1, it is a USB connection event thus ignore.
+						int [] res = processActivity2(
+								sampleFreq,
+								date,
+								current,
+								i,
+								size,
+								checkSum,
+								initIndex,
+								accelerationScale,
+								activityReader);
+						i = res[0];
+						checkSum = res[1];
+					}
+				} else {
+					checkChecksum(i, separator, type, size, date, checkSum, current);
+					checkSum = 0;
+					date = 0;
+					size = 0;
+					type = 0;
+					separator = 0;
+					// allow reading header after checksum is done checking
+					isHeader = true;
+					initIndex = i+1;
+					packetCount++;
+
+					if (packetCount % 10000 == 0) {
+						logger.log(Level.INFO, "Done processing "+packetCount+" packets.");
+					}
+				}
+
+				i++;
+			}
+		}
+		catch (IOException ex) {
+			logger.log(Level.INFO, "End of .g3tx file reached");
+		}
+	}
+
 	private static double[] readAccelPair(byte[] bytes, double accelerationScale) {
 
 		int datum = 0;
@@ -663,15 +1084,16 @@ public class AxivityAx3Epochs {
 
 
 	/*
-	 * This method checks if a file is of GT3X format version 1 It returns true
-	 * if the file is of the correct format otherwise it returns false
+	 * This method checks which GT3 version the zipfile contains.
+	 * Return 1 for v1, 2 for v2, 0 for invalid GT3 file
 	 */
-	private static boolean isGT3XV1(final ZipFile zip) throws IOException {
+	private static int getGT3XVersion(final ZipFile zip) throws IOException {
 
 		// Check if the file contains the necessary Actigraph files
 		boolean hasActivityData = false;
 		boolean hasLuxData = false;
 		boolean hasInfoData = false;
+		boolean hasLogData = false;
 		for (Enumeration<?> e = zip.entries(); e.hasMoreElements();) {
 			ZipEntry entry = (ZipEntry) e.nextElement();
 			if (entry.toString().equals("activity.bin"))
@@ -680,12 +1102,17 @@ public class AxivityAx3Epochs {
 				hasLuxData = true;
 			if (entry.toString().equals("info.txt"))
 				hasInfoData = true;
+			if (entry.toString().equals("log.bin"))
+				hasLogData = true;
 		}
 
-		if (hasActivityData && hasLuxData && hasInfoData)
-			return true;
+		if (hasActivityData && hasLuxData && hasInfoData) {
+			return VALID_GT3_V1_FILE;
+		} else if (hasInfoData && hasLogData) {
+			return VALID_GT3_V2_FILE;
+		}
 
-		return false;
+		return INVALID_GT3_FILE;
 	}
 
 
