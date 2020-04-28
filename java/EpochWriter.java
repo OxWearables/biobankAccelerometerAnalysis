@@ -782,10 +782,12 @@ public class EpochWriter {
 		return line;
 	}
 
-	/* From table in paper:
+	/**
+     * From paper:
 	 * A universal, accurate intensity-based classification of different physical
 	 * activities using raw data of accelerometer.
 	 * Henri Vaha-Ypya, Tommi Vasankari, Pauliina Husu, Jaana Suni and Harri Sievanen
+     * https://www.ncbi.nlm.nih.gov/pubmed/24393233
 	 */
 	private String calculateMADFeatures(
 			double[] paVals) {
@@ -805,8 +807,8 @@ public class EpochWriter {
 			double diff = paVals[c] - vmMean;
 			MAD += Math.abs(diff);
 			MPD += Math.pow(Math.abs(diff), 1.5);
-			skew += Math.pow(diff/vmStd, 3);
-			kurt += Math.pow(diff/vmStd, 4);
+			skew += Math.pow(diff/(vmStd + 1E-8), 3);
+			kurt += Math.pow(diff/(vmStd + 1E-8), 4);
 		}
 
 		MAD /= N;
