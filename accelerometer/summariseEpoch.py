@@ -259,8 +259,8 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     maxStd = maxStd / 1000.0 # java uses Gravity units (not mg)
     e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd), 1, 0)
-    starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1, fill_value=0).astype('bool'))]
-    ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1, fill_value=0).astype('bool'))]
+    starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1).fillna(0).astype('bool'))]
+    ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1).fillna(0).astype('bool'))]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
             if end > start + np.timedelta64(minDuration,'m')]
 
