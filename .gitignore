@@ -19,5 +19,3 @@ __pycache__
 *.classpath
 *.npz
 *.npy
-*cmds.sh
-*cmds.txt
