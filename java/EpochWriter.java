@@ -700,110 +700,76 @@ public class EpochWriter {
 		return new double[] {gxMean, gyMean, gzMean};
 	}
 
-	private String sanDiegoFFT(double[] paVals) {
+	private String sanDiegoFFT(double[] v) {
 
-		int n = paVals.length;
-		// FFT frequency interval = sample frequency / num samples
-		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
+		final int n = v.length;
+        final double vMean = mean(v);
+		// Initialize array to compute FFT coefs
+        double[] vFFT = new double[n];
+        for (int i = 0; i < n; i++)  vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
+        HanningWindow(vFFT, vFFT.length);
+        new DoubleFFT_1D(vFFT.length).realForward(vFFT);  // FFT library computes coefs inplace
+        final double[] vFFTpow = getFFTpower(vFFT);  // parse FFT coefs to obtain the powers
 
-		int numBins = 15; // From original implementation
-//		System.out.println("n = " + n);
-//		System.out.println("Fs =" + intendedSampleRate);
-
-		// set input data array
-		double[] vmFFT = new double[n];
-        for (int c = 0; c < n; c++) {
-        	vmFFT[c] = paVals[c];
+        /*
+        Compute spectral entropy
+        See https://www.mathworks.com/help/signal/ref/pentropy.html#mw_a57f549d-996c-47d9-8d45-e80cb739ed41
+        Note: the following is the spectral entropy of only half of the spectrum (which is symetric anyways)
+        */
+        double H = 0.0;  // spectral entropy
+        final double vFFTpowsum = sum(vFFTpow);
+        for (int i = 0; i < vFFTpow.length; i++) {
+            double p = vFFTpow[i] / (vFFTpowsum + 1E-8);
+            if (p <= 0) continue;  // skip to next loop if power is non-positive
+            H += -p * Math.log(p + 1E-8);
         }
+        H /= Math.log(vFFTpow.length);  // Normalize spectral entropy
 
-        // Hanning window attenuates the signal to zero at it's start and end
-        HanningWindow(vmFFT,n);
-
-        DoubleFFT_1D transformer = new DoubleFFT_1D(n);
-		transformer.realForward(vmFFT);
-		double max = max(vmFFT);
-
-
-		// find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
+        /*
+        Find dominant frequencies overall, also between 0.3Hz and 3Hz
+        */
+		final double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
 		double f1=-1, f33=-1;
 		double p1=0, p33=0;
-
-		double totalPLnP = 0.0; // sum of P * ln(P)
-		double magDC = vmFFT[0]/max;
-		totalPLnP += magDC * Math.log(magDC);
-//    	System.out.println(String.format("%d (%.2fHz bin %d) : % .6f + % .6fi = % .6f",0, 0.0, currBin, magDC, 0.0 , magDC));
-
-		for (int i = 1; i < n/2; i++) {
-			double freq = FFTinterval * i;
-			double Re = vmFFT[i*2];
-			double Im = vmFFT[i*2+1];
-			double mag = Math.sqrt( Re * Re + Im * Im)/max;
-
-        	totalPLnP += mag * Math.log(mag);
-
-        	if (mag>p1) {
+		for (int i = 0; i < vFFTpow.length; i++) {
+            double freq = FFTinterval * i;
+            double p = vFFTpow[i];
+        	if (p > p1) {
         		f1 = freq;
-        		p1 = mag;
+                p1 = p;
         	}
-        	if (freq > 0.3 && freq < 3 && mag>p33) {
+        	if (freq > 0.3 && freq < 3 && p > p33) {
         		f33 = freq;
-        		p33 = mag;
-        	}
+                p33 = p;
+            }
+        }
+        // Use logscale for convenience as these tend to be very large
+        p1 = Math.log(p1 + 1E-8);
+        p33 = Math.log(p33 + 1E-8);
 
-		}
-		// entropy, AKA (Power) Spectral Entropy, measures 'peakyness' of the frequency spectrum
-		// This should be higher where there are periodic motions such as walking
-		double H = - totalPLnP;// / total - (n/2) * Math.log(total);
-
-
+        /*
+        Estimate powers for frequencies 0-14Hz using Welch's method
+        See: https://en.wikipedia.org/wiki/Welch%27s_method
+        Note: Using the average magnitudes (instead of powers) yielded
+        slightly better classification results in random forest
+        */
+		final int numBins = 15;
 		double[] binnedFFT = new double[numBins];
-
-		for (int i = 0; i < numBins; i++) {
-			binnedFFT[i] = 0;
-		}
-		int numWindows = (int) Math.floor(n/intendedSampleRate);
-		double[] windowSamples = new double[intendedSampleRate];
+        for (int i = 0; i < numBins; i++) binnedFFT[i] = 0;
+        final int windowOverlap = intendedSampleRate / 2;  // 50% overlapping windows
+        final int numWindows = n / windowOverlap - 1;
+		double[] windowFFT = new double[intendedSampleRate];
         DoubleFFT_1D windowTransformer = new DoubleFFT_1D(intendedSampleRate);
-        max = Double.NEGATIVE_INFINITY;
-        // do a FFT on each 1 second window (therefore FFT-interval will be one)
-        FFTinterval = 1;
-		for (int window = 0; window < numWindows; window++ ) {
-			for (int i = 0; i < intendedSampleRate; i++) {
-				windowSamples[i] = paVals[i+window*(intendedSampleRate/2)];
-			}
-			HanningWindow(windowSamples, intendedSampleRate);
-			for (int i = 0; i < intendedSampleRate; i++) {
-				// System.out.println(String.format("%d, %d : % .6f",window, i, windowSamples[i]));
-			}
-			windowTransformer.realForward(windowSamples);
-			for (int i = 0; i < Math.min(intendedSampleRate,10); i++) {
-				// System.out.println(String.format("%d, %d : % .6f",window, i, windowSamples[i]));
-			}
-			for (int i = 0; i < numBins; i++) {
-				double mag;
-				if (i==0) {
-					mag = windowSamples[i];
-					// System.out.println(String.format("bin%d: % .6f",i, mag));
-				}
-				else {
-					double Re = windowSamples[i*2];
-					double Im = windowSamples[i*2+1];
-					mag = Math.sqrt( Re * Re + Im * Im);
-					// System.out.println(String.format("bin%d: % .6f + % .6fi = % .6f",i, Re, Im ,mag));
-				}
-				binnedFFT[i] += mag;
-				max = Math.max(max, mag); // find max as we go
-			}
-
-		}
-
-		// Divide by the number of windows (to get the mean value)
-		// Then divide by the maximum of the windowed FFT values (found before combination)
-		// Note this does not mean the new max of binnedFFT will be one, it will be less than one if one window is stronger than the others
-		scale(binnedFFT, 1 / (max * numWindows));
-		/*for (int i=0; i < numBins; i++) {
-			System.out.println(String.format("F%d=% .6f",i, binnedFFT2[i]));
-		}*/
+		for (int i = 0; i < numWindows; i++ ) {
+			for (int j = 0; j < windowFFT.length; j++) windowFFT[j] = v[i*windowOverlap+j];  // grab window
+			HanningWindow(windowFFT, windowFFT.length);
+			windowTransformer.realForward(windowFFT);  // FFT library computes coefs inplace
+            final double[] windowFFTmag = getFFTmagnitude(windowFFT);  // parse FFT coefs to obtain magnitudes
+            // Accumulate the magnitudes
+            for (int j = 0; j < binnedFFT.length; j++) binnedFFT[j] += windowFFTmag[j];
+        }
+        // Average the magnitudes. Also use logscale for convenience.
+        for (int i = 0; i < binnedFFT.length; i++) binnedFFT[i] = Math.log(binnedFFT[i]/numWindows + 1E-8);
 
 		String line = DF8.format(f1) + "," + DF8.format(p1);
 		line += "," + DF8.format(f33) + "," + DF8.format(p33);
