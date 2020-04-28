@@ -911,48 +911,73 @@ public class EpochWriter {
 	}
 
 
-
 	public static double[] getFFTmagnitude(double[] FFT) {
-		return getFFTmagnitude(FFT, FFT.length);
+		return getFFTmagnitude(FFT, true);
 	}
 
 	/* converts FFT library's complex output to only absolute magnitude */
-	public static double[] getFFTmagnitude(double[] FFT, int n) {
-		if (n<1) {
-			System.err.println("cannot get FFT magnitude of array with zero elements");
-			return new double[] {0.0};
-		}
+	public static double[] getFFTmagnitude(double[] FFT, boolean normalize) {
+        /* Get magnitudes from FFT coefficients */
 
-		/*
-		if n is even then
-		 a[2*k] = Re[k], 0<=k<n/2
-		 a[2*k+1] = Im[k], 0<k<n/2
-		 a[1] = Re[n/2]
-		e.g for n = 6: (yes there will be 7 array elements for 4 magnitudes)
-		a = { Re[0], Re[3], Re[1], Im[1], Re[2], Im[2], Im[3]}
+        double[] FFTmag = getFFTpower(FFT, normalize);
+        for (int i=0; i<FFTmag.length; i++) FFTmag[i] = Math.sqrt(FFTmag[i]);
+        return FFTmag;
+    }
 
-		if n is odd then
-		 a[2*k] = Re[k], 0<=k<(n+1)/2
-		 a[2*k+1] = Im[k], 0<k<(n-1)/2
-		 a[1] = Im[(n-1)/2]
-		e.g for n = 7: (again there will be 7 array elements for 4 magnitudes)
-		a = { Re[0], Im[3], Re[1], Im[1], Re[2], Im[2], Re[3]}
+	public static double[] getFFTpower(double[] FFT) {
+		return getFFTpower(FFT, true);
+    }
 
-		*/
-		int m = 1 + (int) Math.floor(n/2); // output array size
-		double[] output = new double[m];
+    /** 
+     * Get powers from FFT coefficients
+
+     * The layout of FFT is as follows (computed using JTransforms, see
+     * https://github.com/wendykierp/JTransforms/blob/3c3253f240510c5f9ec700f2d9d25cfadfc857cc/src/main/java/org/jtransforms/fft/DoubleFFT_1D.java#L459):
+
+     * If n is even then
+     * FFT[2*k] = Re[k], 0<=k<n/2
+     * FFT[2*k+1] = Im[k], 0<k<n/2
+     * FFT[1] = Re[n/2]
+     * e.g. for n=6:
+     * FFT = { Re[0], Re[3], Re[1], Im[1], Re[2], Im[2] }
+
+     * If n is odd then
+     * FFT[2*k] = Re[k], 0<=k<(n+1)/2
+     * FFT[2*k+1] = Im[k], 0<k<(n-1)/2
+     * FFT[1] = Im[(n-1)/2]
+     * e.g for n = 7:
+     * FFT = { Re[0], Im[3], Re[1], Im[1], Re[2], Im[2], Re[3] }
+
+     * See also: https://stackoverflow.com/a/5010434/3250500
+    */
+	public static double[] getFFTpower(double[] FFT, boolean normalize) {
+        final int n = FFT.length;
+        final int m = (int) Math.ceil(n/2);
+		double[] FFTpow = new double[m];
 		double Re, Im;
 
+        FFTpow[0] = FFT[0] * FFT[0];
+        for (int i = 1; i < m-1; i++) {
+            Re = FFT[i*2];
+            Im = FFT[i*2 + 1];
+            FFTpow[i] = Re * Re + Im * Im;
+        }
+        // The last power is a bit tricky due to the weird layout of FFT
+        if (n % 2 == 0) {
+            Re = FFT[n-2];  // FFT[2*m-2]
+            Im = FFT[n-1];  // FFT[2*m-1]
+        } else {
+            Re = FFT[n-1];  // FFT[2*m-2]
+            Im = FFT[1];
+        }
+        FFTpow[m-1] = Re * Re + Im * Im;
 
-		output[0] = FFT[0];
-		for (int i = 1; i < m-1; i++) {
-			Re = FFT[i*2];
-			Im = FFT[i*2 + 1];
-			output[i] = Math.sqrt(Re * Re + Im * Im);
-		}
-		// highest frequency will be
-		output[m-1] = Math.sqrt(FFT[1] * FFT[1] + FFT[m] * FFT[m]);
-		return output;
+        if (normalize) {
+            // Divide by length of the signal
+            for (int i=0; i<m; i++) FFTpow[i] /= n;
+        }
+
+        return FFTpow;
 	}
 
 	/*
@@ -973,7 +998,7 @@ public class EpochWriter {
         }
 		HanningWindow(input, n);
 		transformer.realForward(input);
-        output = EpochWriter.getFFTmagnitude(input, n);
+        output = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
         	for (int c = 0; c < numEachAxis; c++) {
             	featureString += DF3.format(output[c])+",";
@@ -987,7 +1012,7 @@ public class EpochWriter {
         }
 		HanningWindow(input, n);
 		transformer.realForward(input);
-        input = EpochWriter.getFFTmagnitude(input, n);
+        input = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
         	for (int c = 0; c < numEachAxis; c++) {
         		featureString += DF3.format(input[c])+",";
@@ -1004,7 +1029,7 @@ public class EpochWriter {
         }
 		HanningWindow(input, n);
 		transformer.realForward(input);
-        input = EpochWriter.getFFTmagnitude(input, n);
+        input = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
         	for (int c = 0; c < numEachAxis; c++) {
             	featureString += DF3.format(input[c])+",";
@@ -1015,7 +1040,7 @@ public class EpochWriter {
             }
     		HanningWindow(input, n);
     		transformer.realForward(input);
-            input = EpochWriter.getFFTmagnitude(input, n);
+            input = EpochWriter.getFFTmagnitude(input);
             for (int c = 0; c < numEachAxis; c++) {
             	featureString += DF3.format(input[c])+",";
             }
