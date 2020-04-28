@@ -1030,95 +1030,68 @@ public class EpochWriter {
 		return featureString;
 	}
 
-	/* Physical Activity Classification using the GENEA Wrist Worn Accelerometer
-		Shaoyan Zhang, Alex V. Rowlands, Peter Murray, Tina Hurst
-	*/
-	private String unileverFeatures(double[] paVals) {
-		String output = "";
+    /**
+     * From paper:
+     * Physical Activity Classification using the GENEA Wrist Worn Accelerometer
+     * Shaoyan Zhang, Alex V. Rowlands, Peter Murray, Tina Hurst
+     * https://www.ncbi.nlm.nih.gov/pubmed/21988935
+     * See also:
+     * Activity recognition using a single accelerometer placed at the wrist or ankle.
+     * Mannini A, Intille SS, Rosenberger M, Sabatini AM, Haskell W.
+	 */
+	private String unileverFeatures(double[] v) {
 
-		int n = paVals.length;
-		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
-		double binSize = 0.1; // desired size of each FFT bin (Hz)
-		double maxFreq = 15; // min and max for searching for dominant frequency
-		double minFreq = 0.3;
+        /*
+        Compute FFT and power spectrum density
+        */
+		final int n = v.length;
+        final double vMean = mean(v);
+		// Initialize array to compute FFT coefs
+        double[] vFFT = new double[n];
+        for (int i = 0; i < n; i++)  vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
+        HanningWindow(vFFT, vFFT.length);
+        new DoubleFFT_1D(vFFT.length).realForward(vFFT);  // FFT library computes coefs inplace
+        final double[] vFFTpow = getFFTpower(vFFT);  // parse FFT coefs to obtain the powers
 
-		int numBins = (int) Math.ceil((maxFreq-minFreq)/binSize);
-//		System.out.println("samplerate" + intendedSampleRate + ", n =" + n +", interval " + FFTinterval);
-
-		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
-		double[] vmFFT = new double[n * 2];
-		// set input data array
-        for (int c = 0; c < n; c++) {
-        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected).
-        	// Math.sin(c * 2 * Math.PI * 10 / intendedSampleRate) + Math.cos(c * 2 * Math.PI * 2 / intendedSampleRate);
-        	vmFFT[c] = paVals[c];
-        }
-
-		HanningWindow(vmFFT, n);
-        // FFT
-		transformer.realForward(vmFFT);
-
-        // find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
+        /*
+        Find dominant frequencies in 0.3Hz - 15Hz, also in 0.6Hz - 2.5Hz
+        Also accumulate total power in 0.3Hz - 15Hz.
+        */
+		final double maxFreq = 15;
+		final double minFreq = 0.3;
+		final double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
  		double f1=-1, f2=-1, f625=-1, f33=-1;
  		double p1=0, p2=0, p625=0, p33=0;
-
- 		double totalPower = 0;
-		int out_n = (int) Math.ceil(n/2); // output array size
-
-//		for (int i = 1; i < out_n; i++) {
-//	    	double mag = Math.sqrt(vmFFT[i*2]*vmFFT[i*2] + vmFFT[i*2+1]*vmFFT[i*2+1]);
-//	    	double freq = FFTinterval * i;
-// 			if (freq<minFreq || freq>maxFreq) continue;
-//
-//	    	System.out.println(DF3.format(freq) + ": " + mag);
-//		}
-
- 		for (int i = 1; i < out_n; i++) {
- 			double freq = FFTinterval * i;
- 			if (freq<minFreq || freq>maxFreq) continue;
-        	double mag = Math.sqrt(vmFFT[i*2]*vmFFT[i*2] + vmFFT[i*2+1]*vmFFT[i*2+1]);///(n/2);
-        	totalPower += mag;
-        	if (mag>p1) {
+        double totalPower = 0.0;
+        for (int i = 0; i < vFFTpow.length; i++) {
+            double freq = FFTinterval * i;
+            if (freq < minFreq || freq > maxFreq) continue;
+            double p = vFFTpow[i];
+            totalPower += p;
+            if (p > p1) {
         		f2 = f1;
         		p2 = p1;
         		f1 = freq;
-        		p1 = mag;
-        	} else if (mag > p2) {
+        		p1 = p;
+        	} else if (p > p2) {
         		f2 = freq;
-        		p2 = mag;
+        		p2 = p;
         	}
-        	if (mag>p625 && freq > 0.6 && freq < 2.5) {
+        	if (p > p625 && freq > 0.6 && freq < 2.5) {
         		f625 = freq;
-        		p625 = mag;
+        		p625 = p;
         	}
+        }
+        // Use logscale for convenience
+        totalPower = Math.log(totalPower + 1E-8);
+        p1 = Math.log(p1 + 1E-8);
+        p2 = Math.log(p2 + 1E-8);
+        p625 = Math.log(p625 + 1E-8);
 
-        	int w = 20;
-			int a = (int) Math.round(Math.abs(mag)*10);
+        String line = DF8.format(f1) + "," + DF8.format(p1) + "," + DF8.format(f2) + "," + DF8.format(p2);
+        line += "," + DF8.format(f625) + "," + DF8.format(p625) + "," + DF8.format(totalPower);
 
-//			if (mag<0) System.out.println(String.format("[% 4.1f]",freq) + new String(new char[w-a]).replace("\0", " ") + new String(new char[a]).replace("\0", "=") + ":" +  new String(new char[w]).replace("\0", " "));
-//			else System.out.println(String.format("[% 4.1f]",freq) + " " + new String(new char[w]).replace("\0", " ") + ":" + new String(new char[a]).replace("\0", "="));
-
- 		}
-
-
-//		System.out.println("p1: " + DF3.format(p1) + " f1: " + DF2.format(f1));
-//		System.out.println("f1:   " + f1 + ", p1: " + p1);
-//		System.out.println("f2:   " + f2 + ", p2: " + p2);
-//		System.out.println("f625: " + f625 + ", p625: " + p625);
-//		System.out.println("total:" + totalPower);
-//
-// 		System.exit(0);
- 		output = DF3.format(f1)+","+DF3.format(p1)+","+DF3.format(f2)+","+DF3.format(p2)+","+DF3.format(f625)+","+DF3.format(p625)+","+DF3.format(totalPower);
-
- 		if (!get3DFourier) {
-	 		output += ",";
-	 		for(int i=0; i<numEachAxis; i++) {
-	        	double mag = Math.sqrt(vmFFT[i*2]*vmFFT[i*2] + vmFFT[i*2+1]*vmFFT[i*2+1]);///(n/2);
-	        	output += DF3.format(mag)+",";
-			}
-	 		output += "0.0,";
- 		}
- 		return output;
+ 		return line;
 	}
 
 	/* method to write FFT data to a separate _fft.csv file (not used anymore)  */
