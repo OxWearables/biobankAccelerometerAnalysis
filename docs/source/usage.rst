@@ -141,18 +141,26 @@ These 'reprocessed' files can then be processed as outlined in the section above
 ************************************
 Classifying different activity types
 ************************************
+**Note that a major fix/improvement was introduced in April 2020. You therefore need to download the updated files to achieve this**.
+::
+	$ git pull
+        $ bash utilities/downloadDataModels.sh
+        $ pip3 install --user .
+        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+
+
 Different activity classification models can be specified to identify different 
 activity types. For example, to use activity states from the Willetts 2018 
 Scientific Reports paper:
 ::
     $ python3 accProcess.py data/sample.cwa.gz \
-        --activityModel activityModels/willetts2018.tar
+        --activityModel activityModels/willetts2018-apr20Update.tar
 
 
 To visualise the time series and new activity classification output:
 ::
     $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png \
-        --activityModel activityModels/willetts2018.tar
+        --activityModel activityModels/willetts2018-apr20Update.tar
     <output plot written to data/sample-plot.png>
 
 .. figure:: samplePlotWilletts.png

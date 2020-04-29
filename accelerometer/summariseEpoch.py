@@ -15,7 +15,7 @@ from datetime import timedelta
 def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
-    mgVPA=425, activityModel="activityModels/doherty2018.tar",
+    mgVPA=425, activityModel="activityModels/doherty2018-apr20Update.tar",
     intensityDistribution=False, psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
     verbose=False):
     """Calculate overall activity summary from <epochFile> data

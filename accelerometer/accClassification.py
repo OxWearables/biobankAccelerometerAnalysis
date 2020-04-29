@@ -13,7 +13,7 @@ import warnings
 
 
 def activityClassification(epochFile,
-    activityModel="activityModels/doherty2018.tar"):
+    activityModel="activityModels/doherty2018-apr20Update.tar"):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
