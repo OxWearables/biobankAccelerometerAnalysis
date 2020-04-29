@@ -288,7 +288,7 @@ public class AxivityAx3Epochs {
             }
             LowpassFilter filter = null;
 			if (useFilter) {
-				filter = new LowpassFilter(20 /* = lowPassCutFrequency*/, sampleRate /* = sampleRate*/);
+				filter = new LowpassFilter(20, sampleRate, verbose);
 			}
 			if (rawOutput) {
 				if (rawFile.trim().length() == 0) {

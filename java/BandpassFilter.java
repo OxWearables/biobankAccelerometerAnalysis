@@ -1,24 +1,42 @@
 //BSD 2-Clause, (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
+import java.util.Arrays;
 import java.util.List;
 
-// (This inner class should probably be in another file)
 // [dgj] Butterworth 4th-order bandpass filter
-public class BandpassFilter {
+public class BandpassFilter extends Filter {
 
-	public final static int BUTTERWORTH4_ORDER = 4;
-	public final static int BUTTERWORTH4_NUM_COEFFICIENTS = (BUTTERWORTH4_ORDER * 2 + 1);
 
-    // Filter coefficients
-    private double B[];
-    private double A[];
-    
-	// Final/initial conditions
-    private double z[];
+	// Constructs 4th order Butterworth bandpass filter between Fc1 and Fc2 at rate Fs.
+	public BandpassFilter(double Fc1, double Fc2, double Fs, Boolean verbose)
+	{
+		// Calculate normalised cut-offs
+		double W1 = Fc1 / (Fs / 2);
+		double W2 = Fc2 / (Fs / 2);
 	
+		// Create coefficients
+		BUTTERWORTH4_NUM_COEFFICIENTS = (BUTTERWORTH4_ORDER * 2 + 1);
+		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		A = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		
+		// Calculate coefficients
+		CoefficientsButterworth4BP(W1, W2, B, A);
+		
+		// [debug] Dump coefficients
+        if (verbose) {
+			System.out.println("B = " + Arrays.toString(B));
+			System.out.println("A = " + Arrays.toString(A));
+		}
+		
+		// Create final/initial condition tracker
+		z = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		reset();
+	}
+
+
 	// Calculate coefficients for a 4th order Butterworth bandpass filter.
 	// Based on http://www.exstrom.com/journal/sigproc/
 	// Copyright (C) 2014 Exstrom Laboratories LLC
-	void CoefficientsButterworth4BP(double W1, double W2, double B[], double A[])
+	private void CoefficientsButterworth4BP(double W1, double W2, double B[], double A[])
 	{
 		int i, j;		
 		// Calculate B coefficients as if for a Butterworth lowpass filter. 
@@ -112,88 +130,5 @@ public class BandpassFilter {
 		return;
 	}
 	
-	// Constructs 4th order Butterworth bandpass filter between Fc1 and Fc2 at rate Fs.
-	public BandpassFilter(double Fc1, double Fc2, double Fs)
-	{
-		// Calculate normalised cut-offs
-		double W1 = Fc1 / (Fs / 2);
-		double W2 = Fc2 / (Fs / 2);
-	
-		// Create coefficients
-		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		A = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		
-		// Calculate coefficients
-		CoefficientsButterworth4BP(W1, W2, B, A);
-		
-		// [debug] Dump coefficients
-        Boolean debug = false;
-		if (debug) {
-			System.out.print("B = [ ");
-			for (int i = 0; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-			    System.out.print("" + B[i] + " ");
-			}
-			System.out.print("]\n");
-			System.out.print("A = [ ");
-			for (int i = 0; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-			    System.out.print("" + A[i] + " ");
-			}
-			System.out.print("]\n");
-		}
-		
-		// Create final/initial condition tracker
-		z = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		reset();
-	}
-	
-	// Reset state tracking
-	public void reset() {
-		for (int i = 0; i < z.length; i++) { 
-			z[i] = 0; 
-		}
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(double X[], int offset, int count) {
-		int m, i;
-		
-		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
-		for (m = offset; m < offset + count; m++) {
-			double oldXm = X[m];
-			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
-			}
-			X[m] = newXm;
-		}
-		return;
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(double X[]) {
-		filter(X, 0, X.length);
-	}		
-	
-	// Apply the filter to the specified data
-	public void filter(List<Double> X, int offset, int count) {
-		int m, i;
-		
-		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
-		for (m = offset; m < offset + count; m++) {
-			double oldXm = X.get(m);
-			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
-			}
-			X.set(m, newXm);
-		}
-		return;
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(List<Double> X) {
-		filter(X, 0, X.size());
-		return;
-	}
 	
 }
