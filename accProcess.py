@@ -139,7 +139,7 @@ def main():
                             help="""VPA threshold (default : %(default)s)""")
     # calling helper processess and conducting multi-threadings
     parser.add_argument('--rawDataParser',
-                            metavar="rawDataParser", default="AxivityAx3Epochs",
+                            metavar="rawDataParser", default="AccelerometerParser",
                             type=str,
                             help="""file containing a java program to process
                             raw .cwa binary file, must end with .class (omitted)

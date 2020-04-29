@@ -1217,6 +1217,21 @@ public class EpochWriter {
 		// transformer.realInverse(vmFFT, true);
 	}
 
+
+	public void closeWriters(){
+		try{
+			epochFileWriter.close();
+			if (rawWriter != null) rawWriter.close();
+			if (fftWriter != null) fftWriter.close();
+			if (npyWriter != null) npyWriter.close();
+		} catch (IOException excep) {
+			excep.printStackTrace(System.err);
+			System.err.println("error closing file writer: " + excep.toString());
+			System.exit(-2);
+		}
+	}
+	
+
 	private static double getVectorMagnitude(double x, double y, double z) {
 		return Math.sqrt(x * x + y * y + z * z);
 	}
@@ -1491,5 +1506,6 @@ public class EpochWriter {
 			System.err.println("line write error: " + excep.toString());
         }
     }
+
 
 }
