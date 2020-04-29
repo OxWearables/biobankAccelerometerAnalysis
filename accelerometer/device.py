@@ -538,7 +538,9 @@ def getGT3XDeviceId(cwaFile):
                 for line in info_file:
                     if line.startswith(b"Serial Number:"):
                         newline = line.decode("utf-8")
-                        return newline.split("Serial Number: ")[1]
+                        newline = newline.split("Serial Number: ")[1]
+                        print("Serial Number: "+newline)
+                        return newline
             else:
                 print("Could not find info.txt file")
 
