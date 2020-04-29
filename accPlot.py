@@ -38,7 +38,7 @@ def main():
     parser.add_argument('plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/doherty2018.tar",
+                            default="activityModels/doherty2018-apr20Update.tar",
                             help="""trained activity model .tar file""")
 
     # check input is ok
@@ -57,7 +57,7 @@ def main():
 
 
 def plotTimeSeries(tsFile, plotFile,
-    activityModel="activityModels/doherty2018.tar"):
+    activityModel="activityModels/doherty2018-apr20Update.tar"):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
@@ -86,9 +86,9 @@ def plotTimeSeries(tsFile, plotFile,
         if col not in [accUtils.TIME_SERIES_COL, 'imputed', 'acc', 'MET']:
             labels += [col]
     print(labels)
-    if activityModel.endswith("doherty2018.tar"):
+    if 'doherty2018' in activityModel:
         labels_as_col = DOHERTY_NatComms_COLOURS
-    elif activityModel.endswith("willetts2018.tar"):
+    elif 'willetts2018' in activityModel:
         labels_as_col = WILLETS_SciReports_COLOURS
     # add imputation label colour
     labels_as_col['imputed'] = '#fafc6f'

@@ -156,7 +156,7 @@ def main():
                             activity type
                             (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/doherty2018.tar",
+                            default="activityModels/doherty2018-apr20Update.tar",
                             help="""trained activity model .tar file""")
     parser.add_argument('--rawOutput',
                             metavar='True/False', default=False, type=str2bool,
@@ -203,6 +203,27 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
                              (default : %(default)s)""")
+    parser.add_argument('--psd',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate power spectral density for 24 hour 
+                                    circadian period
+                             (default : %(default)s)""")
+    parser.add_argument('--fourierFrequency',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate dominant frequency of sleep for circadian rhythm analysis
+                             (default : %(default)s)""")
+    parser.add_argument('--fourierWithAcc',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""True will do the Fourier analysis of circadian rhythms (for PSD and Fourier Frequency) with 
+                                    acceleration data instead of sleep signal
+                             (default : %(default)s)""") 
+    parser.add_argument('--m10l5',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate relative amplitude of most and 
+                                    least active acceleration periods for circadian rhythm analysis
+                             (default : %(default)s)""")
+
+
     args = parser.parse_args()
 
     processingStartTime = datetime.datetime.now()
@@ -321,7 +342,8 @@ def main():
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
-        intensityDistribution=args.intensityDistribution,
+        intensityDistribution=args.intensityDistribution, psd=args.psd, 
+        fourierFrequency=args.fourierFrequency, fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5, 
         verbose=args.verbose)
 
     # Generate time series file (note: this will also resample to epochData so do this last)

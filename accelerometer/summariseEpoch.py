@@ -2,18 +2,22 @@
 
 from accelerometer import accUtils
 from accelerometer import accClassification
+from accelerometer import circadianRhythms
 import gzip
 import numpy as np
 import pandas as pd
 import pytz
 import sys
-
+import scipy as sp
+from scipy import fftpack
+from datetime import timedelta
 
 def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
-    mgVPA=425, activityModel="activityModels/doherty2018.tar",
-    intensityDistribution=False, verbose=False):
+    mgVPA=425, activityModel="activityModels/doherty2018-apr20Update.tar",
+    intensityDistribution=False, psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
+    verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -121,6 +125,14 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     if intensityDistribution:
         calculateECDF(e, 'acc', summary)
 
+    # Calculate circadian metrics
+    if psd:
+        circadianRhythms.calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary)
+    if fourierFrequency:
+        circadianRhythms.calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary)
+    if m10l5:
+        circadianRhythms.calculateM10L5(e, epochPeriod, summary)
+ 
     # Main movement summaries
     writeMovementSummaries(e, labels, summary)
 
@@ -247,8 +259,8 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     maxStd = maxStd / 1000.0 # java uses Gravity units (not mg)
     e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
             (e['zStd']<maxStd), 1, 0)
-    starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1, fill_value=0).astype('bool'))]
-    ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1, fill_value=0).astype('bool'))]
+    starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1).fillna(0).astype('bool'))]
+    ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1).fillna(0).astype('bool'))]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
             if end > start + np.timedelta64(minDuration,'m')]
 
@@ -405,9 +417,9 @@ def calculateECDF(e, inputCol, summary):
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
+  
 
-
-
+    
 def writeMovementSummaries(e, labels, summary):
     """Write overall summary stats for each activity type to summary dict
 
@@ -457,3 +469,7 @@ def writeMovementSummaries(e, labels, summary):
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
+
+
+    
+    
