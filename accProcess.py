@@ -156,7 +156,7 @@ def main():
                             activity type
                             (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/doherty2018.tar",
+                            default="activityModels/doherty2018-apr20Update.tar",
                             help="""trained activity model .tar file""")
     parser.add_argument('--rawOutput',
                             metavar='True/False', default=False, type=str2bool,

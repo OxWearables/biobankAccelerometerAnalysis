@@ -13,6 +13,13 @@ $ pip3 install --user .
 $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 ```
 
+**Note that a major fix/improvement was introduced in April 2020. You therefore need to download the updated files to achieve this**.
+::
+	$ git pull
+        $ bash utilities/downloadDataModels.sh
+        $ pip3 install --user .
+        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+
 
 
 ## Usage
@@ -31,7 +38,7 @@ The main JSON output will look like:
     "file-name": "sample.cwa.gz", 
     "file-startTime": "2014-05-07 13:29:50", 
     "file-endTime": "2014-05-13 09:49:50", 
-    "acc-overall-avg(mg)": 33.23, 
+    "acc-overall-avg(mg)": 32.78149, 
     "wearTime-overall(days)": 5.8, 
     "nonWearTime-overall(days)": 0.04,
     "quality-goodWearTime": 1
