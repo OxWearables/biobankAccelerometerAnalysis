@@ -533,12 +533,12 @@ def getGT3XDeviceId(cwaFile):
 
             if 'info.txt' in map(lambda x: x.filename, contents):
                 print('info.txt found..')
-                info_file = z.open('info.txt','r')
+                info_file = z.open('info.txt', 'r')
                 # print info_file.read()
                 for line in info_file:
-                    print(line.startswith("Serial Number:"), line)
-                    if line.startswith("Serial Number:"):
-                        return line.split("Serial Number:")
+                    if line.startswith(b"Serial Number:"):
+                        newline = line.decode("utf-8")
+                        return newline.split("Serial Number: ")[1]
             else:
                 print("Could not find info.txt file")
 
