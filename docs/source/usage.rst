@@ -58,7 +58,7 @@ Processing multiple files
 To process multiple files, we recommend the following directory structure be used:
 ::
     <studyName>/
-        files.csv #listing all files in rawData directory
+        files.csv #listing all files in rawData directory (optional)
         rawData/ #all raw .cwa .cwa.gz .bin .gt3x files (no spaces in filename)
         summary/ #to store outputSummary.json
         epoch/ #to store feature output for 30sec windows
@@ -87,6 +87,12 @@ Then use our python utility function to write processing cmds for all files:
     accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
         runName="dec18", cmdOptions="--mgMVPA 90 --mgVPA 435")
     # <list of processing commands written to "process-cmds.txt">
+
+Note that if we don't have `files.csv` in the existing directory, the utility function
+will automatically create `files.csv` that contain the names of all the files in `rawData/`.
+For this to work, we need to specify which file type to use by setting the `accExt` parameter, e.g.,
+cwa, CWA, bin, BIN, gt3x. We can also directly create our own `files.csv` with a column whose column
+name needs to be 'fileName'.
 
 We can then kick-start the processing of all accelerometer files. More advanced
 users will probably want to parallelise the below script using their HPC
