@@ -89,7 +89,7 @@ Then use our python utility function to write processing cmds for all files:
     # <list of processing commands written to "process-cmds.txt">
 
 Note that if we don't have `files.csv` in the existing directory, the utility function
-will automatically create `files.csv` that contain the names of all the files in `rawData/`.
+will automatically create a `files.csv` that contains the names of all the files in `rawData/`.
 For this to work, we need to specify which file type to use by setting the `accExt` parameter, e.g.,
 cwa, CWA, bin, BIN, gt3x. We can also directly create our own `files.csv` with a column whose column
 name needs to be 'fileName'.
