@@ -25,7 +25,6 @@ public class EpochWriter {
 	private static DecimalFormat DF2 = new DecimalFormat("0.00", decimalFormatSymbol);
 	private final long UNUSED_DATE = -1;
 
-
 	// Storage variables setup:
 	// store x/y/z values to pass into epochWriter
 	private List<Long> timeVals = new ArrayList<Long>(); // offset into the epoch in milliseconds
@@ -36,7 +35,7 @@ public class EpochWriter {
 	private final int minSamplesForEpoch = 10;
 
 	private long prevTimeVal = -1;
-	private double[] prevXYZT = { -1, -1, -1, -1 }; // x, y, z, and temp at prevTimeVal
+	private double[] prevXYZT = { -1, -1, -1, -1 }; // x/y/z/temp at prevTimeVal
 	private boolean edgeInterpolation = true;
 
 	// parameters to be initialised
@@ -63,25 +62,17 @@ public class EpochWriter {
 	private boolean getUnileverFeatures;
 	private boolean get3DFourier;
 	private boolean getEachAxis;
-	private int numEachAxis;
-
+	private int numFFTbins;
 
 	// file read/write objects
 	private BufferedWriter epochFileWriter;
 	private BufferedWriter rawWriter; // raw and fft are null if not used
-	private BufferedWriter fftWriter; // otherwise will be created (using epochFile
 	private NpyWriter npyWriter;
-
-
-
-	// have we added the header to the FFT file? (so can generate one based on number of samples)
-	private Boolean fftWriterHasHeader = false;
 
 
 	public EpochWriter(
 		      BufferedWriter epochFileWriter,
 		      BufferedWriter rawWriter,
-		      BufferedWriter fftWriter,
 		      NpyWriter npyWriter,
 		      DateTimeFormatter timeFormat,
 		      int epochPeriod,
@@ -103,11 +94,10 @@ public class EpochWriter {
 		      boolean getUnileverFeatures,
 		      boolean get3DFourier,
 		      boolean getEachAxis,
-		      int numEachAxis,
+		      int numFFTbins,
 		      boolean useAbs) {
 		this.epochFileWriter = epochFileWriter;
 		this.rawWriter = rawWriter;
-		this.fftWriter = fftWriter;
 		this.npyWriter = npyWriter;
 		this.timeFormat = timeFormat;
 		this.epochPeriod = epochPeriod;
@@ -129,7 +119,7 @@ public class EpochWriter {
 		this.getUnileverFeatures = getUnileverFeatures;
 		this.get3DFourier = get3DFourier;
 		this.getEachAxis = getEachAxis;
-		this.numEachAxis = numEachAxis;
+		this.numFFTbins = numFFTbins;
 		this.useAbs = useAbs;
 
 		/* edge interpolation is only useful for resampling. The San Diego features
@@ -188,7 +178,7 @@ public class EpochWriter {
 		if (getUnileverFeatures) {
 			epochHeader += ",f1,p1,f2,p2,f625,p625,total";
 			int out_n = (int) Math.ceil((epochPeriod * this.intendedSampleRate) /2) + 1; // fft output array size
-			out_n = Math.min(out_n, numEachAxis);
+			out_n = Math.min(out_n, numFFTbins);
 			if (getEachAxis && get3DFourier) {
 				for (char c: new char[] {'x','y','z','m'}) {
 					for (int i=0; i<out_n ; i++) {
@@ -299,7 +289,6 @@ public class EpochWriter {
 			try {
 				if (epochFileWriter!=null) epochFileWriter.close();
 				if (rawWriter!=null) rawWriter.close();
-				if (fftWriter!=null) fftWriter.close();
 				if (npyWriter!=null) npyWriter.close();
 			} catch (Exception ex) {
 				System.err.println("error closing output files");
@@ -324,7 +313,6 @@ public class EpochWriter {
 	 *  -uses the calibration parameters and temperature to adjust the x/y/z values
 	 *  -increments the errCounter (array length 1) for 'stuck values'
 	 *  -writes the raw resampled data to the global rawWriter (unless null)
-	 *  -writes the fft output data to the global fftWriter (unless null)
 	 *  [the above does not apply if getSanDiegoFeatures is enabled]
 	 */
 	private void writeEpochSummary(LocalDateTime epochStartTime,
@@ -472,9 +460,6 @@ public class EpochWriter {
 
 		}
 
-		if (fftWriter!=null && !getSanDiegoFeatures) {
-			writeFFTEpoch(epochStartTime, paVals);
-		}
 		// write summary values to file
 		String epochSummary = epochStartTime.format(timeFormat);
 		epochSummary += "," + DF6.format(accPA);
@@ -949,7 +934,7 @@ public class EpochWriter {
 	}
 
 	/*
-	 * Gets [numEachAxis] FFT bins for each of the 3 axes and combines them into 'mfft' column.
+	 * Gets [numFFTbins] FFT bins for each of the 3 axes and combines them into 'mfft' column.
 	 * If getEachAxis is true it will output the FFT bins for each axis separately
 	 */
 	private String getFFT3D(double[] x, double[] y, double[] z, double[] vm) {
@@ -968,7 +953,7 @@ public class EpochWriter {
 		transformer.realForward(input);
         output = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
-        	for (int c = 0; c < numEachAxis; c++) {
+        	for (int c = 0; c < numFFTbins; c++) {
             	featureString += DF3.format(output[c])+",";
             }
         }
@@ -982,7 +967,7 @@ public class EpochWriter {
 		transformer.realForward(input);
         input = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
-        	for (int c = 0; c < numEachAxis; c++) {
+        	for (int c = 0; c < numFFTbins; c++) {
         		featureString += DF3.format(input[c])+",";
         	}
         } else {
@@ -999,7 +984,7 @@ public class EpochWriter {
 		transformer.realForward(input);
         input = EpochWriter.getFFTmagnitude(input);
         if (getEachAxis) {
-        	for (int c = 0; c < numEachAxis; c++) {
+        	for (int c = 0; c < numFFTbins; c++) {
             	featureString += DF3.format(input[c])+",";
             }
         	input = new double[n*2];
@@ -1009,7 +994,7 @@ public class EpochWriter {
     		HanningWindow(input, n);
     		transformer.realForward(input);
             input = EpochWriter.getFFTmagnitude(input);
-            for (int c = 0; c < numEachAxis; c++) {
+            for (int c = 0; c < numFFTbins; c++) {
             	featureString += DF3.format(input[c])+",";
             }
         } else {
@@ -1018,7 +1003,7 @@ public class EpochWriter {
 	        }
 
 
-	        for (int c = 0; c < numEachAxis; c++) {
+	        for (int c = 0; c < numFFTbins; c++) {
 	        	featureString += DF3.format(output[c])+",";
 	        }
         }
@@ -1096,133 +1081,11 @@ public class EpochWriter {
  		return line;
 	}
 
-	/* method to write FFT data to a separate _fft.csv file (not used anymore)  */
-	private void writeFFTEpoch(LocalDateTime epochStartTime, double[] paVals) {
-
-		// num samples
-		int n = paVals.length;
-		// FFT frequency interval = sample frequency / num samples
-		double FFTinterval = intendedSampleRate / (1.0 * n); // (Hz)
-//		System.out.println("samplerate" + intendedSampleRate + ", n =" + n +", interval " + FFTinterval);
-		double binSize = 3; // desired size of each FFT bin (Hz)
-		int numBins = 15;
-		if (!fftWriterHasHeader) {
-
-			// write the header for fft data (number of columns is dependent on sample frequency)
-
-			String line = "Time";
-			// x axis is  x * sample-rate / num-samples
-
-			line += ",mag,f1,p1,f2,p2,f625,p625";
-	        for (int i = 1; i < numBins + 1; i++) {
-				line += "," + (i * FFTinterval) + "Hz";
-	        }
-
-	        writeLine(fftWriter,line);
-	        fftWriterHasHeader = true;
-		}
-
-		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
-		double[] vmFFT = new double[n * 2];
-		// set input data array
-        for (int c = 0; c < n; c++) {
-        	// NOTE: this code will generate peaks at 10Hz, and 2Hz (as expected).
-        	// Math.sin(c * 2 * Math.PI * 10 / intendedSampleRate) + Math.cos(c * 2 * Math.PI * 2 / intendedSampleRate);
-        	vmFFT[c] = paVals[c];
-        }
-
-        // FFT
-		transformer.realForward(vmFFT);
-		// a useful explanation of output:
-		// http://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-a-fft
-
-		// find dominant frequency, second dominant frequency, and dominant between .6 - 2.5Hz
-		double f1=-1, f2=-1, f625=-1, f33=-1;
-		double p1=0, p2=0, p625=0, p33=0;
-
-		double[] binnedFFT = new double[numBins];
-		double total = 0.0;     // sum of P
-		double totalPLnP = 0.0; // sum of P * ln(P)
-		int currBin = 0;
-		int numInBin = 0;
-//		for (int i = 1; i < n/2 + 1; i++) {
-//        	double mag = vmFFT[i*2]*vmFFT[i*2] + vmFFT[i*2+1]*vmFFT[i*2+1];
-//        	double freq = FFTinterval * i;
-//        	System.out.println(freq + ": " + mag);
-//		}
-		for (int i = 1; i < n/2 + 1; i++) {
-        	double mag = Math.sqrt(vmFFT[i*2]*vmFFT[i*2] + vmFFT[i*2+1]*vmFFT[i*2+1])/(n/2);
-        	double freq = FFTinterval * i;
-        	total += mag;
-        	totalPLnP += mag * Math.log(mag);
-        	if (mag>p1) {
-        		f2 = f1;
-        		p2 = p1;
-        		f1 = freq;
-        		p1 = mag;
-        	} else if (mag > p2) {
-        		f2 = freq;
-        		p2 = mag;
-        	}
-        	if (freq > 0.6 && freq < 2.5 && mag>p625) {
-        		f625 = freq;
-        		p625 = mag;
-        	}
-        	if (freq > 0.3 && freq < 3 && mag>p33) {
-        		f33 = freq;
-        		p33 = mag;
-        	}
-
-
-        	binnedFFT[currBin] += mag;
-        	numInBin++;
-
-        	if (freq > currBin * binSize) {
-        		binnedFFT[currBin] /= numInBin; // get average
-//        		System.out.println(currBin + " "+currBin * binSize + "Hz: "+binnedFFT.length + ", " + binnedFFT[currBin]);
-        		currBin++;
-        		numInBin = 0;
-        		if (currBin >= numBins) break;
-        		else binnedFFT[currBin] = 0.0;
-        	}
-
-		}
-
-		// Feature Extraction of EEG Signals Using Power Spectral Entropy (2008)
-		// normalized p = P / sum(P)
-		// H = sum(p * ln(p))
-		// H = sum(P * ln(P) / sum(P)) - N * ln(sum(P))
-		double H = totalPLnP / total - (n/2) * Math.log(total);
-
-//		System.out.println("p1: " + DF3.format(p1) + " f1: " + DF2.format(f1) + " H =" +H);
-//		System.out.println("f1:   " + f1 + ", p1: " + p1);
-//		System.out.println("f2:   " + f2 + ", p2: " + p2);
-//		System.out.println("f625: " + f625 + ", p625: " + p625);
-
-		// print to fftWriter
-		String line = epochStartTime.format(timeFormat);
-		line += "," + DF6.format(vmFFT[0]);
-		line += "," + DF6.format(f1) + "," + DF6.format(p1);
-		line += "," + DF6.format(f2) + "," + DF6.format(p2);
-		line += "," + DF6.format(f625) + "," + DF6.format(p625);
-		line += "," + DF6.format(f33) + "," + DF6.format(p33);
-
-		for (int i=0; i < numBins; i++) {
-			line += "," + DF6.format(binnedFFT[i]);
-        }
-        writeLine(fftWriter,line);
-//        if (Math.random()<0.01)
-//        	System.exit(1);
-        // this line can check that inverse is the same
-		// transformer.realInverse(vmFFT, true);
-	}
-
 
 	public void closeWriters(){
 		try{
 			epochFileWriter.close();
 			if (rawWriter != null) rawWriter.close();
-			if (fftWriter != null) fftWriter.close();
 			if (npyWriter != null) npyWriter.close();
 		} catch (IOException excep) {
 			excep.printStackTrace(System.err);

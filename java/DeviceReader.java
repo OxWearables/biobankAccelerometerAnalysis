@@ -29,7 +29,6 @@ public class DeviceReader {
         boolean useFilter,
         boolean rawOutput,
         String rawFile,
-        boolean fftOutput,
         boolean npyOutput,
         String npyFile,
         boolean getAxisMeans,
@@ -59,8 +58,7 @@ public class DeviceReader {
         // file read/write objects
         EpochWriter epochWriter = null;
         BufferedWriter epochFileWriter = null;
-        BufferedWriter rawWriter = null; // raw and fft are null if not used
-        BufferedWriter fftWriter = null; // else will be similar to epochFile name
+        BufferedWriter rawWriter = null; // raw and npy are null if not used
         NpyWriter npyWriter = null;
         try{
             if (outputFile.endsWith(".gz")) {
@@ -82,12 +80,6 @@ public class DeviceReader {
                                 new FileOutputStream(new File(rawFile)));
             rawWriter = new BufferedWriter(new OutputStreamWriter(zipRaw, "UTF-8"));
         }
-        if (fftOutput && !getSanDiegoFeatures) {
-            String fftFile = (outputFile.toLowerCase().endsWith(".csv") // generate raw output filename
-                    ? outputFile.substring(0, outputFile.length() - ".csv".length()) : outputFile) + "_fft.csv";
-            fftWriter = new BufferedWriter(new FileWriter(fftFile));
-        }
-
         if (npyOutput) {
             if (npyFile.trim().length() == 0) {
                 npyFile = (outputFile.toLowerCase().endsWith(".csv.gz") // generate npy output filename
@@ -98,7 +90,6 @@ public class DeviceReader {
         epochWriter = new EpochWriter(
                   epochFileWriter,
                   rawWriter,
-                  fftWriter,
                   npyWriter,
                   timeFormat,
                   epochPeriod,

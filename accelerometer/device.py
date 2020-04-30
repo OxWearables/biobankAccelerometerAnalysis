@@ -19,7 +19,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     skipFiltering=False, sampleRate=100, epochPeriod=30,
     useAbs=False, activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
-    fftOutput=False, startTime=None, endTime=None,
+    startTime=None, endTime=None,
     verbose=False, timeZoneOffset=0,
     csvStartTime=None, csvSampleRate=None, csvTimeFormat=None, csvStartRow=None, csvXYZTCols=None):
     """Process raw accelerometer file, writing summary epoch stats to file
@@ -61,7 +61,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param bool npyOutput: Output calibrated and resampled raw data to a .npy
         file? requires ~60MB/day.
     :param str npyFile: Output raw data ".npy" filename
-    :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~100MB/day.
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
@@ -162,7 +161,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             "rawFile:" + str(rawFile),
             "npyOutput:" + str(npyOutput),
             "npyFile:" + str(npyFile),
-            "fftOutput:" + str(fftOutput),
             "getEpochCovariance:True",
             "getSanDiegoFeatures:" + str(activityClassification),
             "getMADFeatures:" + str(activityClassification),

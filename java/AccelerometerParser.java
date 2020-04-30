@@ -15,8 +15,9 @@ import java.util.TimeZone;
 
 
 /**
- * Calculates epoch summaries from an AX3 .CWA file. Class/application can be
- * called from the command line as follows: java AxivityAx3Epochs inputFile.CWA
+ * Calculates epoch summaries from an AX3 .cwa.gz file. Class/application can be
+ * called from the command line as follows:
+ 			java AccelerometerParser inputFile.cwa.gz
  */
 public class AccelerometerParser {
 
@@ -41,7 +42,6 @@ public class AccelerometerParser {
 		String rawFile = ""; // file name for epoch file
 		String npyFile = ""; // file name for epoch file
 		Boolean rawOutput = false; // whether to output raw data
-		Boolean fftOutput = false; // whether to output fft data
 		Boolean npyOutput = false; // whether to output npy data
 		boolean verbose = false; //to facilitate logging
 
@@ -89,7 +89,7 @@ public class AccelerometerParser {
 		if (args.length < 1) {
 			String invalidInputMsg = "Invalid input, ";
 			invalidInputMsg += "please enter at least 1 parameter, e.g.\n";
-			invalidInputMsg += "java AxivityAx3Epochs inputFile.CWA";
+			invalidInputMsg += "java AccelerometerParser inputFile.cwa.gz";
 			System.out.println(invalidInputMsg);
 			System.exit(-1);
 		}
@@ -162,8 +162,6 @@ public class AccelerometerParser {
 					rawOutput = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("rawFile")) {
 					rawFile = funcParam;
-				} else if (funcName.equals("fftOutput")) {
-					fftOutput = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("npyOutput")) {
                     npyOutput = Boolean.parseBoolean(funcParam.toLowerCase());
                 } else if (funcName.equals("npyFile")) {
@@ -233,7 +231,7 @@ public class AccelerometerParser {
 		try {
 			System.out.println("Intermediate file: " + outputFile);
    			epochWriter = DeviceReader.setupEpochWriter(
-   				outputFile, useFilter, rawOutput, rawFile, fftOutput, npyOutput,
+   				outputFile, useFilter, rawOutput, rawFile, npyOutput,
         		npyFile, getAxisMeans, getSanDiegoFeatures, getMADFeatures, getUnileverFeatures,
         		get3DFourier, getEachAxis, numFFTbins, useAbs, timeFormat,
         		epochPeriod, sampleRate, range, swIntercept, swSlope, tempCoef,
