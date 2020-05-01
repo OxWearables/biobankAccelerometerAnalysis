@@ -102,7 +102,8 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
                 "outputFile:" + stationaryFile,
                 "verbose:" + str(verbose), "filter:true",
                 "getStationaryBouts:true", "epochPeriod:10",
-                "stationaryStd:" + str(staticStdG)]
+                "stationaryStd:" + str(staticStdG),
+                "sampleRate:" + str(sampleRate)]
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
             if timeZoneOffset:
