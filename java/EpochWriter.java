@@ -187,7 +187,7 @@ public class EpochWriter {
     	}
 		if (getUnileverFeatures) {
 			epochHeader += ",f1,p1,f2,p2,f625,p625,total";
-			int out_n = (int) Math.ceil((epochPeriod * this.intendedSampleRate) /2) + 1; // fft output array size
+			int out_n = (int) Math.ceil((double) (epochPeriod * this.intendedSampleRate) /2) + 1; // fft output array size
 			out_n = Math.min(out_n, numEachAxis);
 			if (getEachAxis && get3DFourier) {
 				for (char c: new char[] {'x','y','z','m'}) {
@@ -854,7 +854,7 @@ public class EpochWriter {
 
 		if (debug) System.out.println(Arrays.toString(signal).replace(',', '\n'));
 
-		int m = (int) Math.ceil(n/2); // output array size
+		int m = (int) Math.ceil((double) n / 2); // output array size
 		double[] output = new double[m];
 		output[0] = Math.abs(signal[0])/m;
 		for (int i = 1; i < m; i++) {
@@ -920,7 +920,7 @@ public class EpochWriter {
     */
 	public static double[] getFFTpower(double[] FFT, boolean normalize) {
         final int n = FFT.length;
-        final int m = (int) Math.ceil(n/2);
+        final int m = (int) Math.ceil((double) n / 2);
 		double[] FFTpow = new double[m];
 		double Re, Im;
 
@@ -958,7 +958,7 @@ public class EpochWriter {
 		DoubleFFT_1D transformer = new DoubleFFT_1D(n);
 		double[] input = new double[n*2];
 
-		int m = 1 + (int) Math.floor(n/2); // output array size
+		int m = 1 + (int) Math.floor((double) n / 2); // output array size
 		double[] output = new double[m];
 
         for (int c = 0; c < n; c++) {
