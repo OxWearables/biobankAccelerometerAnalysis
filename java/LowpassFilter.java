@@ -115,8 +115,22 @@ public class LowpassFilter {
 	// Constructs 4th order Butterworth lowpass filter with cutoff Fc at rate Fs.
 	public LowpassFilter(double Fc, double Fs)
 	{
+
+        /* 
+         * TODO: should it support edge case Fc == Fs/2? Current implementation
+         * makes all B coefficients zero in this case
+         */
+        if (Fc >= (Fs / 2)) {
+            System.out.format(
+                "\nThe specified lowpass filter cutoff (%s) "
+                + "is >= Nyquist frequency of the sampling rate (%s), "
+                + "therefore the cutoff will be capped at %s\n\n", Fc, Fs, Fs/2
+            );
+            Fc = (Fs / 2) * 0.999d;
+        }
+
 		// Calculate normalised cut-off
-		double W = Fc / (Fs / 2);
+        double W = Math.min( (Fc / (Fs / 2)), 0.999d);  // W cannot be > 1
 
 		// Create coefficients
 		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
