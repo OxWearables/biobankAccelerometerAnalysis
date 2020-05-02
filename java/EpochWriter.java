@@ -702,8 +702,8 @@ public class EpochWriter {
 
 	private String sanDiegoFFT(double[] v) {
 
-		final int n = v.length;
         final double vMean = mean(v);
+		int n = v.length;
 		// Initialize array to compute FFT coefs
         double[] vFFT = new double[n];
         for (int i = 0; i < n; i++)  vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
@@ -753,6 +753,13 @@ public class EpochWriter {
         Note: Using the average magnitudes (instead of powers) yielded
         slightly better classification results in random forest
         */
+        // Resample to at least 30Hz to be able to compute FFT 0-14
+        final int MIN_SAMPLE_RATE = 30;
+        if (intendedSampleRate < MIN_SAMPLE_RATE) {
+            n = n / intendedSampleRate * MIN_SAMPLE_RATE;  // resampled length
+            intendedSampleRate = MIN_SAMPLE_RATE;  // new sample rate
+            v = Resample.resample(v, n);
+        }
 		final int numBins = 15;
 		double[] binnedFFT = new double[numBins];
         for (int i = 0; i < numBins; i++) binnedFFT[i] = 0;
@@ -896,7 +903,7 @@ public class EpochWriter {
 		return getFFTpower(FFT, true);
     }
 
-    /** 
+    /**
      * Get powers from FFT coefficients
 
      * The layout of FFT is as follows (computed using JTransforms, see
