@@ -15,8 +15,8 @@ from datetime import timedelta
 def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
-    mgVPA=425, activityModel="activityModels/doherty2018-apr20Update.tar",
-    intensityDistribution=False, psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
+    mgVPA=425, activityModel="doherty2018", activityModelPath=None,
+    intensityDistribution=False, psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
     verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
@@ -106,7 +106,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Predict activity from features, and add label column
     if activityClassification:
-        e, labels = accClassification.activityClassification(e, activityModel)
+        e, labels = accClassification.activityClassification(e, activityModel, activityModelPath)
     else:
         labels = []
 
@@ -132,7 +132,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         circadianRhythms.calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary)
     if m10l5:
         circadianRhythms.calculateM10L5(e, epochPeriod, summary)
- 
+
     # Main movement summaries
     writeMovementSummaries(e, labels, summary)
 
@@ -417,9 +417,9 @@ def calculateECDF(e, inputCol, summary):
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
-  
 
-    
+
+
 def writeMovementSummaries(e, labels, summary):
     """Write overall summary stats for each activity type to summary dict
 
@@ -471,5 +471,5 @@ def writeMovementSummaries(e, labels, summary):
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
 
 
-    
-    
+
+

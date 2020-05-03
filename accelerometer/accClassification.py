@@ -10,10 +10,33 @@ import sklearn.metrics as metrics
 import joblib
 import tarfile
 import warnings
+import requests
 
 
-def activityClassification(epochFile,
-    activityModel="activityModels/doherty2018-apr20Update.tar"):
+
+MODEL_URL = "http://gas.ndph.ox.ac.uk/aidend/accModels/"
+MODEL_DIR = 'activityModels'
+MODELS = {
+    "doherty2018": 'doherty2018-apr20Update.tar',
+    "willetts2018": 'willetts2018-apr20Update.tar',
+    # "doherty2018": 'doherty2018_030520.tar',  # DDMMYY
+    # "willetts2018": 'willetts2018_030520.tar',
+}
+
+
+
+def downloadModel(model):
+    url = os.path.join(MODEL_URL, MODELS[model])
+    filename = os.path.join(MODEL_DIR, MODELS[model])
+    r = requests.get(url)
+    r.raise_for_status()
+    print("Saving to", filename)
+    with open(filename, 'wb') as f:
+        f.write(r.content)
+
+
+
+def activityClassification(epochFile, activityModel="doherty2018", activityModelPath=None):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -32,6 +55,15 @@ def activityClassification(epochFile,
     :return: Activity state labels
     :rtype: list(str)
     """
+
+    if activityModelPath is not None:
+        assert os.path.isfile(activityModelPath), f"Specified classifier {activityModelPath} not found"
+    else:
+        activityModelPath = os.path.join(MODEL_DIR, MODELS[activityModel])
+        if not os.path.isfile(activityModelPath):
+            print(f"Classifier not found or current model out of date. Downloading...")
+            downloadModel(activityModel)
+    activityModel = activityModelPath
 
     X = epochFile
     featureColsFile = getFileFromTar(activityModel, 'featureCols.txt').getvalue()
