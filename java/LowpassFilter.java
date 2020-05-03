@@ -2,24 +2,48 @@
 import java.util.Arrays;
 import java.util.List;
 
-// (This inner class should probably be in another file)
 // [dgj] Butterworth 4th-order lowpass filter
-public class LowpassFilter {
+public class LowpassFilter extends Filter {
 
-	public final static int BUTTERWORTH4_ORDER = 4;
-	public final static int BUTTERWORTH4_NUM_COEFFICIENTS = (BUTTERWORTH4_ORDER + 1);
+	
+	// Constructs 4th order Butterworth lowpass filter with cutoff Fc at rate Fs.
+	public LowpassFilter(double Fc, double Fs, Boolean verbose)
+	{
+		if (Fc >= (Fs / 2)) {
+            System.out.format(
+                "\nThe specified lowpass filter cutoff (%s) "
+                + "is >= Nyquist frequency of the sampling rate (%s), "
+                + "therefore the cutoff will be capped at %s\n\n", Fc, Fs, Fs/2
+            );
+            Fc = (Fs / 2) * 0.999d;
+        }
+		// Calculate normalised cut-off
+		double W = Math.min( (Fc / (Fs / 2)), 0.999d);  // W cannot be > 1
 
-    // Filter coefficients
-    private double B[];
-    private double A[];
-    
-	// Final/initial conditions
-    private double z[];
+		// Create coefficients
+		BUTTERWORTH4_NUM_COEFFICIENTS = (BUTTERWORTH4_ORDER + 1);
+		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		A = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		
+		// Calculate coefficients
+		CoefficientsButterworth4LP(W, B, A);
+		
+		// [debug] Dump coefficients
+        if (verbose) {
+			System.out.println("B = " + Arrays.toString(B));
+			System.out.println("A = " + Arrays.toString(A));
+		}
+		
+		// Create final/initial condition tracker
+		z = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
+		reset();
+	}
+
 	
 	// Calculate coefficients for a 4th order Butterworth lowpass filter.
 	// Based on http://www.exstrom.com/journal/sigproc/
 	// Copyright (C) 2014 Exstrom Laboratories LLC
-	void CoefficientsButterworth4LP(double W, double B[], double A[])
+	private void CoefficientsButterworth4LP(double W, double B[], double A[])
 	{
 		// (Bit hacky:) treat a negative value as a high-pass
 		Boolean highpass = false;
@@ -111,86 +135,6 @@ public class LowpassFilter {
 
 		return;
 	}
-	
-	// Constructs 4th order Butterworth lowpass filter with cutoff Fc at rate Fs.
-	public LowpassFilter(double Fc, double Fs)
-	{
 
-        /* 
-         * TODO: should it support edge case Fc == Fs/2? Current implementation
-         * makes all B coefficients zero in this case
-         */
-        if (Fc >= (Fs / 2)) {
-            System.out.format(
-                "\nThe specified lowpass filter cutoff (%s) "
-                + "is >= Nyquist frequency of the sampling rate (%s), "
-                + "therefore the cutoff will be capped at %s\n\n", Fc, Fs, Fs/2
-            );
-            Fc = (Fs / 2) * 0.999d;
-        }
 
-		// Calculate normalised cut-off
-        double W = Math.min( (Fc / (Fs / 2)), 0.999d);  // W cannot be > 1
-
-		// Create coefficients
-		B = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		A = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		
-		// Calculate coefficients
-		CoefficientsButterworth4LP(W, B, A);
-		
-		// [debug] Dump coefficients
-        Boolean debug = false;
-		if (debug) {
-			System.out.println("B = " + Arrays.toString(B));
-			System.out.println("A = " + Arrays.toString(A));
-		}
-		
-		// Create final/initial condition tracker
-		z = new double[BUTTERWORTH4_NUM_COEFFICIENTS];
-		reset();
-	}
-	
-	// Reset state tracking
-	public void reset() {
-		for (int i = 0; i < z.length; i++) { 
-			z[i] = 0; 
-		}
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(double[] X, int offset, int count) {
-		int m, i;
-		
-		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
-		for (m = offset; m < offset + count; m++) {
-			double oldXm = X[m];
-			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
-			}
-			X[m] = newXm;
-		}
-	}
-	
-	// Additionally, returns the filtered-out signal
-	public double[] filterWithRemainder(double[] X, int offset, int count) {
-		double[] remainder = X.clone();
-		filter(X, offset, count);
-		for (int m = 0; m < X.length; m++) {
-			if (m<offset || m>=offset+count) {
-				remainder[m] = 0;
-			} else {
-				remainder[m] = X[m] - remainder[m];
-			}
-		}
-		return remainder;
-	}
-	
-	// Apply the filter to the specified data
-	public void filter(double[] X) {
-		filter(X, 0, X.length);
-	}		
-
-	
 }

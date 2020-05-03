@@ -32,13 +32,13 @@ public class NpyWriter {
 	// buffer file output so it's faster
 	private int bufferLength = 1000; // number of lines to buffer
 	private int bytesPerLine = (Long.BYTES + Float.BYTES * 3);
-//	private int bufferPosition = 0;
 	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
 	private char numpyByteOrder = nativeByteOrder==ByteOrder.BIG_ENDIAN ? '>' : '<';
 	private ByteBuffer lineBuffer = ByteBuffer.allocate(bufferLength * bytesPerLine).order(nativeByteOrder);
 	// column names and types (must remain the same after initialization)
 	private ArrayList<Class> itemTypes = new ArrayList<Class>();
 	private ArrayList<String> itemNames= new ArrayList<String>();
+
 
 	/**
 	 * Opens a .npy file for writing (contents are erased) and initializes a dummy header.
@@ -60,15 +60,13 @@ public class NpyWriter {
 			itemTypes.add(Float.class);itemNames.add("x");
 			itemTypes.add(Float.class);itemNames.add("y");
 			itemTypes.add(Float.class);itemNames.add("z");
-			// System.out.println(itemNames.toString());
-			// System.out.println(itemTypes.toString());
-			// System.out.println("order = "+ lineBuffer.order().toString());
-			// System.out.println("numpy order = "+ numpyByteOrder);
 
 		} catch (IOException e) {
 			throw new RuntimeException("The .npy file " + outputFile +" could not be created");
 		}
 	}
+
+
 	public void writeData(long time, Float x, Float y, Float z) throws IOException {
 		lineBuffer.putLong(time);
 		lineBuffer.putFloat(x);
@@ -81,8 +79,8 @@ public class NpyWriter {
 
 		linesWritten+=1;
 		if (linesWritten % 10000000 == 0) {writeHeader(); System.out.print(linesWritten +" ");}
-
 	}
+
 
 	/**
 	 * Updates the file's header based on the arrayType and number of array elements written thus far.
@@ -122,7 +120,6 @@ public class NpyWriter {
 
 			writeLEShort (raf, (short) HEADER_SIZE);
 
-
 			raf.writeBytes(dataHeader);
 			raf.seek(raf.length());
 
@@ -131,6 +128,7 @@ public class NpyWriter {
 			throw new RuntimeException("The .npy file could not write a header created");
 		}
 	}
+
 
 	/**
 	 * Writes a little-endian short to the given output stream
@@ -147,6 +145,8 @@ public class NpyWriter {
 		out.writeShort( value );
 
 	}
+
+
 	/**
 	 * Writes a little-endian int to the given output stream
 	 * @param out the stream
@@ -161,6 +161,7 @@ public class NpyWriter {
 		out.writeByte((value >> 16) & 0x00FF);
 		out.writeByte((value >> 24) & 0x00FF);
 	}
+
 
 	/**
 	 * Converts a Java class to a python datatype String
@@ -181,6 +182,7 @@ public class NpyWriter {
 			throw new IllegalArgumentException("Don't know the corresponding Python datatype for " + datatype.getSimpleName());
     }
 
+
     private void compress() {
         try {
             GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(outputFile+".gz")));
@@ -195,6 +197,7 @@ public class NpyWriter {
             e.printStackTrace();
         }
     }
+
 
 	public void close() {
 		writeHeader(); // ensure header is correct length
@@ -225,4 +228,6 @@ public class NpyWriter {
 
 		System.out.println("npyWriter was shut down correctly");
     }
+
+    
 }

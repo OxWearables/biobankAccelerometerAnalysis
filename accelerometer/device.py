@@ -15,11 +15,11 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xIntercept=0.0,
     yIntercept=0.0, zIntercept=0.0, xSlope=0.0, ySlope=0.0,
     zSlope=0.0, xTemp=0.0, yTemp=0.0, zTemp=0.0, meanTemp=20.0,
-    rawDataParser="AxivityAx3Epochs", javaHeapSpace=None,
+    rawDataParser="AccelerometerParser", javaHeapSpace=None,
     skipFiltering=False, sampleRate=100, epochPeriod=30,
-    useAbs=False, activityClassification=True,
+    activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
-    fftOutput=False, startTime=None, endTime=None,
+    startTime=None, endTime=None,
     verbose=False, timeZoneOffset=0,
     csvStartTime=None, csvSampleRate=None, csvTimeFormat=None, csvStartRow=None, csvXYZTCols=None):
     """Process raw accelerometer file, writing summary epoch stats to file
@@ -53,7 +53,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param bool skipFiltering: Skip filtering stage
     :param int sampleRate: Resample data to n Hz
     :param int epochPeriod: Size of epoch time window (in seconds)
-    :param bool useAbs: Use abs(VM) instead of trunc(VM)
     :param bool activityClassification: Extract features for machine learning
     :param bool rawOutput: Output calibrated and resampled raw data to a .csv.gz
         file? requires ~50MB/day.
@@ -61,7 +60,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param bool npyOutput: Output calibrated and resampled raw data to a .npy
         file? requires ~60MB/day.
     :param str npyFile: Output raw data ".npy" filename
-    :param bool fftOutput: Output FFT epochs to a .csv.gz file? requires ~100MB/day.
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
@@ -163,15 +161,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             "rawFile:" + str(rawFile),
             "npyOutput:" + str(npyOutput),
             "npyFile:" + str(npyFile),
-            "fftOutput:" + str(fftOutput),
-            "getEpochCovariance:True",
-            "getSanDiegoFeatures:" + str(activityClassification),
-            "getMADFeatures:" + str(activityClassification),
-            "getAxisMeans:" + str(activityClassification),
-            "getUnileverFeatures:" + str(activityClassification),
-            "getEachAxis:" + str(activityClassification),
-            "get3DFourier:" + str(activityClassification),
-            "useAbs:" + str(useAbs)]
+            "getFeatures:" + str(activityClassification)]
         if javaHeapSpace:
             commandArgs.insert(1, javaHeapSpace)
         if startTime:
@@ -247,10 +237,12 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         axesVals = staticBoutsFile[['xMean','yMean','zMean']].values
         tempVals = staticBoutsFile[['temperature']].values
     else:
-        d = np.loadtxt(open(staticBoutsFile,"rb"),delimiter=",",skiprows=1,
-                usecols=(2,3,4,11,13))
+        cols = ['xMean', 'yMean', 'zMean', 'temp', 'dataErrors']
+        d = pd.read_csv(staticBoutsFile, usecols=cols)
+        d = d.to_numpy()
         if len(d)<=5:
-            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], [0.0,0.0,0.0], 20, np.nan, np.nan,
+            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], 
+                [0.0,0.0,0.0], 20, np.nan, np.nan,
                 np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
             return
         stationaryPoints = d[d[:,4] == 0] # don't consider episodes with data errors
@@ -305,7 +297,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         # highlight problem with regression, and exit
         xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
         xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
-        sys.stderr.write('WARNING: Calibration error\n ' + exceptStr)
+        sys.stderr.write('WARNING: Calibration error\n ' + str(exceptStr))
     # store output to summary dictionary
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
         bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,

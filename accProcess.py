@@ -66,10 +66,6 @@ def main():
                             metavar='Hz, or samples/second', default=100,
                             type=int, help="""resample data to n Hz (default
                              : %(default)ss, must be an integer)""")
-    parser.add_argument('--useAbs',
-                            metavar='useAbs', default=False, type=str2bool,
-                            help="""use abs(VM) instead of trunc(VM)
-                            (default : %(default)s)""")
     parser.add_argument('--skipFiltering',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Skip filtering stage
@@ -139,7 +135,7 @@ def main():
                             help="""VPA threshold (default : %(default)s)""")
     # calling helper processess and conducting multi-threadings
     parser.add_argument('--rawDataParser',
-                            metavar="rawDataParser", default="AxivityAx3Epochs",
+                            metavar="rawDataParser", default="AccelerometerParser",
                             type=str,
                             help="""file containing a java program to process
                             raw .cwa binary file, must end with .class (omitted)
@@ -168,10 +164,6 @@ def main():
                             help="""output calibrated and resampled raw data to
                             .npy file? NOTE: requires ~60MB per day.
                             (default : %(default)s)""")
-    parser.add_argument('--fftOutput',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""output FFT epochs to a .csv file? NOTE:
-                            requires ~0.1GB per day. (default : %(default)s)""")
     # optional outputs
     parser.add_argument('--outputFolder', metavar='filename',default="",
                             help="""folder for all of the output files, \
@@ -323,11 +315,10 @@ def main():
             meanTemp=args.meanTemp, rawDataParser=args.rawDataParser,
             javaHeapSpace=args.javaHeapSpace, skipFiltering=args.skipFiltering,
             sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
-            useAbs=args.useAbs, activityClassification=args.activityClassification,
+            activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawFile=args.rawFile,
             npyOutput=args.npyOutput, npyFile=args.npyFile,
-            fftOutput=args.fftOutput, startTime=args.startTime,
-            endTime=args.endTime, verbose=args.verbose, 
+            startTime=args.startTime, endTime=args.endTime, verbose=args.verbose, 
             timeZoneOffset=args.timeZoneOffset,
             csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
             csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
