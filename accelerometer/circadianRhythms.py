@@ -23,24 +23,18 @@ def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
     :return: Write dict <summary> keys 'PSD-<W/Hz>'
     """
     if fourierWithAcc:
-        y = (e['accImputed'])
+        y = e['accImputed'].values
     else:
-        cols = []
-        # get imputed variable names for each activity type
-        # NB - make sure sleep comes first
-        for accType in labels:
-            col = accType + 'Imputed'
-            cols += [col]
-      
-        idx = cols.index('sleepImputed') #gets index of sleep label
-        # collects the sleep column from data frame assumes sleep if it is the highest imputed value
-        y = (np.argmax(e[cols].values, axis=1) == idx).astype('int')*2-1
+        cols = [label+'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
+        y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
+        y = y.values.astype('int')  # e.g. [0,0,0,1,1,0,0,1,...]
+        y = 2 * y - 1  # center the signal, [0,1] -> [-1,1]
         
     n = len(y)
     k = len(y)*epochPeriod/(60*60*24)
-    e = -2.j * np.pi * k * np.arange(n) / n
-    # finds the power spectral density for a one day cycle using fourier analysis 
-    res = np.sum(np.exp(e) * y, axis=-1)/n
+    a = -2.j * np.pi * k * np.arange(n) / n
+    # Find the power spectral density for a one day cycle using fourier analysis 
+    res = np.sum(np.exp(a) * y) / n
     PSD = np.abs(res)**2
     summary['PSD'] = PSD
 
@@ -58,29 +52,23 @@ def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
     :return: Write dict <summary> keys 'fourier frequency-<1/days>'
     """
     if fourierWithAcc:
-        y = (e['accImputed'])
+        y = e['accImputed'].values
     else:
-        cols = []
-        # get imputed variable names for each activity type
-        # NB - make sure sleep comes first
-        for accType in labels:
-            col = accType + 'Imputed'
-            cols += [col]
-            
-        idx = cols.index('sleepImputed') #gets index of sleep label
-        # collects the sleep column from data frame assumes sleep if it is the highest imputed value
-        y = (np.argmax(e[cols].values, axis=1) == idx).astype('int')*2-1
+        cols = [label+'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
+        y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
+        y = y.values.astype('int')  # e.g. [0,0,0,1,1,0,0,1,...]
+        y = 2 * y - 1  # center the signal, [0,1] -> [-1,1]
         
-    # fast fourier transform of the sleep column 
+    # Fast fourier transform of the sleep column 
     fft_y = np.abs(fftpack.fft(y))
     
     i =  np.arange(1,len(fft_y)) 
     k_max = np.argmax(fft_y[i]) + 1
     n = len(y)
-    # maximises the fourier transform function (func) using the fft_y as a first esitmate 
-    func = lambda k: -np.abs(np.sum(np.exp(-2.j * np.pi * k * np.arange(n) / n) * y, axis=-1)/n)
-    res = sp.optimize.minimize_scalar(func, bracket = (k_max-1,k_max+1)) 
-    #adjusts the frequency to have the units 1/days
+    # Maximise the fourier transform function (func) using the fft_y as a first esitmate 
+    func = lambda k: -np.abs(np.sum(np.exp(-2.j * np.pi * k * np.arange(n) / n) * y) / n)
+    res = sp.optimize.minimize_scalar(func, bracket=(k_max-1,k_max+1)) 
+    # Adjust the frequency to have the units 1/days
     freq_mx = float(res.x)/(len(y)*epochPeriod/(60*60*24))
     summary['fourier-frequency'] = freq_mx
 
