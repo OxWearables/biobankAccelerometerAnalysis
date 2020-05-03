@@ -723,7 +723,7 @@ public class EpochWriter {
             if (p <= 0) continue;  // skip to next loop if power is non-positive
             H += -p * Math.log(p + 1E-8);
         }
-        H /= Math.log(vFFTpow.length);  // Normalize spectral entropy
+        H /= Math.log(n);  // Normalize spectral entropy
 
         /*
         Find dominant frequencies overall, also between 0.3Hz and 3Hz
@@ -896,7 +896,7 @@ public class EpochWriter {
 		return getFFTpower(FFT, true);
     }
 
-    /** 
+    /**
      * Get powers from FFT coefficients
 
      * The layout of FFT is as follows (computed using JTransforms, see
@@ -942,7 +942,7 @@ public class EpochWriter {
 
         if (normalize) {
             // Divide by length of the signal
-            for (int i=0; i<m; i++) FFTpow[i] /= n;
+            for (int i=0; i<m; i++) FFTpow[i] /= n*n;
         }
 
         return FFTpow;
