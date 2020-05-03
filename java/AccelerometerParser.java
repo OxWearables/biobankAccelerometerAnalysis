@@ -53,8 +53,6 @@ public class AccelerometerParser {
     	int epochPeriod = 30;
     	DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("M/d/yyyy,HH:mm:ss.SSSS");
-    	boolean getEpochCovariance = false;
-    	boolean getAxisMeans = false;
     	boolean getStationaryBouts = false;
     	double stationaryStd = 0.013;
     	double[] swIntercept = new double[] { 0.0, 0.0, 0.0 };
@@ -67,12 +65,7 @@ public class AccelerometerParser {
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
     	int timeZoneOffset = 0;
-    	boolean getSanDiegoFeatures = false;
-    	boolean getMADFeatures = false;
-    	boolean getUnileverFeatures = false;
-    	boolean get3DFourier = true;
-    	boolean getEachAxis = true;
-    	boolean useAbs = false;
+    	boolean getFeatures = false;
     	int numFFTbins = 15; // number of fft bins to print
 
     	// Must supply additional information when loading from a .csv file
@@ -125,10 +118,6 @@ public class AccelerometerParser {
 					timeFormat = DateTimeFormatter.ofPattern(funcParam);
 				} else if (funcName.equals("filter")) {
 					useFilter = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("getEpochCovariance")) {
-					getEpochCovariance = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("getAxisMeans")) {
-					getAxisMeans = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("getStationaryBouts")) {
 					getStationaryBouts = Boolean.parseBoolean(funcParam.toLowerCase());
 					epochPeriod = 10;
@@ -166,8 +155,6 @@ public class AccelerometerParser {
                     npyOutput = Boolean.parseBoolean(funcParam.toLowerCase());
                 } else if (funcName.equals("npyFile")) {
 					npyFile = funcParam;
-				} else if (funcName.equals("useAbs")) {
-					useAbs = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("startTime")) {
 					try {
 						startTime = dateFormat.parse(funcParam).getTime();
@@ -197,16 +184,8 @@ public class AccelerometerParser {
 
 				} else if (funcName.equals("csvStartRow")) {
 					csvStartRow = Integer.parseInt(funcParam);
-				} else if (funcName.equals("getSanDiegoFeatures")) {
-					getSanDiegoFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("getMADFeatures")) {
-					getMADFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("getUnileverFeatures")) {
-					getUnileverFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("get3DFourier")) {
-					get3DFourier = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("getEachAxis")) {
-					getEachAxis = Boolean.parseBoolean(funcParam.toLowerCase());
+				} else if (funcName.equals("getFeatures")) {
+					getFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("numFFTbins")) {
 					numFFTbins = Integer.parseInt(funcParam);
 				} else if (funcName.equals("csvStartTime")) {
@@ -232,10 +211,9 @@ public class AccelerometerParser {
 			System.out.println("Intermediate file: " + outputFile);
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
-        		npyFile, getAxisMeans, getSanDiegoFeatures, getMADFeatures, getUnileverFeatures,
-        		get3DFourier, getEachAxis, numFFTbins, useAbs, timeFormat,
+        		npyFile, getFeatures, numFFTbins, timeFormat,
         		epochPeriod, sampleRate, range, swIntercept, swSlope, tempCoef,
-        		meanTemp, getStationaryBouts, stationaryStd, getEpochCovariance,
+        		meanTemp, getStationaryBouts, stationaryStd,
         		startTime, endTime, verbose
    				);
 

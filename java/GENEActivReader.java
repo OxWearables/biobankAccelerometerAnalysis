@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 
 /**
- * Calculates epoch summaries from an AX3 .CWA file.
+ * Calculates epoch summaries from an GENEActiv .bin file.
  */
 public class GENEActivReader extends DeviceReader {
 

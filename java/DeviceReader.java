@@ -31,14 +31,8 @@ public class DeviceReader {
         String rawFile,
         boolean npyOutput,
         String npyFile,
-        boolean getAxisMeans,
-        boolean getSanDiegoFeatures,
-        boolean getMADFeatures,
-        boolean getUnileverFeatures,
-        boolean get3DFourier,
-        boolean getEachAxis,
+        boolean getFeatures,
         int numFFTbins,
-        boolean useAbs,
         DateTimeFormatter timeFormat,
         int epochPeriod,
         int sampleRate,
@@ -49,7 +43,6 @@ public class DeviceReader {
         double meanTemp,
         boolean getStationaryBouts,
         double stationaryStd,
-        boolean getEpochCovariance,
         long startTime,
         long endTime,
         boolean verbose
@@ -102,17 +95,10 @@ public class DeviceReader {
                   getStationaryBouts,
                   stationaryStd,
                   filter,
-                  getEpochCovariance,
-                  getAxisMeans,
                   startTime,
                   endTime,
-                  getSanDiegoFeatures,
-                  getMADFeatures,
-                  getUnileverFeatures,
-                  get3DFourier,
-                  getEachAxis,
-                  numFFTbins,
-                  useAbs
+                  getFeatures,
+                  numFFTbins
                   );
         } catch (IOException excep) {
             excep.printStackTrace(System.err);

@@ -66,10 +66,6 @@ def main():
                             metavar='Hz, or samples/second', default=100,
                             type=int, help="""resample data to n Hz (default
                              : %(default)ss, must be an integer)""")
-    parser.add_argument('--useAbs',
-                            metavar='useAbs', default=False, type=str2bool,
-                            help="""use abs(VM) instead of trunc(VM)
-                            (default : %(default)s)""")
     parser.add_argument('--skipFiltering',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Skip filtering stage
@@ -319,7 +315,7 @@ def main():
             meanTemp=args.meanTemp, rawDataParser=args.rawDataParser,
             javaHeapSpace=args.javaHeapSpace, skipFiltering=args.skipFiltering,
             sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
-            useAbs=args.useAbs, activityClassification=args.activityClassification,
+            activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawFile=args.rawFile,
             npyOutput=args.npyOutput, npyFile=args.npyFile,
             startTime=args.startTime, endTime=args.endTime, verbose=args.verbose, 
