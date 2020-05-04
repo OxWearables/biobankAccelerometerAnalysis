@@ -12,9 +12,8 @@ import sys
 
 
 def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
-    skipCalibration=False, stationaryStd=13, xIntercept=0.0,
-    yIntercept=0.0, zIntercept=0.0, xSlope=0.0, ySlope=0.0,
-    zSlope=0.0, xTemp=0.0, yTemp=0.0, zTemp=0.0, meanTemp=20.0,
+    skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
+    xyzSlope=[1.0, 1.0, 1.0], xyzTemp=[0.0, 0.0, 0.0], meanTemp=20.0,
     rawDataParser="AccelerometerParser", javaHeapSpace=None,
     useFilter=True, sampleRate=100, epochPeriod=30,
     activityClassification=True,
@@ -36,15 +35,9 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param dict summary: Output dictionary containing all summary metrics
     :param bool skipCalibration: Perform software calibration (process data twice)
     :param int stationaryStd: Gravity threshold (in mg units) for stationary vs not
-    :param float xIntercept: Calbiration offset x
-    :param float yIntercept: Calbiration offset y
-    :param float zIntercept: Calbiration offset z
-    :param float xSlope: Calbiration slope x
-    :param float ySlope: Calbiration slope y
-    :param float zSlope: Calbiration slope z
-    :param float xTemp: Calbiration temperature coefficient x
-    :param float yTemp: Calbiration temperature coefficient y
-    :param float zTemp: Calbiration temperature coefficient z
+    :param list(float) xyzIntercept: Calbiration offset [x, y, z]
+    :param list(float) xyzSlope: Calbiration slope [x, y, z]
+    :param list(float) xyzTemp: Calbiration temperature coefficient [x, y, z]
     :param float meanTemp: Calibration mean temperature in file
     :param str rawDataParser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
@@ -88,6 +81,10 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     javaClassPath = "java:java/JTransforms-3.1-with-dependencies.jar"
     staticStdG = stationaryStd / 1000.0 #java expects units of G (not mg)
 
+    if xyzIntercept != [0, 0 ,0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
+        skipCalibration = True
+        print('\nSkipping calibration as input parameter supplied')
+
     if 'omconvert' in rawDataParser:
         useJava = False
 
@@ -124,19 +121,18 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
                 sys.exit(-6)
             # record calibrated axes scale/offset/temp vals + static point stats
             getCalibrationCoefs(stationaryFile, summary)
-            xIntercept = summary['calibration-xOffset(g)']
-            yIntercept = summary['calibration-yOffset(g)']
-            zIntercept = summary['calibration-zOffset(g)']
-            xSlope = summary['calibration-xSlope(g)']
-            ySlope = summary['calibration-ySlope(g)']
-            zSlope = summary['calibration-zSlope(g)']
-            xTemp = summary['calibration-xTemp(C)']
-            yTemp = summary['calibration-yTemp(C)']
-            zTemp = summary['calibration-zTemp(C)']
+            xyzIntercept = [summary['calibration-xOffset(g)'],
+                            summary['calibration-yOffset(g)'], 
+                            summary['calibration-zOffset(g)']]
+            xyzSlope = [summary['calibration-xSlope(g)'], 
+                        summary['calibration-ySlope(g)'],
+                        summary['calibration-zSlope(g)']]
+            xyzTemp = [summary['calibration-xTemp(C)'], 
+                        summary['calibration-yTemp(C)'],
+                        summary['calibration-zTemp(C)']]
             meanTemp = summary['calibration-meanDeviceTemp(C)']
         else:
-            storeCalibrationParams(summary, xIntercept, yIntercept, zIntercept,
-                    xSlope, ySlope, zSlope, xTemp, yTemp, zTemp, meanTemp)
+            storeCalibrationParams(summary, xyzIntercept, xyzSlope, xyzTemp, meanTemp)
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
@@ -146,15 +142,15 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             "outputFile:" + epochFile, "verbose:" + str(verbose),
             "filter:"+str(useFilter),
             "sampleRate:" + str(sampleRate),
-            "xIntercept:" + str(xIntercept),
-            "yIntercept:" + str(yIntercept),
-            "zIntercept:" + str(zIntercept),
-            "xSlope:" + str(xSlope),
-            "ySlope:" + str(ySlope),
-            "zSlope:" + str(zSlope),
-            "xTemp:" + str(xTemp),
-            "yTemp:" + str(yTemp),
-            "zTemp:" + str(zTemp),
+            "xIntercept:" + str(xyzIntercept[0]),
+            "yIntercept:" + str(xyzIntercept[1]),
+            "zIntercept:" + str(xyzIntercept[2]),
+            "xSlope:" + str(xyzSlope[0]),
+            "ySlope:" + str(xyzSlope[1]),
+            "zSlope:" + str(xyzSlope[2]),
+            "xTemp:" + str(xyzTemp[0]),
+            "yTemp:" + str(xyzTemp[1]),
+            "zTemp:" + str(xyzTemp[2]),
             "meanTemp:" + str(meanTemp),
             "epochPeriod:" + str(epochPeriod),
             "rawOutput:" + str(rawOutput),
@@ -197,12 +193,12 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             calArgs = str(xSlope) + ','
             calArgs += str(ySlope) + ','
             calArgs += str(zSlope) + ','
-            calArgs += str(xIntercept) + ','
-            calArgs += str(yIntercept) + ','
-            calArgs += str(zIntercept) + ','
-            calArgs += str(xTemp) + ','
-            calArgs += str(yTemp) + ','
-            calArgs += str(zTemp) + ','
+            calArgs += str(xyzIntercept[0]) + ','
+            calArgs += str(xyzIntercept[1]) + ','
+            calArgs += str(xyzIntercept[2]) + ','
+            calArgs += str(xyzTemp[0]) + ','
+            calArgs += str(xyzTemp[1]) + ','
+            calArgs += str(xyzTemp[2]) + ','
             calArgs += str(meanTemp)
             commandArgs = [rawDataParser, inputFile, "-svm-file",
                 epochFile, "-info", stationaryFile,
@@ -376,9 +372,7 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
     # store output to summary dictionary
     summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initError*1000, 2)
     summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestError*1000, 2)
-    storeCalibrationParams(summary, bestIntercept[0], bestIntercept[1],
-            bestIntercept[2], bestSlope[0], bestSlope[1], bestSlope[2],
-            bestTemp[0], bestTemp[1], bestTemp[2], meanTemp)
+    storeCalibrationParams(summary, bestIntercept, bestSlope, bestTemp, meanTemp)
     summary['calibration-numStaticPoints'] = nStatic
     summary['calibration-staticXmin(g)'] = accUtils.formatNum(xMin, 2)
     summary['calibration-staticXmax(g)'] = accUtils.formatNum(xMax, 2)
@@ -399,20 +393,13 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
 
 
 
-def storeCalibrationParams(summary, xOff, yOff, zOff, xSlope, ySlope, zSlope,
-        xTemp, yTemp, zTemp, meanTemp):
+def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzTemp, meanTemp):
     """Store calibration parameters to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
-    :param float xOff: x intercept
-    :param float yOff: y intercept
-    :param float zOff: z intercept
-    :param float xSlope: x slope
-    :param float ySlope: y slope
-    :param float zSlope: z slope
-    :param float xTemp: x temperature
-    :param float yTemp: y temperature
-    :param float zTemp: z temperature
+    :param list(float) xyzOff: intercept [x, y, z]
+    :param list(float) xyzSlope: slope [x, y, z]
+    :param list(float) xyzTemp: temperature [x, y, z]
     :param float meanTemp: Calibration mean temperature in file
 
     :return: Calibration summary values written to dict <summary>
@@ -420,15 +407,15 @@ def storeCalibrationParams(summary, xOff, yOff, zOff, xSlope, ySlope, zSlope,
     """
 
     # store output to summary dictionary
-    summary['calibration-xOffset(g)'] = accUtils.formatNum(xOff, 4)
-    summary['calibration-yOffset(g)'] = accUtils.formatNum(yOff, 4)
-    summary['calibration-zOffset(g)'] = accUtils.formatNum(zOff, 4)
-    summary['calibration-xSlope(g)'] = accUtils.formatNum(xSlope, 4)
-    summary['calibration-ySlope(g)'] = accUtils.formatNum(ySlope, 4)
-    summary['calibration-zSlope(g)'] = accUtils.formatNum(zSlope, 4)
-    summary['calibration-xTemp(C)'] = accUtils.formatNum(xTemp, 4)
-    summary['calibration-yTemp(C)'] = accUtils.formatNum(yTemp, 4)
-    summary['calibration-zTemp(C)'] = accUtils.formatNum(zTemp, 4)
+    summary['calibration-xOffset(g)'] = accUtils.formatNum(xyzOff[0], 4)
+    summary['calibration-yOffset(g)'] = accUtils.formatNum(xyzOff[1], 4)
+    summary['calibration-zOffset(g)'] = accUtils.formatNum(xyzOff[2], 4)
+    summary['calibration-xSlope(g)'] = accUtils.formatNum(xyzSlope[0], 4)
+    summary['calibration-ySlope(g)'] = accUtils.formatNum(xyzSlope[1], 4)
+    summary['calibration-zSlope(g)'] = accUtils.formatNum(xyzSlope[2], 4)
+    summary['calibration-xTemp(C)'] = accUtils.formatNum(xyzTemp[0], 4)
+    summary['calibration-yTemp(C)'] = accUtils.formatNum(xyzTemp[1], 4)
+    summary['calibration-zTemp(C)'] = accUtils.formatNum(xyzTemp[2], 4)
     summary['calibration-meanDeviceTemp(C)'] = accUtils.formatNum(meanTemp, 2)
 
 
