@@ -14,9 +14,11 @@ from datetime import timedelta
 
 def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
-    epochPeriod=30, stationaryStd=13, minNonWearDuration=60, mgMVPA=100,
-    mgVPA=425, activityModel="activityModels/doherty2018-apr20Update.tar",
-    intensityDistribution=False, psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
+    epochPeriod=30, stationaryStd=13, minNonWearDuration=60, 
+    mgMVPA=100, mgVPA=425, 
+    activityModel="activityModels/doherty2018-apr20Update.tar",
+    intensityDistribution=False, useRecommendedImputation=True,
+    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
     verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
@@ -44,6 +46,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
     :param bool intensityDistribution: Add intensity outputs to dict <summary>
+    :param bool useRecommendedImputation: Highly recommended method to impute 
+        missing data using data from other days around the same time
     :param bool verbose: Print verbose output
 
     :return: Pandas dataframe of activity epoch data
@@ -120,10 +124,10 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     e = perform_wearTime_imputation(e, verbose)
     e['MVPA'] = e['accImputed'] >= mgMVPA
     e['VPA'] = e['accImputed'] >= mgVPA
-
+    
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
-        calculateECDF(e, 'acc', summary)
+        calculateECDF(e, 'acc', summary, useRecommendedImputation)
 
     # Calculate circadian metrics
     if psd:
@@ -134,7 +138,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         circadianRhythms.calculateM10L5(e, epochPeriod, summary)
  
     # Main movement summaries
-    writeMovementSummaries(e, labels, summary)
+    writeMovementSummaries(e, labels, summary, useRecommendedImputation)
 
     # Return physical activity summary
     return e, labels
@@ -345,7 +349,7 @@ def perform_wearTime_imputation(e, verbose):
     # Now wearTime weight values
     for col in wearTimeWeights:
         e[col+'Imputed'] = e[col].fillna(e[col+'_imputed'])
-
+    
     if verbose:
         # Features averaged over epochs - use imputed version of features for this.
         # This ignores rows with NaN and infinities
@@ -360,7 +364,7 @@ def perform_wearTime_imputation(e, verbose):
 
 
 
-def calculateECDF(e, inputCol, summary):
+def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     """Calculate activity intensity empirical cumulative distribution
 
     The input data must not be imputed, as ECDF requires different imputation
@@ -376,6 +380,8 @@ def calculateECDF(e, inputCol, summary):
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param str inputCol: Column to calculate intensity distribution on
     :param dict summary: Output dictionary containing all summary metrics
+    :param bool useRecommendedImputation: Highly recommended method to impute 
+        missing data using data from other days around the same time
 
     :return: Write dict <summary> keys '<inputCol>-ecdf-<level...>mg'
     :rtype: void
@@ -408,7 +414,10 @@ def calculateECDF(e, inputCol, summary):
         for col, imputed, adjusted in zip(cols, colsImputed, colsAdjusted):
             ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
 
-        accEcdf = ecdfData[colsAdjusted].mean()
+        if useRecommendedImputation:
+            accEcdf = ecdfData[colsAdjusted].mean()
+        else:
+            accEcdf = ecdfData[cols].mean()
     else:
         accEcdf = pd.Series(data=[0.0 for i in ecdfXVals],
                             index=[str(i)+'Adjusted' for i in ecdfXVals])
@@ -420,12 +429,14 @@ def calculateECDF(e, inputCol, summary):
   
 
     
-def writeMovementSummaries(e, labels, summary):
+def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
     """Write overall summary stats for each activity type to summary dict
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
+    :param bool useRecommendedImputation: Highly recommended method to impute 
+        missing data using data from other days around the same time
 
     :return: Write dict <summary> keys for each activity type 'overall-<avg/sd>',
         'week<day/end>-avg', '<day..>-avg', 'hourOfDay-<hr..>-avg',
@@ -441,7 +452,9 @@ def writeMovementSummaries(e, labels, summary):
 
     # Sumarise each type by: overall, week day/end, day, and hour of day
     for accType in activityTypes:
-        col = accType + 'Imputed'
+        col = accType
+        if useRecommendedImputation:
+            col += 'Imputed'
         if accType in ['MVPA', 'VPA']:
             col = accType
 

@@ -94,6 +94,17 @@ def main():
                             type=str, help="""index of column positions for XYZT columns, 
                             e.g. "0,1,2,3" (default
                              : %(default)s)""")
+    # optional outputs
+    parser.add_argument('--rawOutput',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""output calibrated and resampled raw data to
+                            a .csv.gz file? NOTE: requires ~50MB per day.
+                            (default : %(default)s)""")
+    parser.add_argument('--npyOutput',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""output calibrated and resampled raw data to
+                            .npy file? NOTE: requires ~60MB per day.
+                            (default : %(default)s)""")
     # calibration parameters
     parser.add_argument('--skipCalibration',
                             metavar='True/False', default=False, type=str2bool,
@@ -133,18 +144,15 @@ def main():
     parser.add_argument('--mgVPA',
                             metavar="mg", default=425, type=int,
                             help="""VPA threshold (default : %(default)s)""")
-    # calling helper processess and conducting multi-threadings
-    parser.add_argument('--rawDataParser',
-                            metavar="rawDataParser", default="AccelerometerParser",
-                            type=str,
-                            help="""file containing a java program to process
-                            raw .cwa binary file, must end with .class (omitted)
+    parser.add_argument('--intensityDistribution',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Save intensity distribution
                              (default : %(default)s)""")
-    parser.add_argument('--javaHeapSpace',
-                            metavar="amount in MB", default="", type=str,
-                            help="""amount of heap space allocated to the java
-                            subprocesses,useful for limiting RAM usage (default
-                            : unlimited)""")
+    parser.add_argument('--useRecommendedImputation',
+                            metavar='True/False', default=True, type=str2bool,
+                            help="""Highly recommended method to impute missing 
+                            data using data from other days around the same time
+                             (default : %(default)s)""")
     # activity classification arguments
     parser.add_argument('--activityClassification',
                             metavar='True/False', default=True, type=str2bool,
@@ -154,16 +162,27 @@ def main():
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/doherty2018-apr20Update.tar",
                             help="""trained activity model .tar file""")
-    parser.add_argument('--rawOutput',
+    
+    # circadian rhythm options
+    parser.add_argument('--psd',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output calibrated and resampled raw data to
-                            a .csv.gz file? NOTE: requires ~50MB per day.
-                            (default : %(default)s)""")
-    parser.add_argument('--npyOutput',
+                            help="""Calculate power spectral density for 24 hour 
+                                    circadian period
+                             (default : %(default)s)""")
+    parser.add_argument('--fourierFrequency',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""output calibrated and resampled raw data to
-                            .npy file? NOTE: requires ~60MB per day.
-                            (default : %(default)s)""")
+                            help="""Calculate dominant frequency of sleep for circadian rhythm analysis
+                             (default : %(default)s)""")
+    parser.add_argument('--fourierWithAcc',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""True will do the Fourier analysis of circadian rhythms (for PSD and Fourier Frequency) with 
+                                    acceleration data instead of sleep signal
+                             (default : %(default)s)""") 
+    parser.add_argument('--m10l5',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Calculate relative amplitude of most and 
+                                    least active acceleration periods for circadian rhythm analysis
+                             (default : %(default)s)""")
     # optional outputs
     parser.add_argument('--outputFolder', metavar='filename',default="",
                             help="""folder for all of the output files, \
@@ -191,29 +210,18 @@ def main():
                             metavar='True/False', default=True, type=str2bool,
                             help="""True will remove extra "helper" files created
                                     by the program (default : %(default)s)""")
-    parser.add_argument('--intensityDistribution',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""Save intensity distribution
+    # calling helper processess and conducting multi-threadings
+    parser.add_argument('--rawDataParser',
+                            metavar="rawDataParser", default="AccelerometerParser",
+                            type=str,
+                            help="""file containing a java program to process
+                            raw .cwa binary file, must end with .class (omitted)
                              (default : %(default)s)""")
-    parser.add_argument('--psd',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate power spectral density for 24 hour 
-                                    circadian period
-                             (default : %(default)s)""")
-    parser.add_argument('--fourierFrequency',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate dominant frequency of sleep for circadian rhythm analysis
-                             (default : %(default)s)""")
-    parser.add_argument('--fourierWithAcc',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""True will do the Fourier analysis of circadian rhythms (for PSD and Fourier Frequency) with 
-                                    acceleration data instead of sleep signal
-                             (default : %(default)s)""") 
-    parser.add_argument('--m10l5',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate relative amplitude of most and 
-                                    least active acceleration periods for circadian rhythm analysis
-                             (default : %(default)s)""")
+    parser.add_argument('--javaHeapSpace',
+                            metavar="amount in MB", default="", type=str,
+                            help="""amount of heap space allocated to the java
+                            subprocesses,useful for limiting RAM usage (default
+                            : unlimited)""")
 
 
     args = parser.parse_args()
@@ -330,8 +338,10 @@ def main():
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
-        intensityDistribution=args.intensityDistribution, psd=args.psd, 
-        fourierFrequency=args.fourierFrequency, fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5, 
+        intensityDistribution=args.intensityDistribution,
+        useRecommendedImputation=args.useRecommendedImputation,
+        psd=args.psd, fourierFrequency=args.fourierFrequency, 
+        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5, 
         verbose=args.verbose)
 
     # Generate time series file (note: this will also resample to epochData so do this last)
