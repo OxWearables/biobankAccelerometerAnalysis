@@ -506,20 +506,20 @@ def getGeneaDeviceId(binFile):
 
 
 
-def getGT3XDeviceId(cwaFile):
+def getGT3XDeviceId(gt3xFile):
     """Get serial number of Actigraph device
 
     Parses the unique serial code from the header of a GT3X accelerometer file
 
-    :param str cwaFile: Input raw .gt3x accelerometer file
+    :param str gt3xFile: Input raw .gt3x accelerometer file
 
     :return: Device ID
     :rtype: int
     """
 
     import zipfile
-    if zipfile.is_zipfile(cwaFile):
-        with zipfile.ZipFile(cwaFile, 'r') as z:
+    if zipfile.is_zipfile(gt3xFile):
+        with zipfile.ZipFile(gt3xFile, 'r') as z:
             contents = z.infolist()
             print("\n".join(map(lambda x: str(x.filename).rjust(20, " ") + ", "
                 + str(x.file_size), contents)))
@@ -537,7 +537,7 @@ def getGT3XDeviceId(cwaFile):
             else:
                 print("Could not find info.txt file")
 
-    print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
+    print("ERROR: in getDeviceId(\"" + gt3xFile + "\")")
     print("""A deviceId value could not be found in input file header,
      this usually occurs when the file is not an Actigraph .gt3x accelerometer
      file. Exiting...""")
