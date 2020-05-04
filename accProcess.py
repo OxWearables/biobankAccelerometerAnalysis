@@ -66,9 +66,9 @@ def main():
                             metavar='Hz, or samples/second', default=100,
                             type=int, help="""resample data to n Hz (default
                              : %(default)ss, must be an integer)""")
-    parser.add_argument('--skipFiltering',
-                            metavar='True/False', default=False, type=str2bool,
-                            help="""Skip filtering stage
+    parser.add_argument('--useFilter',
+                            metavar='True/False', default=True, type=str2bool,
+                            help="""Filter ENMOtrunc values?
                              (default : %(default)s)""")
     parser.add_argument('--csvStartTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
@@ -313,7 +313,7 @@ def main():
             zSlope=args.calSlope[2], xTemp=args.calTemp[0],
             yTemp=args.calTemp[1], zTemp=args.calTemp[2],
             meanTemp=args.meanTemp, rawDataParser=args.rawDataParser,
-            javaHeapSpace=args.javaHeapSpace, skipFiltering=args.skipFiltering,
+            javaHeapSpace=args.javaHeapSpace, useFilter=args.useFilter,
             sampleRate=args.sampleRate, epochPeriod=args.epochPeriod,
             activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawFile=args.rawFile,

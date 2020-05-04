@@ -16,7 +16,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     yIntercept=0.0, zIntercept=0.0, xSlope=0.0, ySlope=0.0,
     zSlope=0.0, xTemp=0.0, yTemp=0.0, zTemp=0.0, meanTemp=20.0,
     rawDataParser="AccelerometerParser", javaHeapSpace=None,
-    skipFiltering=False, sampleRate=100, epochPeriod=30,
+    useFilter=True, sampleRate=100, epochPeriod=30,
     activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     startTime=None, endTime=None,
@@ -50,7 +50,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
         java class, it must omit .class ending.
     :param str javaHeapSpace: Amount of heap space allocated to java subprocesses.
         Useful for limiting RAM usage.
-    :param bool skipFiltering: Skip filtering stage
+    :param bool useFilter: Filter ENMOtrunc signal
     :param int sampleRate: Resample data to n Hz
     :param int epochPeriod: Size of epoch time window (in seconds)
     :param bool activityClassification: Extract features for machine learning
@@ -144,7 +144,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
         commandArgs = ["java", "-classpath", javaClassPath,
             "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
             "outputFile:" + epochFile, "verbose:" + str(verbose),
-            "filter:"+str(not skipFiltering),
+            "filter:"+str(useFilter),
             "sampleRate:" + str(sampleRate),
             "xIntercept:" + str(xIntercept),
             "yIntercept:" + str(yIntercept),
