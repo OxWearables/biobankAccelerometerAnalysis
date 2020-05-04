@@ -345,13 +345,13 @@ public class AccStats {
         int numStuckValues = 0;
         double stuckVal = 1.5;
         if (xStd == 0 && (xMean < -stuckVal || xMean > stuckVal)) {
-            numStuckValues += 1;
+            numStuckValues = xArray.length;
         }
         if (yStd == 0 && (yMean < -stuckVal || yMean > stuckVal)) {
-            numStuckValues += 1;
+            numStuckValues = yArray.length;
         }
         if (zStd == 0 && (zMean < -stuckVal || zMean > stuckVal)) {
-            numStuckValues += 1;
+            numStuckValues = zArray.length;
         }
         return numStuckValues;
     }
