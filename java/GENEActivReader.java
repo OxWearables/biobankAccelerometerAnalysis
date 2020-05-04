@@ -50,14 +50,14 @@ public class GENEActivReader extends DeviceReader {
                 // Then: dataBlock (9)
                 // line "page = readLine(..." above will read 1st header line
                 // (c=0)
-                for (int c = 1; c < pageHeaderSize; c++) {
+                for (int i = 1; i < pageHeaderSize; i++) {
                     try {
                         header = readLine(rawAccReader);
-                        if (c == 3) {
+                        if (i == 3) {
                             blockTime = LocalDateTime.parse(header.split("Time:")[1], timeFmt);
-                        } else if (c == 5) {
+                        } else if (i == 5) {
                             temperature = Double.parseDouble(header.split(":")[1]);
-                        } else if (c == 8) {
+                        } else if (i == 8) {
                             sampleFreq = Double.parseDouble(header.split(":")[1]);
                         }
                     } catch (Exception excep) {
@@ -130,8 +130,8 @@ public class GENEActivReader extends DeviceReader {
      */
     private static int parseBinFileHeader(BufferedReader reader, int fileHeaderSize, int linesToAxesCalibration,
             double[] gainVals, int[] offsetVals) {
-        // read first c lines in bin file to writer
-        for (int c = 0; c < linesToAxesCalibration; c++) {
+        // read first i lines in bin file to writer
+        for (int i = 0; i < linesToAxesCalibration; i++) {
             readLine(reader);
         }
         // read axes calibration lines for gain and offset values
@@ -149,7 +149,7 @@ public class GENEActivReader extends DeviceReader {
         int memorySizePages = Integer.parseInt(readLine(reader).split(":")[1]); // 11
 
         // ignore remaining header lines in bin file
-        for (int c = 0; c < fileHeaderSize - linesToAxesCalibration - 11; c++) {
+        for (int i = 0; i < fileHeaderSize - linesToAxesCalibration - 11; i++) {
             readLine(reader);
         }
         return memorySizePages;

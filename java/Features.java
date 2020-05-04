@@ -221,14 +221,14 @@ public class Features {
             double yMovAvg = (1-weight)*y[0];
             double zMovAvg = (1-weight)*z[0];
 
-            for (int c = 1; c < n; c++) {
-                xMovAvg = xMovAvg * weight + (1-weight) * x[c];
-                yMovAvg = yMovAvg * weight + (1-weight) * y[c];
-                zMovAvg = zMovAvg * weight + (1-weight) * z[c];
-                if (c>= gStartIdx){
-                    gx[c-gStartIdx] = xMovAvg;
-                    gy[c-gStartIdx] = yMovAvg;
-                    gz[c-gStartIdx] = zMovAvg;
+            for (int i = 1; i < n; i++) {
+                xMovAvg = xMovAvg * weight + (1-weight) * x[i];
+                yMovAvg = yMovAvg * weight + (1-weight) * y[i];
+                zMovAvg = zMovAvg * weight + (1-weight) * z[i];
+                if (i>= gStartIdx){
+                    gx[i-gStartIdx] = xMovAvg;
+                    gy[i-gStartIdx] = yMovAvg;
+                    gz[i-gStartIdx] = zMovAvg;
                 }
             }
         }
@@ -341,8 +341,8 @@ public class Features {
 
     private static String getSanDiegoFFTHeader(int numFFTbins){
         String header = "fmax,pmax,fmaxband,pmaxband,entropy";
-        for(int c=0; c<numFFTbins; c++){
-            header += ",fft" + c;
+        for(int i=0; i<numFFTbins; i++){
+            header += ",fft" + i;
         }
         return header;
     }
@@ -361,11 +361,11 @@ public class Features {
             double[] z) {
 
         double[] unfilteredVM = new double[x.length];
-        for (int c = 0; c < x.length; c++) {
-            if (!Double.isNaN(x[c])) {
-                double vm = AccStats.getVectorMagnitude(x[c], y[c], z[c]);
+        for (int i = 0; i < x.length; i++) {
+            if (!Double.isNaN(x[i])) {
+                double vm = AccStats.getVectorMagnitude(x[i], y[i], z[i]);
                 //todo should really be on vm, not vm - 1
-                unfilteredVM[c] = vm - 1;
+                unfilteredVM[i] = vm - 1;
             }
         }
 
@@ -384,8 +384,8 @@ public class Features {
         double skew = 0; 
         // Kurtosis (kurtR) describes the peakedness of the distribution of data points
         double kurt = 0;
-        for (int c = 0; c < n; c++) {
-            double diff = unfilteredVM[c] - vmMean;
+        for (int i = 0; i < n; i++) {
+            double diff = unfilteredVM[i] - vmMean;
             MAD += Math.abs(diff);
             MPD += Math.pow(Math.abs(diff), 1.5);
             skew += Math.pow(diff/(vmStd + 1E-8), 3);
@@ -436,14 +436,14 @@ public class Features {
         double[] input = new double[n*2];
 
         //FFT for channel
-        for (int c = 0; c < n; c++) {
-            input[c] = channel[c];
+        for (int i = 0; i < n; i++) {
+            input[i] = channel[i];
         }
         HanningWindow(input, n);
         transformer.realForward(input);
         input = getFFTmagnitude(input);
-        for (int c = 0; c < outputFFT.length; c++) {
-            outputFFT[c] = input[c];
+        for (int i = 0; i < outputFFT.length; i++) {
+            outputFFT[i] = input[i];
         }
 
         return outputFFT;
@@ -451,8 +451,8 @@ public class Features {
 
     private static String getFFFHeader(int numFFTbins, String prefix){
         String header = prefix + "fft0";
-        for (int c = 1; c < numFFTbins; c++) {
-            header += "," + prefix + "fft" + c;
+        for (int i = 1; i < numFFTbins; i++) {
+            header += "," + prefix + "fft" + i;
         }
         return header;
     }

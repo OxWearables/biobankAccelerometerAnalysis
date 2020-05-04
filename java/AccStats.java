@@ -78,9 +78,9 @@ public class AccStats {
     private static double[] getENMO(double[] x, double[] y, double[] z) {
         //get euclidean norm minus one
         double[] enmo = new double[x.length];
-        for (int c = 0; c < x.length; c++){
-            double vm = getVectorMagnitude(x[c], y[c], z[c]);
-            enmo[c] = vm-1;
+        for (int i = 0; i < x.length; i++){
+            double vm = getVectorMagnitude(x[i], y[i], z[i]);
+            enmo[i] = vm-1;
         }
         return enmo;
     }
@@ -93,8 +93,8 @@ public class AccStats {
 
     private static double[] abs(double[] vals) {
         double[] output = new double[vals.length];
-        for (int c = 0; c < vals.length; c++) {
-            output[c] = Math.abs(vals[c]);
+        for (int i = 0; i < vals.length; i++) {
+            output[i] = Math.abs(vals[i]);
         }
         return output;
     }
@@ -103,12 +103,12 @@ public class AccStats {
     private static double[] trunc(double[] vals) {
         double[] output = new double[vals.length];
         double tmp;
-        for (int c = 0; c < vals.length; c++) {
-            tmp = vals[c];
+        for (int i = 0; i < vals.length; i++) {
+            tmp = vals[i];
             if (tmp < 0) {
                 tmp = 0;
             }
-            output[c] = tmp;
+            output[i] = tmp;
         }
         return output;
     }
@@ -165,14 +165,14 @@ public class AccStats {
         }
         double[] angles = new double[len];
         double total = 0.0;
-        for (int c = 0; c < len; c++) {
-            angles[c] = Math.atan2(vals1[c],vals2[c]);
-            total += angles[c];
+        for (int i = 0; i < len; i++) {
+            angles[i] = Math.atan2(vals1[i],vals2[i]);
+            total += angles[i];
         }
         double mean = total/len;
         double var = 0.0;
-        for (int c = 0; c < len; c++) {
-            var += Math.pow(angles[c] - mean, 2);
+        for (int i = 0; i < len; i++) {
+            var += Math.pow(angles[i] - mean, 2);
         }
         // use R's (n-1) denominator standard deviation (Bessel's correction)
         double std = Math.sqrt(var/(len-1));
@@ -187,9 +187,9 @@ public class AccStats {
             return Double.NaN;
         }
         double cov = 0; // covariance
-        for (int c = lag; c < vals1.length; c++) {
-            if (!Double.isNaN(vals1[c-lag]) && !Double.isNaN(vals2[c])) {
-                cov += (vals1[c]-mean1) * (vals2[c]-mean2);
+        for (int i = lag; i < vals1.length; i++) {
+            if (!Double.isNaN(vals1[i-lag]) && !Double.isNaN(vals2[i])) {
+                cov += (vals1[i]-mean1) * (vals2[i]-mean2);
             }
         }
         cov /= vals1.length+1-lag;
@@ -243,9 +243,9 @@ public class AccStats {
             return Double.NaN;
         }
         double sum = 0;
-        for (int c = 0; c < vals.length; c++) {
-            if (!Double.isNaN(vals[c])) {
-                sum += vals[c];
+        for (int i = 0; i < vals.length; i++) {
+            if (!Double.isNaN(vals[i])) {
+                sum += vals[i];
             }
         }
         return sum;
@@ -257,8 +257,8 @@ public class AccStats {
             return Double.NaN;
         }
         double sum = 0;
-        for (int c = 0; c < vals.size(); c++) {
-            sum += vals.get(c);
+        for (int i = 0; i < vals.size(); i++) {
+            sum += vals.get(i);
         }
         return sum;
     }
@@ -286,12 +286,12 @@ public class AccStats {
         }
         double min = Double.MAX_VALUE;
         double max = -Double.MAX_VALUE;
-        for (int c = 0; c < vals.length; c++) {
-            if (vals[c] < min) {
-                min = vals[c];
+        for (int i = 0; i < vals.length; i++) {
+            if (vals[i] < min) {
+                min = vals[i];
             }
-            if (vals[c] > max) {
-                max = vals[c];
+            if (vals[i] > max) {
+                max = vals[i];
             }
         }
         return max - min;
@@ -305,9 +305,9 @@ public class AccStats {
         }
         double var = 0; // variance
         double len = vals.length; // length
-        for (int c = 0; c < len; c++) {
-            if (!Double.isNaN(vals[c])) {
-                var += Math.pow((vals[c] - mean), 2);
+        for (int i = 0; i < len; i++) {
+            if (!Double.isNaN(vals[i])) {
+                var += Math.pow((vals[i] - mean), 2);
             }
         }
         return Math.sqrt(var / len);
@@ -321,9 +321,9 @@ public class AccStats {
         }
         double var = 0; // variance
         double len = vals.length; // length
-        for (int c = 0; c < len; c++) {
-            if (!Double.isNaN(vals[c])) {
-                var += Math.pow((vals[c] - mean), 2);
+        for (int i = 0; i < len; i++) {
+            if (!Double.isNaN(vals[i])) {
+                var += Math.pow((vals[i] - mean), 2);
             }
         }
         return Math.sqrt(var / (len-1));
@@ -359,11 +359,11 @@ public class AccStats {
 
     public static double[] combineArrays(double[] array1, double[] array2){
         double[] output = new double[array1.length + array2.length];
-        for(int c=0; c<array1.length; c++){
-            output[c] = array1[c];
+        for(int i=0; i<array1.length; i++){
+            output[i] = array1[i];
         }
-        for(int c=0; c<array2.length; c++){
-            output[array1.length + c] = array2[c];
+        for(int i=0; i<array2.length; i++){
+            output[array1.length + i] = array2[i];
         }
         return output;
     }

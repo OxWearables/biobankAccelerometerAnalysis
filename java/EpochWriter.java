@@ -255,12 +255,12 @@ public class EpochWriter {
 		double x;
 		double y;
 		double z;
-		for (int c = 0; c < xVals.size(); c++) {
+		for (int i = 0; i < xVals.size(); i++) {
 			Boolean isClipped = false;
-			x = xVals.get(c);
-			y = yVals.get(c);
-			z = zVals.get(c);
-			double mcTemp = temperatureVals.get(c) - meanTemp; // mean centred
+			x = xVals.get(i);
+			y = yVals.get(i);
+			z = zVals.get(i);
+			double mcTemp = temperatureVals.get(i) - meanTemp; // mean centred
 																// temp
 			// check if any pre-calibration clipping present
 			//use >= range as it's clipped here
@@ -298,9 +298,9 @@ public class EpochWriter {
 				}
 			}
 
-			xVals.set(c, x);
-			yVals.set(c, y);
-			zVals.set(c, z);
+			xVals.set(i, x);
+			yVals.set(i, y);
+			zVals.set(i, z);
 		}
 
 		// resample values to epochSec * (intended) sampleRate
@@ -308,25 +308,27 @@ public class EpochWriter {
 		double[] xResampled = new double[timeResampled.length];
 		double[] yResampled = new double[timeResampled.length];
 		double[] zResampled = new double[timeResampled.length];
-		for (int c = 0; c < timeResampled.length; c++) {
-			timeResampled[c] = Math.round((epochPeriod * 1000d * c) / timeResampled.length);
+		for (int i = 0; i < timeResampled.length; i++) {
+			timeResampled[i] = Math.round((epochPeriod * 1000d * i) / timeResampled.length);
 		}
 		Resample.interpLinear(timeVals, xVals, yVals, zVals, 
 			timeResampled, xResampled, yResampled, zResampled);
 
 		//write out raw values ...				
 		if (rawWriter != null) {
-			for (int c = 0; c < xResampled.length; c++) {
+			for (int i = 0; i < xResampled.length; i++) {
 				writeLine(rawWriter,
-						epochStartTime.plusNanos(timeResampled[c] * 1000000).format(timeFormat)
-								+ "," + DF3.format(xResampled[c]) + "," + DF3.format(yResampled[c]) + "," + DF3.format(zResampled[c]));
+						epochStartTime.plusNanos(timeResampled[i] * 1000000).format(timeFormat)
+								+ "," + DF3.format(xResampled[i]) + "," 
+								+ DF3.format(yResampled[i]) + "," 
+								+ DF3.format(zResampled[i]));
 			}
         }
 		if (npyWriter!=null) {
-			for (int c = 0; c < xResampled.length; c++) {
+			for (int i = 0; i < xResampled.length; i++) {
                 // note: For .npy format, we store time in Unix nanoseconds
-                long time = (long) (timestampToMillis(epochStartTime.plusNanos(timeResampled[c] * 1000000)) * 1000000);
-                writeNpyLine(npyWriter, time, xResampled[c], yResampled[c], zResampled[c]);
+                long time = (long) (timestampToMillis(epochStartTime.plusNanos(timeResampled[i] * 1000000)) * 1000000);
+                writeNpyLine(npyWriter, time, xResampled[i], yResampled[i], zResampled[i]);
             }
 
 		}
@@ -340,8 +342,8 @@ public class EpochWriter {
 
 		// write summary values to file
 		String epochSummary = epochStartTime.format(timeFormat);
-		for(int c=0; c<stats.length; c++){
-			epochSummary += "," + DF6.format(stats[c]);
+		for(int i=0; i<stats.length; i++){
+			epochSummary += "," + DF6.format(stats[i]);
 		}
 		
 		// write housekeeping stats

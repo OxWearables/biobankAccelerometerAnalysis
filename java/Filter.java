@@ -26,16 +26,16 @@ public class Filter {
 	
 	// Apply the filter to the specified data
 	public void filter(double[] X, int offset, int count) {
-		int m, i;
+		int i, j;
 		
 		z[BUTTERWORTH4_NUM_COEFFICIENTS - 1] = 0;
-		for (m = offset; m < offset + count; m++) {
-			double oldXm = X[m];
+		for (i = offset; i < offset + count; i++) {
+			double oldXm = X[i];
 			double newXm = B[0] * oldXm + z[0];
-			for (i = 1; i < BUTTERWORTH4_NUM_COEFFICIENTS; i++) {
-				z[i - 1] = B[i] * oldXm + z[i] - A[i] * newXm;
+			for (j = 1; j < BUTTERWORTH4_NUM_COEFFICIENTS; j++) {
+				z[j - 1] = B[j] * oldXm + z[j] - A[j] * newXm;
 			}
-			X[m] = newXm;
+			X[i] = newXm;
 		}
 	}
 	
@@ -43,11 +43,11 @@ public class Filter {
 	public double[] filterWithRemainder(double[] X, int offset, int count) {
 		double[] remainder = X.clone();
 		filter(X, offset, count);
-		for (int m = 0; m < X.length; m++) {
-			if (m<offset || m>=offset+count) {
-				remainder[m] = 0;
+		for (int i = 0; i < X.length; i++) {
+			if (i<offset || i>=offset+count) {
+				remainder[i] = 0;
 			} else {
-				remainder[m] = X[m] - remainder[m];
+				remainder[i] = X[i] - remainder[i];
 			}
 		}
 		return remainder;
