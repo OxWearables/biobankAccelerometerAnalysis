@@ -1,5 +1,6 @@
 import java.util.Collections;
 import java.util.List;
+import java.util.Arrays;
 
 public class Resample{
 
@@ -75,6 +76,60 @@ public class Resample{
                 }
             }
         }
+    }
+
+    /**
+    * Stripped down version of interpLinear for 1D array
+    */
+    public static final double[] resample(double[] x, int n)
+    {
+        final int m = x.length;
+        if (m == n) return x;
+
+        double[] t = new double[m];
+        double[] tNew = new double[n];
+        double[] xNew = new double[n];
+
+        for (int i=0; i<m; i++) t[i] = i;
+        for (int i=0; i<n; i++) tNew[i] = (double) i * m / n;
+
+        double dt;
+        double dx;
+        double[] xSlope = new double[m-1];
+        double[] xIntercept = new double[m-1];
+
+        // Calculate the line equation (i.e. slope and intercept) between each point
+        for (int i=(m-2); i >= 0; i--) {
+            dt = t[i+1] - t[i];
+            if (dt <= 0){
+                t[i] = t[i+1] - 1;
+                dt = 1;
+            }
+            dx = x[i+1] - x[i];
+            xSlope[i] = dx / dt;
+            xIntercept[i] = x[i] - t[i] * xSlope[i];
+        }
+
+        // Perform the interpolation here
+        for (int i = 0; i < n; i++) {
+            if (tNew[i] > t[m-1]) {
+                xNew[i] = x[m-1];
+            } else if (tNew[i] < t[0]) {
+                xNew[i] = x[0];
+            } else {
+                int loc = Arrays.binarySearch(t, tNew[i]);
+                if (loc < -1) {
+                    loc = -loc - 2;
+                    xNew[i] = xSlope[loc] * tNew[i] + xIntercept[loc];
+                }
+                else {
+                    xNew[i] = x[loc];
+                }
+            }
+        }
+
+        return xNew;
+
     }
 
 }

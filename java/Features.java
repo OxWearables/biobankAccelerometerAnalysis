@@ -247,7 +247,7 @@ public class Features {
             int sampleRate,
             int numFFTbins)
     {
-        final int n = v.length;
+        int n = v.length;
         final double vMean = AccStats.mean(v);
         
         // Initialize array to compute FFT coefs
@@ -300,9 +300,18 @@ public class Features {
         Note: Using the average magnitudes (instead of powers) yielded
         slightly better classification results in random forest
         */
-        final int numBins = numFFTbins;
-        double[] binnedFFT = new double[numBins];
-        for (int i = 0; i < numBins; i++){
+
+        /* If sampleRate is less than 30Hz, resample to 30Hz to be able to
+          compute FFT 0-14 */
+        final int MIN_SAMPLE_RATE = 30;
+        if (sampleRate < MIN_SAMPLE_RATE) {
+            n = n / sampleRate * MIN_SAMPLE_RATE;  // resampled length
+            sampleRate = MIN_SAMPLE_RATE;  // new sample rate
+            v = Resample.resample(v, n);
+        }
+
+        double[] binnedFFT = new double[numFFTbins];
+        for (int i = 0; i < numFFTbins; i++){
             binnedFFT[i] = 0;
         }
         
