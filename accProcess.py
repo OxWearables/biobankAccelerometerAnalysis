@@ -256,7 +256,7 @@ def main():
     args.summaryFile = os.path.join(args.summaryFolder, inputFileName + "-summary.json")
     args.nonWearFile = os.path.join(args.nonWearFolder, inputFileName + "-nonWearBouts.csv.gz")
     args.epochFile = os.path.join(args.epochFolder, inputFileName + "-epoch.csv.gz")
-    args.stationaryFile = os.path.join(args.stationaryFolder, inputFileName + "-stationaryPoints.csv")
+    args.stationaryFile = os.path.join(args.stationaryFolder, inputFileName + "-stationaryPoints.csv.gz")
     args.tsFile = os.path.join(args.timeSeriesFolder, inputFileName + "-timeSeries.csv.gz")
     args.rawFile = os.path.join(args.rawFolder, inputFileName + ".csv.gz")
     args.npyFile = os.path.join(args.npyFolder, inputFileName + ".npy")

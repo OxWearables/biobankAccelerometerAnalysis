@@ -234,7 +234,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         tempVals = staticBoutsFile[['temperature']].values
     else:
         cols = ['xMean', 'yMean', 'zMean', 'temp', 'dataErrors']
-        d = pd.read_csv(staticBoutsFile, usecols=cols)
+        d = pd.read_csv(staticBoutsFile, usecols=cols, compression='gzip')
         d = d.to_numpy()
         if len(d)<=5:
             storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], 
