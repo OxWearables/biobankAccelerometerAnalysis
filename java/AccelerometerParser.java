@@ -66,7 +66,7 @@ public class AccelerometerParser {
     	long endTime = -1;
     	int timeZoneOffset = 0;
     	boolean getFeatures = false;
-    	int numFFTbins = 15; // number of fft bins to print
+    	int numFFTbins = 12; // number of fft bins to print
 
     	// Must supply additional information when loading from a .csv file
     	LocalDateTime csvStartTime = null; // start date of first sample
