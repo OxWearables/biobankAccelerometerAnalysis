@@ -65,7 +65,7 @@ public class Features {
         header += "," + getFFFHeader(numFFTbins, "x");
         header += "," + getFFFHeader(numFFTbins, "y");
         header += "," + getFFFHeader(numFFTbins, "z");
-        header += "," + getFFFHeader(numFFTbins, "m");
+        header += "," + getFFFHeader(numFFTbins, "vm");
         return header;
     }
 
@@ -342,7 +342,7 @@ public class Features {
     private static String getSanDiegoFFTHeader(int numFFTbins){
         String header = "fmax,pmax,fmaxband,pmaxband,entropy";
         for(int i=0; i<numFFTbins; i++){
-            header += ",fft" + i;
+            header += ",fft" + (i+1);
         }
         return header;
     }
@@ -450,9 +450,9 @@ public class Features {
     }
 
     private static String getFFFHeader(int numFFTbins, String prefix){
-        String header = prefix + "fft0";
+        String header = prefix + "fft1";
         for (int i = 1; i < numFFTbins; i++) {
-            header += "," + prefix + "fft" + i;
+            header += "," + prefix + "fft" + (i+1);
         }
         return header;
     }
