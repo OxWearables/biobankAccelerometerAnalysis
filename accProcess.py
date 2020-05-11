@@ -11,6 +11,7 @@ import os
 import accelerometer.summariseEpoch
 import pandas as pd
 import atexit
+import warnings
 
 
 def main():
@@ -225,6 +226,13 @@ def main():
 
 
     args = parser.parse_args()
+
+    assert args.sampleRate >= 25, "sampleRate<25 currently not supported"
+
+    if args.sampleRate <= 40:
+        warnings.warn("Skipping lowpass filter (--useFilter False) as sampleRate too low (<= 40)")
+        args.useFilter = False
+
 
     processingStartTime = datetime.datetime.now()
 
