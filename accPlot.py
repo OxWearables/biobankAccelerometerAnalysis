@@ -40,6 +40,10 @@ def main():
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/doherty2018-apr20Update.tar",
                             help="""trained activity model .tar file""")
+    parser.add_argument('--useRecommendedImputation',
+                            metavar='True/False', default=True, type=str2bool,
+                            help="""Highly recommended method to show imputed 
+                            missing data (default : %(default)s)""")
 
     # check input is ok
     if len(sys.argv) < 3:
@@ -52,17 +56,23 @@ def main():
 
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
-        activityModel=args.activityModel)
+        activityModel=args.activityModel,
+        useRecommendedImputation=args.useRecommendedImputation)
 
 
 
-def plotTimeSeries(tsFile, plotFile,
-    activityModel="activityModels/doherty2018-apr20Update.tar"):
+def plotTimeSeries(
+        tsFile,
+        plotFile,
+        activityModel="activityModels/doherty2018-apr20Update.tar",
+        useRecommendedImputation=True,):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
     :param str activityModel: Input tar model file used for activity classification
+    :param bool useRecommendedImputation: Highly recommended method to show  
+        imputed values for missing data
 
     :return: Writes plot to <plotFile>
     :rtype: void
@@ -97,6 +107,8 @@ def plotTimeSeries(tsFile, plotFile,
 
     # number of rows to display in figure (all days + legend)
     d['date'] = d.index.date
+    if not useRecommendedImputation:
+        d = d[d['imputed']==0] # if requested, do not show imputed values
     groupedDays = d[['acc','time','imputed'] + labels].groupby(by=d['date'])
     nrows = len(groupedDays) + 1
 
@@ -195,6 +207,14 @@ def plotTimeSeries(tsFile, plotFile,
 
     plt.savefig(plotFile, dpi=200, bbox_inches='tight')
     print('Plot file written to:', plotFile)
+
+
+def str2bool(v):
+    """
+    Used to parse true/false values from the command line. E.g. "True" -> True
+    """
+
+    return v.lower() in ("yes", "true", "t", "1")
 
 
 if __name__ == '__main__':
