@@ -96,9 +96,9 @@ def plotTimeSeries(
         if col not in [accUtils.TIME_SERIES_COL, 'imputed', 'acc', 'MET']:
             labels += [col]
     print(labels)
-    if 'doherty2018' in activityModel:
+    if 'doherty' in activityModel:
         labels_as_col = DOHERTY_NatComms_COLOURS
-    elif 'willetts2018' in activityModel:
+    elif 'willetts' in activityModel:
         labels_as_col = WILLETS_SciReports_COLOURS
     # add imputation label colour
     labels_as_col['imputed'] = '#fafc6f'

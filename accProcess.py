@@ -161,7 +161,7 @@ def main():
                             activity type
                             (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/doherty2018-apr20Update.tar",
+                            default="activityModels/doherty-may20.tar",
                             help="""trained activity model .tar file""")
     
     # circadian rhythm options

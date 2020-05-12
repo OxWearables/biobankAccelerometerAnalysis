@@ -16,7 +16,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, 
     mgMVPA=100, mgVPA=425, 
-    activityModel="activityModels/doherty2018-apr20Update.tar",
+    activityModel="activityModels/doherty-may20.tar",
     intensityDistribution=False, useRecommendedImputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
     verbose=False):
