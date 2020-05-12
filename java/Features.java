@@ -600,7 +600,7 @@ public class Features {
     }
 
     private static String getUnileverFeaturesHeader(){
-        String header = "f1,p1,f2,p2,f625,p625,total";
+        String header = "f1,p1,f2,p2,f625,p625,totalPower";
         return header;
     }
 
