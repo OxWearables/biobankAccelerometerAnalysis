@@ -13,7 +13,7 @@ import warnings
 
 
 def activityClassification(epochFile,
-    activityModel="activityModels/doherty2018-apr20Update.tar"):
+    activityModel="activityModels/doherty-may20.tar"):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -128,7 +128,8 @@ def trainClassificationModel(trainingFile,
     train = pd.read_csv(trainingFile)
     train = train[~pd.isnull(train[labelCol])]
     allCols = [participantCol, labelCol, atomicLabelCol, metCol] + featureCols
-    train = train[allCols].dropna(axis=0, how='any')
+    with pd.option_context('mode.use_inf_as_null', True):
+        train = train[allCols].dropna(axis=0, how='any')
 
     # Reduce size of train/test sets if we are training/testing on some people
     if testParticipants is not None:
@@ -423,6 +424,59 @@ def getFileFromTar(tarArchive, targetFile):
     array_file.write(t.extractfile(targetFile).read())
     array_file.seek(0)
     return array_file
+
+
+
+def addReferenceLabelsToNewFeatures(
+    featuresFile,
+    referenceLabelsFile,
+    outputFile,
+    featuresTxt="activityModels/features.txt",
+    labelCol="label", participantCol="participant",
+    atomicLabelCol="annotation", metCol="MET"):
+    """Append reference annotations to newly extracted feature data
+
+    This method helps add existing curated labels (from referenceLabelsFile)
+    to a file with newly extracted features (both pre-sorted by participant 
+    and time).
+
+    :param str featuresFile: Input csv file of new features data, pre-sorted by time
+    :param str referenceLabelsFile: Input csv file of reference labelled data, 
+        pre-sorted by time
+    :param str outputFile: Output csv file of new features data with refernce labels
+    :param str featuresTxt: Input txt file listing feature column names
+    :param str labelCol: Input label column
+    :param str participantCol: Input participant column
+    :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
+        vs. 'walking'
+    :param str metCol: Input MET column
+    
+    :return: New csv file written to <outputFile>
+    :rtype: void
+
+    :Example:
+    >>> from accelerometer import accClassification
+    >>> accClassification.addReferenceLabelsToNewFeatures("newFeats.csv", 
+            "refLabels.csv", "newFeatsPlusLabels.csv")
+    <file written to newFeatsPlusLabels.csv>
+    """
+
+    # load new features file
+    featureCols = getListFromTxtFile(featuresTxt)
+    dFeat = pd.read_csv(featuresFile, usecols=featureCols+[participantCol, 'time'])
+    
+    # load in reference annotations file
+    refCols = [participantCol, 'age', 'sex', 'time', atomicLabelCol, labelCol, 
+                'code', metCol, 'MET_label'] 
+    dRef = pd.read_csv(referenceLabelsFile, usecols=refCols)
+
+    # join dataframes
+    indexCols = [participantCol, 'time']
+    dOut = dRef.set_index(indexCols).join(dFeat.set_index(indexCols), how='left')
+
+    # write out new labelled features file
+    dOut.to_csv(outputFile, index=True)
+    print('New file written to: ', outputFile)
 
 
 
