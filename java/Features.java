@@ -703,10 +703,10 @@ public class Features {
                 double tmp = rollingMedianZ[i] / (Math.pow(rollingMedianX[i], 2) + Math.pow(rollingMedianY[i], 2));
                 angelZ[i] = Math.atan(tmp) * 180 * Math.PI;
             }
-            double avgArmAngel = calculateAvg(angelZ);
 
             // 3. consecutive 5-sec avg
             double[] fiveSecAvg = computeFiveSecAvg(angelZ, sampleRate);
+            double avgArmAngel = calculateAvg(fiveSecAvg);
 
             // 4. Absolute difference between successive values
             double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
@@ -726,6 +726,5 @@ public class Features {
         String header = "avgArmAngel, avgArmAngelAbsDiff";
         return header;
     }
-
 
 }
