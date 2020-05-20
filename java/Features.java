@@ -701,18 +701,19 @@ public class Features {
             double[] angelZ = new double[rollingMedianX.length];
             for (int i = 0; i < rollingMedianX.length; i++) {
                 double tmp = rollingMedianZ[i] / (Math.pow(rollingMedianX[i], 2) + Math.pow(rollingMedianY[i], 2));
-                angelZ[i] = Math.atan(tmp) * 180 * Math.PI;
+                angelZ[i] = Math.atan(tmp) * 180 / Math.PI;
             }
 
             // 3. consecutive 5-sec avg
             double[] fiveSecAvg = computeFiveSecAvg(angelZ, sampleRate);
             double avgArmAngel = calculateAvg(fiveSecAvg);
-
+            System.out.println("Avg angel: "+avgArmAngel)
             // 4. Absolute difference between successive values
             double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
 
             // get the avg of difference
             double avgArmAngelAbsDiff = calculateAvg(absoluteAvgDiff);
+            System.out.println("avgArmAngelAbsDiff: "+avgArmAngelAbsDiff)
 
             // don't forget to change header method immediately below !!!
             return new double[]{
@@ -723,7 +724,7 @@ public class Features {
     }
 
     private static String getArmFeaturesHeader(){
-        String header = "avgArmAngel, avgArmAngelAbsDiff";
+        String header = "avgArmAngel,avgArmAngelAbsDiff";
         return header;
     }
 
