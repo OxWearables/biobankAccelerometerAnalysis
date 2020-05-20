@@ -20,7 +20,8 @@ public class CsvReader extends DeviceReader {
             double csvSampleRate,
             DateTimeFormatter csvTimeFormat,
             int csvStartRow,
-            List<Integer> csvXYZTCols) {
+            List<Integer> csvXYZTCols,
+            Boolean verbose) {
 
         try {
             BufferedReader accStream =  new BufferedReader(new FileReader(accFile));
@@ -77,7 +78,9 @@ public class CsvReader extends DeviceReader {
                             time += 1000/csvSampleRate;
                         }
                 } else {
-                    System.err.println(".csv line " + lineNumber + " had too few columns :\n" + line);
+                    if (verbose) {
+                        System.err.println(".csv line " + lineNumber + " had too few columns :\n" + line);
+                    }
                 }
             }
 
