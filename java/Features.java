@@ -707,13 +707,13 @@ public class Features {
             // 3. consecutive 5-sec avg
             double[] fiveSecAvg = computeFiveSecAvg(angelZ, sampleRate);
             double avgArmAngel = calculateAvg(fiveSecAvg);
-            System.out.println("Avg angel: "+avgArmAngel)
+            System.out.println("Avg angel: "+avgArmAngel);
             // 4. Absolute difference between successive values
             double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
 
             // get the avg of difference
             double avgArmAngelAbsDiff = calculateAvg(absoluteAvgDiff);
-            System.out.println("avgArmAngelAbsDiff: "+avgArmAngelAbsDiff)
+            System.out.println("avgArmAngelAbsDiff: "+avgArmAngelAbsDiff);
 
             // don't forget to change header method immediately below !!!
             return new double[]{
