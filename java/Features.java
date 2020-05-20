@@ -18,7 +18,9 @@
  *
  */
 import org.jtransforms.fft.DoubleFFT_1D;
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 public class Features {
 
     public static double[] getFeatures(
@@ -32,6 +34,9 @@ public class Features {
         // get San Diego (Ellis) features
         double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate, 
                                                             numFFTbinsPerChannel);
+
+        // get arm angel features
+        double[] armFeats = calculateArmFeatures(x, y, z, sampleRate);
 
         // get MAD features
         double[] madFeats = calculateMADFeatures(x, y, z);
@@ -49,6 +54,7 @@ public class Features {
         // don't forget to change header method immediately below !!!
         double[] output = AccStats.combineArrays(sanDiegoFeats, madFeats);
         output = AccStats.combineArrays(output, uniFeats);
+        output = AccStats.combineArrays(output, armFeats);
         output = AccStats.combineArrays(output, xFFTfeats);
         output = AccStats.combineArrays(output, yFFTfeats);
         output = AccStats.combineArrays(output, zFFTfeats);
@@ -61,6 +67,7 @@ public class Features {
     public static String getFeaturesHeader(int numFFTbins){
         String header = getSanDiegoFeaturesHeader(numFFTbins);
         header += "," + getMADFeaturesHeader();
+        header += "," + getArmFeaturesHeader();
         header += "," + getUnileverFeaturesHeader();
         header += "," + getFFFHeader(numFFTbins, "x");
         header += "," + getFFFHeader(numFFTbins, "y");
@@ -601,6 +608,122 @@ public class Features {
 
     private static String getUnileverFeaturesHeader(){
         String header = "f1,p1,f2,p2,f625,p625,totalPower";
+        return header;
+    }
+
+    /**
+     * Obtain the rolling window median of window of size k
+     */
+    public static double[] medianSlidingWindow(double[] nums, int k) {
+        double[] res=new double[nums.length-k+1];
+        List<Double> list = new ArrayList<Double>();
+        for(int i=0;i<k;i++){
+            list.add(nums[i]);
+        }
+        Collections.sort(list);
+        res[0]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
+        for(int i=0;i<nums.length-k;i++){
+            double left=nums[i];
+            double right=nums[i+k];
+            int index=Collections.binarySearch(list,right);
+            if(index>=0) list.add(index,right);
+            else list.add(-index-1,right);
+            index=Collections.binarySearch(list,left);
+            list.remove(index);
+            res[i+1]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
+        }
+        return res;
+    }
+
+    private static double calculateAvg(double[] x) {
+        double sum = 0;
+        for (int i = 0; i < x.length; i++) {
+            sum += x[i];
+        }
+        return sum/x.length;
+    }
+
+    private static double[] computeFiveSecAvg(double[] x, int sampleRate) {
+        int avgsLen = (int)Math.ceil(x.length/(5*sampleRate));
+        double[] avgs = new double[avgsLen];
+        int count = 0;
+        int sum = 0;
+        int j = 0;
+        for (int i = 0; i < x.length; i++) {
+            count++;
+            sum += x[i];
+            if (count==5*sampleRate || i==x.length-1) {
+                avgs[j] = sum/count;
+                j++;
+                sum = 0;
+                count = 0;
+            }
+        }
+        return avgs;
+    }
+
+    private static double[] computeAbsoluteDiff(double[] x) {
+        double[] res = new double[x.length-1];
+        for (int i = 1; i < x.length; i++) {
+            res[i-1] = Math.abs(x[i]-x[i-1]);
+        }
+        return res;
+    }
+
+    /**
+     * From paper:
+     * Estimating sleep parameters using an accelerometer without sleep diary
+     * van Hees et al. 2018
+     * https://www.nature.com/articles/s41598-018-31266-z
+     * See also:
+     * A novel, open access method to assess sleep duration using a wrist-worn accelerometer
+     * van Hees et al. 2015
+     *
+     * This won't work if the epoch length is less than 5-sec. So return 0 in that case.
+     */
+    private static double[] calculateArmFeatures(double[] x,
+                                                 double[] y,
+                                                 double[] z,
+                                                 int sampleRate) {
+        int window_len = 5; // 5-sec
+        if (x.length / sampleRate < window_len) {
+            return new double[] {
+                    0, 0 // if less than 5sec, just return zeros
+            };
+        } else {
+            // 1. 5-sec rolling medians
+            int k = window_len * sampleRate;
+            double[] rollingMedianX = medianSlidingWindow(x, k);
+            double[] rollingMedianY = medianSlidingWindow(y, k);
+            double[] rollingMedianZ = medianSlidingWindow(z, k);
+
+            // 2. compute arm angel
+            double[] angelZ = new double[rollingMedianX.length];
+            for (int i = 0; i < rollingMedianX.length; i++) {
+                double tmp = rollingMedianZ[i] / (Math.pow(rollingMedianX[i], 2) + Math.pow(rollingMedianY[i], 2));
+                angelZ[i] = Math.atan(tmp) * 180 * Math.PI;
+            }
+            double avgArmAngel = calculateAvg(angelZ);
+
+            // 3. consecutive 5-sec avg
+            double[] fiveSecAvg = computeFiveSecAvg(angelZ, sampleRate);
+
+            // 4. Absolute difference between successive values
+            double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
+
+            // get the avg of difference
+            double avgArmAngelAbsDiff = calculateAvg(absoluteAvgDiff);
+
+            // don't forget to change header method immediately below !!!
+            return new double[]{
+                    avgArmAngel,
+                    avgArmAngelAbsDiff
+            };
+        }
+    }
+
+    private static String getArmFeaturesHeader(){
+        String header = "avgArmAngel, avgArmAngelAbsDiff";
         return header;
     }
 
