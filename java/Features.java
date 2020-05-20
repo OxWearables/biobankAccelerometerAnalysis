@@ -644,7 +644,7 @@ public class Features {
     }
 
     private static double[] computeFiveSecAvg(double[] x, int sampleRate) {
-        int avgsLen = (int)Math.ceil(x.length/(5*sampleRate));
+        int avgsLen = (int)Math.ceil(x.length/(5.0*sampleRate));
         double[] avgs = new double[avgsLen];
         int count = 0;
         int sum = 0;
