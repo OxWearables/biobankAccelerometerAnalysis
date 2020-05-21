@@ -53,8 +53,8 @@ public class Features {
         // construct final output array
         // don't forget to change header method immediately below !!!
         double[] output = AccStats.combineArrays(sanDiegoFeats, madFeats);
-        output = AccStats.combineArrays(output, uniFeats);
         output = AccStats.combineArrays(output, armFeats);
+        output = AccStats.combineArrays(output, uniFeats);
         output = AccStats.combineArrays(output, xFFTfeats);
         output = AccStats.combineArrays(output, yFFTfeats);
         output = AccStats.combineArrays(output, zFFTfeats);
