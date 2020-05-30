@@ -129,13 +129,14 @@ def plotTimeSeries(
         # and then plot time series data for this day
         plt.subplot(nrows, 1, i+1)
         plt.plot(timeSeries, group['acc'], c='k')
-        plt.fill(timeSeries, np.multiply(group['imputed'], ymax),
-            labels_as_col['imputed'], alpha=1.0)
+        plt.fill_between(timeSeries, y1 = np.multiply(group['imputed'], ymax), 
+            y2 = np.multiply(group['imputed'], ymax * 0.5),
+            color = labels_as_col['imputed'], alpha=1.0)
 
         # change display properties of this subplot
         ax = plt.gca()
         if len(labels)>0:
-            ax.stackplot(timeSeries, [np.multiply(group[l], ymax) for l in labels],
+            ax.stackplot(timeSeries, [np.multiply(group[l], ymax * 0.5) for l in labels],
                 colors=[labels_as_col[l] for l in labels], alpha=0.5, edgecolor="none")
         # add date label to left hand side of each day's activity plot
         plt.title(
