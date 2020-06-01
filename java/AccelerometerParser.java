@@ -236,7 +236,7 @@ public class AccelerometerParser {
 					System.exit(-1);
 				}
 				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartTime,
-					csvSampleRate, csvTimeFormat, csvStartRow, csvXYZTCols);
+					csvSampleRate, csvTimeFormat, csvStartRow, csvXYZTCols, verbose);
 			} else {
 				System.err.println("Unrecognised file format for: " + accFile);
 				System.exit(-1);
