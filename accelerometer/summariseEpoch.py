@@ -105,7 +105,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     e = get_interrupts(e, epochPeriod, summary)
 
     # Check if data occurs at a daylight savings crossover
-    e = check_daylight_savings_crossover(e, timeZone, startTime, endTime, summary)
+    e = check_daylight_savings_crossover(e, startTime, endTime, summary, timeZone)
 
     # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
