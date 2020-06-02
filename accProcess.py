@@ -38,6 +38,11 @@ def main():
                             by timezone difference from configure timezone and
                             deployment timezone
                             (default : %(default)s""")
+    parser.add_argument('--timeZone',
+                            metavar='e.g. Europe/London', default='Europe/London',
+                            type=int, help="""timezone in country/city format to
+                            be used for daylight savings crossover check
+                            (default : %(default)s""")
     parser.add_argument('--startTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
                             type=str2date, help="""removes data before this
@@ -342,7 +347,8 @@ def main():
     # Summarise epoch
     epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
         args.epochFile, args.nonWearFile, summary,
-        activityClassification=args.activityClassification, startTime=args.startTime,
+        activityClassification=args.activityClassification, 
+        timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
