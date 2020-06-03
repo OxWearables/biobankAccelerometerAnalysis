@@ -74,7 +74,6 @@ public class ActigraphReader extends DeviceReader {
             double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
             long _LastSampleTime, firstSampleTime=-1;
             String serialNumber = "";
-            accelerationScale = setAccelerationScale(serialNumber);
 
             while (infoReader.ready()) {
                 String line = infoReader.readLine();
@@ -98,6 +97,7 @@ public class ActigraphReader extends DeviceReader {
                     }
                 }
             }
+            accelerationScale = setAccelerationScale(serialNumber);
 
             if ((sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) && gt3Version != VALID_GT3_V2_FILE) {
                 System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");

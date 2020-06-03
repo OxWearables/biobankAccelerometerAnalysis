@@ -351,7 +351,7 @@ public class EpochWriter {
 		epochSummary += "," + xResampled.length + "," + errCounter[0];
 		epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
 		epochSummary += "," + timeVals.size();
-
+		
 		//write line to file...
 		double xStd = stats[8]; //needed to identify stationary episodes
 		double yStd = stats[9]; //if running first step of calibration process
