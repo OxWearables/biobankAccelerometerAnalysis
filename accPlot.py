@@ -48,6 +48,11 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""If activity classification during imputed
                             period will be displayed (default : %(default)s)""")
+    parser.add_argument('--imputedLabelsHeight',
+                            metavar='Proportion i.e. 0-1.0', default=0.9,
+                            type=float, help="""Proportion of plot labels take
+                            if activity classification during imputed
+                            period will be displayed (default : %(default)s)""")
 
     # check input is ok
     if len(sys.argv) < 3:
@@ -62,7 +67,8 @@ def main():
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
         activityModel=args.activityModel,
         useRecommendedImputation=args.useRecommendedImputation,
-        imputedLabels=args.imputedLabels)
+        imputedLabels=args.imputedLabels,
+        imputedLabelsHeight=args.imputedLabelsHeight)
 
 
 
@@ -71,7 +77,8 @@ def plotTimeSeries(
         plotFile,
         activityModel="activityModels/doherty2018-apr20Update.tar",
         useRecommendedImputation=True,
-        imputedLabels=False):
+        imputedLabels=False,
+        imputedLabelsHeight=0.9):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
@@ -81,6 +88,8 @@ def plotTimeSeries(
         imputed values for missing data
     :param bool imputedLabels: If activity classification during imputed period 
         will be displayed
+    :param float imputedLabelsHeight: Proportion of plot labels take up if
+        <imputedLabels> is True
 
     :return: Writes plot to <plotFile>
     :rtype: void
@@ -119,7 +128,7 @@ def plotTimeSeries(
         d = d[d['imputed']==0] # if requested, do not show imputed values
         
     if imputedLabels:
-        labelsPosition = 0.75
+        labelsPosition = imputedLabelsHeight
     else:
         labelsPosition = 1
     
