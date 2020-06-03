@@ -35,11 +35,11 @@ public class Features {
         double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate, 
                                                             numFFTbinsPerChannel);
 
-        // get arm angel features
-        double[] armFeats = calculateArmFeatures(x, y, z, sampleRate);
-
         // get MAD features
         double[] madFeats = calculateMADFeatures(x, y, z);
+
+        // get arm angel features
+        double[] armFeats = calculateArmFeatures(x, y, z, sampleRate);
 
         // get Unilever (Zhang/Rowlands) features
         double[] uniFeats = unileverFeatures(filteredVM, sampleRate);
@@ -610,65 +610,7 @@ public class Features {
         String header = "f1,p1,f2,p2,f625,p625,totalPower";
         return header;
     }
-
-    /**
-     * Obtain the rolling window median of window of size k
-     */
-    public static double[] medianSlidingWindow(double[] nums, int k) {
-        double[] res=new double[nums.length-k+1];
-        List<Double> list = new ArrayList<Double>();
-        for(int i=0;i<k;i++){
-            list.add(nums[i]);
-        }
-        Collections.sort(list);
-        res[0]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
-        for(int i=0;i<nums.length-k;i++){
-            double left=nums[i];
-            double right=nums[i+k];
-            int index=Collections.binarySearch(list,right);
-            if(index>=0) list.add(index,right);
-            else list.add(-index-1,right);
-            index=Collections.binarySearch(list,left);
-            list.remove(index);
-            res[i+1]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
-        }
-        return res;
-    }
-
-    private static double calculateAvg(double[] x) {
-        double sum = 0;
-        for (int i = 0; i < x.length; i++) {
-            sum += x[i];
-        }
-        return sum/x.length;
-    }
-
-    private static double[] computeFiveSecAvg(double[] x, int sampleRate) {
-        int avgsLen = (int)Math.ceil(x.length/(5.0*sampleRate));
-        double[] avgs = new double[avgsLen];
-        int count = 0;
-        int sum = 0;
-        int j = 0;
-        for (int i = 0; i < x.length; i++) {
-            count++;
-            sum += x[i];
-            if (count==5*sampleRate || i==x.length-1) {
-                avgs[j] = sum/count;
-                j++;
-                sum = 0;
-                count = 0;
-            }
-        }
-        return avgs;
-    }
-
-    private static double[] computeAbsoluteDiff(double[] x) {
-        double[] res = new double[x.length-1];
-        for (int i = 1; i < x.length; i++) {
-            res[i-1] = Math.abs(x[i]-x[i-1]);
-        }
-        return res;
-    }
+    
 
     /**
      * From paper:
@@ -706,13 +648,13 @@ public class Features {
 
             // 3. consecutive 5-sec avg
             double[] fiveSecAvg = computeFiveSecAvg(angelZ, sampleRate);
-            double avgArmAngel = calculateAvg(fiveSecAvg);
+            double avgArmAngel = AccStats.mean(fiveSecAvg);
 
             // 4. Absolute difference between successive values
             double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
 
             // get the avg of difference
-            double avgArmAngelAbsDiff = calculateAvg(absoluteAvgDiff);
+            double avgArmAngelAbsDiff = AccStats.mean(absoluteAvgDiff);
 
             // don't forget to change header method immediately below !!!
             return new double[]{
@@ -725,6 +667,57 @@ public class Features {
     private static String getArmFeaturesHeader(){
         String header = "avgArmAngel,avgArmAngelAbsDiff";
         return header;
+    }
+
+    /**
+     * Obtain the rolling window median of window of size k
+     */
+    public static double[] medianSlidingWindow(double[] nums, int k) {
+        double[] res=new double[nums.length-k+1];
+        List<Double> list = new ArrayList<Double>();
+        for(int i=0;i<k;i++){
+            list.add(nums[i]);
+        }
+        Collections.sort(list);
+        res[0]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
+        for(int i=0;i<nums.length-k;i++){
+            double left=nums[i];
+            double right=nums[i+k];
+            int index=Collections.binarySearch(list,right);
+            if(index>=0) list.add(index,right);
+            else list.add(-index-1,right);
+            index=Collections.binarySearch(list,left);
+            list.remove(index);
+            res[i+1]=(k%2==0)?((double)list.get(k/2-1)+(double)list.get(k/2))/2:list.get(k/2);
+        }
+        return res;
+    }
+
+    private static double[] computeFiveSecAvg(double[] x, int sampleRate) {
+        int avgsLen = (int)Math.ceil(x.length/(5.0*sampleRate));
+        double[] avgs = new double[avgsLen];
+        int count = 0;
+        int sum = 0;
+        int j = 0;
+        for (int i = 0; i < x.length; i++) {
+            count++;
+            sum += x[i];
+            if (count==5*sampleRate || i==x.length-1) {
+                avgs[j] = sum/count;
+                j++;
+                sum = 0;
+                count = 0;
+            }
+        }
+        return avgs;
+    }
+
+    private static double[] computeAbsoluteDiff(double[] x) {
+        double[] res = new double[x.length-1];
+        for (int i = 1; i < x.length; i++) {
+            res[i-1] = Math.abs(x[i]-x[i-1]);
+        }
+        return res;
     }
 
 }
