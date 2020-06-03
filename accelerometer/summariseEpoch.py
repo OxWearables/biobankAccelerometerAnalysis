@@ -13,7 +13,8 @@ from scipy import fftpack
 from datetime import timedelta
 
 def getActivitySummary(epochFile, nonWearFile, summary,
-    activityClassification=True, startTime=None, endTime=None,
+    activityClassification=True, timeZone='Europe/London', 
+    startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60, 
     mgMVPA=100, mgVPA=425, 
     activityModel="activityModels/doherty-may20.tar",
@@ -35,6 +36,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
     :param bool activityClassification: Perform machine learning of activity states
+    :param str timeZone: timezone in country/city format to be used for daylight 
+        savings crossover check
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param int epochPeriod: Size of epoch time window (in seconds)
@@ -102,7 +105,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     e = get_interrupts(e, epochPeriod, summary)
 
     # Check if data occurs at a daylight savings crossover
-    e = check_daylight_savings_crossover(e, startTime, endTime, summary)
+    e = check_daylight_savings_crossover(e, startTime, endTime, summary, timeZone)
 
     # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
@@ -177,7 +180,7 @@ def get_interrupts(e, epochPeriod, summary):
     return e
 
 
-def check_daylight_savings_crossover(e, startTime, endTime, summary):
+def check_daylight_savings_crossover(e, startTime, endTime, summary, timeZone='Europe/London'):
     """Check if data occurs at a daylight savings crossover
 
     If daylight savings crossover, update times after time-change by +/- 1hr.
@@ -187,6 +190,8 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary):
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param dict summary: Output dictionary containing all summary metrics
+    :param str timeZone: timezone in country/city format to be used for daylight 
+        savings crossover check
 
     :return: Write dict <summary> key 'quality-daylightSavingsCrossover'
     :rtype: void
@@ -196,7 +201,7 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary):
     """
 
     daylightSavingsCrossover = 0
-    localTime = pytz.timezone('Europe/London')
+    localTime = pytz.timezone(timeZone)
     # Convert because pytz can error if not using python datetime type
     startTimeZone = localTime.localize(startTime.to_pydatetime())
     endTimeZone = localTime.localize(endTime.to_pydatetime())
