@@ -40,7 +40,7 @@ def main():
                             (default : %(default)s""")
     parser.add_argument('--timeZone',
                             metavar='e.g. Europe/London', default='Europe/London',
-                            type=int, help="""timezone in country/city format to
+                            type=str, help="""timezone in country/city format to
                             be used for daylight savings crossover check
                             (default : %(default)s""")
     parser.add_argument('--startTime',

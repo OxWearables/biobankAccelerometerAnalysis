@@ -180,7 +180,8 @@ def get_interrupts(e, epochPeriod, summary):
     return e
 
 
-def check_daylight_savings_crossover(e, startTime, endTime, summary, timeZone='Europe/London'):
+def check_daylight_savings_crossover(e, startTime, endTime, summary, 
+        timeZone='Europe/London'):
     """Check if data occurs at a daylight savings crossover
 
     If daylight savings crossover, update times after time-change by +/- 1hr.
