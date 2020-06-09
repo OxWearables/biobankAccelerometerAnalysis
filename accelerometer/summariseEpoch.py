@@ -202,6 +202,7 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary,
     """
 
     daylightSavingsCrossover = 0
+    utc_tz = pytz.timezone("UTC")
     localTime = pytz.timezone(timeZone)
     # Convert because pytz can error if not using python datetime type
     startTimeZone = localTime.localize(startTime.to_pydatetime())
@@ -218,11 +219,14 @@ def check_daylight_savings_crossover(e, startTime, endTime, summary,
         for t in localTime._utc_transition_times:
             if t>startTime:
                 transition = t
+                transition = transition - pd.DateOffset(seconds = 1)
+                transition = utc_tz.localize(transition)
+                transition = localTime.normalize(transition)
+                transition = transition.replace(tzinfo = None)
+                transition = transition + pd.DateOffset(seconds = 1)
                 break
         # If Autumn crossover time, adjust transition time plus remove 1hr chunk
         if offset == -1:
-            # pytz stores dst crossover at 1am, but clocks change at 2am local
-            transition = transition + pd.DateOffset(hours=1)
             # Remove last hr before DST cut, which will be subsequently overwritten
             e = e[(e.index < transition - pd.DateOffset(hours=1)) |
                     (e.index >= transition)]
