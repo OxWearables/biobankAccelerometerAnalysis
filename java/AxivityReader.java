@@ -40,9 +40,6 @@ public class AxivityReader extends DeviceReader {
         // data block support variables
         String header = "";
 
-        // Variables for tracking start offset of header
-        long START_OFFSET_NANOS = 0;
-
         int bufSize = 512;
         ByteBuffer buf = ByteBuffer.allocate(bufSize);
         try ( FileInputStream accStream = new FileInputStream(accFile); ) {
@@ -56,7 +53,7 @@ public class AxivityReader extends DeviceReader {
                                                 // interpolates timestamp
                                                 // between blocks.
             while (rawAccReader.read(buf) != -1) {
-                readCwaBuffer(buf, START_OFFSET_NANOS,
+                readCwaBuffer(buf,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
                     errCounter, epochWriter);
                 buf.clear();
@@ -92,9 +89,6 @@ public class AxivityReader extends DeviceReader {
         // data block support variables
         String header = "";
 
-        // Variables for tracking start offset of header
-        long START_OFFSET_NANOS = 0;
-
         int bufSize = 512;
         ByteBuffer buf = ByteBuffer.allocate(bufSize);
         try ( FileInputStream accStream = new FileInputStream(accFile); ) {
@@ -109,7 +103,7 @@ public class AxivityReader extends DeviceReader {
                                                 // interpolates timestamp
                                                 // between blocks.
             while (rawAccReader.read(buf) != -1) {
-                readCwaBuffer(buf, START_OFFSET_NANOS,
+                readCwaBuffer(buf,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
                     errCounter, epochWriter);
                 buf.clear();
@@ -137,7 +131,7 @@ public class AxivityReader extends DeviceReader {
      * https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
     **/
     private static void readCwaBuffer(ByteBuffer buf,
-        long START_OFFSET_NANOS, boolean USE_PRECISE_TIME,
+        boolean USE_PRECISE_TIME,
         LocalDateTime[] lastBlockTime, int[] lastBlockTimeIndex, String header,
         int[] errCounter, EpochWriter epochWriter)
     {
@@ -318,7 +312,7 @@ public class AxivityReader extends DeviceReader {
                     x = xRaw / 256.0;
                     y = yRaw / 256.0;
                     z = zRaw / 256.0;
-                    timeValue = getEpochMillis(blockTime.plusNanos(START_OFFSET_NANOS));
+                    timeValue = getEpochMillis(blockTime);
 
                     epochWriter.newValues(timeValue, x, y, z, temperature, errCounter);
 
