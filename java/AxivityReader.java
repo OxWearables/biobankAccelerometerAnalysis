@@ -8,6 +8,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.zip.GZIPInputStream;
 
 
@@ -15,6 +17,10 @@ import java.util.zip.GZIPInputStream;
  * Calculates epoch summaries from an AX3 .CWA file.
  */
 public class AxivityReader extends DeviceReader {
+
+    // public static ZonedDateTime SESSION_START = null;
+    // public static ZoneId zoneId = ZoneId.of("Europe/London");
+    public static LocalDateTime SESSION_START = null;
 
     /**
      * Read and process Axivity CWA file. Setup file reading infrastructure
@@ -25,7 +31,7 @@ public class AxivityReader extends DeviceReader {
         EpochWriter epochWriter,
         int timeZoneOffset,
         Boolean verbose) {
-        
+
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
         // Inter-block timstamp tracking
@@ -36,7 +42,6 @@ public class AxivityReader extends DeviceReader {
         String header = "";
 
         // Variables for tracking start offset of header
-        LocalDateTime SESSION_START = null;
         long START_OFFSET_NANOS = 0;
 
         int bufSize = 512;
@@ -52,7 +57,7 @@ public class AxivityReader extends DeviceReader {
                                                 // interpolates timestamp
                                                 // between blocks.
             while (rawAccReader.read(buf) != -1) {
-                readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
+                readCwaBuffer(buf, START_OFFSET_NANOS,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
                     errCounter, timeZoneOffset, epochWriter);
                 buf.clear();
@@ -90,7 +95,6 @@ public class AxivityReader extends DeviceReader {
         String header = "";
 
         // Variables for tracking start offset of header
-        LocalDateTime SESSION_START = null;
         long START_OFFSET_NANOS = 0;
 
         int bufSize = 512;
@@ -107,7 +111,7 @@ public class AxivityReader extends DeviceReader {
                                                 // interpolates timestamp
                                                 // between blocks.
             while (rawAccReader.read(buf) != -1) {
-                readCwaBuffer(buf, SESSION_START, START_OFFSET_NANOS,
+                readCwaBuffer(buf, START_OFFSET_NANOS,
                     USE_PRECISE_TIME, lastBlockTime, lastBlockTimeIndex, header,
                     errCounter, timeZoneOffset, epochWriter);
                 buf.clear();
@@ -134,7 +138,7 @@ public class AxivityReader extends DeviceReader {
      * to epochFileWriter. CWA format is described at:
      * https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
     **/
-    private static void readCwaBuffer(ByteBuffer buf, LocalDateTime SESSION_START,
+    private static void readCwaBuffer(ByteBuffer buf,
         long START_OFFSET_NANOS, boolean USE_PRECISE_TIME,
         LocalDateTime[] lastBlockTime, int[] lastBlockTimeIndex, String header,
         int[] errCounter, int timeZoneOffset, EpochWriter epochWriter)
@@ -147,10 +151,12 @@ public class AxivityReader extends DeviceReader {
             // Read first page (& data-block) to get time, temp,
             // measurement frequency, and start of epoch values
             try {
-                SESSION_START = cwaHeaderLoggingStartTime(buf, timeZoneOffset);
+                LocalDateTime blockTime = cwaHeaderLoggingStartTime(buf, timeZoneOffset);
+                SESSION_START = blockTime;
+                // SESSION_START = blockTime.atZone(zoneId)
+                System.out.println("Device was programmed with delayed start time");
                 System.out.println("Session start:" + SESSION_START);
             } catch (Exception e) {
-                System.err.println("No preset start time");
             }
         } else if (header.equals("AX")) {
             // read each individual page block, and process epochs...
@@ -220,8 +226,16 @@ public class AxivityReader extends DeviceReader {
                 }
 
                 // determine time for indexed sample within block
-                LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp, 
+                LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp,
                                                     fractional, timeZoneOffset);
+
+                // if SESSION_START not set yet, this is the first block
+                if (SESSION_START == null) {
+                    SESSION_START = blockTime;
+                    // SESSION_START = blockTime.atZone(zoneId);
+                    System.out.println("Session start: " + SESSION_START);
+                }
+
                 // first & last sample. Actually, last = first sample in next block
                 LocalDateTime firstSampleTime, lastSampleTime;
                 // if no interval between times (or interval too large)
