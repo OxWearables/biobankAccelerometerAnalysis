@@ -32,12 +32,6 @@ def main():
                             """)
 
     #optional inputs
-    parser.add_argument('--timeZoneOffset',
-                            metavar='e.g. -180', default=0,
-                            type=int, help="""timezone minutes offset induced 
-                            by timezone difference from configure timezone and
-                            deployment timezone
-                            (default : %(default)s""")
     parser.add_argument('--timeZone',
                             metavar='e.g. Europe/London', default='Europe/London',
                             type=str, help="""timezone in country/city format to
@@ -78,26 +72,26 @@ def main():
                              (default : %(default)s)""")
     parser.add_argument('--csvStartTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
-                            type=str2date, help="""start time for csv file 
+                            type=str2date, help="""start time for csv file
                             when time column is not available
                             (default : %(default)s)""")
     parser.add_argument('--csvSampleRate',
                             metavar='Hz, or samples/second', default=None,
-                            type=float, help="""sample rate for csv file 
+                            type=float, help="""sample rate for csv file
                             when time column is not available (default
                              : %(default)s)""")
     parser.add_argument('--csvTimeFormat',
                             metavar='time format', default=None,
-                            type=str, help="""time format for csv file 
+                            type=str, help="""time format for csv file
                             when time column is available (default
-                             : %(default)s)""")                         
+                             : %(default)s)""")
     parser.add_argument('--csvStartRow',
                             metavar='start row', default=None, type=int,
                             help="""start row for accelerometer data in csv file (default
-                             : %(default)s, must be an integer)""")                         
+                             : %(default)s, must be an integer)""")
     parser.add_argument('--csvXYZTCols',
                             metavar='XYZT Cols', default=None,
-                            type=str, help="""index of column positions for XYZT columns, 
+                            type=str, help="""index of column positions for XYZT columns,
                             e.g. "0,1,2,3" (default
                              : %(default)s)""")
     # optional outputs
@@ -156,7 +150,7 @@ def main():
                              (default : %(default)s)""")
     parser.add_argument('--useRecommendedImputation',
                             metavar='True/False', default=True, type=str2bool,
-                            help="""Highly recommended method to impute missing 
+                            help="""Highly recommended method to impute missing
                             data using data from other days around the same time
                              (default : %(default)s)""")
     # activity classification arguments
@@ -168,11 +162,11 @@ def main():
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/doherty-may20.tar",
                             help="""trained activity model .tar file""")
-    
+
     # circadian rhythm options
     parser.add_argument('--psd',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate power spectral density for 24 hour 
+                            help="""Calculate power spectral density for 24 hour
                                     circadian period
                              (default : %(default)s)""")
     parser.add_argument('--fourierFrequency',
@@ -181,12 +175,12 @@ def main():
                              (default : %(default)s)""")
     parser.add_argument('--fourierWithAcc',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""True will do the Fourier analysis of circadian rhythms (for PSD and Fourier Frequency) with 
+                            help="""True will do the Fourier analysis of circadian rhythms (for PSD and Fourier Frequency) with
                                     acceleration data instead of sleep signal
-                             (default : %(default)s)""") 
+                             (default : %(default)s)""")
     parser.add_argument('--m10l5',
                             metavar='True/False', default=False, type=str2bool,
-                            help="""Calculate relative amplitude of most and 
+                            help="""Calculate relative amplitude of most and
                                     least active acceleration periods for circadian rhythm analysis
                              (default : %(default)s)""")
     # optional outputs
@@ -336,8 +330,7 @@ def main():
             activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawFile=args.rawFile,
             npyOutput=args.npyOutput, npyFile=args.npyFile,
-            startTime=args.startTime, endTime=args.endTime, verbose=args.verbose, 
-            timeZoneOffset=args.timeZoneOffset,
+            startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
             csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
             csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
             csvXYZTCols=args.csvXYZTCols)
@@ -347,15 +340,15 @@ def main():
     # Summarise epoch
     epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
         args.epochFile, args.nonWearFile, summary,
-        activityClassification=args.activityClassification, 
+        activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgMVPA=args.mgMVPA,
         mgVPA=args.mgVPA, activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
         useRecommendedImputation=args.useRecommendedImputation,
-        psd=args.psd, fourierFrequency=args.fourierFrequency, 
-        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5, 
+        psd=args.psd, fourierFrequency=args.fourierFrequency,
+        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
         verbose=args.verbose)
 
     # Generate time series file (note: this will also resample to epochData so do this last)

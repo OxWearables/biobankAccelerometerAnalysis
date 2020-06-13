@@ -19,7 +19,7 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     activityClassification=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     startTime=None, endTime=None,
-    verbose=False, timeZoneOffset=0,
+    verbose=False,
     csvStartTime=None, csvSampleRate=None, csvTimeFormat=None, csvStartRow=None, csvXYZTCols=None):
     """Process raw accelerometer file, writing summary epoch stats to file
 
@@ -56,7 +56,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param bool verbose: Print verbose output
-    :param int timeZoneOffset: timezone difference between configure and deployment (in minutes)
     :param datetime csvStartTime: start time for csv file when time column is not available
     :param float csvSampleRate: sample rate for csv file when time column is not available
     :param str csvTimeFormat: time format for csv file when time column is available
@@ -95,15 +94,13 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             commandArgs = ["java", "-classpath", javaClassPath,
                 "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                 "outputFile:" + stationaryFile,
-                "verbose:" + str(verbose), 
+                "verbose:" + str(verbose),
                 "filter:"+str(useFilter),
                 "getStationaryBouts:true", "epochPeriod:10",
                 "stationaryStd:" + str(staticStdG),
                 "sampleRate:" + str(sampleRate)]
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
-            if timeZoneOffset:
-                commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
             if csvStartTime:
                 commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
             if csvSampleRate:
@@ -123,12 +120,12 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             # record calibrated axes scale/offset/temp vals + static point stats
             getCalibrationCoefs(stationaryFile, summary)
             xyzIntercept = [summary['calibration-xOffset(g)'],
-                            summary['calibration-yOffset(g)'], 
+                            summary['calibration-yOffset(g)'],
                             summary['calibration-zOffset(g)']]
-            xyzSlope = [summary['calibration-xSlope(g)'], 
+            xyzSlope = [summary['calibration-xSlope(g)'],
                         summary['calibration-ySlope(g)'],
                         summary['calibration-zSlope(g)']]
-            xyzTemp = [summary['calibration-xTemp(C)'], 
+            xyzTemp = [summary['calibration-xTemp(C)'],
                         summary['calibration-yTemp(C)'],
                         summary['calibration-zTemp(C)']]
             meanTemp = summary['calibration-meanDeviceTemp(C)']
@@ -165,8 +162,6 @@ def processInputFileToEpoch(inputFile, epochFile, stationaryFile, summary,
             commandArgs.append("startTime:" + startTime.strftime("%Y-%m-%dT%H:%M"))
         if endTime:
             commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
-        if timeZoneOffset:
-            commandArgs.append("timeZoneOffset:" + str(timeZoneOffset))
         if csvStartTime:
             commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
         if csvSampleRate:
@@ -238,7 +233,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         d = pd.read_csv(staticBoutsFile, usecols=cols, compression='gzip')
         d = d.to_numpy()
         if len(d)<=5:
-            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0], 
+            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0],
                 [0.0,0.0,0.0], 20, np.nan, np.nan,
                 np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
             return

@@ -24,7 +24,7 @@ public class AccelerometerParser {
 	private static final DecimalFormat DF6 = new DecimalFormat("0.000000");
 	private static final DecimalFormat DF3 = new DecimalFormat("0.000");
 	private static final DecimalFormat DF2 = new DecimalFormat("0.00");
-	
+
 
 	/*
 	 * Parse command line args, then call method to identify and write epochs.
@@ -64,7 +64,6 @@ public class AccelerometerParser {
     	boolean useFilter = true;
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
-    	int timeZoneOffset = 0;
     	boolean getFeatures = false;
     	int numFFTbins = 12; // number of fft bins to print
 
@@ -107,8 +106,6 @@ public class AccelerometerParser {
 				String funcParam = param.substring(param.indexOf(":") + 1);
 				if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
-				} else if (funcName.equals("timeZoneOffset")) {
-					timeZoneOffset = Integer.parseInt(funcParam);
 				} else if (funcName.equals("verbose")) {
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
@@ -219,11 +216,9 @@ public class AccelerometerParser {
 
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
-				AxivityReader.readCwaEpochs(accFile, epochWriter, 
-											timeZoneOffset, verbose);
+				AxivityReader.readCwaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
-                AxivityReader.readCwaGzEpochs(accFile, epochWriter, 
-                								timeZoneOffset, verbose);
+                AxivityReader.readCwaGzEpochs(accFile, epochWriter, verbose);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
@@ -243,7 +238,7 @@ public class AccelerometerParser {
 			}
 		} catch (Exception excep) {
 			excep.printStackTrace(System.err);
-			System.err.println("error reading/writing file " + outputFile + ": " 
+			System.err.println("error reading/writing file " + outputFile + ": "
 								+ excep.toString());
 			System.exit(-2);
 		} finally {
@@ -260,10 +255,10 @@ public class AccelerometerParser {
 
 
 	private static LocalDateTime epochMillisToLocalDateTime(long m) {
-		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000), 
-			(int) TimeUnit.MILLISECONDS.toNanos((m % 1000)), 
+		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000),
+			(int) TimeUnit.MILLISECONDS.toNanos((m % 1000)),
 			ZoneOffset.UTC);
 	}
-	
+
 
 }
