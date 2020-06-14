@@ -7,9 +7,11 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.zone.ZoneRules;
 import java.util.zip.GZIPInputStream;
 
 
@@ -18,9 +20,12 @@ import java.util.zip.GZIPInputStream;
  */
 public class AxivityReader extends DeviceReader {
 
-    // public static ZonedDateTime SESSION_START = null;
-    // public static ZoneId zoneId = ZoneId.of("Europe/London");
-    public static LocalDateTime SESSION_START = null;
+    private static ZonedDateTime sessionStart = null;
+    private static boolean sessionStartDST;
+
+    private static ZoneId zoneId;
+    private static ZoneRules rules;
+
 
     /**
      * Read and process Axivity CWA file. Setup file reading infrastructure
@@ -28,8 +33,11 @@ public class AxivityReader extends DeviceReader {
     **/
     public static void readCwaEpochs(
         String accFile,
+        String timeZone,
         EpochWriter epochWriter,
         Boolean verbose) {
+
+        setTimeZone(timeZone);
 
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
@@ -71,14 +79,18 @@ public class AxivityReader extends DeviceReader {
         }
     }
 
+
     /**
      * Read and process Axivity CWA.gz gzipped file. Setup file reading
      * infrastructure and then call readCwaBuffer() method
     **/
     public static void readCwaGzEpochs(
         String accFile,
+        String timeZone,
         EpochWriter epochWriter,
         Boolean verbose) {
+
+        setTimeZone(timeZone);
 
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
@@ -144,10 +156,9 @@ public class AxivityReader extends DeviceReader {
             // measurement frequency, and start of epoch values
             try {
                 LocalDateTime blockTime = cwaHeaderLoggingStartTime(buf);
-                SESSION_START = blockTime;
-                // SESSION_START = blockTime.atZone(zoneId)
+                setSessionStart(blockTime);
                 System.out.println("Device was programmed with delayed start time");
-                System.out.println("Session start:" + SESSION_START);
+                System.out.println("Session start: " + sessionStart);
             } catch (Exception e) {
             }
         } else if (header.equals("AX")) {
@@ -221,11 +232,10 @@ public class AxivityReader extends DeviceReader {
                 LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp,
                                                     fractional);
 
-                // if SESSION_START not set yet, this is the first block
-                if (SESSION_START == null) {
-                    SESSION_START = blockTime;
-                    // SESSION_START = blockTime.atZone(zoneId);
-                    System.out.println("Session start: " + SESSION_START);
+                // if sessionStart not set yet, this is the first block
+                if (sessionStart == null) {
+                    setSessionStart(blockTime);
+                    System.out.println("Session start: " + sessionStart);
                 }
 
                 // first & last sample. Actually, last = first sample in next block
@@ -259,7 +269,7 @@ public class AxivityReader extends DeviceReader {
                 long spanNanos = Duration.between(firstSampleTime, lastSampleTime).toNanos();
 
                 // raw reading values
-                long timeValue = 0;
+                long t = 0;  // Unix time in millis
                 long value = 0; // x/y/z vals
                 short xRaw = 0;
                 short yRaw = 0;
@@ -312,14 +322,16 @@ public class AxivityReader extends DeviceReader {
                     x = xRaw / 256.0;
                     y = yRaw / 256.0;
                     z = zRaw / 256.0;
-                    timeValue = getEpochMillis(blockTime);
+                    t = zonedWithDSTCorrection(blockTime).toInstant().toEpochMilli();
 
-                    epochWriter.newValues(timeValue, x, y, z, temperature, errCounter);
+                    epochWriter.newValues(t, x, y, z, temperature, errCounter);
 
                 }
             } catch (Exception excep) {
                 excep.printStackTrace(System.err);
-                System.err.println("block err @ " + lastBlockTime[0].toString() + ": " + excep.toString());
+                System.err.println(
+                    "block err @ " + zonedWithDSTCorrection(lastBlockTime[0]).toString() + ": " + excep.toString()
+                );
             }
         }
     }
@@ -348,5 +360,25 @@ public class AxivityReader extends DeviceReader {
     }
 
 
+    private static void setTimeZone(String timeZone) {
+        zoneId = ZoneId.of(timeZone);
+        rules = zoneId.getRules();
+    }
+
+
+    private static void setSessionStart(LocalDateTime ldt) {
+        sessionStart = ldt.atZone(zoneId);
+        sessionStartDST = rules.isDaylightSavings(sessionStart.toInstant());
+    }
+
+
+    private static ZonedDateTime zonedWithDSTCorrection(LocalDateTime ldt) {
+        ZonedDateTime zdt = ldt.atZone(zoneId);
+        boolean isDST = rules.isDaylightSavings(zdt.toInstant());
+        if (isDST != sessionStartDST) {  // DST crossover happened
+            zdt = isDST ? ldt.plusHours(1).atZone(zoneId) : zdt.plusHours(-1);
+        }
+        return zdt;
+    }
 
 }

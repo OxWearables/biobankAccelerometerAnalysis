@@ -13,13 +13,13 @@ from scipy import fftpack
 from datetime import timedelta
 
 def getActivitySummary(epochFile, nonWearFile, summary,
-    activityClassification=True, timeZone='Europe/London', 
+    activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
-    epochPeriod=30, stationaryStd=13, minNonWearDuration=60, 
-    mgMVPA=100, mgVPA=425, 
+    epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
+    mgMVPA=100, mgVPA=425,
     activityModel="activityModels/doherty-may20.tar",
     intensityDistribution=False, useRecommendedImputation=True,
-    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False, 
+    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
     verbose=False):
     """Calculate overall activity summary from <epochFile> data
 
@@ -36,7 +36,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
     :param bool activityClassification: Perform machine learning of activity states
-    :param str timeZone: timezone in country/city format to be used for daylight 
+    :param str timeZone: timezone in country/city format to be used for daylight
         savings crossover check
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
@@ -49,7 +49,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
     :param bool intensityDistribution: Add intensity outputs to dict <summary>
-    :param bool useRecommendedImputation: Highly recommended method to impute 
+    :param bool useRecommendedImputation: Highly recommended method to impute
         missing data using data from other days around the same time
     :param bool verbose: Print verbose output
 
@@ -104,9 +104,6 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # Get interrupt and data error summary vals
     e = get_interrupts(e, epochPeriod, summary)
 
-    # Check if data occurs at a daylight savings crossover
-    e = check_daylight_savings_crossover(e, startTime, endTime, summary, timeZone)
-
     # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
         nonWearFile, summary)
@@ -127,7 +124,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     e = perform_wearTime_imputation(e, verbose)
     e['MVPA'] = e['accImputed'] >= mgMVPA
     e['VPA'] = e['accImputed'] >= mgVPA
-    
+
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
         calculateECDF(e, 'acc', summary, useRecommendedImputation)
@@ -139,7 +136,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         circadianRhythms.calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary)
     if m10l5:
         circadianRhythms.calculateM10L5(e, epochPeriod, summary)
- 
+
     # Main movement summaries
     writeMovementSummaries(e, labels, summary, useRecommendedImputation)
 
@@ -160,12 +157,11 @@ def get_interrupts(e, epochPeriod, summary):
     """
 
     epochNs = epochPeriod * np.timedelta64(1, 's')
-    interrupts = np.where(np.diff(np.array(e.index)) > epochNs)[0]
+    interrupts = np.where(e.index.to_series().diff() > epochNs)[0]
     # Get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
-        interruptMins.append(np.diff(np.array(e[i:i+2].index)) /
-                np.timedelta64(1, 'm'))
+        interruptMins.append(e[i:i+2].index.to_series().diff() / np.timedelta64(1, 'm'))
     # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
@@ -177,71 +173,6 @@ def get_interrupts(e, epochPeriod, summary):
         frames.append(dti.to_frame().drop(columns=0))
     e = pd.concat(frames).sort_index()
 
-    return e
-
-
-def check_daylight_savings_crossover(e, startTime, endTime, summary, 
-        timeZone='Europe/London'):
-    """Check if data occurs at a daylight savings crossover
-
-    If daylight savings crossover, update times after time-change by +/- 1hr.
-    Also, if Autumn crossover time, remove last 1hr chunk before time-change.
-
-    :param pandas.DataFrame e: Pandas dataframe of epoch data
-    :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis
-    :param dict summary: Output dictionary containing all summary metrics
-    :param str timeZone: timezone in country/city format to be used for daylight 
-        savings crossover check
-
-    :return: Write dict <summary> key 'quality-daylightSavingsCrossover'
-    :rtype: void
-
-    :return: Update DataFrame <e> time column after time-change crossover.
-    :rtype: void
-    """
-
-    daylightSavingsCrossover = 0
-    utc_tz = pytz.timezone("UTC")
-    localTime = pytz.timezone(timeZone)
-    # Convert because pytz can error if not using python datetime type
-    startTimeZone = localTime.localize(startTime.to_pydatetime())
-    endTimeZone = localTime.localize(endTime.to_pydatetime())
-    if startTimeZone.dst() != endTimeZone.dst():
-        daylightSavingsCrossover = 1
-        # Find whether clock needs to go forward or back
-        if endTimeZone.dst() > startTimeZone.dst():
-            offset = 1
-        else:
-            offset = -1
-        print('different timezones, offset = ', str(offset))
-        # Find actual crossover time
-        for t in localTime._utc_transition_times:
-            if t>startTime:
-                transition = t
-                transition = transition - pd.DateOffset(seconds = 1)
-                transition = utc_tz.localize(transition)
-                transition = localTime.normalize(transition)
-                transition = transition.replace(tzinfo = None)
-                transition = transition + pd.DateOffset(seconds = 1)
-                break
-        # If Autumn crossover time, adjust transition time plus remove 1hr chunk
-        if offset == -1:
-            # Remove last hr before DST cut, which will be subsequently overwritten
-            e = e[(e.index < transition - pd.DateOffset(hours=1)) |
-                    (e.index >= transition)]
-        print('day light savings transition at:', str(transition))
-        # Now update datetime index to 'fix' values after DST crossover
-        e['newTime'] = e.index
-        e['newTime'] = np.where(e.index >= transition,
-                e.index + np.timedelta64(offset,'h'), e.index)
-        e['newTime'] = np.where(e['newTime'].isnull(), e.index, e['newTime'])
-        e = e.set_index('newTime')
-        # Reset startTime and endTime variables
-        startTime = pd.to_datetime(e.index.values[0])
-        endTime = pd.to_datetime(e.index.values[-1])
-    # And record to output summary
-    summary['quality-daylightSavingsCrossover'] = daylightSavingsCrossover
     return e
 
 
@@ -359,7 +290,7 @@ def perform_wearTime_imputation(e, verbose):
     # Now wearTime weight values
     for col in wearTimeWeights:
         e[col+'Imputed'] = e[col].fillna(e[col+'_imputed'])
-    
+
     if verbose:
         # Features averaged over epochs - use imputed version of features for this.
         # This ignores rows with NaN and infinities
@@ -390,7 +321,7 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param str inputCol: Column to calculate intensity distribution on
     :param dict summary: Output dictionary containing all summary metrics
-    :param bool useRecommendedImputation: Highly recommended method to impute 
+    :param bool useRecommendedImputation: Highly recommended method to impute
         missing data using data from other days around the same time
 
     :return: Write dict <summary> keys '<inputCol>-ecdf-<level...>mg'
@@ -436,16 +367,16 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
-  
 
-    
+
+
 def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
     """Write overall summary stats for each activity type to summary dict
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
-    :param bool useRecommendedImputation: Highly recommended method to impute 
+    :param bool useRecommendedImputation: Highly recommended method to impute
         missing data using data from other days around the same time
 
     :return: Write dict <summary> keys for each activity type 'overall-<avg/sd>',
@@ -492,7 +423,3 @@ def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
-
-
-    
-    

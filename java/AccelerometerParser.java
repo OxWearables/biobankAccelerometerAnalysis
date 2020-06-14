@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +38,8 @@ public class AccelerometerParser {
 		// variables to store default parameter options
 		String[] functionParameters = new String[0];
 
-		String accFile = ""; // file to process
+        String accFile = ""; // file to process
+        String timeZone = "Europe/London";  // file timezone (default: Europe/London)
 		String outputFile = ""; // file name for epoch file
 		String rawFile = ""; // file name for epoch file
 		String npyFile = ""; // file name for epoch file
@@ -103,8 +105,10 @@ public class AccelerometerParser {
 			for (String param : functionParameters) {
 				// individual_Parameters will look like "epoch_period:60"
 				String funcName = param.split(":")[0];
-				String funcParam = param.substring(param.indexOf(":") + 1);
-				if (funcName.equals("outputFile")) {
+                String funcParam = param.substring(param.indexOf(":") + 1);
+                if (funcName.equals("timeZone")) {
+                    timeZone = funcParam;
+                } else if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
 				} else if (funcName.equals("verbose")) {
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
@@ -208,7 +212,7 @@ public class AccelerometerParser {
 			System.out.println("Intermediate file: " + outputFile);
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
-        		npyFile, getFeatures, numFFTbins, timeFormat,
+        		npyFile, getFeatures, numFFTbins, timeFormat, timeZone,
         		epochPeriod, sampleRate, range, swIntercept, swSlope, tempCoef,
         		meanTemp, getStationaryBouts, stationaryStd,
         		startTime, endTime, verbose
@@ -216,9 +220,9 @@ public class AccelerometerParser {
 
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
-				AxivityReader.readCwaEpochs(accFile, epochWriter, verbose);
+				AxivityReader.readCwaEpochs(accFile, timeZone, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
-                AxivityReader.readCwaGzEpochs(accFile, epochWriter, verbose);
+                AxivityReader.readCwaGzEpochs(accFile, timeZone, epochWriter, verbose);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {

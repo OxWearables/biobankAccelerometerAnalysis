@@ -94,9 +94,10 @@ def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn=False,
 
     startTime = pd.to_datetime(epochPD.index.values[0])
     endTime = pd.to_datetime(epochPD.index.values[-1])
-    # resample index so we can add imputed data
-    e = epochPD.reindex(pd.date_range(start=startTime, end=endTime,
-        freq=str(epochPeriod)+'s'))
+    # # resample index so we can add imputed data
+    # e = epochPD.reindex(pd.date_range(start=startTime, end=endTime,
+    #     freq=str(epochPeriod)+'s'))
+    e = epochPD
     e.index.name = TIME_SERIES_COL
 
     # prepare time series header

@@ -34,6 +34,7 @@ public class DeviceReader {
         boolean getFeatures,
         int numFFTbins,
         DateTimeFormatter timeFormat,
+        String timeZone,
         int epochPeriod,
         int sampleRate,
         int range,
@@ -47,7 +48,7 @@ public class DeviceReader {
         long endTime,
         boolean verbose
         ){
-        
+
         // file read/write objects
         EpochWriter epochWriter = null;
         BufferedWriter epochFileWriter = null;
@@ -85,6 +86,7 @@ public class DeviceReader {
                   rawWriter,
                   npyWriter,
                   timeFormat,
+                  timeZone,
                   epochPeriod,
                   sampleRate,
                   range,
@@ -105,7 +107,7 @@ public class DeviceReader {
             System.err.println("error closing file writer: " + excep.toString());
             System.exit(-2);
         }
-        
+
         return epochWriter;
     }
 

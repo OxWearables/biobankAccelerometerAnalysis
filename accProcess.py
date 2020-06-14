@@ -320,8 +320,9 @@ def main():
     # Now process the .CWA file
     if args.processInputFile:
         summary['file-name'] = args.inputFile
-        accelerometer.device.processInputFileToEpoch(args.inputFile, args.epochFile,
-            args.stationaryFile, summary, skipCalibration=args.skipCalibration,
+        accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
+            args.epochFile, args.stationaryFile, summary,
+            skipCalibration=args.skipCalibration,
             stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
             xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
             rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
