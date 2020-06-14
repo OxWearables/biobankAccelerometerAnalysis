@@ -176,8 +176,8 @@ public class EpochWriter {
 			// log that an error occurred, and write epoch with previous values
 			errCounter[0] += 1;
 			if (timeVals.size()>minSamplesForEpoch) {
-				// writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
-				writeEpochSummary(millisToInstant(epochStartTime), timeVals,
+				writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
+				// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
 					xVals, yVals, zVals, temperatureVals, errCounter);
 			} else {
 				System.err.println("not enough samples for an epoch.. discarding " +
@@ -207,8 +207,8 @@ public class EpochWriter {
 				zVals.add(z);
 				temperatureVals.add(temperature);
 			}
-			// writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
-			writeEpochSummary(millisToInstant(epochStartTime), timeVals,
+			writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
+			// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
 				xVals, yVals, zVals, temperatureVals, errCounter);
 
 			epochStartTime = epochStartTime + epochPeriod * 1000;
@@ -257,8 +257,8 @@ public class EpochWriter {
 	 *  [the above does not apply if getSanDiegoFeatures is enabled]
 	 */
 	private void writeEpochSummary(
-			// ZonedDateTime epochStartTime,
-			Instant epochStartTime,
+			ZonedDateTime epochStartTime,
+			// Instant epochStartTime,
 			List<Long> timeVals /* milliseconds since start of epochStartTime */,
 			List<Double> xVals,
 			List<Double> yVals,
@@ -334,7 +334,7 @@ public class EpochWriter {
 			for (int i = 0; i < xResampled.length; i++) {
 				writeLine(
                     rawWriter,
-                    epochStartTime.plus(timeResampled[i], ChronoUnit.MILLIS)
+                    timeFormat.format(epochStartTime.plus(timeResampled[i], ChronoUnit.MILLIS))
                     + "," + DF3.format(xResampled[i])
                     + "," + DF3.format(yResampled[i])
                     + "," + DF3.format(zResampled[i]));
@@ -357,7 +357,7 @@ public class EpochWriter {
 		errCounter[0] += AccStats.countStuckVals(xResampled, yResampled, zResampled);
 
 		// write summary values to file
-        String epochSummary = epochStartTime.toString();
+        String epochSummary = timeFormat.format(epochStartTime);
 		for(int i=0; i<stats.length; i++){
 			epochSummary += "," + DF6.format(stats[i]);
 		}

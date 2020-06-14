@@ -340,7 +340,7 @@ def main():
 
     # Summarise epoch
     epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
-        args.epochFile, args.nonWearFile, summary,
+        args.epochFile, args.nonWearFile, args.tsFile, summary,
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
@@ -351,12 +351,6 @@ def main():
         psd=args.psd, fourierFrequency=args.fourierFrequency,
         fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
         verbose=args.verbose)
-
-    # Generate time series file (note: this will also resample to epochData so do this last)
-    accelerometer.accUtils.generateTimeSeries(epochData, args.tsFile,
-        epochPeriod=args.epochPeriod,
-        timeSeriesDateColumn=args.timeSeriesDateColumn,
-        activityClassification=args.activityClassification, labels=labels)
 
     # Print short summary
     accelerometer.accUtils.toScreen("=== Short summary ===")

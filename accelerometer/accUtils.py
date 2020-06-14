@@ -111,6 +111,7 @@ def generateTimeSeries(epochPD, tsFile, timeSeriesDateColumn=False,
         # fill with vm, imputed data used where needed, convert to mg units
         e['vmFinal'] = e['accImputed']
         # highlight any imputed values
+        #TODO: this doesn't find all nans
         e['imputed'] = np.isnan(e['acc']).astype(int)
         # add activity prediction labels
         if activityClassification:
@@ -502,3 +503,26 @@ def createDirIfNotExists(folder):
 
     if not os.path.exists(folder):
         os.makedirs(folder)
+
+
+
+def date_parser(t):
+    '''
+    Parse date a date string of the form e.g.
+    2020-06-14 19:01:15.123000+0100 [Europe/London]
+    '''
+    tz = re.search(r'(?<=\[).+?(?=\])', t)
+    if tz is not None:
+        tz = tz.group()
+    t = re.sub(r'\[(.*?)\]', '', t)
+    return pd.to_datetime(t, utc=True).tz_convert(tz)
+
+
+
+def date_strftime(t):
+    '''
+    Convert to time format of the form e.g.
+    2020-06-14 19:01:15.123000+0100 [Europe/London]
+    '''
+    tz = t.tz
+    return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')

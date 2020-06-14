@@ -52,8 +52,10 @@ public class AccelerometerParser {
     	DF3.setRoundingMode(RoundingMode.HALF_UP); // To match their implementation
 
     	// epochWriter parameters
-    	int epochPeriod = 30;
-    	DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        int epochPeriod = 30;
+        // output time format, e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
+        // this should be consistent with the date_parser used later in the Python code
+        final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSxxxx '['VV']'");
     	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("M/d/yyyy,HH:mm:ss.SSSS");
     	boolean getStationaryBouts = false;
     	double stationaryStd = 0.013;
@@ -114,9 +116,6 @@ public class AccelerometerParser {
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
 					epochPeriod = Integer.parseInt(funcParam);
-				// Make sure time f
-				} else if (funcName.equals("timeFormat")) {
-					timeFormat = DateTimeFormatter.ofPattern(funcParam);
 				} else if (funcName.equals("filter")) {
 					useFilter = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("getStationaryBouts")) {

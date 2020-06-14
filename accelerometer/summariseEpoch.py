@@ -12,7 +12,8 @@ import scipy as sp
 from scipy import fftpack
 from datetime import timedelta
 
-def getActivitySummary(epochFile, nonWearFile, summary,
+
+def getActivitySummary(epochFile, nonWearFile, tsFile, summary,
     activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
@@ -79,8 +80,10 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         e = epochFile
     else:
         # Use python PANDAS framework to read in and store epochs
-        e = pd.read_csv(epochFile, parse_dates=['time'], index_col=['time'],
-            compression='gzip').sort_index()
+        e = pd.read_csv(
+            epochFile, index_col=['time'],
+            parse_dates=['time'], date_parser=accUtils.date_parser,
+        )
 
     # Remove data before/after user specified start/end times
     rows = e.shape[0]
@@ -139,6 +142,10 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Main movement summaries
     writeMovementSummaries(e, labels, summary, useRecommendedImputation)
+
+    # Write output activity timeseries file
+    if activityClassification:
+        writeActivityTimeseries(e, labels, tsFile)
 
     # Return physical activity summary
     return e, labels
@@ -423,3 +430,29 @@ def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[accType + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
+
+
+
+def writeActivityTimeseries(e, labels, tsFile):
+    """ Write activity timeseries file
+    :param pandas.DataFrame e: Pandas dataframe of epoch data. Must contain
+        activity classification columns with missing rows imputed.
+    :param list(str) labels: Activity state labels
+    :param dict tsFile: output CSV filename
+
+    :return: None
+    :rtype: void
+    """
+    labelsImputed = [l + 'Imputed' for l in labels]
+    cols = ['accImputed'] + labelsImputed + ['METImputed']
+    cols_new = ['acc'] + labels + ['MET']
+
+    e_new = pd.DataFrame(index=e.index)
+    e_new['imputed'] = e.isna().any(1).astype('int')
+    e_new[cols_new] = e[cols]
+
+    # make output time format contain timezone
+    # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
+    e_new.index = e_new.index.to_series().apply(accUtils.date_strftime)
+
+    e_new.to_csv(tsFile, compression='gzip')
