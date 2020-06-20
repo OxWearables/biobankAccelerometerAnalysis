@@ -526,3 +526,36 @@ def date_strftime(t):
     '''
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
+
+
+
+def writeTimeSeries(e, labels, tsFile):
+    """ Write activity timeseries file
+    :param pandas.DataFrame e: Pandas dataframe of epoch data. Must contain
+        activity classification columns with missing rows imputed.
+    :param list(str) labels: Activity state labels
+    :param dict tsFile: output CSV filename
+
+    :return: None
+    :rtype: void
+    """
+    cols = ['accImputed']
+    cols_new = ['acc']
+
+    labelsImputed = [l + 'Imputed' for l in labels]
+    cols.extend(labelsImputed)
+    cols_new.extend(labels)
+
+    if 'MET' in e.columns:
+        cols.append('METImputed')
+        cols_new.append('MET')
+
+    e_new = pd.DataFrame(index=e.index)
+    e_new['imputed'] = e.isna().any(1).astype('int')
+    e_new[cols_new] = e[cols]
+
+    # make output time format contain timezone
+    # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
+    e_new.index = e_new.index.to_series().apply(date_strftime)
+
+    e_new.to_csv(tsFile, compression='gzip')
