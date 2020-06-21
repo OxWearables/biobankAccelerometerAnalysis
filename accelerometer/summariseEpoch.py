@@ -107,6 +107,9 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # Get interrupt and data error summary vals
     e = get_interrupts(e, epochPeriod, summary)
 
+    # Check daylight savings time crossover
+    check_daylight_savings_crossovers(e, summary)
+
     # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
         nonWearFile, summary)
@@ -177,6 +180,16 @@ def get_interrupts(e, epochPeriod, summary):
     e = pd.concat(frames).sort_index()
 
     return e
+
+
+
+def check_daylight_savings_crossovers(e, summary):
+    if e.index[0].dst() < e.index[-1].dst():
+        summary['quality-daylightSavingsCrossover'] = 1
+    elif e.index[0].dst() > e.index[-1].dst():
+        summary['quality-daylightSavingsCrossover'] = -1
+    else:
+        summary['quality-daylightSavingsCrossover'] = 0
 
 
 
