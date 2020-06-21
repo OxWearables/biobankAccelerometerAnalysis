@@ -13,6 +13,9 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.zone.ZoneRules;
 import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
@@ -22,6 +25,14 @@ import java.util.zip.GZIPOutputStream;
  * Common methods to calculate epoch summaries across all device types.
  */
 public class DeviceReader {
+
+    protected static ZonedDateTime sessionStart = null;
+    protected static boolean sessionStartDST;
+
+    protected static ZoneId zoneId;
+    protected static ZoneRules rules;
+
+    protected static int timeShift = 0;
 
 
     public static EpochWriter setupEpochWriter(
@@ -162,5 +173,29 @@ public class DeviceReader {
         }
         return rawVal;
     }
+
+
+    protected static void setTimeSettings(String timeZone, int timeShift) {
+        DeviceReader.zoneId = ZoneId.of(timeZone);
+        DeviceReader.rules = zoneId.getRules();
+        DeviceReader.timeShift = timeShift;
+    }
+
+
+    protected static void setSessionStart(LocalDateTime ldt) {
+        DeviceReader.sessionStart = ldt.atZone(zoneId);
+        DeviceReader.sessionStartDST = rules.isDaylightSavings(sessionStart.toInstant());
+    }
+
+
+    protected static ZonedDateTime zonedWithDSTCorrection(LocalDateTime ldt) {
+        ZonedDateTime zdt = ldt.atZone(zoneId);
+        boolean isDST = rules.isDaylightSavings(zdt.toInstant());
+        if (isDST != sessionStartDST) {  // DST crossover happened
+            zdt = isDST ? ldt.plusHours(1).atZone(zoneId) : zdt.plusHours(-1);
+        }
+        return zdt;
+    }
+
 
 }

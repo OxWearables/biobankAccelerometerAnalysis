@@ -11,7 +11,7 @@ from subprocess import call
 import sys
 
 
-def processInputFileToEpoch(inputFile, timeZone,
+def processInputFileToEpoch(inputFile, timeZone, timeShift,
     epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
     xyzSlope=[1.0, 1.0, 1.0], xyzTemp=[0.0, 0.0, 0.0], meanTemp=20.0,
@@ -95,6 +95,7 @@ def processInputFileToEpoch(inputFile, timeZone,
             commandArgs = ["java", "-classpath", javaClassPath,
                 "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                 "timeZone:" + timeZone,
+                "timeShift:" + str(timeShift),
                 "outputFile:" + stationaryFile,
                 "verbose:" + str(verbose),
                 "filter:"+str(useFilter),
@@ -140,6 +141,7 @@ def processInputFileToEpoch(inputFile, timeZone,
         commandArgs = ["java", "-classpath", javaClassPath,
             "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
             "timeZone:" + timeZone,
+            "timeShift:" + str(timeShift),
             "outputFile:" + epochFile, "verbose:" + str(verbose),
             "filter:"+str(useFilter),
             "sampleRate:" + str(sampleRate),
@@ -183,7 +185,7 @@ def processInputFileToEpoch(inputFile, timeZone,
 
     else:
         if not skipCalibration:
-            commandArgs = [rawDataParser, inputFile, timeZone,
+            commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
                     "-svm-file", epochFile, "-info", stationaryFile,
                     "-svm-extended", "3", "-calibrate", "1",
                     "-interpolate-mode", "2",
@@ -200,7 +202,7 @@ def processInputFileToEpoch(inputFile, timeZone,
             calArgs += str(xyzTemp[1]) + ','
             calArgs += str(xyzTemp[2]) + ','
             calArgs += str(meanTemp)
-            commandArgs = [rawDataParser, inputFile, timeZone,
+            commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
                 "-svm-file", epochFile, "-info", stationaryFile,
                 "-svm-extended", "3", "-calibrate", "0",
                 "-calibration", calArgs, "-interpolate-mode", "2",

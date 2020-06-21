@@ -46,6 +46,7 @@ public class AccelerometerParser {
 		Boolean rawOutput = false; // whether to output raw data
 		Boolean npyOutput = false; // whether to output npy data
 		boolean verbose = false; //to facilitate logging
+        int timeShift = 0;  // shift (in minutes) applied to file time
 
 		DF6.setRoundingMode(RoundingMode.CEILING);
 		DF2.setRoundingMode(RoundingMode.CEILING);
@@ -110,6 +111,8 @@ public class AccelerometerParser {
                 String funcParam = param.substring(param.indexOf(":") + 1);
                 if (funcName.equals("timeZone")) {
                     timeZone = funcParam;
+                } else if (funcName.equals("timeShift")) {
+					timeShift = Integer.parseInt(funcParam);
                 } else if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
 				} else if (funcName.equals("verbose")) {
@@ -219,9 +222,9 @@ public class AccelerometerParser {
 
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
-				AxivityReader.readCwaEpochs(accFile, timeZone, epochWriter, verbose);
+				AxivityReader.readCwaEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
-                AxivityReader.readCwaGzEpochs(accFile, timeZone, epochWriter, verbose);
+                AxivityReader.readCwaGzEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {

@@ -20,13 +20,6 @@ import java.util.zip.GZIPInputStream;
  */
 public class AxivityReader extends DeviceReader {
 
-    private static ZonedDateTime sessionStart = null;
-    private static boolean sessionStartDST;
-
-    private static ZoneId zoneId;
-    private static ZoneRules rules;
-
-
     /**
      * Read and process Axivity CWA file. Setup file reading infrastructure
      * and then call readCwaBuffer() method
@@ -34,10 +27,11 @@ public class AxivityReader extends DeviceReader {
     public static void readCwaEpochs(
         String accFile,
         String timeZone,
+        int timeShift,
         EpochWriter epochWriter,
         Boolean verbose) {
 
-        setTimeZone(timeZone);
+        setTimeSettings(timeZone, timeShift);
 
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
@@ -87,10 +81,11 @@ public class AxivityReader extends DeviceReader {
     public static void readCwaGzEpochs(
         String accFile,
         String timeZone,
+        int timeShift,
         EpochWriter epochWriter,
         Boolean verbose) {
 
-        setTimeZone(timeZone);
+        setTimeSettings(timeZone, timeShift);
 
         int[] errCounter = new int[] { 0 }; // store val if updated in other
                                             // method
@@ -350,6 +345,7 @@ public class AxivityReader extends DeviceReader {
         tStamp = LocalDateTime.of(year, month, day, hours, mins, secs);
         // add 1/65536th fractions of a second
         tStamp = tStamp.plusNanos(secs2Nanos(fractional / 65536.0));
+        tStamp = tStamp.plusMinutes(timeShift);
         return tStamp;
     }
 
@@ -357,28 +353,6 @@ public class AxivityReader extends DeviceReader {
     private static LocalDateTime cwaHeaderLoggingStartTime(ByteBuffer buf) {
         long delayedLoggingStartTime = getUnsignedInt(buf, 13);
         return getCwaTimestamp((int) delayedLoggingStartTime, 0);
-    }
-
-
-    private static void setTimeZone(String timeZone) {
-        zoneId = ZoneId.of(timeZone);
-        rules = zoneId.getRules();
-    }
-
-
-    private static void setSessionStart(LocalDateTime ldt) {
-        sessionStart = ldt.atZone(zoneId);
-        sessionStartDST = rules.isDaylightSavings(sessionStart.toInstant());
-    }
-
-
-    private static ZonedDateTime zonedWithDSTCorrection(LocalDateTime ldt) {
-        ZonedDateTime zdt = ldt.atZone(zoneId);
-        boolean isDST = rules.isDaylightSavings(zdt.toInstant());
-        if (isDST != sessionStartDST) {  // DST crossover happened
-            zdt = isDST ? ldt.plusHours(1).atZone(zoneId) : zdt.plusHours(-1);
-        }
-        return zdt;
     }
 
 }

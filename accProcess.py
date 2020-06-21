@@ -37,6 +37,12 @@ def main():
                             type=str, help="""timezone in country/city format to
                             be used for daylight savings crossover check
                             (default : %(default)s""")
+    parser.add_argument('--timeShift',
+                            metavar='e.g. 10 (mins)', default=0,
+                            type=int, help="""time shift to be applied, e.g.
+                            -15 will shift the device internal time by -15
+                            minutes. Not to be confused with timezone offsets.
+                            (default : %(default)s""")
     parser.add_argument('--startTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
                             type=str2date, help="""removes data before this
@@ -321,7 +327,7 @@ def main():
     if args.processInputFile:
         summary['file-name'] = args.inputFile
         accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
-            args.epochFile, args.stationaryFile, summary,
+            args.timeShift, args.epochFile, args.stationaryFile, summary,
             skipCalibration=args.skipCalibration,
             stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
             xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,

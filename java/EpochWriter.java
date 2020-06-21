@@ -133,7 +133,7 @@ public class EpochWriter {
 	// Method which accepts raw values and writes them to an epoch (when enough values collected)
 	// Returns true to continue processing, or false if endTime has been reached
 	public boolean newValues(
-			long time /* milliseconds since start of 1970 epoch */,
+			long time, // Unix time (milliseconds)
 			double x,
 			double y,
 			double z,
