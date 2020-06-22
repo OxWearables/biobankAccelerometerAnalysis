@@ -3,15 +3,19 @@ import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 public class EpochWriter {
 
@@ -37,7 +41,8 @@ public class EpochWriter {
 	// parameters to be initialised
 	private long epochStartTime = UNUSED_DATE; // start point of current epoch (in milliseconds from 1970 epoch)
 	private int epochPeriod; // duration of epoch (seconds)
-	private DateTimeFormatter timeFormat;
+    private DateTimeFormatter timeFormat;
+    private String timeZone;
 	private boolean getStationaryBouts;
 	private double stationaryStd;
 	private double[] swIntercept;
@@ -55,14 +60,17 @@ public class EpochWriter {
 	// file read/write objects
 	private BufferedWriter epochFileWriter;
 	private BufferedWriter rawWriter; // raw and fft are null if not used
-	private NpyWriter npyWriter;
+    private NpyWriter npyWriter;
+
+    private ZoneId zoneId;
 
 
 	public EpochWriter(
 		      BufferedWriter epochFileWriter,
 		      BufferedWriter rawWriter,
 		      NpyWriter npyWriter,
-		      DateTimeFormatter timeFormat,
+              DateTimeFormatter timeFormat,
+              String timeZone,
 		      int epochPeriod,
 		      int intendedSampleRate,
 		      int range,
@@ -94,7 +102,9 @@ public class EpochWriter {
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.getFeatures = getFeatures;
-		this.numFFTbins = numFFTbins;
+        this.numFFTbins = numFFTbins;
+
+        this.zoneId = ZoneId.of(timeZone);
 
 		// NaN's and infinity normally display as non-ASCII characters
 		decimalFormatSymbol.setNaN("NaN");
@@ -105,7 +115,7 @@ public class EpochWriter {
 
 		DF6.setRoundingMode(RoundingMode.CEILING);
 		DF3.setRoundingMode(RoundingMode.HALF_UP); // To match mHealth Gt3x implementation
-		DF2.setRoundingMode(RoundingMode.CEILING);
+        DF2.setRoundingMode(RoundingMode.CEILING);
 
 		String epochHeader = "time";
 		epochHeader += "," + AccStats.getStatsHeader(getFeatures, numFFTbins);
@@ -123,10 +133,10 @@ public class EpochWriter {
 	// Method which accepts raw values and writes them to an epoch (when enough values collected)
 	// Returns true to continue processing, or false if endTime has been reached
 	public boolean newValues(
-			long time /* milliseconds since start of 1970 epoch */,
-			double x, 
-			double y, 
-			double z, 
+			long time, // Unix time (milliseconds)
+			double x,
+			double y,
+			double z,
 			double temperature,
 			int[] errCounter) {
 
@@ -147,7 +157,7 @@ public class EpochWriter {
 				}
 				System.out.println("first epochtime set to startTime" +
 				 	(numSkipped>0 ? " + " + numSkipped + " epochs" : "") +
-				 	" at " + millisToTimestamp(epochStartTime).format(timeFormat));
+				 	" at " + millisToZonedDateTime(epochStartTime));
 			}
 		}
 
@@ -157,17 +167,20 @@ public class EpochWriter {
 		}
 		// check for large discontinuities in time intervals
 		if (time-prevTimeVal >= epochPeriod * 2 * 1000 && prevTimeVal != UNUSED_DATE) {
-			System.err.println("Interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch "
-								+ millisToTimestamp(epochStartTime).format(timeFormat) + " \n from: " +
-								millisToTimestamp(prevTimeVal).format(timeFormat) + "\n to  : " +
-								millisToTimestamp(time).format(timeFormat));
+			System.err.println(
+                "Interrupt of length: " + (time-prevTimeVal)/1000.0 + "s, at epoch "
+                + millisToZonedDateTime(epochStartTime) + " \n from: "
+                + millisToZonedDateTime(prevTimeVal) + "\n to  : "
+                + millisToZonedDateTime(time)
+            );
 			// log that an error occurred, and write epoch with previous values
 			errCounter[0] += 1;
 			if (timeVals.size()>minSamplesForEpoch) {
-				writeEpochSummary(millisToTimestamp(epochStartTime), timeVals, 
+				writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
+				// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
 					xVals, yVals, zVals, temperatureVals, errCounter);
 			} else {
-				System.err.println("not enough samples for an epoch.. discarding " + 
+				System.err.println("not enough samples for an epoch.. discarding " +
 					timeVals.size()+" samples");
 				timeVals.clear();
 				xVals.clear();
@@ -186,7 +199,7 @@ public class EpochWriter {
 		// check to see if we have collected enough values to form an epoch
 		if (time-epochStartTime >= epochPeriod * 1000 && xVals.size() > minSamplesForEpoch) {
 			if (edgeInterpolation) {
-				// this code adds the last sample of the next epoch so we can 
+				// this code adds the last sample of the next epoch so we can
 				//correctly interpolate to the edges
 				timeVals.add(time - epochStartTime);
 				xVals.add(x);
@@ -194,13 +207,14 @@ public class EpochWriter {
 				zVals.add(z);
 				temperatureVals.add(temperature);
 			}
-			writeEpochSummary(millisToTimestamp(epochStartTime), timeVals, 
+			writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
+			// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
 				xVals, yVals, zVals, temperatureVals, errCounter);
 
 			epochStartTime = epochStartTime + epochPeriod * 1000;
 
 			if (edgeInterpolation) {
-				// this code adds the first sample of the previous epoch so we 
+				// this code adds the first sample of the previous epoch so we
 				//can correctly interpolate to the edges
 				timeVals.add(prevTimeVal - epochStartTime);
 				xVals.add(prevXYZT[0]);
@@ -210,8 +224,8 @@ public class EpochWriter {
 			}
 		}
 		if (endTime!=UNUSED_DATE && time>endTime) {
-			System.out.println("reached endTime at sample:" + 
-				millisToTimestamp(time).format(timeFormat) );
+			System.out.println("reached endTime at sample:" +
+                millisToZonedDateTime(time));
 			try {
 				if (epochFileWriter!=null) epochFileWriter.close();
 				if (rawWriter!=null) rawWriter.close();
@@ -243,11 +257,12 @@ public class EpochWriter {
 	 *  [the above does not apply if getSanDiegoFeatures is enabled]
 	 */
 	private void writeEpochSummary(
-			LocalDateTime epochStartTime,
+			ZonedDateTime epochStartTime,
+			// Instant epochStartTime,
 			List<Long> timeVals /* milliseconds since start of epochStartTime */,
-			List<Double> xVals, 
-			List<Double> yVals, 
-			List<Double> zVals, 
+			List<Double> xVals,
+			List<Double> yVals,
+			List<Double> zVals,
 			List<Double> temperatureVals,
 			int[] errCounter) {
 
@@ -311,23 +326,24 @@ public class EpochWriter {
 		for (int i = 0; i < timeResampled.length; i++) {
 			timeResampled[i] = Math.round((epochPeriod * 1000d * i) / timeResampled.length);
 		}
-		Resample.interpLinear(timeVals, xVals, yVals, zVals, 
+		Resample.interpLinear(timeVals, xVals, yVals, zVals,
 			timeResampled, xResampled, yResampled, zResampled);
 
-		//write out raw values ...				
+		//write out raw values ...
 		if (rawWriter != null) {
 			for (int i = 0; i < xResampled.length; i++) {
-				writeLine(rawWriter,
-						epochStartTime.plusNanos(timeResampled[i] * 1000000).format(timeFormat)
-								+ "," + DF3.format(xResampled[i]) + "," 
-								+ DF3.format(yResampled[i]) + "," 
-								+ DF3.format(zResampled[i]));
+				writeLine(
+                    rawWriter,
+                    timeFormat.format(epochStartTime.plus(timeResampled[i], ChronoUnit.MILLIS))
+                    + "," + DF3.format(xResampled[i])
+                    + "," + DF3.format(yResampled[i])
+                    + "," + DF3.format(zResampled[i]));
 			}
         }
 		if (npyWriter!=null) {
 			for (int i = 0; i < xResampled.length; i++) {
-                // note: For .npy format, we store time in Unix nanoseconds
-                long time = (long) (timestampToMillis(epochStartTime.plusNanos(timeResampled[i] * 1000000)) * 1000000);
+                // Note: For .npy format, we store time in Unix nanoseconds
+                long time = toNanos(epochStartTime.plus(timeResampled[i], ChronoUnit.MILLIS));
                 writeNpyLine(npyWriter, time, xResampled[i], yResampled[i], zResampled[i]);
             }
 
@@ -341,17 +357,17 @@ public class EpochWriter {
 		errCounter[0] += AccStats.countStuckVals(xResampled, yResampled, zResampled);
 
 		// write summary values to file
-		String epochSummary = epochStartTime.format(timeFormat);
+        String epochSummary = timeFormat.format(epochStartTime);
 		for(int i=0; i<stats.length; i++){
 			epochSummary += "," + DF6.format(stats[i]);
 		}
-		
+
 		// write housekeeping stats
 		epochSummary += "," + DF2.format(AccStats.mean(temperatureVals));
 		epochSummary += "," + xResampled.length + "," + errCounter[0];
 		epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
 		epochSummary += "," + timeVals.size();
-		
+
 		//write line to file...
 		double xStd = stats[8]; //needed to identify stationary episodes
 		double yStd = stats[9]; //if running first step of calibration process
@@ -366,7 +382,7 @@ public class EpochWriter {
 		zVals.clear();
 		temperatureVals.clear();
 		errCounter[0] = 0;
-	}
+    }
 
 
 	private static void writeLine(BufferedWriter fileWriter, String line) {
@@ -414,6 +430,26 @@ public class EpochWriter {
         long millis = zdt.toInstant().toEpochMilli();
         return millis;
     }
-	
+
+
+    private static Instant millisToInstant(long t) {
+        return Instant.ofEpochMilli(t);
+    }
+
+
+    private ZonedDateTime millisToZonedDateTime(long t) {
+        return millisToInstant(t).atZone(this.zoneId);
+    }
+
+
+    private static long toNanos(Instant ins) {
+        return (long) TimeUnit.SECONDS.toNanos(ins.getEpochSecond()) + ins.getNano();
+    }
+
+
+    private static long toNanos(ZonedDateTime zdt) {
+        return toNanos(zdt.toInstant());
+    }
+
 
 }

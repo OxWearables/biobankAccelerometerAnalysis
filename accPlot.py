@@ -42,7 +42,7 @@ def main():
                             help="""trained activity model .tar file""")
     parser.add_argument('--useRecommendedImputation',
                             metavar='True/False', default=True, type=str2bool,
-                            help="""Highly recommended method to show imputed 
+                            help="""Highly recommended method to show imputed
                             missing data (default : %(default)s)""")
     parser.add_argument('--imputedLabels',
                             metavar='True/False', default=False, type=str2bool,
@@ -84,9 +84,9 @@ def plotTimeSeries(
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
     :param str activityModel: Input tar model file used for activity classification
-    :param bool useRecommendedImputation: Highly recommended method to show  
+    :param bool useRecommendedImputation: Highly recommended method to show
         imputed values for missing data
-    :param bool imputedLabels: If activity classification during imputed period 
+    :param bool imputedLabels: If activity classification during imputed period
         will be displayed
     :param float imputedLabelsHeight: Proportion of plot labels take up if
         <imputedLabels> is True
@@ -101,7 +101,10 @@ def plotTimeSeries(
     """
 
     # read time series file to pandas DataFrame
-    d = accUtils.loadTimeSeriesCSV(tsFile)
+    d = pd.read_csv(
+        tsFile, index_col='time',
+        parse_dates=['time'], date_parser=accUtils.date_parser
+    )
     d['acc'] = d['acc'].rolling(window=12, min_periods=1).mean() # smoothing
     d['time'] = d.index.time
     ymin = d['acc'].min()
@@ -126,12 +129,12 @@ def plotTimeSeries(
     d['date'] = d.index.date
     if not useRecommendedImputation:
         d = d[d['imputed']==0] # if requested, do not show imputed values
-        
+
     if imputedLabels:
         labelsPosition = imputedLabelsHeight
     else:
         labelsPosition = 1
-    
+
     groupedDays = d[['acc','time','imputed'] + labels].groupby(by=d['date'])
     nrows = len(groupedDays) + 1
 
@@ -154,7 +157,7 @@ def plotTimeSeries(
         plt.plot(timeSeries, group['acc'], c='k')
         if imputedLabels:
             plt.fill_between(timeSeries,
-                y1 = np.multiply(group['imputed'], ymax), 
+                y1 = np.multiply(group['imputed'], ymax),
                 y2 = np.multiply(group['imputed'], ymax * labelsPosition),
                 color = labels_as_col['imputed'], alpha=1.0,
                 where=group['imputed']==1)
@@ -167,7 +170,7 @@ def plotTimeSeries(
         if len(labels)>0:
             ax.stackplot(timeSeries,
                 [np.multiply(group[l], ymax * labelsPosition) for l in labels],
-                colors=[labels_as_col[l] for l in labels], 
+                colors=[labels_as_col[l] for l in labels],
                 alpha=0.5, edgecolor="none")
         # add date label to left hand side of each day's activity plot
         plt.title(

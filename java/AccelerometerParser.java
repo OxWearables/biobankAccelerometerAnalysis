@@ -6,6 +6,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +25,7 @@ public class AccelerometerParser {
 	private static final DecimalFormat DF6 = new DecimalFormat("0.000000");
 	private static final DecimalFormat DF3 = new DecimalFormat("0.000");
 	private static final DecimalFormat DF2 = new DecimalFormat("0.00");
-	
+
 
 	/*
 	 * Parse command line args, then call method to identify and write epochs.
@@ -37,21 +38,25 @@ public class AccelerometerParser {
 		// variables to store default parameter options
 		String[] functionParameters = new String[0];
 
-		String accFile = ""; // file to process
+        String accFile = ""; // file to process
+        String timeZone = "Europe/London";  // file timezone (default: Europe/London)
 		String outputFile = ""; // file name for epoch file
 		String rawFile = ""; // file name for epoch file
 		String npyFile = ""; // file name for epoch file
 		Boolean rawOutput = false; // whether to output raw data
 		Boolean npyOutput = false; // whether to output npy data
 		boolean verbose = false; //to facilitate logging
+        int timeShift = 0;  // shift (in minutes) applied to file time
 
 		DF6.setRoundingMode(RoundingMode.CEILING);
 		DF2.setRoundingMode(RoundingMode.CEILING);
     	DF3.setRoundingMode(RoundingMode.HALF_UP); // To match their implementation
 
     	// epochWriter parameters
-    	int epochPeriod = 30;
-    	DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        int epochPeriod = 30;
+        // output time format, e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
+        // this should be consistent with the date_parser used later in the Python code
+        final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSxxxx '['VV']'");
     	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("M/d/yyyy,HH:mm:ss.SSSS");
     	boolean getStationaryBouts = false;
     	double stationaryStd = 0.013;
@@ -64,7 +69,6 @@ public class AccelerometerParser {
     	boolean useFilter = true;
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
-    	int timeZoneOffset = 0;
     	boolean getFeatures = false;
     	int numFFTbins = 12; // number of fft bins to print
 
@@ -104,18 +108,17 @@ public class AccelerometerParser {
 			for (String param : functionParameters) {
 				// individual_Parameters will look like "epoch_period:60"
 				String funcName = param.split(":")[0];
-				String funcParam = param.substring(param.indexOf(":") + 1);
-				if (funcName.equals("outputFile")) {
+                String funcParam = param.substring(param.indexOf(":") + 1);
+                if (funcName.equals("timeZone")) {
+                    timeZone = funcParam;
+                } else if (funcName.equals("timeShift")) {
+					timeShift = Integer.parseInt(funcParam);
+                } else if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
-				} else if (funcName.equals("timeZoneOffset")) {
-					timeZoneOffset = Integer.parseInt(funcParam);
 				} else if (funcName.equals("verbose")) {
 					verbose = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("epochPeriod")) {
 					epochPeriod = Integer.parseInt(funcParam);
-				// Make sure time f
-				} else if (funcName.equals("timeFormat")) {
-					timeFormat = DateTimeFormatter.ofPattern(funcParam);
 				} else if (funcName.equals("filter")) {
 					useFilter = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("getStationaryBouts")) {
@@ -211,7 +214,7 @@ public class AccelerometerParser {
 			System.out.println("Intermediate file: " + outputFile);
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
-        		npyFile, getFeatures, numFFTbins, timeFormat,
+        		npyFile, getFeatures, numFFTbins, timeFormat, timeZone,
         		epochPeriod, sampleRate, range, swIntercept, swSlope, tempCoef,
         		meanTemp, getStationaryBouts, stationaryStd,
         		startTime, endTime, verbose
@@ -219,11 +222,9 @@ public class AccelerometerParser {
 
 			// process file if input parameters are all ok
 			if (accFile.toLowerCase().endsWith(".cwa")) {
-				AxivityReader.readCwaEpochs(accFile, epochWriter, 
-											timeZoneOffset, verbose);
+				AxivityReader.readCwaEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
-                AxivityReader.readCwaGzEpochs(accFile, epochWriter, 
-                								timeZoneOffset, verbose);
+                AxivityReader.readCwaGzEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
@@ -243,7 +244,7 @@ public class AccelerometerParser {
 			}
 		} catch (Exception excep) {
 			excep.printStackTrace(System.err);
-			System.err.println("error reading/writing file " + outputFile + ": " 
+			System.err.println("error reading/writing file " + outputFile + ": "
 								+ excep.toString());
 			System.exit(-2);
 		} finally {
@@ -260,10 +261,10 @@ public class AccelerometerParser {
 
 
 	private static LocalDateTime epochMillisToLocalDateTime(long m) {
-		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000), 
-			(int) TimeUnit.MILLISECONDS.toNanos((m % 1000)), 
+		return LocalDateTime.ofEpochSecond((long) Math.floor(m/1000),
+			(int) TimeUnit.MILLISECONDS.toNanos((m % 1000)),
 			ZoneOffset.UTC);
 	}
-	
+
 
 }
