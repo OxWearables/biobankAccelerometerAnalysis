@@ -697,7 +697,7 @@ public class Features {
         int avgsLen = (int)Math.ceil(x.length/(5.0*sampleRate));
         double[] avgs = new double[avgsLen];
         int count = 0;
-        int sum = 0;
+        double sum = 0;
         int j = 0;
         for (int i = 0; i < x.length; i++) {
             count++;
