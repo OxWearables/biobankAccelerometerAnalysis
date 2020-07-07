@@ -56,8 +56,8 @@ public class AccelerometerParser {
         int epochPeriod = 30;
         // output time format, e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
         // this should be consistent with the date_parser used later in the Python code
-        final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSxxxx '['VV']'");
-    	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("M/d/yyyy,HH:mm:ss.SSSS");
+        final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'");
+    	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'");
     	boolean getStationaryBouts = false;
     	double stationaryStd = 0.013;
     	double[] swIntercept = new double[] { 0.0, 0.0, 0.0 };
@@ -71,16 +71,9 @@ public class AccelerometerParser {
     	long endTime = -1;
     	boolean getFeatures = false;
     	int numFFTbins = 12; // number of fft bins to print
-
-    	// Must supply additional information when loading from a .csv file
-    	LocalDateTime csvStartTime = null; // start date of first sample
-    	double csvSampleRate = -1; // must specify sample rate if time column and date format not given
-    	int csvStartRow = 0;
-    	// [0, 1, 2] = assume X is 1st column, Y is 2nd, Z is 3rd, and no time column.
-    	// if list is longer than 3 elements the extra elements are the columns that make up a time value
-    	// e.g. [0,1,2,3,6] means use 1st three columns for X/Y/Z, and concatenate cols 3 & 6 to parse time
-    	// (useful when time and date are in separate columns)
-    	List<Integer> csvXYZTCols = Arrays.asList( 0,1,2 );
+        // Must supply additional information when loading from a .csv file
+    	int csvStartRow = 1;
+    	List<Integer> csvTimeXYZColsIndex = Arrays.asList( 0,1,2 );
 
 
 		if (args.length < 1) {
@@ -172,36 +165,25 @@ public class AccelerometerParser {
 						System.err.println("error parsing endTime:'"+funcParam+"', must be in format: 1996-7-30T13:59");
 						System.exit(-2);
 					}
-				} else if (funcName.equals("csvXYZTCols")) {
-					String[] XYZT = funcParam.split(",");
-					if (XYZT.length < 3) {
-						System.err.println("error parsing csvXYZTCols: "+XYZT.toString()+"\n must be 3 or 4 integers");
+				} else if (funcName.equals("csvTimeXYZColsIndex")) {
+					String[] timeXYZ = funcParam.split(",");
+					if (timeXYZ.length != 4) {
+						System.err.println("error parsing csvTimeXYZColsIndex: "
+                            + timeXYZ.toString() + "\n must be 4 integers");
 						System.exit(-2);
 					}
-					csvXYZTCols = new LinkedList<Integer>();
-					System.out.println(csvXYZTCols.toString());
-					for( int i = 0; i<XYZT.length; i++ ) {
-						System.out.println(XYZT[i] + " - " + Integer.parseInt(XYZT[i]));
-						csvXYZTCols.add(Integer.parseInt(XYZT[i]));
+					csvTimeXYZColsIndex = new LinkedList<Integer>();
+					for( int i = 0; i<timeXYZ.length; i++ ) {
+						csvTimeXYZColsIndex.add(Integer.parseInt(timeXYZ[i]));
 					}
-
 				} else if (funcName.equals("csvStartRow")) {
 					csvStartRow = Integer.parseInt(funcParam);
 				} else if (funcName.equals("getFeatures")) {
 					getFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
 				} else if (funcName.equals("numFFTbins")) {
 					numFFTbins = Integer.parseInt(funcParam);
-				} else if (funcName.equals("csvStartTime")) {
-					try {
-						csvStartTime = epochMillisToLocalDateTime( dateFormat.parse(funcParam).getTime() );
-					} catch (ParseException ex) {
-						System.err.println("error parsing startTime, must be in format: 1996-7-30T13:01");
-						System.exit(-2);
-					}
 				} else if (funcName.equals("csvTimeFormat")) {
 					csvTimeFormat = DateTimeFormatter.ofPattern(funcParam);
-				} else if (funcName.equals("csvSampleRate")) {
-					csvSampleRate = Double.parseDouble(funcParam);
 				} else {
 					System.err.println("unknown parameter " + funcName + ":" + funcParam);
 				}
@@ -229,15 +211,10 @@ public class AccelerometerParser {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
 				ActigraphReader.readG3TXEpochs(accFile, epochWriter, verbose);
-			} else if (accFile.toLowerCase().endsWith(".csv")) {
-				if ((csvStartTime==null || csvSampleRate<=0) && (csvTimeFormat==null || csvXYZTCols.size()<=3)) {
-					System.err.println("Must specify either 'csvStartTime' (YYYY-MM-DDThh:mm format) and 'csvSampleRate', or:\n"
-									 + "'csvXYZYCols' (at least 4 values) and 'csvTimeFormat'\n"
-									 + "options for .csv type file: " + accFile);
-					System.exit(-1);
-				}
-				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartTime,
-					csvSampleRate, csvTimeFormat, csvStartRow, csvXYZTCols, verbose);
+			} else if (accFile.toLowerCase().endsWith(".csv") ||
+                        accFile.toLowerCase().endsWith(".csv.gz") ){
+				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow, 
+                    csvTimeXYZColsIndex, csvTimeFormat, verbose);
 			} else {
 				System.err.println("Unrecognised file format for: " + accFile);
 				System.exit(-1);

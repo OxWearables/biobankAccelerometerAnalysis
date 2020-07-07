@@ -380,7 +380,7 @@ def createDirIfNotExists(folder):
 def date_parser(t):
     '''
     Parse date a date string of the form e.g.
-    2020-06-14 19:01:15.123000+0100 [Europe/London]
+    2020-06-14 19:01:15.123+0100 [Europe/London]
     '''
     tz = re.search(r'(?<=\[).+?(?=\])', t)
     if tz is not None:
@@ -393,7 +393,7 @@ def date_parser(t):
 def date_strftime(t):
     '''
     Convert to time format of the form e.g.
-    2020-06-14 19:01:15.123000+0100 [Europe/London]
+    2020-06-14 19:01:15.123+0100 [Europe/London]
     '''
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
