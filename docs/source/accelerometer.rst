@@ -20,6 +20,14 @@ accelerometer.accUtils module
     :undoc-members:
     :show-inheritance:
 
+accelerometer.circadianRhythms module
+-------------------------------------
+
+.. automodule:: accelerometer.circadianRhythms
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 accelerometer.device module
 ---------------------------
 

@@ -67,8 +67,7 @@ Process data from raw `GENEActiv <https://49wvycy00mv416l561vrj345-wpengine.netd
 ========================
 Actigraph
 ========================
-Process data from raw `Actigraph <https://github.com/actigraph/GT3X-File-Format>`_
- .gt3x files (both versions 1 and 2):
+Process data from raw `Actigraph <https://github.com/actigraph/GT3X-File-Format>`_ .gt3x files (both versions 1 and 2):
 ::
     $ python3 accProcess.py data/sample.gt3x --sampleRate 80
 
@@ -96,6 +95,20 @@ were to unzip and view .csv.gz file it would ideally be in this format:
     time,x,y,z
     2014-05-07 13:29:50.439+0100 [Europe/London],-0.514,0.07,1.671
     2014-05-07 13:29:50.449+0100 [Europe/London],-0.089,-0.805,-0.59
+
+If your CSV is in a different format, there are options to flexibly parse these.
+Consider the below file with a different time format and the x/y/z columns having
+different index positions
+::
+    $ head data/awkwardfile.csv
+    time,temperature, z,y,x
+    2014-05-07 13:29:50.439,20,0.07,1.671,-0.514
+    2014-05-07 13:29:50.449,20,-0.805,-0.59,-0.089
+
+The above file can be processed as follows:
+::
+    $ python3 accProcess.py data/awkwardFile.csv \
+    --csvTimeFormat 'yyyy-MM-dd HH:mm:ss.SSS' --csvTimeXYZColsIndex 0 4 2 3
 
 
 
