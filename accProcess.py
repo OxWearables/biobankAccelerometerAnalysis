@@ -77,7 +77,7 @@ def main():
                             help="""Filter ENMOtrunc values?
                              (default : %(default)s)""")
     parser.add_argument('--csvStartTime',
-                            metavar='e.g. 1991-01-01T23:59', default=None,
+                            metavar='e.g. 2020-01-01T00:01', default=None,
                             type=str2date, help="""start time for csv file
                             when time column is not available
                             (default : %(default)s)""")
@@ -87,18 +87,19 @@ def main():
                             when time column is not available (default
                              : %(default)s)""")
     parser.add_argument('--csvTimeFormat',
-                            metavar='time format', default=None,
+                            metavar='time format',
+                            default="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
                             type=str, help="""time format for csv file
                             when time column is available (default
                              : %(default)s)""")
     parser.add_argument('--csvStartRow',
-                            metavar='start row', default=None, type=int,
+                            metavar='start row', default=1, type=int,
                             help="""start row for accelerometer data in csv file (default
                              : %(default)s, must be an integer)""")
-    parser.add_argument('--csvXYZTCols',
-                            metavar='XYZT Cols', default=None,
-                            type=str, help="""index of column positions for XYZT columns,
-                            e.g. "0,1,2,3" (default
+    parser.add_argument('--csvTimeXYZColsIndex',
+                            metavar='XYZT Cols', default=[0,1,2,3],
+                            type=str, help="""index of column positions for time
+                            and x/y/z columns, e.g. "0,1,2,3" (default
                              : %(default)s)""")
     # optional outputs
     parser.add_argument('--rawOutput',
@@ -340,7 +341,7 @@ def main():
             startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
             csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
             csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-            csvXYZTCols=args.csvXYZTCols)
+            csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
     else:
         summary['file-name'] = args.epochFile
 

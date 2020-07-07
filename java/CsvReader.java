@@ -1,11 +1,15 @@
 
 //BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.Reader;
+import java.io.InputStreamReader;
 import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Calculates epoch summaries from an AX3 .CWA file.
@@ -16,77 +20,63 @@ public class CsvReader extends DeviceReader {
     public static void readCSVEpochs(
             String accFile,
             EpochWriter epochWriter,
-            LocalDateTime startTime,
-            double csvSampleRate,
-            DateTimeFormatter csvTimeFormat,
             int csvStartRow,
-            List<Integer> csvXYZTCols,
+            List<Integer> csvTimeXYZColsIndex,
+            DateTimeFormatter csvTimeFormat,
             Boolean verbose) {
 
+        BufferedReader accReader;
         try {
-            BufferedReader accStream =  new BufferedReader(new FileReader(accFile));
+            // check if .csv or .csv.gz, then setup reader apprioriately
+            if (accFile.toLowerCase().endsWith(".csv.gz")){
+                FileInputStream accStream = new FileInputStream(accFile);
+                GZIPInputStream gzipStream = new GZIPInputStream(accStream);
+                Reader decoder = new InputStreamReader(gzipStream);
+                accReader = new BufferedReader(decoder);
+            } else{ // i.e. endsWith(".csv")
+                accReader = new BufferedReader(new FileReader(accFile));
+            }
+
             String line = "";
             int lineNumber = 0;
             String csvSplitBy = ",";
-            int numColsRequired = Collections.max(csvXYZTCols);
-            System.out.println("This is a special .csv reading version made for Alex-Rowlands dataset!\n"
-                                + "parsing .csv file using:\n"
-                                + (startTime!=null ? "csvStartTime = " + startTime.toString() + "\n"
-                                + "csvSampleRate = " + csvSampleRate + "Hz" : "csvTimeFormat = " + csvTimeFormat.toString())+"\n"
-                                + "minimum number of columns per row: " + numColsRequired);
-            int xCol = csvXYZTCols.get(0);
-            int yCol = csvXYZTCols.get(1);
-            int zCol = csvXYZTCols.get(2);
-            boolean readTime = false;
+            int timeCol = csvTimeXYZColsIndex.get(0);
+            int xCol = csvTimeXYZColsIndex.get(1);
+            int yCol = csvTimeXYZColsIndex.get(2);
+            int zCol = csvTimeXYZColsIndex.get(3);
+            
+            String[] cols;
             long time = Long.MIN_VALUE;
-            if (csvXYZTCols.size()>3) {
-                readTime = true;
-            } else {
-                time = getEpochMillis(startTime);
-            }
-
+            double x;
+            double y;
+            double z;
             while (true) {
-                line = accStream.readLine();
-                if (lineNumber++ <= csvStartRow) continue;
+                line = accReader.readLine();
 
+                // skip unto we reach appropriate start line number
+                if (lineNumber < csvStartRow){
+                    lineNumber++;
+                    continue;
+                }
                 if (line==null) {
-                    accStream.close();
+                    accReader.close();
                     break;
-                    // uncomment to loop forever (useful for testing performance)
-                    // accStream =  new BufferedReader(new FileReader(accFile));
-                    // continue;
                 }
-                String[] cols = line.split(csvSplitBy);
-                if (cols.length>numColsRequired) {
-                        if (readTime) {
-                            String timeStr = "";
-                            for(int i=3; i<csvXYZTCols.size(); i++) {
-                                timeStr += cols[csvXYZTCols.get(i)];
-                                if (i!=csvXYZTCols.size()-1) {
-                                    timeStr += ",";
-                                }
-                            }
-                            time = getEpochMillis(LocalDateTime.parse(timeStr, csvTimeFormat));
-                            // System.out.println(epochMillisToLocalDateTime(time).toString() + " - " + timeStr);
-                        }
 
-                        double x = Double.parseDouble(cols[xCol]);
-                        double y = Double.parseDouble(cols[yCol]);
-                        double z = Double.parseDouble(cols[zCol]);
-                        epochWriter.newValues(time, x, y, z, 0, new int[] {0});
-                        if (!readTime) {
-                            time += 1000/csvSampleRate;
-                        }
-                } else {
-                    if (verbose) {
-                        System.err.println(".csv line " + lineNumber + " had too few columns :\n" + line);
-                    }
-                }
+                // read csv line
+                cols = line.split(csvSplitBy);
+                time = getEpochMillis(LocalDateTime.parse(cols[timeCol], 
+                        csvTimeFormat));
+                x = Double.parseDouble(cols[xCol]);
+                y = Double.parseDouble(cols[yCol]);
+                z = Double.parseDouble(cols[zCol]);
+                epochWriter.newValues(time, x, y, z, 0, new int[] {0});                
             }
 
         } catch (Exception excep) {
             excep.printStackTrace(System.err);
-            System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
+            System.err.println("error reading/writing file " + accFile + ": "
+                 + excep.toString());
             System.exit(-2);
         }
     }
