@@ -97,8 +97,9 @@ def main():
                             help="""start row for accelerometer data in csv file (default
                              : %(default)s, must be an integer)""")
     parser.add_argument('--csvTimeXYZColsIndex',
-                            metavar='XYZT Cols', default=[0,1,2,3],
-                            type=str, help="""index of column positions for time
+                            metavar=('time', 'x', 'y', 'z'), nargs=4,
+                            default=[0,1,2,3],
+                            type=int, help="""index of column positions for time
                             and x/y/z columns, e.g. "0,1,2,3" (default
                              : %(default)s)""")
     # optional outputs
