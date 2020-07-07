@@ -51,6 +51,55 @@ To visualise the time output:
 
 
 
+
+**************
+Input file types
+**************
+
+========================
+GENEActiv
+========================
+Process data from raw `GENEActiv <https://49wvycy00mv416l561vrj345-wpengine.netdna-ssl.com/wp-content/uploads/2019/06/geneactiv_instruction_manual_v1.4.pdf>`_ .bin files:
+::
+    $ python3 accProcess.py data/sample.bin
+
+
+========================
+Actigraph
+========================
+Process data from raw `Actigraph <https://github.com/actigraph/GT3X-File-Format>`_
+ .gt3x files (both versions 1 and 2):
+::
+    $ python3 accProcess.py data/sample.gt3x --sampleRate 80
+
+An example Actigraph file can be obtained from the `AGread <https://github.com/paulhibbing/AGread>`_ gitHub page:
+::
+    $ wget "https://github.com/paulhibbing/AGread/raw/master/data-raw/119AGBPFLW%20(2016-03-08).gt3x"
+    $ mv 119AGBPFLW\ \(2016-03-08\).gt3x data/actigraph-example.gt3x
+    $ python3 accProcess.py data/sample.gt3x --sampleRate 80
+
+
+========================
+CSV
+========================
+Process data from raw gzipped CSV files:
+::
+    $ python3 accProcess.py data/sample.csv.gz
+
+It is very unwise to store accelerometer data in .csv format. However, if one
+were to unzip and view .csv.gz file it would ideally be in this format:
+::
+    $ wget "http://gas.ndph.ox.ac.uk/aidend/accModels/sample-small.csv.gz"
+    $ mv sample-small.csv.gz data/
+    $ gunzip data/sample.csv.gz
+    $ head -3 data/sample.csv
+    time,x,y,z
+    2014-05-07 13:29:50.439+0100 [Europe/London],-0.514,0.07,1.671
+    2014-05-07 13:29:50.449+0100 [Europe/London],-0.089,-0.805,-0.59
+
+
+
+
 *************************
 Processing multiple files
 *************************
