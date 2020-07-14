@@ -146,12 +146,12 @@ def main():
                             help="""calibration sphere threshold (default
                              : %(default)s mg))""")
     # activity parameters
-    parser.add_argument('--mgCutpointMVPA',
+    parser.add_argument('--mgCutPointMVPA',
                             metavar="mg", default=100, type=int,
-                            help="""MVPA threshold for cutpoint based activity definition (default : %(default)s)""")
-    parser.add_argument('--mgCutpointVPA',
+                            help="""MVPA threshold for CutPoint based activity definition (default : %(default)s)""")
+    parser.add_argument('--mgCutPointVPA',
                             metavar="mg", default=425, type=int,
-                            help="""VPA threshold for cutpoint based activity definition (default : %(default)s)""")
+                            help="""VPA threshold for CutPoint based activity definition (default : %(default)s)""")
     parser.add_argument('--intensityDistribution',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
@@ -352,8 +352,8 @@ def main():
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
-        stationaryStd=args.stationaryStd, mgCutpointMVPA=args.mgCutpointMVPA,
-        mgCutpointVPA=args.mgCutpointVPA, activityModel=args.activityModel,
+        stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
+        mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
         useRecommendedImputation=args.useRecommendedImputation,
         psd=args.psd, fourierFrequency=args.fourierFrequency,

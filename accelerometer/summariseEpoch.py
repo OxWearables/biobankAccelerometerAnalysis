@@ -17,7 +17,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
-    mgCutpointMVPA=100, mgCutpointVPA=425,
+    mgCutPointMVPA=100, mgCutPointVPA=425,
     activityModel="activityModels/doherty-may20.tar",
     intensityDistribution=False, useRecommendedImputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
@@ -44,8 +44,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     :param int epochPeriod: Size of epoch time window (in seconds)
     :param int stationaryStd: Threshold (in mg units) for stationary vs not
     :param int minNonWearDuration: Minimum duration of nonwear events (minutes)
-    :param int mgCutpointMVPA: Milli-gravity threshold for moderate intensity activity
-    :param int mgCutpointVPA: Milli-gravity threshold for vigorous intensity activity
+    :param int mgCutPointMVPA: Milli-gravity threshold for moderate intensity activity
+    :param int mgCutPointVPA: Milli-gravity threshold for vigorous intensity activity
     :param str activityModel: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
@@ -128,8 +128,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Calculate imputation values to replace nan PA metric values
     e = perform_wearTime_imputation(e, verbose)
-    e['CutpointMVPA'] = e['accImputed'] >= mgCutpointMVPA
-    e['CutpointVPA'] = e['accImputed'] >= mgCutpointVPA
+    e['CutPointMVPA'] = e['accImputed'] >= mgCutPointMVPA
+    e['CutPointVPA'] = e['accImputed'] >= mgCutPointVPA
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
@@ -402,7 +402,7 @@ def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
     """
 
     # Identify activity types to summarise
-    activityTypes = ['acc', 'CutpointMVPA', 'CutpointVPA']
+    activityTypes = ['acc', 'CutPointMVPA', 'CutPointVPA']
     activityTypes += labels
     if 'MET' in e.columns:
         activityTypes.append('MET')
@@ -412,7 +412,7 @@ def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
         col = accType
         if useRecommendedImputation:
             col += 'Imputed'
-        if accType in ['CutpointMVPA', 'CutpointVPA']:
+        if accType in ['CutPointMVPA', 'CutPointVPA']:
             col = accType
 
         # Overall / weekday / weekend summaries
