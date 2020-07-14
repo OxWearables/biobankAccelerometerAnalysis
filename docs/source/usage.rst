@@ -147,7 +147,7 @@ Then use our python utility function to write processing cmds for all files:
     # if for some reason we wanted to use different thresholds for moderate
     # and vigorous intensity activities, we could go with
     accUtils.writeStudyAccProcessCmds("/myStudy/", "process-cmds.txt", \
-        runName="dec18", cmdOptions="--mgMVPA 90 --mgVPA 435")
+        runName="dec18", cmdOptions="--mgCutPointMVPA 90 --mgCutPointVPA 435")
     # <list of processing commands written to "process-cmds.txt">
 
 Note that if we don't have `files.csv` in the existing directory, the utility function
