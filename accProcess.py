@@ -148,10 +148,12 @@ def main():
     # activity parameters
     parser.add_argument('--mgCutPointMVPA',
                             metavar="mg", default=100, type=int,
-                            help="""MVPA threshold for CutPoint based activity definition (default : %(default)s)""")
+                            help="""MVPA threshold for cut point based activity
+                             definition (default : %(default)s)""")
     parser.add_argument('--mgCutPointVPA',
                             metavar="mg", default=425, type=int,
-                            help="""VPA threshold for CutPoint based activity definition (default : %(default)s)""")
+                            help="""VPA threshold for cut point based activity 
+                            definition (default : %(default)s)""")
     parser.add_argument('--intensityDistribution',
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
