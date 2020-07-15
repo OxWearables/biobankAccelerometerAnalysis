@@ -316,9 +316,10 @@ to test the performance of a model trained on unseen data for each participant:
         cmd += "'" + trainingFile + "', "
         cmd += "featuresTxt='activityModels/features.txt',"
         cmd += "testParticipants='" + str(p) + "',"
+        cmd += "labelCol='label',"
         cmd += "outputPredict='activityModels/testPredict-" + str(p) + ".csv',"
-        cmd += "rfTrees=1000, rfThreads=1)"
-        w.write('python -c $"' + cmd + '"\n')
+        cmd += "rfTrees=100, rfThreads=1)"
+        w.write('python3 -c $"' + cmd + '"\n')
     w.close() 
     # <list of processing commands written to "training-cmds.txt">
 
