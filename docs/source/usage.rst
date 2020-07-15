@@ -264,17 +264,18 @@ A number of `metrics <https://scikit-learn.org/stable/modules/model_evaluation.h
 can then be calculated from the test predictions csv file:
 ::
     import pandas as pd
-    import sklearn.metrics as metrics
+    from accelerometer import accClassification
 
     # load data
     d = pd.read_csv("test-predictions.csv")
-    y_true = d['label']
-    y_pred = d['predicted']
     
-    # print metrics
-    print('kappa = ', metrics.cohen_kappa_score(y_true, y_pred))
-    print('accuracy = ', metrics.accuracy_score(y_true, y_pred))
-    print(metrics.classification_report(y_true, y_pred))
+    # print summary to HTML file
+    htmlFile = "classificationReport.html"
+    yTrueCol = 'label'
+    yPredCol = 'predicted'
+    participantCol = 'participant'
+    accClassification.perParticipantSummaryHTML(d, yTrueCol, yPredCol, 
+        participantCol, htmlFile)
 
 After evaluating the performance of our model on unseen data, we then re-train 
 a final model that includes all possible data. We therefore specify the 
@@ -332,7 +333,7 @@ test participant can be collated as follows:
 ::
     $ head -1 activityModels/testPredict-1.csv > header.csv
     $ awk 'FNR > 1' activityModels/testPredict-*.csv > tmp.csv
-    $ cat header.csv tmp.csv > testPredict-all.csv
+    $ cat header.csv tmp.csv > test-predictions.csv
     $ rm header.csv
     $ rm tmp.csv
 

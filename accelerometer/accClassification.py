@@ -1,5 +1,6 @@
 """Module to support machine learning of activity states from acc data"""
 
+from accelerometer import accUtils
 from io import BytesIO
 import numpy as np
 import os
@@ -7,6 +8,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 import sklearn.ensemble.forest as forest
 import sklearn.metrics as metrics
+from sklearn.metrics import confusion_matrix
 import joblib
 import tarfile
 import warnings
@@ -333,19 +335,64 @@ def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
 
 
 
-def summary(y_true, y_pred):
-    """Provide summary of how well activity classification model works
+def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
+    """Provide HTML summary of how well activity classification model works
+    at the per-participant level
 
-    :param list y_true: Input list of groundtruth labels
-    :param list y_pred: Input list of predicted labels
+    :param dataframe dfParam: Input pandas dataframe
+    :param str yTrueCol: Input for y_true column label
+    :param str yPregCol: Input for y_pred column label
+    :param str pidCol: Input for participant ID column label
+    :param str outHTML: Output file to print HTML summary to
 
-    :return: Print out of kappa + accuracy statistics
+    :return: HTML file reporting kappa, accuracy, and confusion matrix
     :rtype: void
     """
+    # get kappa & accuracy on a per-participant basis
+    pIDs = dfParam[pidCol].unique()
+    pIDKappa = []
+    pIDAccuracy = []
+    for pID in pIDs:
+        d_tmp = dfParam[dfParam[pidCol]==pID]
+        pIDKappa += [metrics.cohen_kappa_score(d_tmp[yTrueCol], d_tmp[yPredCol])]
+        pIDAccuracy += [metrics.accuracy_score(d_tmp[yTrueCol], d_tmp[yPredCol])]
+    d_summary = pd.DataFrame()
+    d_summary['pid'] = pIDs
+    d_summary['kappa'] = pIDKappa
+    d_summary['accuracy'] = pIDAccuracy
+    # print out values to html string
+    kappaSDHTML = "Mean Kappa (SD) = "
+    kappaSDHTML += accUtils.meanSDstr(d_summary['kappa'].mean(), 
+        d_summary['kappa'].std(), 2)
+    accuracySDHTML = "Mean accuracy (SD) = " 
+    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean()*100, 
+        d_summary['accuracy'].std()*100, 1) + ' %'
+    kappaCIHTML = "Mean Kappa (95% CI) = " 
+    kappaCIHTML += accUtils.meanCIstr(d_summary['kappa'].mean(), 
+        d_summary['kappa'].std(), len(d_summary), 2)
+    accuracyCIHTML = "Mean accuracy (95% CI) = " 
+    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean()*100, 
+        d_summary['accuracy'].std()*100, len(d_summary), 1) + ' %'
+    
+    # get confusion matrix to pandas dataframe
+    y_true = dfParam[yTrueCol]
+    y_pred = dfParam[yPredCol]
+    labels = sorted(list(set(y_true) | set(y_pred)))
+    cnf_matrix = confusion_matrix(y_true, y_pred, labels)
+    df_confusion = pd.DataFrame(data=cnf_matrix, columns=labels, index=labels)
+    confusionHTML = df_confusion.to_html()
+    
+    # construct final output string
+    htmlStr = '<html><head><title>Classification summary</title></head><body>'
+    htmlStr += kappaSDHTML + '<br>\n' + accuracySDHTML + '<br><br>\n'
+    htmlStr += kappaCIHTML + '<br>\n' + accuracyCIHTML + '<br>\n'
+    htmlStr += confusionHTML + '<br>\n'
+    htmlStr += '</body></html>'
 
-    print('kappa = ', metrics.cohen_kappa_score(y_true, y_pred))
-    print('accuracy = ', metrics.accuracy_score(y_true, y_pred))
-    print(metrics.classification_report(y_true, y_pred))
+    # write HTML file
+    w = open(outHTML, 'w')
+    w.write(htmlStr)
+    w.close()
 
 
 

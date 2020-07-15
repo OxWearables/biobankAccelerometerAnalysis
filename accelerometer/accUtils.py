@@ -36,6 +36,56 @@ def formatNum(num, decimalPlaces):
 
 
 
+def meanSDstr(mean, std, numDecimalPlaces):
+    """return str of mean and stdev numbers formatted to number of decimalPlaces
+
+    :param float mean: Mean number to be formatted.
+    :param float std: Standard deviation number to be formatted.
+    :param int decimalPlaces: Number of decimal places for output format
+    :return: String formatted to number of decimalPlaces
+    :rtype: str
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.meanSDstr(2.567, 0.089, 2)
+    2.57 (0.09)
+    """
+    outStr = str(formatNum(mean, numDecimalPlaces))
+    outStr += ' ('
+    outStr += str(formatNum(std, numDecimalPlaces))
+    outStr += ')'
+    return outStr
+
+
+
+def meanCIstr(mean, std, n, numDecimalPlaces):
+    """return str of mean and 95% confidence interval numbers formatted
+
+    :param float mean: Mean number to be formatted.
+    :param float std: Standard deviation number to be formatted.
+    :param int n: Number of observations
+    :param int decimalPlaces: Number of decimal places for output format
+    :return: String formatted to number of decimalPlaces
+    :rtype: str
+
+    :Example:
+    >>> import accUtils
+    >>> accUtils.meanSDstr(2.567, 0.089, 2)
+    2.57 (0.09)
+    """
+    stdErr = std / math.sqrt(n)
+    lowerCI = mean - 1.96*stdErr
+    upperCI = mean + 1.96*stdErr
+    outStr = str(formatNum(mean, numDecimalPlaces))
+    outStr += ' ('
+    outStr += str(formatNum(lowerCI, numDecimalPlaces))
+    outStr += ' - '
+    outStr += str(formatNum(upperCI, numDecimalPlaces))
+    outStr += ')'
+    return outStr
+
+
+
 def toScreen(msg):
     """Print msg str prepended with current time
 
