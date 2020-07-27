@@ -167,14 +167,14 @@ def get_interrupts(e, epochPeriod, summary):
     # Get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
-        interruptMins.append(e[i:i+2].index.to_series().diff() / np.timedelta64(1, 'm'))
+        interruptMins.append(e.index[i-1:i+1].to_series().diff() / np.timedelta64(1, 'm'))
     # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
 
     frames = [e]
     for i in interrupts:
-        start, end = e[i:i+2].index
+        start, end = e.index[i-1:i+1]
         dti = pd.date_range(start=start, end=end, freq=str(epochPeriod)+'s')[1:-1]
         frames.append(dti.to_frame().drop(columns=0))
     e = pd.concat(frames).sort_index()
