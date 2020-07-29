@@ -104,61 +104,49 @@ def toScreen(msg):
 
 
 
-def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
-        accExt="cwa", cmdOptions=None, filesID="files.csv"):
+def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
+        accExt="cwa", cmdOptions=None, filesCSV="files.csv"):
     """Read files to process and write out list of processing commands
 
-    This method assumes that a study directory structure has been created by the
-    createStudyDir.sh script where there is a folder structure of
-    <studyName>/
-        files.csv #listing all files in rawData directory
-        rawData/ #all raw .cwa .bin .gt3x files
-        summary/ #to store outputSummary.json
-        epoch/ #to store feature output for 30sec windows
-        timeSeries/ #simple csv time series output (VMag, activity binary predictions)
-        nonWear/ #bouts of nonwear episodes
-        stationary/ #temp store for features of stationary data for calibration
-        clusterLogs/ #to store terminal output for each processed file
+    This creates the following output directory structure containing all
+    processing results:
+    <outDir>/
+        summary/  #to store outputSummary.json
+        epoch/  #to store feature output for 30sec windows
+        timeSeries/  #simple csv time series output (VMag, activity binary predictions)
+        nonWear/  #bouts of nonwear episodes
+        stationary/  #temp store for features of stationary data for calibration
+        clusterLogs/  #to store terminal output for each processed file
 
-    If files.csv exists, process files listed here. If not, all files in
-    rawData/ are read and listed in files.csv
+    If a filesCSV exists in accDir/, process the files listed there. If not,
+    all files in accDir/ are processed
 
     Then an acc processing command is written for each file and written to cmdsFile
 
-    :param str studyDir: Root directory of study
-    :param str cmdsFile: Output .txt file listing acc processing commands
-    :param str runName: Name to assign to this processing run. Supports processing
-        dataset in multiple different ways.
+    :param str accDirs: Directory(s) with accelerometer files to process
+    :param str outDir: Output directory to be created containing the processing results
+    :param str cmdsFile: Output .txt file listing all processing commands
     :param str accExt: Acc file type e.g. cwa, CWA, bin, BIN, gt3x...
     :param str cmdOptions: String of processing options e.g. "--epochPeriod 10"
         Type 'python3 accProccess.py -h' for full list of options
-    :param str files: Name of .csv file listing acc files to process
+    :param str filesCSV: Name of .csv file listing acc files to process
 
     :return: New file written to <cmdsFile>
     :rtype: void
 
     :Example:
     >>> import accUtils
-    >>> accUtils.writeStudyAccProcessingCmds("/myStudy/", "myStudy-cmds.txt")
-    <cmd options written to "myStudy-cmds.txt">
+    >>> accUtils.writeStudyAccProcessingCmds("myAccDir/", "myResults/", "myProcessCmds.txt")
+    <cmd options written to "myProcessCmds.txt">
     """
 
-    # firstly check if files.csv list exists (if not, create it)
-    filesCSV = studyDir + filesID
-    if not os.path.exists(filesCSV):
-        csvWriter = open(filesCSV, 'w')
-        csvWriter.write('fileName,\n')
-        for inputFile in glob.glob(studyDir+"rawData/*." + accExt):
-            csvWriter.write(inputFile + ',\n')
-        csvWriter.close()
-
-    # then create runName output directories
-    summaryDir = studyDir + 'summary/' + runName + '/'
-    epochDir = studyDir + 'epoch/' + runName + '/'
-    timeSeriesDir = studyDir + 'timeSeries/' + runName + '/'
-    nonWearDir = studyDir + 'nonWear/' + runName + '/'
-    stationaryDir = studyDir + 'stationary/' + runName + '/'
-    logsDir = studyDir + 'clusterLogs/' + runName + '/'
+    # Create output directory structure
+    summaryDir = os.path.join(outDir, 'summary')
+    epochDir = os.path.join(outDir, 'epoch')
+    timeSeriesDir = os.path.join(outDir, 'timeSeries')
+    nonWearDir = os.path.join(outDir, 'nonWear')
+    stationaryDir = os.path.join(outDir, 'stationary')
+    logsDir = os.path.join(outDir, 'clusterLogs')
     createDirIfNotExists(summaryDir)
     createDirIfNotExists(epochDir)
     createDirIfNotExists(timeSeriesDir)
@@ -166,17 +154,20 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
     createDirIfNotExists(stationaryDir)
     createDirIfNotExists(logsDir)
 
-    # next read files.csv
-    fileList = pd.read_csv(filesCSV)
-    # remove unnamed columns
-    fileList.drop(fileList.columns[fileList.columns.str.contains('unnamed', case=False)], axis=1, inplace=True)
+    # Use filesCSV if provided, else process everything in accDir (and create filesCSV)
+    if filesCSV in os.listdir(accDir):
+        fileList = pd.read_csv(os.path.join(accDir, filesCSV))
+    else:
+        fileList = pd.DataFrame(
+            {'fileName': [f for f in os.listdir(accDir) if f.endswith(accExt)]}
+        )
+        fileList.to_csv(os.path.join(accDir, filesCSV), index=False)
 
-    # and write commands text
-    with open(cmdsFile, 'w') as txtWriter:
-        for ix, row in fileList.iterrows():
+    with open(cmdsFile, 'w') as f:
+        for i, row in fileList.iterrows():
 
             cmd = [
-                'python3 accProcess.py "{:s}"'.format(str(row['fileName'])),
+                'python3 accProcess.py "{:s}"'.format(os.path.join(accDir, row['fileName'])),
                 '--summaryFolder "{:s}"'.format(summaryDir),
                 '--epochFolder "{:s}"'.format(epochDir),
                 '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
@@ -184,7 +175,7 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
                 '--stationaryFolder "{:s}"'.format(stationaryDir)
             ]
 
-            # grab additional arguments provided in filesCSV; cmdOptionsCSV is '' if nothing found
+            # Grab additional arguments provided in filesCSV (e.g. calibration params) 
             cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
 
             if cmdOptions:
@@ -193,8 +184,8 @@ def writeStudyAccProcessCmds(studyDir, cmdsFile, runName="default",
                 cmd.append(cmdOptionsCSV)
 
             cmd = ' '.join(cmd)
-            txtWriter.write(cmd)
-            txtWriter.write('\n')
+            f.write(cmd)
+            f.write('\n')
 
     print('Processing list written to ', cmdsFile)
     print('Suggested dir for log files: ', logsDir)
