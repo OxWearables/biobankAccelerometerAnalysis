@@ -159,6 +159,7 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
     createDirIfNotExists(logsDir)
     createDirIfNotExists(npyDir)
     createDirIfNotExists(outputDir)
+    
     # Use filesCSV if provided, else process everything in accDir (and create filesCSV)
     if filesCSV in os.listdir(accDir):
         fileList = pd.read_csv(os.path.join(accDir, filesCSV))
