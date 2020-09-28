@@ -33,7 +33,7 @@ jobs:
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
       - name: Download Junit
-        run: wget -O java/juint.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar
+        run: wget -O java/junit.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar
 
       - name: Create folder for class files
         run: mkdir java/out
