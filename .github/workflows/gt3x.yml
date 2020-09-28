@@ -17,15 +17,20 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-          
+
       - name: Compile Parser
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
+  parsing:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Prase gt3x V2 file
         run: java AccelerometerParser java/Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
 
       - name: Check if the output file has changed
-        uses: tianhaoz95/mirror-action@v1
-        with:
-          original: 'java/Tests/Resources/sampleV2EpochRef.csv'
-          mirror: 'java/Tests/Resources/sampleV2Epoch.csv'
+        run: |
+          chmod +x java/Tests/Resources/compareOutput.sh
+          ./java/Tests/Resources/compareOutput.sh
+          
