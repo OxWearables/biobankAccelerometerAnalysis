@@ -30,8 +30,3 @@ jobs:
         run: |
           chmod +x java/Tests/Resources/compareOutput.sh
           ./java/Tests/Resources/compareOutput.sh
-
-      - name: Check if the output file has changed
-        run: |
-          chmod +x java/Tests/Resources/sampleV2.sh
-          ./java/Tests/Resources/compareOutput.sh
