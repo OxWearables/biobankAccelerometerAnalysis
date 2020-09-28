@@ -28,5 +28,6 @@ jobs:
 
       - name: Check if the output file has changed
         run: |
+          ls 
           chmod +x Tests/Resources/compareOutput.sh
           ./Tests/Resources/compareOutput.sh
