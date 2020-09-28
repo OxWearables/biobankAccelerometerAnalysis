@@ -22,9 +22,11 @@ jobs:
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
       - name: Prase gt3x V2 file
-        run: java java/AccelerometerParser java/Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
+        run: |
+          cd java
+          java AccelerometerParser Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
 
       - name: Check if the output file has changed
         run: |
-          chmod +x java/Tests/Resources/compareOutput.sh
-          ./java/Tests/Resources/compareOutput.sh
+          chmod +x Tests/Resources/compareOutput.sh
+          ./Tests/Resources/compareOutput.sh
