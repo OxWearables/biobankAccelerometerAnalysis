@@ -39,7 +39,7 @@ jobs:
         run: mkdir java/out
         
       - name: Compile tests
-        run: javac -d out -cp java/out:java/junit.jar:.:java/:java/Tests java/Tests/*.java
+        run: javac -d java/out -cp java/out:java/junit.jar:.:java/:java/Tests java/Tests/*.java
         
       - name: Run tests
         run: java -jar java/junit.jar --classpath java/out:java --scan-class-path
