@@ -1,3 +1,7 @@
+#
+#  1. Check we can parse gt3x v2 file without error
+#  2. Test if the extracted epoch files have changed
+#
 name: gt3x
 
 on:
@@ -7,7 +11,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  parsing:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,29 +25,12 @@ jobs:
       - name: Compile Parser
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
-      - name: Upload class file
-        uses: actions/upload-artifact@v2
-        with:
-          name: JTransforms
-          path: java/JTransforms-3.1-with-dependencies.jar
-
-  parsing:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Download JTransforms result from build
-        uses: actions/download-artifact@v2
-        with:
-          name: JTransforms
-
-      - name: Prase gt3x V2 file
-        run: java AccelerometerParser java/Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
+      - name: Parse gt3x V2 file
+        run: |
+          cd java
+          java AccelerometerParser Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
 
       - name: Check if the output file has changed
         run: |
           chmod +x java/Tests/Resources/compareOutput.sh
           ./java/Tests/Resources/compareOutput.sh
-
