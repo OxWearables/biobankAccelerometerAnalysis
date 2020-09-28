@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v2
+
       - name: Prase gt3x V2 file
         run: java AccelerometerParser java/Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True
 
@@ -33,4 +35,4 @@ jobs:
         run: |
           chmod +x java/Tests/Resources/compareOutput.sh
           ./java/Tests/Resources/compareOutput.sh
-          
+
