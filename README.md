@@ -2,7 +2,7 @@
 
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
-![Build status](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/CI/badge.svg)
+![Build status](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/build/badge.svg)
 
 ## Installation
 Dependancies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).

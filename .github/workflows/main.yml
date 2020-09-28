@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  unit-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,24 +21,6 @@ jobs:
       - name: Compile Parser
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
-      - name: Upload class file
-        uses: actions/upload-artifact@v2
-        with:
-          name: JTransforms
-          path: java/JTransforms-3.1-with-dependencies.jar
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Download JTransforms result from build
-        uses: actions/download-artifact@v2
-        with:
-          name: JTransforms
-          
       - name: Download Junit
         run: wget -O java/junit.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar
 
