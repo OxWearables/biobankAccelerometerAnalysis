@@ -147,12 +147,18 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
     nonWearDir = os.path.join(outDir, 'nonWear')
     stationaryDir = os.path.join(outDir, 'stationary')
     logsDir = os.path.join(outDir, 'clusterLogs')
+    rawDir = os.path.join(outDir, 'raw') 
+    npyDir = os.path.join(outDir, 'npy') 
+
     createDirIfNotExists(summaryDir)
     createDirIfNotExists(epochDir)
     createDirIfNotExists(timeSeriesDir)
     createDirIfNotExists(nonWearDir)
     createDirIfNotExists(stationaryDir)
     createDirIfNotExists(logsDir)
+    createDirIfNotExists(rawDir)
+    createDirIfNotExists(npyDir)
+    createDirIfNotExists(outDir)
 
     # Use filesCSV if provided, else process everything in accDir (and create filesCSV)
     if filesCSV in os.listdir(accDir):
@@ -172,8 +178,11 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
                 '--epochFolder "{:s}"'.format(epochDir),
                 '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
                 '--nonWearFolder "{:s}"'.format(nonWearDir),
-                '--stationaryFolder "{:s}"'.format(stationaryDir)
-            ]
+                '--stationaryFolder "{:s}"'.format(stationaryDir),
+                '--rawFolder "{:s}"'.format(rawDir), 
+                '--npyFolder "{:s}"'.format(npyDir),
+                '--outputFolder "{:s}"'.format(outDir)
+                ]
 
             # Grab additional arguments provided in filesCSV (e.g. calibration params) 
             cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
