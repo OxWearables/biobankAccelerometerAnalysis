@@ -25,7 +25,7 @@ jobs:
       - name: Compile Parser
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
-      - name: Prase gt3x V2 file
+      - name: Parse gt3x V2 file
         run: |
           cd java
           java AccelerometerParser Tests/Resources/sampleV2.gt3x npyOutput:True  rawOutput:True

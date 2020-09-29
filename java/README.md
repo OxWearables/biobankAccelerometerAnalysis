@@ -25,7 +25,7 @@ and add them to the Junit test cases. The unit tests will be run when a pull req
 is created. 
  
 ### How to run tests 
-1. Download junit platform console stand0-alone [jar](https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar) to `java` folder.
+1. Download junit platform console stand-alone [jar](https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar) to `java` folder.
 2. Compile tests 
 3. Run the tests 
 
