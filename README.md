@@ -5,7 +5,7 @@ A tool to extract meaningful health information from large accelerometer dataset
 ![Build status](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/CI/badge.svg)
 
 ## Installation
-Dependancies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
+Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
 ```
 $ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
 $ bash utilities/downloadDataModels.sh
@@ -14,12 +14,12 @@ $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 ```
 
 **Note that a major fix/improvement was introduced in April 2020. You therefore need to download the updated files to achieve this**.
-::
-	$ git pull
-        $ bash utilities/downloadDataModels.sh
-        $ pip3 install --user .
-        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
-
+```
+$ git pull
+$ bash utilities/downloadDataModels.sh
+$ pip3 install --user .
+$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+```
 
 
 ## Usage
