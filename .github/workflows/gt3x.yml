@@ -1,3 +1,7 @@
+#
+#  1. Check we can parse gt3x v2 file without error
+#  2. Test if the extracted epoch files have changed
+#
 name: gt3x
 
 on:

@@ -1,3 +1,6 @@
+#
+#  Make sure we can build the java files properly
+#
 name: build
 
 on:

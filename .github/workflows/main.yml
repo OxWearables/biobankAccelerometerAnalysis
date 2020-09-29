@@ -1,3 +1,7 @@
+#
+#  Build the class and test files
+#  Run all the unit tests in the `java/Tests`
+#
 name: CI
 
 on:
