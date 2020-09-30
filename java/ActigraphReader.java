@@ -666,7 +666,7 @@ public class ActigraphReader extends DeviceReader {
      ** Helper method that converts .NET ticks that Actigraph GT3X uses to millisecond (local)
      ** method from: https://github.com/SPADES-PUBLIC/mHealth-GT3X-converter-public/blob/master/src/com/qmedic/data/converter/gt3x/GT3XUtils.java
      **/
-    public static long GT3XfromTickToMillisecond(final long ticks)
+    private static long GT3XfromTickToMillisecond(final long ticks)
     {
         Date date = new Date((ticks - 621355968000000000L) / 10000);
         return date.getTime();
