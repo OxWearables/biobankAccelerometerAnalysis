@@ -32,6 +32,7 @@ public class ActigraphReader extends DeviceReader {
         logger = Logger.getLogger(ActigraphReader.class.getName());
     }
 
+
     /**
      * Reads a .gt3x file
      * For v1, the .zip archive should contain least 3 files.
@@ -39,6 +40,10 @@ public class ActigraphReader extends DeviceReader {
      * This method first verifies if it is a valid v1/v2 file,
      * it will then parse the header and begin processing the activity.bin file for v1
      * and log.bin file for v2.
+     *
+     * For the timestamp, since the gt3x uses .NET format even though
+     * the timestamp is saved in UNIX time format but it is local time.
+     * TODO: confirm the DST change
      */
     public static void readG3TXEpochs(
         String accFile,
@@ -72,18 +77,19 @@ public class ActigraphReader extends DeviceReader {
 
             // underscored are unused for now
             double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
-            long _LastSampleTime, firstSampleTime=-1;
+            long startDate = -1, stopDate = -1, firstSampleTime=-1;
             String serialNumber = "";
+            String infoTimeZone = " ";
 
             while (infoReader.ready()) {
                 String line = infoReader.readLine();
                 if (line!=null){
                     String[] tokens=line.split(":");
                     if ((tokens !=null)  && (tokens.length==2)){
-                        if (tokens[0].trim().equals("Sample Rate")){
+                        if (tokens[0].trim().equals("Sample Rate"))
                             sampleFreq=Integer.parseInt(tokens[1].trim());
-                        } else if (tokens[0].trim().equals("Last Sample Time"))
-                            _LastSampleTime=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
+                        else if (tokens[0].trim().equals("First Sample Date"))
+                            firstSampleTime=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
                         else if (tokens[0].trim().equals("Acceleration Scale"))
                             accelerationScale=Double.parseDouble(tokens[1].trim());
                         else if (tokens[0].trim().equals("Acceleration Min"))
@@ -91,12 +97,21 @@ public class ActigraphReader extends DeviceReader {
                         else if (tokens[0].trim().equals("Acceleration Max"))
                             _AccelerationMax=Double.parseDouble(tokens[1].trim());
                         else if (tokens[0].trim().equals("Start Date"))
-                            firstSampleTime=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
+                            startDate=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
+                        else if (tokens[0].trim().equals("Stop Date"))
+                            stopDate=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
                         else if (tokens[0].trim().equals("Serial Number"))
                             serialNumber=tokens[1].trim();
+                        else if (tokens[0].trim().equals("TimeZone"))
+                            infoTimeZone=tokens[1].trim();
                     }
                 }
             }
+
+            System.out.println("Timezone: " + infoTimeZone);
+            System.out.println("Start date: " + startDate);
+            System.out.println("Stop date: " + stopDate);
+
             accelerationScale = setAccelerationScale(serialNumber);
 
             if ((sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) && gt3Version != VALID_GT3_V2_FILE) {
@@ -665,8 +680,11 @@ public class ActigraphReader extends DeviceReader {
     /**
      ** Helper method that converts .NET ticks that Actigraph GT3X uses to millisecond (local)
      ** method from: https://github.com/SPADES-PUBLIC/mHealth-GT3X-converter-public/blob/master/src/com/qmedic/data/converter/gt3x/GT3XUtils.java
+     *
+     * Unit: .NET has a unit of 100 naooseconds
+     * https://docs.microsoft.com/en-us/dotnet/api/system.datetime.ticks?view=netcore-3.1
      **/
-    private static long GT3XfromTickToMillisecond(final long ticks)
+    public static long GT3XfromTickToMillisecond(final long ticks)
     {
         Date date = new Date((ticks - 621355968000000000L) / 10000);
         return date.getTime();
