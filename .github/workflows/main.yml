@@ -1,0 +1,40 @@
+#
+#  Build the class and test files
+#  Run all the unit tests in the `java/Tests`
+#
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          
+      - name: Compile Parser
+        run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+
+      - name: Download Junit
+        run: wget -O java/junit.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar
+
+      - name: Create folder for class files
+        run: mkdir java/out
+        
+      - name: Compile tests
+        run: javac -d java/out -cp java/out:java/junit.jar:.:java/:java/Tests java/Tests/*.java
+        
+      - name: Run tests
+        run: java -jar java/junit.jar --classpath java/out:java --scan-class-path
+ 
+        
