@@ -32,7 +32,7 @@ public class Features {
             int numFFTbinsPerChannel){
 
         // get San Diego (Ellis) features
-        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate, 
+        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate,
                                                             numFFTbinsPerChannel);
 
         // get MAD features
@@ -140,17 +140,17 @@ public class Features {
         double xyCorrelation = AccStats.correlation(wx, wy);
         double xzCorrelation = AccStats.correlation(wx, wz);
         double yzCorrelation = AccStats.correlation(wy, wz);
-        
+
         // Roll, Pitch, Yaw
         double [] angleAvgStdYZ = AccStats.angleAvgStd(wy, wz); //roll
         double [] angleAvgStdZX = AccStats.angleAvgStd(wz, wx); //pitch
         double [] angleAvgStdYX = AccStats.angleAvgStd(wy, wx); //yaw
-        
+
         // gravity component angles
         double gxyAngle = Math.atan2(gyMean,gzMean);
         double gzxAngle = Math.atan2(gzMean,gxMean);
         double gyxAngle = Math.atan2(gyMean,gxMean);
-        
+
         // don't forget to change header method immediately below !!!
         double[] output = new double[]{
             sdMean,
@@ -239,12 +239,12 @@ public class Features {
                 }
             }
         }
-        
+
         // column means
         double gxMean = AccStats.mean(gx);
         double gyMean = AccStats.mean(gy);
         double gzMean = AccStats.mean(gz);
-        
+
         return new double[] {gxMean, gyMean, gzMean};
     }
 
@@ -256,13 +256,13 @@ public class Features {
     {
         final int n = v.length;
         final double vMean = AccStats.mean(v);
-        
+
         // Initialize array to compute FFT coefs
         double[] vFFT = new double[n];
         for (int i = 0; i < n; i++){
             vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
         }
-        
+
         HanningWindow(vFFT, vFFT.length);
         new DoubleFFT_1D(vFFT.length).realForward(vFFT);  // FFT library computes coefs inplace
         final double[] vFFTpow = getFFTpower(vFFT);  // parse FFT coefs to obtain the powers
@@ -312,7 +312,7 @@ public class Features {
         for (int i = 0; i < numBins; i++){
             binnedFFT[i] = 0;
         }
-        
+
         final int windowOverlap = sampleRate / 2;  // 50% overlapping windows
         final int numWindows = n / windowOverlap - 1;
         double[] windowFFT = new double[sampleRate];
@@ -384,11 +384,11 @@ public class Features {
 
         // features from paper:
         // Mean amplitude deviation (MAD) describes the typical distance of data points about the mean
-        double MAD = 0; 
+        double MAD = 0;
         // Mean power deviation (MPD) describes the dispersion of data points about the mean
         double MPD = 0;
         // Skewness (skewR) describes the asymmetry of dispersion of data points about the mean
-        double skew = 0; 
+        double skew = 0;
         // Kurtosis (kurtR) describes the peakedness of the distribution of data points
         double kurt = 0;
         for (int i = 0; i < n; i++) {
@@ -403,7 +403,7 @@ public class Features {
         MPD /= Math.pow(N, 1.5);
         skew *= N / ((N-1)*(N-2));
         kurt = kurt * N*(N+1)/((N-1)*(N-2)*(N-3)*(N-4)) - 3*(N-1)*(N-1)/((N-2)*(N-3));
-        
+
         // don't forget to change header method immediately below !!!
         return new double[] {
             MAD,
@@ -463,7 +463,7 @@ public class Features {
         }
         return header;
     }
-    
+
 
     private static double[] getFFTmagnitude(double[] FFT) {
         return getFFTmagnitude(FFT, true);
@@ -484,7 +484,7 @@ public class Features {
     }
 
 
-    
+
     private static double[] getFFTpower(double[] FFT, boolean normalize) {
         /*
          * Get powers from FFT coefficients
@@ -553,7 +553,7 @@ public class Features {
         //Compute FFT and power spectrum density
         final int n = v.length;
         final double vMean = AccStats.mean(v);
-        
+
         // Initialize array to compute FFT coefs
         double[] vFFT = new double[n];
         for (int i = 0; i < n; i++)  vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
@@ -610,7 +610,7 @@ public class Features {
         String header = "f1,p1,f2,p2,f625,p625,totalPower";
         return header;
     }
-    
+
 
     /**
      * From paper:
