@@ -432,7 +432,7 @@ public class EpochWriter {
     }
 
 
-    public static Instant millisToInstant(long t) {
+    private static Instant millisToInstant(long t) {
         return Instant.ofEpochMilli(t);
     }
 
