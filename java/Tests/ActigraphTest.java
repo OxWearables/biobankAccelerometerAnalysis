@@ -37,4 +37,22 @@ public class ActigraphTest {
                         ZoneId.of(localTimeZone));
         assertEquals(computedTime, targetTime);
     }
+
+    @Test
+    public void activityTimeShift() {
+        long myTime = 1271901600; // peudo-UNIX time
+        String timeShift = "08:00:00";
+        long targetTime = ActigraphReader.getTrueUnixTime(myTime, timeShift);
+        assertEquals(myTime+7*60*60*1000, targetTime);
+    }
+
+
+    @Test
+    public void activityTimeShiftII() {
+        long myTime = 1271901600; // peudo-UNIX time
+        String timeShift = "00:00:00";
+        long targetTime = ActigraphReader.getTrueUnixTime(myTime, timeShift);
+        assertEquals(myTime-1*60*60*1000, targetTime);
+    }
 }
+

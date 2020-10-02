@@ -11,6 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.time.LocalTime;
 
 
 /**
@@ -79,7 +80,7 @@ public class ActigraphReader extends DeviceReader {
             double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
             long startDate = -1, stopDate = -1, firstSampleTime=-1;
             String serialNumber = "";
-            String infoTimeZone = " ";
+            String infoTimeZone = "01:00:00"; // default to be UTC time difference
 
             while (infoReader.ready()) {
                 String line = infoReader.readLine();
@@ -131,6 +132,7 @@ public class ActigraphReader extends DeviceReader {
                     epochWriter);
             if (gt3Version == VALID_GT3_V2_FILE) readG3TXV2Epoch(
                     activityReader,
+                    infoTimeZone,
                     sampleDelta,
                     sampleFreq,
                     accelerationScale,
@@ -162,6 +164,7 @@ public class ActigraphReader extends DeviceReader {
      **/
     private static void readG3TXV2Epoch(
             InputStream activityReader,
+            String infoTimeShift,
             double sampleDelta,
             double sampleFreq,
             double accelerationScale,
@@ -282,6 +285,7 @@ public class ActigraphReader extends DeviceReader {
                     } else if (type == ACTIVITY2_ID && size > 1) {
                         // when Size = 1, it is a USB connection event thus ignore.
                         int [] res = processActivity2(
+                                infoTimeShift,
                                 sampleFreq,
                                 date,
                                 current,
@@ -458,7 +462,16 @@ public class ActigraphReader extends DeviceReader {
     }
 
 
+    public static long getTrueUnixTime (long myTime, String inforTimeshift) {
+        LocalTime timeShift = LocalTime.parse(inforTimeshift);
+        long timeShiftMilli = 1000 * (timeShift.getHour() * 60 * 60 +
+                timeShift.getMinute() * 60 + timeShift.getMinute() - 1*60*60); // time shfit w.r.t. UTC
+        return myTime + timeShiftMilli;
+    }
+
+
     private static int [] processActivity2(
+            String infoTimeShift,
             double sampleFreq,
             long firstSampleTime,
             byte current,
@@ -499,10 +512,12 @@ public class ActigraphReader extends DeviceReader {
                 samples += 1;
 
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
+                myTime = getTrueUnixTime(myTime, infoTimeShift);
 
                 logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
                         "\nTime:" + myTime);
-                epochWriter.newValues(myTime, sample[0], sample[1], sample[2], temp, errCounter);
+                epochWriter.newValues(myTime,
+                                      sample[0], sample[1], sample[2], temp, errCounter);
             }
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
