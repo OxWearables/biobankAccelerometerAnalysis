@@ -699,7 +699,7 @@ public class ActigraphReader extends DeviceReader {
      * Unit: .NET has a unit of 100 naooseconds
      * https://docs.microsoft.com/en-us/dotnet/api/system.datetime.ticks?view=netcore-3.1
      **/
-    private static long GT3XfromTickToMillisecond(final long ticks)
+    public static long GT3XfromTickToMillisecond(final long ticks)
     {
         Date date = new Date((ticks - 621355968000000000L) / 10000);
         return date.getTime();
