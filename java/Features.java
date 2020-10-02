@@ -136,10 +136,10 @@ public class Features {
         double[] paQuartiles = AccStats.percentiles(v, new double[] {0, 0.25, 0.5, 0.75, 1});
 
         //correlations
-        double autoCorrelation = AccStats.correlation(v, v, sampleRate);
-        double xyCorrelation = AccStats.correlation(wx, wy);
-        double xzCorrelation = AccStats.correlation(wx, wz);
-        double yzCorrelation = AccStats.correlation(wy, wz);
+        double autoCorrelation = correlation(v, v, sampleRate);
+        double xyCorrelation = correlation(wx, wy);
+        double xzCorrelation = correlation(wx, wz);
+        double yzCorrelation = correlation(wy, wz);
 
         // Roll, Pitch, Yaw
         double [] angleAvgStdYZ = AccStats.angleAvgStd(wy, wz); //roll
@@ -719,5 +719,23 @@ public class Features {
         }
         return res;
     }
+
+
+    /**
+     * This assumes the correlation is zero if one of the axes is all constant.
+     * In reality, correlation is undefined in such cases, but for our
+     * particular case we shall assume that the axes are independent at rest
+     */
+    private static double correlation(double[] vals1, double[] vals2, int lag) {
+        double res = AccStats.correlation(vals1, vals2, lag);
+        if (!Double.isFinite(res)) return 0.0;
+        return res;
+    }
+
+
+    private static double correlation(double[] vals1, double[] vals2) {
+        return correlation(vals1, vals2, 0);
+    }
+
 
 }

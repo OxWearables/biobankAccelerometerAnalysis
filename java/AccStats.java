@@ -229,9 +229,9 @@ public class AccStats {
         // covariation
         double cov = sxy / n - sx * sy / n / n;
         // standard error of x
-        double sigmax = Math.sqrt(sxx / n -  sx * sx / n / n);
+        double sigmax = Math.sqrt(Math.max(0, sxx / n -  sx * sx / n / n));
         // standard error of y
-        double sigmay = Math.sqrt(syy / n -  sy * sy / n / n);
+        double sigmay = Math.sqrt(Math.max(0, syy / n -  sy * sy / n / n));
 
         // correlation is just a normalized covariation
         return cov / sigmax / sigmay;
