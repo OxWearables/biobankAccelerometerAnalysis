@@ -3,6 +3,7 @@ import org.junit.Test;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.ZoneId;
+import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 
@@ -17,7 +18,7 @@ public class ActigraphTest {
         long myTime = 635887368000000000L;
         String localTimeZone = "UTC";
         long localTimeMillis = ActigraphReader.GT3XfromTickToMillisecond(myTime);
-        Instant computedTimeIns = EpochWriter.millisToInstant(localTimeMillis);
+        Instant computedTimeIns = Instant.ofEpochMilli(localTimeMillis);
         ZonedDateTime computedTime = computedTimeIns.atZone(ZoneId.of("UTC"));
         ZonedDateTime targetTime =
                 ZonedDateTime.of(2016, 1, 18, 18, 0,0, 0,
@@ -30,7 +31,7 @@ public class ActigraphTest {
         long myTime = 635960808000000000L;
         String localTimeZone = "UTC";
         long localTimeMillis = ActigraphReader.GT3XfromTickToMillisecond(myTime);
-        Instant computedTimeIns = EpochWriter.millisToInstant(localTimeMillis);
+        Instant computedTimeIns = Instant.ofEpochMilli(localTimeMillis);
         ZonedDateTime computedTime = computedTimeIns.atZone(ZoneId.of("UTC"));
         ZonedDateTime targetTime =
                 ZonedDateTime.of(2016, 4, 12, 18, 0,0, 0,
