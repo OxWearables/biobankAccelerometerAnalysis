@@ -46,12 +46,12 @@ def main():
     parser.add_argument('--startTime',
                             metavar='e.g. 1991-01-01T23:59', default=None,
                             type=str2date, help="""removes data before this
-                            time in the final analysis
+                            time (local) in the final analysis
                             (default : %(default)s)""")
     parser.add_argument('--endTime',
                             metavar='e.g 1991-01-01T23:59', default=None,
                             type=str2date, help="""removes data after this
-                            time in the final analysis
+                            time (local) in the final analysis
                             (default : %(default)s)""")
     parser.add_argument('--timeSeriesDateColumn',
                             metavar='True/False', default=False, type=str2bool,

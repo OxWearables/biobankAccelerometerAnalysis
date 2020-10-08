@@ -87,10 +87,13 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Remove data before/after user specified start/end times
     rows = e.shape[0]
+    tz = pytz.timezone(timeZone)
     if startTime:
-        e = e[e.index >= startTime]
+        localStartTime = tz.localize(startTime)
+        e = e[e.index >= localStartTime]
     if endTime:
-        e = e[e.index <= endTime]
+        localEndTime = tz.localize(endTime)
+        e = e[e.index <= localEndTime]
     # Quit if no data left
     if e.shape[0] == 0:
         print("No rows remaining after start/end time removal")
@@ -98,10 +101,10 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         sys.exit(-9)
 
     # Get start & end times
-    startTime = pd.to_datetime(e.index.values[0])
-    endTime = pd.to_datetime(e.index.values[-1])
-    summary['file-startTime'] = startTime.strftime('%Y-%m-%d %H:%M:%S')
-    summary['file-endTime'] = endTime.strftime('%Y-%m-%d %H:%M:%S')
+    startTime = e.index[0]
+    endTime = e.index[-1]
+    summary['file-startTime'] = accUtils.date_strftime(startTime)
+    summary['file-endTime'] = accUtils.date_strftime(endTime)
     summary['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
 
     # Get interrupt and data error summary vals
