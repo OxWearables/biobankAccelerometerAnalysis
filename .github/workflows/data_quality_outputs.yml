@@ -24,9 +24,11 @@ jobs:
         run: bash utilities/downloadDataModels.sh
        
       - name: Summarise sample
-        run: import accelerometer
-             python accelerometer/summariseEpoch.py data/sample.cwa
+        run: |
+            import accelerometer
+            python accelerometer/summariseEpoch.py data/sample.cwa
           
       - name: compare output
-        run:  import accelerometer
-              python accelerometer/tests/check_data_quality_outputs.py
+        run:  |
+            import accelerometer
+            python accelerometer/tests/check_data_quality_outputs.py
