@@ -27,4 +27,4 @@ jobs:
         run: python accelerometer/summariseEpoch.py data/sample.cwa
           
       - name: compare output
-        run: python acceleromter/tests/check_data_quality_outputs.py
+        run: python accelerometer/tests/check_data_quality_outputs.py
