@@ -69,6 +69,8 @@ public class AccelerometerParser {
     	boolean useFilter = true;
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
+    	String startTimeStr = "";
+    	String endTimeStr = "";
     	boolean getFeatures = false;
     	int numFFTbins = 12; // number of fft bins to print
         // Must supply additional information when loading from a .csv file
@@ -104,7 +106,8 @@ public class AccelerometerParser {
                 String funcParam = param.substring(param.indexOf(":") + 1);
                 if (funcName.equals("timeZone")) {
                     timeZone = funcParam;
-                } else if (funcName.equals("timeShift")) {
+					dateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+				} else if (funcName.equals("timeShift")) {
 					timeShift = Integer.parseInt(funcParam);
                 } else if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
@@ -152,19 +155,9 @@ public class AccelerometerParser {
                 } else if (funcName.equals("npyFile")) {
 					npyFile = funcParam;
 				} else if (funcName.equals("startTime")) {
-					try {
-						startTime = dateFormat.parse(funcParam).getTime();
-					} catch (ParseException ex) {
-						System.err.println("error parsing startTime:'"+funcParam+"', must be in format: 1996-7-30T13:59");
-						System.exit(-2);
-					}
+                	startTimeStr = funcParam;
 				} else if (funcName.equals("endTime")) {
-					try {
-						endTime = dateFormat.parse(funcParam).getTime();
-					} catch (ParseException ex) {
-						System.err.println("error parsing endTime:'"+funcParam+"', must be in format: 1996-7-30T13:59");
-						System.exit(-2);
-					}
+                	endTimeStr = funcParam;
 				} else if (funcName.equals("csvTimeXYZColsIndex")) {
 					String[] timeXYZ = funcParam.split(",");
 					if (timeXYZ.length != 4) {
@@ -187,7 +180,23 @@ public class AccelerometerParser {
 				} else {
 					System.err.println("unknown parameter " + funcName + ":" + funcParam);
 				}
+			}
 
+			if (!startTimeStr.isEmpty()) {
+				try {
+					startTime = dateFormat.parse(startTimeStr).getTime();
+				} catch (ParseException ex) {
+					System.err.println("error parsing startTime:'" + startTimeStr + "', must be in format: 1996-7-30T13:59");
+					System.exit(-2);
+				}
+			}
+			if (!endTimeStr.isEmpty()) {
+				try {
+					endTime = dateFormat.parse(endTimeStr).getTime();
+				} catch (ParseException ex) {
+					System.err.println("error parsing endTime:'" + endTimeStr + "', must be in format: 1996-7-30T13:59");
+					System.exit(-2);
+				}
 			}
 		}
 
