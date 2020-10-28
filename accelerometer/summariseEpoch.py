@@ -1,5 +1,5 @@
 """Module to generate overall activity summary from epoch data."""
-
+import accelerometer
 from accelerometer import accUtils
 from accelerometer import accClassification
 from accelerometer import circadianRhythms
