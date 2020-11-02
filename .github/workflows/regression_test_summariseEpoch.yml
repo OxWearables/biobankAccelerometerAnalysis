@@ -36,7 +36,7 @@ jobs:
       - name: Load and process data using accProcess.py
         run: |
           bash utilities/downloadDataModels.sh
-          ls data
+          gunzip -c data/sample.cwa.gz >data/sample.cwa
           python accProcess.py --deleteIntermediateFiles False data/sample.cwa
       - name: Compare epoch output
         uses: tianhaoz95/mirror-action@v1.0.1
