@@ -36,7 +36,7 @@ jobs:
     - name: Load data
       run: bash utilities/downloadDataModels.sh
     - name: Process data using accProcess.py
-      run: python accelerometer/accProcess.py --deleteIntermediateFiles False data/sample.cwa
+      run: python accProcess.py --deleteIntermediateFiles False data/sample.cwa
     - name: Compare epoch output
       uses: tianhaoz95/mirror-action@v1.0.1
       with:
