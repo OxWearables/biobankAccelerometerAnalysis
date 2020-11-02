@@ -33,10 +33,10 @@ jobs:
    #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Compile Parser
       run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
-    - name: Load data
-      run: bash utilities/downloadDataModels.sh
-    - name: Process data using accProcess.py
-      run: python accProcess.py --deleteIntermediateFiles False data/sample.cwa
+    - name: Load and process data using accProcess.py 
+      run: | 
+        bash utilities/downloadDataModels.sh
+        python accProcess.py --deleteIntermediateFiles False data/sample.cwa
     - name: Compare epoch output
       uses: tianhaoz95/mirror-action@v1.0.1
       with:
