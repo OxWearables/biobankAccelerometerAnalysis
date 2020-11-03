@@ -1,5 +1,4 @@
 """Module to generate overall activity summary from epoch data."""
-
 from accelerometer import accUtils
 from accelerometer import accClassification
 from accelerometer import circadianRhythms
@@ -117,6 +116,11 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
         nonWearFile, summary)
 
+    # Calculate and include data quality statistics
+    get_total_reads(e, epochPeriod, summary)
+    get_clips(e, epochPeriod, summary)
+
+
     # Predict activity from features, and add label column
     if activityClassification:
         e, labels = accClassification.activityClassification(e, activityModel)
@@ -152,7 +156,12 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # Return physical activity summary
     return e, labels
 
-
+def get_clips(e, epochPeriod, summary):
+    summary['clipsBeforeCalibration'] = np.sum(e['clipsBeforeCalibr'])
+    summary['clipsAfterCalibration'] = np.sum(e['clipsAfterCalibr'])
+    
+def get_total_reads(e, epochPeriod, summary):
+    summary['totalReads'] = np.sum(e['rawSamples'])
 
 def get_interrupts(e, epochPeriod, summary):
     """Identify if there are interrupts in the data recording
