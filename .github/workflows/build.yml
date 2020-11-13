@@ -1,5 +1,5 @@
 #
-#  Make sure we can build the java files properly
+#  Make sure we can build the java and python files across operating systems.
 #
 name: build
 
