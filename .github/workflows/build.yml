@@ -26,10 +26,3 @@ jobs:
           
       - name: Compile Java Parser
         run: javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
-
-      - name: Check python dependencies
-        uses: actions/setup-python@v2
-        with:
-          python-version: "3.7"
-        run: |
-          pip3 install .
