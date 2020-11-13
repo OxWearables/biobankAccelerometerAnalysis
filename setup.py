@@ -20,7 +20,7 @@ setuptools.setup(
         'numpy',
         'scipy', 
         'pandas>=0.24',
-        'scikit-learn==0.21.2',
+        'scikit-learn>=0.21.2',
         'sphinx',
         'sphinx-rtd-theme',
         'statsmodels',
