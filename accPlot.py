@@ -23,6 +23,8 @@ WILLETS_SciReports_COLOURS = {'sleep':'blue', 'sit.stand':'red',
     'vehicle':'darkorange', 'walking':'lightgreen', 'mixed':'green',
     'bicycling':'purple'}
 
+WALMSLEY_Nov2020_COLOURS = {'sleep':'blue', 'sedentary':'red',
+    'light':'darkorange', 'MVPA':'green'}
 
 
 def main():
@@ -38,7 +40,7 @@ def main():
     parser.add_argument('plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/doherty2018-apr20Update.tar",
+                            default="activityModels/walmsley-nov20.tar",
                             help="""trained activity model .tar file""")
     parser.add_argument('--useRecommendedImputation',
                             metavar='True/False', default=True, type=str2bool,
@@ -75,7 +77,7 @@ def main():
 def plotTimeSeries(
         tsFile,
         plotFile,
-        activityModel="activityModels/doherty2018-apr20Update.tar",
+        activityModel="activityModels/walmsley-nov20.tar",
         useRecommendedImputation=True,
         imputedLabels=False,
         imputedLabelsHeight=0.9):
@@ -116,7 +118,9 @@ def plotTimeSeries(
         if col not in [accUtils.TIME_SERIES_COL, 'imputed', 'acc', 'MET']:
             labels += [col]
     print(labels)
-    if 'doherty' in activityModel:
+    if 'walmsley' in activityModel:
+        labels_as_col = WALMSLEY_Nov2020_COLOURS
+    elif 'doherty' in activityModel:
         labels_as_col = DOHERTY_NatComms_COLOURS
     elif 'willetts' in activityModel:
         labels_as_col = WILLETS_SciReports_COLOURS

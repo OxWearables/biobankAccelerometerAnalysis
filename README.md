@@ -13,7 +13,7 @@ $ pip3 install --user .
 $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 ```
 
-**Note that a major fix/improvement was introduced in April 2020. You therefore need to download the updated files to achieve this**.
+**Note a new dependency was introduced in November 2020. You therefore need to download the updated files to achieve this**.
 ```
 $ git pull
 $ bash utilities/downloadDataModels.sh
@@ -80,25 +80,27 @@ When describing or using the UK Biobank accelerometer dataset, or using this too
 to extract overall activity from your accelerometer data, please cite [Doherty2017].
 
 When using this tool to extract sleep duration and physical activity behaviours
-from your accelerometer data, please cite [Willetts2018] and [Doherty2018].
+from your accelerometer data, please cite [Willetts2018], [Doherty2018], and 
+[Walmsley2020]
 
 ```
-[Doherty2017] Doherty A, Jackson D, Hammerla N, et al. (2017) 
+[Doherty2017] Doherty A, Jackson D, et al. (2017) 
 Large scale population assessment of physical activity using wrist worn 
 accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
 
-[Willetts2018] Willetts M, Hollowell S, Aslett L, Holmes C, Doherty A. (2018) 
+[Willetts2018] Willetts M, Hollowell S, et al. (2018) 
 Statistical machine learning of sleep and physical activity phenotypes from 
 sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
 
-[Doherty2018] Doherty A, Smith-Bryne K, Ferreira T, et al. (2018) 
+[Doherty2018] Doherty A, Smith-Bryne K, et al. (2018) 
 GWAS identifies 14 loci for device-measured physical activity and sleep 
 duration. Nature Communications. 9(1):5257
+
+[Walmsley2020] Walmsley R, Chan S, et al. (2020)
+Reallocating time from machine-learned sleep, sedentary behaviour or light 
+physical activity to moderate-to-vigorous physical activity is associated with 
+lower cardiovascular disease risk (preprint https://doi.org/10.1101/2020.11.10.20227769)
 ```
 
 ###### Licence
 This project is released under a [BSD 2-Clause Licence](http://opensource.org/licenses/BSD-2-Clause) (see LICENCE file)
-
-###### Contributors
-Aiden Doherty, Sven Hollowell, Matthew Willetts (University of Oxford)
-Dan Jackson, Nils Hammerla (Newcastle University)
