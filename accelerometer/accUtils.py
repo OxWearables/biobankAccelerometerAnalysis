@@ -472,11 +472,12 @@ def writeTimeSeries(e, labels, tsFile):
         cols_new.append('MET')
 
     e_new = pd.DataFrame(index=e.index)
+    e_new.index.name = 'time'
     e_new['imputed'] = e.isna().any(1).astype('int')
     e_new[cols_new] = e[cols]
 
     # make output time format contain timezone
     # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
-    e_new.index = e_new.index.to_series().apply(date_strftime)
-
+    e_new.index = e_new.index.to_series(keep_tz=True).apply(date_strftime)
+    
     e_new.to_csv(tsFile, compression='gzip')

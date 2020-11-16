@@ -17,7 +17,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
     mgCutPointMVPA=100, mgCutPointVPA=425,
-    activityModel="activityModels/doherty-may20.tar",
+    activityModel="activityModels/walmsley-nov20.tar",
     intensityDistribution=False, useRecommendedImputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
     verbose=False):
@@ -175,11 +175,12 @@ def get_interrupts(e, epochPeriod, summary):
     """
 
     epochNs = epochPeriod * np.timedelta64(1, 's')
-    interrupts = np.where(e.index.to_series().diff() > epochNs)[0]
+    interrupts = np.where(e.index.to_series(keep_tz=True).diff() > epochNs)[0]
     # Get duration of each interrupt in minutes
     interruptMins = []
     for i in interrupts:
-        interruptMins.append(e.index[i-1:i+1].to_series().diff() / np.timedelta64(1, 'm'))
+        interruptMins.append(e.index[i-1:i+1].to_series(keep_tz=True).diff() /
+         np.timedelta64(1, 'm'))
     # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
