@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest numpy scipy pandas sklearn argparse datetime statsmodels
+          pip install .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
       - name: Set up JDK 1.8

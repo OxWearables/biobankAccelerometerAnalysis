@@ -195,7 +195,7 @@ def plotTimeSeries(
             datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0))))
         ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)),
             end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
-            freq='4H'))
+            freq='4H')[:-1])
         ax.set_xticks(pd.date_range(start=datetime.combine(day,time(0, 0, 0, 0)),
             end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
             freq='1H'), minor=True)

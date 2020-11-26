@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest numpy scipy pandas sklearn argparse datetime statsmodels
+        pip install .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
    # - name: Lint with flake8
    #   run: |
@@ -43,6 +43,5 @@ jobs:
       with:
          original: referenceFiles/epoch.csv.gz
          mirror: data/sample-epoch.csv.gz
-
-
-
+    - name: Plot output
+      run: python accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
