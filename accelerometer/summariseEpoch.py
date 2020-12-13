@@ -18,7 +18,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
     mgCutPointMVPA=100, mgCutPointVPA=425,
     activityModel="activityModels/walmsley-jan21.tar",
-    intensityDistribution=False, useRecommendedImputation=True,
+    intensityDistribution=False, intensityDistributionVals = "accelerometer/intensityVals.txt", useRecommendedImputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
     verbose=False):
     """Calculate overall activity summary from <epochFile> data
@@ -49,6 +49,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
     :param bool intensityDistribution: Add intensity outputs to dict <summary>
+    :param bool intensityDistributionVals: Text file containing values at which to find intensity distribution
     :param bool useRecommendedImputation: Highly recommended method to impute
         missing data using data from other days around the same time
     :param bool verbose: Print verbose output
@@ -140,7 +141,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
-        calculateECDF(e, 'acc', summary, useRecommendedImputation)
+        calculateECDF(e, 'acc', summary, useRecommendedImputation, intensityDistributionVals = intensityDistributionVals)
 
     # Calculate circadian metrics
     if psd:
@@ -337,7 +338,7 @@ def perform_wearTime_imputation(e, verbose):
 
 
 
-def calculateECDF(e, inputCol, summary, useRecommendedImputation):
+def calculateECDF(e, inputCol, summary, useRecommendedImputation, intensityDistributionVals = "intensityDistributionVals.txt"):
     """Calculate activity intensity empirical cumulative distribution
 
     The input data must not be imputed, as ECDF requires different imputation
@@ -359,13 +360,10 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     :return: Write dict <summary> keys '<inputCol>-ecdf-<level...>mg'
     :rtype: void
     """
-
-    ecdf1, step = np.linspace(1, 20, 20, retstep=True)  # 1mg bins from 1-20mg
-    ecdf2, step = np.linspace(25, 100, 16, retstep=True)  # 5mg bins from 25-100mg
-    ecdf3, step = np.linspace(125, 500, 16, retstep=True)  # 25mg bins from 125-500mg
-    ecdf4, step = np.linspace(600, 2000, 15, retstep=True)  # 100mg bins from 500-2000mg
-    ecdfXVals = np.concatenate([ecdf1, ecdf2, ecdf3, ecdf4])
-
+    filename = intensityDistributionVals[0]
+    valsFile = open(filename, "r")
+    ecdfXVals = [float(number) for number in valsFile]
+    
     # Remove NaNs (necessary for statsmodels.api)
     ecdfData = e[['hour', 'minute', inputCol]][~np.isnan(e[inputCol])]
     if len(ecdfData) > 0:
@@ -399,7 +397,6 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     for x, ecdf in zip(ecdfXVals, accEcdf):
         summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
-
 
 
 def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
