@@ -288,12 +288,17 @@ def main():
 
     # Check if we can write to the output folders
     for path in [
-        args.summaryFolder, args.nonWearFolder, args.epochFolder,
+        args.summaryFolder, args.nonWearFolder,
         args.stationaryFolder, args.timeSeriesFolder,
         args.rawFolder, args.npyFolder, args.outputFolder
     ]:
         assert os.access(path, os.W_OK), (
             f"Either folder '{path}' does not exist "
+            "or you do not have write permission"
+        )
+    if args.processInputFile: 
+        assert os.access(args.epochFolder, os.W_OK), (
+            f"Either folder '{args.epochFolder}' does not exist "
             "or you do not have write permission"
         )
 
