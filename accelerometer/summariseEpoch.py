@@ -157,11 +157,11 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     return e, labels
 
 def get_clips(e, epochPeriod, summary):
-    summary['clipsBeforeCalibration'] = np.sum(e['clipsBeforeCalibr'])
-    summary['clipsAfterCalibration'] = np.sum(e['clipsAfterCalibr'])
-    
+    summary['clipsBeforeCalibration'] = e['clipsBeforeCalibr'].sum().item()
+    summary['clipsAfterCalibration'] = e['clipsAfterCalibr'].sum().item()
+
 def get_total_reads(e, epochPeriod, summary):
-    summary['totalReads'] = np.sum(e['rawSamples'])
+    summary['totalReads'] = e['rawSamples'].sum().item()
 
 def get_interrupts(e, epochPeriod, summary):
     """Identify if there are interrupts in the data recording
