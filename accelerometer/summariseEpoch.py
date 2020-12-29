@@ -156,9 +156,13 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # Return physical activity summary
     return e, labels
 
+
+
 def get_clips(e, epochPeriod, summary):
     summary['clipsBeforeCalibration'] = e['clipsBeforeCalibr'].sum().item()
     summary['clipsAfterCalibration'] = e['clipsAfterCalibr'].sum().item()
+
+
 
 def get_total_reads(e, epochPeriod, summary):
     summary['totalReads'] = e['rawSamples'].sum().item()
