@@ -163,6 +163,8 @@ def get_clips(e, epochPeriod, summary):
 def get_total_reads(e, epochPeriod, summary):
     summary['totalReads'] = e['rawSamples'].sum().item()
 
+
+
 def get_interrupts(e, epochPeriod, summary):
     """Identify if there are interrupts in the data recording
 
@@ -175,12 +177,9 @@ def get_interrupts(e, epochPeriod, summary):
     """
 
     epochNs = epochPeriod * np.timedelta64(1, 's')
-    interrupts = np.where(e.index.to_series(keep_tz=True).diff() > epochNs)[0]
+    interrupts = np.where(e.index.to_series().diff() > epochNs)[0]
     # Get duration of each interrupt in minutes
-    interruptMins = []
-    for i in interrupts:
-        interruptMins.append(e.index[i-1:i+1].to_series(keep_tz=True).diff() /
-         np.timedelta64(1, 'm'))
+    interruptMins = [e.index[i-1:i+1].to_series().diff().sum(skipna=True).seconds / 60 for i in interrupts]
     # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
