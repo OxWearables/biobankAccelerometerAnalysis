@@ -239,8 +239,7 @@ def plotTimeSeries(
     # format x-axis to show hours
     plt.gcf().autofmt_xdate()
     # add hour labels to top of plot
-    hours2Display = range(0, 24, 4)
-    hrLabels = [(str(hr) + 'am') if hr<=12 else (str(hr-12) + 'pm') for hr in hours2Display]
+    hrLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00']
     ax_list[0].set_xticklabels(hrLabels)
     ax_list[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
 
