@@ -1,6 +1,6 @@
 /* BSD 2-Clause (c) 2014: A.Doherty (Oxford), Shing Chan (Oxford)
  *
- * Code for extracting basic summary stats from raw triaxial 
+ * Code for extracting basic summary stats from raw triaxial
  * acceleration measurements.
  */
 import java.util.Arrays;
@@ -39,7 +39,7 @@ public class AccStats {
         }
         double[] enmoTrunc = trunc(enmo);
         double[] enmoAbs = abs(enmo);
-        
+
 
         // don't forget to change header method immediately below !!!
         double[] basicStatistics = {
@@ -49,17 +49,17 @@ public class AccStats {
             xStd, yStd, zStd,
             xyCovariance, xzCovariance, yzCovariance,
         };
-        
+
         double[] outputFeats = null;
         //extract features if requested
         if (getFeatures){
-            double[] features = Features.getFeatures(xArray, yArray, zArray, 
+            double[] features = Features.getFeatures(xArray, yArray, zArray,
                                             enmoTrunc, sampleRate, numFFTbins);
             outputFeats = AccStats.combineArrays(basicStatistics, features);
         } else{
             outputFeats = basicStatistics;
         }
-        
+
         return outputFeats;
     }
 
@@ -229,9 +229,9 @@ public class AccStats {
         // covariation
         double cov = sxy / n - sx * sy / n / n;
         // standard error of x
-        double sigmax = Math.sqrt(sxx / n -  sx * sx / n / n);
+        double sigmax = Math.sqrt(Math.max(0, sxx / n -  sx * sx / n / n));
         // standard error of y
-        double sigmay = Math.sqrt(syy / n -  sy * sy / n / n);
+        double sigmay = Math.sqrt(Math.max(0, syy / n -  sy * sy / n / n));
 
         // correlation is just a normalized covariation
         return cov / sigmax / sigmay;
@@ -367,6 +367,6 @@ public class AccStats {
         }
         return output;
     }
-   
+
 
 }

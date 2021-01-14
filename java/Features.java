@@ -32,7 +32,7 @@ public class Features {
             int numFFTbinsPerChannel){
 
         // get San Diego (Ellis) features
-        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate, 
+        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate,
                                                             numFFTbinsPerChannel);
 
         // get MAD features
@@ -136,21 +136,21 @@ public class Features {
         double[] paQuartiles = AccStats.percentiles(v, new double[] {0, 0.25, 0.5, 0.75, 1});
 
         //correlations
-        double autoCorrelation = AccStats.correlation(v, v, sampleRate);
-        double xyCorrelation = AccStats.correlation(wx, wy);
-        double xzCorrelation = AccStats.correlation(wx, wz);
-        double yzCorrelation = AccStats.correlation(wy, wz);
-        
+        double autoCorrelation = correlation(v, v, sampleRate);
+        double xyCorrelation = correlation(wx, wy);
+        double xzCorrelation = correlation(wx, wz);
+        double yzCorrelation = correlation(wy, wz);
+
         // Roll, Pitch, Yaw
         double [] angleAvgStdYZ = AccStats.angleAvgStd(wy, wz); //roll
         double [] angleAvgStdZX = AccStats.angleAvgStd(wz, wx); //pitch
         double [] angleAvgStdYX = AccStats.angleAvgStd(wy, wx); //yaw
-        
+
         // gravity component angles
         double gxyAngle = Math.atan2(gyMean,gzMean);
         double gzxAngle = Math.atan2(gzMean,gxMean);
         double gyxAngle = Math.atan2(gyMean,gxMean);
-        
+
         // don't forget to change header method immediately below !!!
         double[] output = new double[]{
             sdMean,
@@ -239,12 +239,12 @@ public class Features {
                 }
             }
         }
-        
+
         // column means
         double gxMean = AccStats.mean(gx);
         double gyMean = AccStats.mean(gy);
         double gzMean = AccStats.mean(gz);
-        
+
         return new double[] {gxMean, gyMean, gzMean};
     }
 
@@ -256,13 +256,13 @@ public class Features {
     {
         final int n = v.length;
         final double vMean = AccStats.mean(v);
-        
+
         // Initialize array to compute FFT coefs
         double[] vFFT = new double[n];
         for (int i = 0; i < n; i++){
             vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
         }
-        
+
         HanningWindow(vFFT, vFFT.length);
         new DoubleFFT_1D(vFFT.length).realForward(vFFT);  // FFT library computes coefs inplace
         final double[] vFFTpow = getFFTpower(vFFT);  // parse FFT coefs to obtain the powers
@@ -312,7 +312,7 @@ public class Features {
         for (int i = 0; i < numBins; i++){
             binnedFFT[i] = 0;
         }
-        
+
         final int windowOverlap = sampleRate / 2;  // 50% overlapping windows
         final int numWindows = n / windowOverlap - 1;
         double[] windowFFT = new double[sampleRate];
@@ -384,11 +384,11 @@ public class Features {
 
         // features from paper:
         // Mean amplitude deviation (MAD) describes the typical distance of data points about the mean
-        double MAD = 0; 
+        double MAD = 0;
         // Mean power deviation (MPD) describes the dispersion of data points about the mean
         double MPD = 0;
         // Skewness (skewR) describes the asymmetry of dispersion of data points about the mean
-        double skew = 0; 
+        double skew = 0;
         // Kurtosis (kurtR) describes the peakedness of the distribution of data points
         double kurt = 0;
         for (int i = 0; i < n; i++) {
@@ -403,7 +403,7 @@ public class Features {
         MPD /= Math.pow(N, 1.5);
         skew *= N / ((N-1)*(N-2));
         kurt = kurt * N*(N+1)/((N-1)*(N-2)*(N-3)*(N-4)) - 3*(N-1)*(N-1)/((N-2)*(N-3));
-        
+
         // don't forget to change header method immediately below !!!
         return new double[] {
             MAD,
@@ -463,7 +463,7 @@ public class Features {
         }
         return header;
     }
-    
+
 
     private static double[] getFFTmagnitude(double[] FFT) {
         return getFFTmagnitude(FFT, true);
@@ -484,7 +484,7 @@ public class Features {
     }
 
 
-    
+
     private static double[] getFFTpower(double[] FFT, boolean normalize) {
         /*
          * Get powers from FFT coefficients
@@ -553,7 +553,7 @@ public class Features {
         //Compute FFT and power spectrum density
         final int n = v.length;
         final double vMean = AccStats.mean(v);
-        
+
         // Initialize array to compute FFT coefs
         double[] vFFT = new double[n];
         for (int i = 0; i < n; i++)  vFFT[i] = v[i] - vMean;  // note: we remove the 0Hz freq
@@ -610,7 +610,7 @@ public class Features {
         String header = "f1,p1,f2,p2,f625,p625,totalPower";
         return header;
     }
-    
+
 
     /**
      * From paper:
@@ -719,5 +719,23 @@ public class Features {
         }
         return res;
     }
+
+
+    /**
+     * This assumes the correlation is zero if one of the axes is all constant.
+     * In reality, correlation is undefined in such cases, but for our
+     * particular case we shall assume that the axes are independent at rest
+     */
+    private static double correlation(double[] vals1, double[] vals2, int lag) {
+        double res = AccStats.correlation(vals1, vals2, lag);
+        if (!Double.isFinite(res)) return 0.0;
+        return res;
+    }
+
+
+    private static double correlation(double[] vals1, double[] vals2) {
+        return correlation(vals1, vals2, 0);
+    }
+
 
 }
