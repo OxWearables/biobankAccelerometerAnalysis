@@ -6,7 +6,7 @@ import numpy as np
 import os
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-import sklearn.ensemble.forest as forest
+import sklearn.ensemble._forest as forest
 import sklearn.metrics as metrics
 from sklearn.metrics import confusion_matrix
 import joblib
