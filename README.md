@@ -13,7 +13,7 @@ $ pip3 install --user .
 $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 ```
 
-**Note a new dependency was introduced in November 2020. You therefore need to download the updated files to achieve this**.
+**Note a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages. You therefore need to download the updated files to achieve this**.
 ```
 $ git pull
 $ bash utilities/downloadDataModels.sh

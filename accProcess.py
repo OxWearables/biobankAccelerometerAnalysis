@@ -170,7 +170,7 @@ def main():
                             activity type
                             (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/walmsley-nov20.tar",
+                            default="activityModels/walmsley-jan21.tar",
                             help="""trained activity model .tar file""")
 
     # circadian rhythm options
