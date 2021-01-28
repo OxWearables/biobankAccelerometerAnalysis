@@ -473,7 +473,7 @@ def writeTimeSeries(e, labels, tsFile):
 
     e_new = pd.DataFrame(index=e.index)
     e_new.index.name = 'time'
-    e_new['imputed'] = e.isna().any(1).astype('int')
+    e_new['imputed'] = e[['acc']+labels].isna().any(1).astype('int')
     e_new[cols_new] = e[cols]
 
     # make output time format contain timezone
