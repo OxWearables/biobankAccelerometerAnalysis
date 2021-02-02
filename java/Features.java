@@ -621,7 +621,9 @@ public class Features {
      * A novel, open access method to assess sleep duration using a wrist-worn accelerometer
      * van Hees et al. 2015
      *
-     * This won't work if the epoch length is less than 5-sec. So return 0 in that case.
+     * avgArmAngel is only defined for epoch_length >= 5 sec and avgArmAngelAbsDiff
+     * is only defined for epoch_length >= 10 sec. If epoch_length is not valid, we will return 0.
+     * For more details, please refer to the references above.
      */
     private static double[] calculateArmFeatures(double[] x,
                                                  double[] y,
@@ -641,6 +643,7 @@ public class Features {
 
             // 2. compute arm angel
             double[] angelZ = new double[rollingMedianX.length];
+
             for (int i = 0; i < rollingMedianX.length; i++) {
                 double tmp = rollingMedianZ[i] / (Math.pow(rollingMedianX[i], 2) + Math.pow(rollingMedianY[i], 2));
                 angelZ[i] = Math.atan(tmp) * 180 / Math.PI;
@@ -651,10 +654,12 @@ public class Features {
             double avgArmAngel = AccStats.mean(fiveSecAvg);
 
             // 4. Absolute difference between successive values
-            double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
-
-            // get the avg of difference
-            double avgArmAngelAbsDiff = AccStats.mean(absoluteAvgDiff);
+            //    ill-defined when we have fewer 10 sec for the epoch length
+            double avgArmAngelAbsDiff = 0;
+            if (x.length/sampleRate >= 10) {
+                double[] absoluteAvgDiff = computeAbsoluteDiff(fiveSecAvg);
+                avgArmAngelAbsDiff = AccStats.mean(absoluteAvgDiff);
+            }
 
             // don't forget to change header method immediately below !!!
             return new double[]{
