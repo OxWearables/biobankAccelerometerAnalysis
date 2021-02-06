@@ -12,6 +12,9 @@ import accelerometer.summariseEpoch
 import pandas as pd
 import atexit
 import warnings
+from accelerometer import device
+import numpy as np
+from accelerometer import processing
 
 
 def main():
@@ -335,66 +338,74 @@ def main():
     ##########################
     # Start processing file
     ##########################
-    summary = {}
-    # Now process the .CWA file
-    if args.processInputFile:
-        summary['file-name'] = args.inputFile
-        accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
-            args.timeShift, args.epochFile, args.stationaryFile, summary,
-            skipCalibration=args.skipCalibration,
-            stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
-            xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
-            rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
-            useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
-            epochPeriod=args.epochPeriod,
-            activityClassification=args.activityClassification,
-            rawOutput=args.rawOutput, rawFile=args.rawFile,
-            npyOutput=args.npyOutput, npyFile=args.npyFile,
-            startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
-            csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
-            csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-            csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
-    else:
-        summary['file-name'] = args.epochFile
+    # summary = {}
+    # # Now process the .CWA file
+    # if args.processInputFile:
+    #     summary['file-name'] = args.inputFile
+    #     accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
+    #         args.timeShift, args.epochFile, args.stationaryFile, summary,
+    #         skipCalibration=args.skipCalibration,
+    #         stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
+    #         xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
+    #         rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
+    #         useFilter=args.useFilter, sampleRate=args.sampleRate,
+    #         epochPeriod=args.epochPeriod,
+    #         activityClassification=args.activityClassification,
+    #         rawOutput=args.rawOutput, rawFile=args.rawFile,
+    #         npyOutput=args.npyOutput, npyFile=args.npyFile,
+    #         startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
+    #         csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
+    #         csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
+    #         csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
+    # else:
+    #     summary['file-name'] = args.epochFile
 
-    # Summarise epoch
-    epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
-        args.epochFile, args.nonWearFile, summary,
-        activityClassification=args.activityClassification,
-        timeZone=args.timeZone, startTime=args.startTime,
-        endTime=args.endTime, epochPeriod=args.epochPeriod,
-        stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
-        mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
-        intensityDistribution=args.intensityDistribution,
-        useRecommendedImputation=args.useRecommendedImputation,
-        psd=args.psd, fourierFrequency=args.fourierFrequency,
-        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
-        verbose=args.verbose)
+    # # Summarise epoch
+    # epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
+    #     args.epochFile, args.nonWearFile, summary,
+    #     activityClassification=args.activityClassification,
+    #     timeZone=args.timeZone, startTime=args.startTime,
+    #     endTime=args.endTime, epochPeriod=args.epochPeriod,
+    #     stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
+    #     mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
+    #     intensityDistribution=args.intensityDistribution,
+    #     useRecommendedImputation=args.useRecommendedImputation,
+    #     psd=args.psd, fourierFrequency=args.fourierFrequency,
+    #     fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
+    #     verbose=args.verbose)
 
-    # Generate time series file
-    accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
+    # # Generate time series file
+    # accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
 
-    # Print short summary
-    accelerometer.accUtils.toScreen("=== Short summary ===")
-    summaryVals = ['file-name', 'file-startTime', 'file-endTime',
-            'acc-overall-avg','wearTime-overall(days)',
-            'nonWearTime-overall(days)', 'quality-goodWearTime']
-    summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
-    print(json.dumps(summaryDict, indent=4))
+    # # Print short summary
+    # accelerometer.accUtils.toScreen("=== Short summary ===")
+    # summaryVals = ['file-name', 'file-startTime', 'file-endTime',
+    #         'acc-overall-avg','wearTime-overall(days)',
+    #         'nonWearTime-overall(days)', 'quality-goodWearTime']
+    # summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
+    # print(json.dumps(summaryDict, indent=4))
 
-    # Write summary to file
-    with open(args.summaryFile,'w') as f:
-        json.dump(summary, f, indent=4)
-    print('Full summary written to: ' + args.summaryFile)
+    # # Write summary to file
+    # with open(args.summaryFile,'w') as f:
+    #     json.dump(summary, f, indent=4)
+    # print('Full summary written to: ' + args.summaryFile)
 
-    ##########################
-    # Closing
-    ##########################
-    processingEndTime = datetime.datetime.now()
-    processingTime = (processingEndTime - processingStartTime).total_seconds()
-    accelerometer.accUtils.toScreen(
-        "In total, processing took " + str(processingTime) + " seconds"
+    # ##########################
+    # # Closing
+    # ##########################
+    # processingEndTime = datetime.datetime.now()
+    # processingTime = (processingEndTime - processingStartTime).total_seconds()
+    # accelerometer.accUtils.toScreen(
+    #     "In total, processing took " + str(processingTime) + " seconds"
+    # )
+
+    tempOutFile = device.parse(
+        args.inputFile,
+        timeZone=args.timeZone,
+        timeShift=args.timeShift
     )
+
+    processing.Processing(tempOutFile, args.sampleRate, args.epochPeriod, args.epochFile)
 
 
 def str2bool(v):

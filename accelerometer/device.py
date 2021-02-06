@@ -9,6 +9,38 @@ import statsmodels.api as sm
 import struct
 from subprocess import call
 import sys
+import jpype
+import atexit
+from tempfile import mkstemp
+
+
+
+def parse(inputFile, **kwargs):
+
+    # Create temporary destination file to store parsed data
+    tempOutFileFd, tempOutFile = mkstemp()
+
+    @atexit.register
+    def closeTemp():
+        os.close(tempOutFileFd)
+        os.unlink(tempOutFile)
+
+    # Start JVM
+    if not jpype.isJVMStarted():
+        jpype.addClassPath('../java/')
+        jpype.addClassPath('../java/JTransforms-3.1-with-dependencies.jar')
+        jpype.startJVM(convertStrings=False)
+
+    # Parsing -- parsed data is stored at tempOutFile
+    jpype.JClass('AxivityParser')(
+        inputFile, 
+        tempOutFile, 
+        kwargs.get('timeZone', 'Europe/London'), 
+        kwargs.get('timeShift', 0)
+    ).parse()
+
+    return tempOutFile
+
 
 
 def processInputFileToEpoch(inputFile, timeZone, timeShift,
