@@ -11,7 +11,7 @@ import java.util.zip.GZIPOutputStream;
 
 public class NpyWriter {
 
-    private static final Boolean COMPRESS = true;
+    private static final boolean COMPRESS = false;
     private String outputFile;
 	private File file;
     private RandomAccessFile raf;
@@ -30,7 +30,7 @@ public class NpyWriter {
 	private final static int HEADER_SIZE = BLOCK_SIZE * 16;
 
 	// buffer file output so it's faster
-	private int bufferLength = 1000; // number of lines to buffer
+	private int bufferLength = 1024; // number of lines to buffer
 	private int bytesPerLine = (Long.BYTES + Float.BYTES * 3);
 	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
 	private char numpyByteOrder = nativeByteOrder==ByteOrder.BIG_ENDIAN ? '>' : '<';
@@ -72,13 +72,13 @@ public class NpyWriter {
 		lineBuffer.putFloat(x);
 		lineBuffer.putFloat(y);
 		lineBuffer.putFloat(z);
+
 		if (!lineBuffer.hasRemaining()) {
 			raf.write(lineBuffer.array());
 			lineBuffer.clear();
 		}
 
-		linesWritten+=1;
-		if (linesWritten % 10000000 == 0) {writeHeader(); System.out.print(linesWritten +" ");}
+		linesWritten += 1;
 	}
 
 
@@ -183,25 +183,29 @@ public class NpyWriter {
     }
 
 
-    private void compress() {
-        try {
-            GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(outputFile+".gz")));
+    public void compress(String compressedOutputFile) {
+		flush();
+
+        try(GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(compressedOutputFile)))) {
             byte [] buff = new byte[1024];
             int len;
             raf.seek(0);
             while((len=raf.read(buff)) != -1){
                 zip.write(buff, 0, len);
             }
-            zip.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+		}
     }
 
 
-	public void close() {
-		writeHeader(); // ensure header is correct length
+	public void compress() {
+		compress(outputFile+".gz");
+	}
 
+
+	public void flush() {
+		writeHeader();  // ensure header is correct length
 		try {
 			// write any remaining data
 			raf.write(lineBuffer.array());
@@ -209,25 +213,26 @@ public class NpyWriter {
 		} catch (IOException e) {
 			e.printStackTrace();
         }
+	}
 
-        if (COMPRESS) {
-            System.out.println("\ncompressing .npy file...");
-            compress();  // compress created file
-        }
+
+	public void close() {
+		flush();
 
 		try {
             raf.close();
+			System.out.println("NpyWriter was shut down correctly");
 		} catch (IOException e) {
 			e.printStackTrace();
         }
 
-        if (COMPRESS) {
-            System.out.println("deleting uncompressed .npy file...");
-            file.delete();  // note: raf must be closed first
-        }
-
-		System.out.println("npyWriter was shut down correctly");
     }
+
+
+	public void closeAndDelete() {
+		close();
+		file.delete();
+	}
 
     
 }
