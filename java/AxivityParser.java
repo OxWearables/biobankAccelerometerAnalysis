@@ -50,7 +50,7 @@ public class AxivityParser {
         try(FileInputStream accStream = new FileInputStream(accFile);
             FileChannel accChannel = accStream.getChannel();) {
 
-            setWriter();
+            setupWriter();
 
             // now read every page in CWA file
             ByteBuffer buf = ByteBuffer.allocate(BUFSIZE);
@@ -323,13 +323,17 @@ public class AxivityParser {
     }
 
 
-    private void setWriter() {
+    private void setupWriter() {
         writer = new NpyWriter(outFile);
     }
 
 
     private void closeWriter() {
-        writer.close();
+        try {
+            writer.close();
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
 
