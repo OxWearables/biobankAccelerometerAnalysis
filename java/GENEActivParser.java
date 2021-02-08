@@ -119,6 +119,12 @@ public class GENEActivParser {
             excep.printStackTrace(System.err);
             System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
             return EXIT_FAILURE;
+        } finally {
+            try{
+                writer.close();
+            } catch (Exception e) {
+                // ignore
+            }
         }
 
         return EXIT_SUCCESS;

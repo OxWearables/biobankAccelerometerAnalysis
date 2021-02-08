@@ -140,14 +140,14 @@ public class ActigraphParser {
             excep.printStackTrace(System.err);
             System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
             return EXIT_FAILURE;
-        }
-        finally {
+        } finally {
             try {
                 zip.close();
                 activityReader.close();
                 infoReader.close();
-            } catch (Exception ex) {
-                /* ignore */
+                writer.close();
+            } catch (Exception e) {
+                // ignore
             }
         }
 
