@@ -11,19 +11,10 @@ from subprocess import call
 import sys
 import jpype
 import atexit
-from tempfile import mkstemp
 
 
 
-def parse(inputFile, **kwargs):
-
-    # Create temporary destination file to store parsed data
-    tempOutFileFd, tempOutFile = mkstemp()
-
-    @atexit.register
-    def closeTemp():
-        os.close(tempOutFileFd)
-        os.unlink(tempOutFile)
+def parse(inputFile, outputFile, **kwargs):
 
     # Start JVM
     if not jpype.isJVMStarted():
@@ -32,14 +23,22 @@ def parse(inputFile, **kwargs):
         jpype.startJVM(convertStrings=False)
 
     # Parsing -- parsed data is stored at tempOutFile
-    jpype.JClass('AxivityParser')(
-        inputFile, 
-        tempOutFile, 
-        kwargs.get('timeZone', 'Europe/London'), 
-        kwargs.get('timeShift', 0)
-    ).parse()
-
-    return tempOutFile
+    if inputFile.endswith('.cwa'):
+        jpype.JClass('AxivityParser').parse(
+            inputFile, outputFile, 
+            kwargs.get('timeZone', 'Europe/London'), 
+            kwargs.get('timeShift', 0)
+        )
+    elif inputFile.endswith('.gt3x'):
+        jpype.JClass('ActigraphParser').parse(
+            inputFile, outputFile, True
+        )
+    elif inputFile.endswith('.bin'):
+        jpype.JClass('GENEActivParser').parse(
+            inputFile, outputFile, True
+        )
+    else:
+        raise ValueError(f"Unrecognized file extension {inputFile}")
 
 
 

@@ -15,6 +15,7 @@ import warnings
 from accelerometer import device
 import numpy as np
 from accelerometer import processing
+from tempfile import mkstemp
 
 
 def main():
@@ -399,13 +400,25 @@ def main():
     #     "In total, processing took " + str(processingTime) + " seconds"
     # )
 
-    tempOutFile = device.parse(
+    if args.npyOutput:
+        npyFile = args.npyFile
+
+    else:
+        npyFileFd, npyFile = mkstemp()
+
+        @atexit.register
+        def closeTemp():
+            os.close(npyFileFd)
+            os.unlink(npyFile)
+
+    device.parse(
         args.inputFile,
+        npyFile,
         timeZone=args.timeZone,
         timeShift=args.timeShift
     )
 
-    processing.Processing(tempOutFile, args.sampleRate, args.epochPeriod, args.epochFile)
+    processing.Processing(npyFile, args.sampleRate, args.epochPeriod, args.epochFile)
 
 
 def str2bool(v):
