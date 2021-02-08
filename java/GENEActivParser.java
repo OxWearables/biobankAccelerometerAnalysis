@@ -17,7 +17,7 @@ public class GENEActivParser {
     public static int parse(
         String accFile,
         String outFile,
-        Boolean verbose) {
+        boolean verbose) {
 
         int fileHeaderSize = 59;
         int linesToAxesCalibration = 47;
