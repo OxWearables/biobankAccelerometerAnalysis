@@ -73,6 +73,16 @@ public class AxivityParser {
     }
 
 
+    /** 
+     * Simple wrapper to do AxivityParser.parse(...) instead of AxivityParser(...).parse()
+    */
+    public static int parse(String accFile, String outFile, String timeZone, int timeShift) {
+
+        return new AxivityParser(accFile, outFile, timeZone, timeShift).parse();
+
+    }
+
+
     /**
      * CWA format is described at:
      * https://github.com/digitalinteraction/openmovement/blob/master/Downloads/AX3/AX3-CWA-Format.txt
