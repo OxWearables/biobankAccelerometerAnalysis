@@ -5,18 +5,22 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 
 public class NpyWriter {
 
+	private static final int BUFSIZE = 1024;
+	private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
+	private static final char NUMPY_BYTE_ORDER = NATIVE_BYTE_ORDER==ByteOrder.BIG_ENDIAN ? '>' : '<';
     private static final boolean COMPRESS = false;
-    private String outputFile;
-	private File file;
-    private RandomAccessFile raf;
-	private int linesWritten = 0;
-
+	private final static byte NPY_MAJ_VERSION = 1;
+	private final static byte NPY_MIN_VERSION = 0;
+	private final static int BLOCK_SIZE = 16;
+	private final static int HEADER_SIZE = BLOCK_SIZE * 16;
 	private final static byte[] NPY_HEADER;
 	static {
 		byte[] hdr = "XNUMPY".getBytes(StandardCharsets.US_ASCII);
@@ -24,28 +28,18 @@ public class NpyWriter {
 		NPY_HEADER = hdr;
 	}
 
-	private final static byte NPY_MAJ_VERSION = 1;
-	private final static byte NPY_MIN_VERSION = 0;
-	private final static int BLOCK_SIZE = 16;
-	private final static int HEADER_SIZE = BLOCK_SIZE * 16;
-
-	// buffer file output so it's faster
-	private int bufferLength = 1024; // number of lines to buffer
-	private int bytesPerLine = (Long.BYTES + Float.BYTES * 3);
-	private ByteOrder nativeByteOrder = ByteOrder.nativeOrder();
-	private char numpyByteOrder = nativeByteOrder==ByteOrder.BIG_ENDIAN ? '>' : '<';
-	private ByteBuffer lineBuffer = ByteBuffer.allocate(bufferLength * bytesPerLine).order(nativeByteOrder);
-	// column names and types (must remain the same after initialization)
-	private ArrayList<Class> itemTypes = new ArrayList<Class>();
-	private ArrayList<String> itemNames= new ArrayList<String>();
+    private String outputFile;
+	private LinkedHashMap<String, String> itemNamesAndTypes;
+	private ByteBuffer buf;
+	private File file;
+    private RandomAccessFile raf;
+	private int linesWritten = 0;
 
 
-	/**
-	 * Opens a .npy file for writing (contents are erased) and initializes a dummy header.
-	 * @param outputFile filename for the .npy file
-	 */
-	public NpyWriter(String outputFile) {
+	public NpyWriter(String outputFile, LinkedHashMap<String, String> itemNamesAndTypes) {
         this.outputFile = outputFile;
+		this.itemNamesAndTypes = itemNamesAndTypes;
+		this.buf = ByteBuffer.allocate(BUFSIZE * getBytesPerLine(itemNamesAndTypes)).order(NATIVE_BYTE_ORDER);
 
 		try {
             file = new File(outputFile);
@@ -56,10 +50,6 @@ public class NpyWriter {
 			int hdrLen = NPY_HEADER.length + 3; // +3 for three extra bytes due to NPY_(MIN/MAX)_VERSION and \n
 			String filler = new String(new char[HEADER_SIZE + hdrLen]).replace("\0", " ") +"\n";
 			raf.writeBytes(filler);
-			itemTypes.add(Long.class); itemNames.add("time");
-			itemTypes.add(Float.class);itemNames.add("x");
-			itemTypes.add(Float.class);itemNames.add("y");
-			itemTypes.add(Float.class);itemNames.add("z");
 
 		} catch (IOException e) {
 			throw new RuntimeException("The .npy file " + outputFile +" could not be created");
@@ -67,15 +57,74 @@ public class NpyWriter {
 	}
 
 
-	public void writeData(long time, Float x, Float y, Float z) throws IOException {
-		lineBuffer.putLong(time);
-		lineBuffer.putFloat(x);
-		lineBuffer.putFloat(y);
-		lineBuffer.putFloat(z);
+	public NpyWriter(String outputFile) {
+		this(outputFile, getDefaultItemNamesAndTypes());
+	}
 
-		if (!lineBuffer.hasRemaining()) {
-			raf.write(lineBuffer.array());
-			lineBuffer.clear();
+
+	public void write(HashMap<String, Object> items) throws IOException {
+		putItems(items);
+
+		if (!buf.hasRemaining()) {
+			raf.write(buf.array());
+			buf.clear();
+		}
+
+		linesWritten++;
+	}
+
+
+	private void putItems(HashMap<String, Object> items) {
+		for(Map.Entry<String, String> entry : itemNamesAndTypes.entrySet()) {
+			String name = entry.getKey();
+			String type = entry.getValue();
+			Object item = items.get(name);
+			putItem(item, type);
+		}
+	}
+
+
+	private void putItem(Object item, String type) {
+
+		switch(type) {
+
+			case "Integer":
+				buf.putInt((int) item);
+				break;
+
+			case "Short":
+				buf.putShort((short) item);
+				break;
+
+			case "Long":
+				buf.putLong((long) item);
+				break;
+
+			case "Float":
+				buf.putFloat((float) item);
+				break;
+
+			case "Double":
+				buf.putDouble((double) item);
+				break;
+
+			default:
+				throw new IllegalArgumentException("Unrecognized item type: " + type);
+
+		}
+
+	}
+
+
+	public void writeData(long time, Float x, Float y, Float z) throws IOException {
+		buf.putLong(time);
+		buf.putFloat(x);
+		buf.putFloat(y);
+		buf.putFloat(z);
+
+		if (!buf.hasRemaining()) {
+			raf.write(buf.array());
+			buf.clear();
 		}
 
 		linesWritten += 1;
@@ -85,7 +134,7 @@ public class NpyWriter {
 	/**
 	 * Updates the file's header based on the arrayType and number of array elements written thus far.
 	 */
-	public void writeHeader() {
+	private void writeHeader() {
 		try {
 
 			raf.seek(0);
@@ -98,10 +147,11 @@ public class NpyWriter {
 			// multiple of the block size. Terminated with a newline. Prefixed with a header length.
 			String dataHeader = "{ 'descr': [";
 
-			// Now add to the description our predefined itemNames and itemTypes
-			for (int i=0; i < itemNames.size(); i++) {
-				dataHeader += "('"+ itemNames.get(i)+"','"+ toDataTypeStr (itemTypes.get(i)) + "')";
-				if (i+1!=itemNames.size()) dataHeader+=",";
+			int i = 0;
+			for (Map.Entry<String, String> entry : itemNamesAndTypes.entrySet()) {
+				dataHeader += "('" + entry.getKey() + "','" + toNpyTypeStr(entry.getValue()) + "')";
+				if ((i+1) < itemNamesAndTypes.entrySet().size()) dataHeader += ",";
+				i++;
 			}
 
 			dataHeader	+= "]"
@@ -130,61 +180,8 @@ public class NpyWriter {
 	}
 
 
-	/**
-	 * Writes a little-endian short to the given output stream
-	 * @param out the stream
-	 * @param value the short value
-	 * @throws IOException
-	 */
-	private void writeLEShort (RandomAccessFile out, short value) throws IOException
-	{
-
-		// convert to little endian
-		value = (short) ((short) ((short) value << 8) & 0xFF00 | (value >> 8));
-
-		out.writeShort( value );
-
-	}
-
-
-	/**
-	 * Writes a little-endian int to the given output stream
-	 * @param out the stream
-	 * @param value the short value
-	 * @throws IOException
-	 */
-	public static void writeLEInt(RandomAccessFile out, int value) throws IOException
-	{
-		System.out.println("writing:" + value);
-		out.writeByte(value & 0x00FF);
-		out.writeByte((value >> 8) & 0x00FF);
-		out.writeByte((value >> 16) & 0x00FF);
-		out.writeByte((value >> 24) & 0x00FF);
-	}
-
-
-	/**
-	 * Converts a Java class to a python datatype String
-	 */
-	private String toDataTypeStr(Class<?> datatype)
-	{
-		if (datatype == Integer.class || datatype == Integer.TYPE)
-			return numpyByteOrder+"i4";
-		else if (datatype == Short.class || datatype == Short.TYPE)
-			return numpyByteOrder+"i2";
-		else if (datatype == Long.class || datatype == Long.TYPE)
-			return numpyByteOrder+"i8";
-		else if (datatype == Float.class || datatype == Float.TYPE)
-            return numpyByteOrder+"f4";
-        else if (datatype == Double.class || datatype == Double.TYPE)
-            return numpyByteOrder+"f8";
-		else
-			throw new IllegalArgumentException("Don't know the corresponding Python datatype for " + datatype.getSimpleName());
-    }
-
-
     public void compress(String compressedOutputFile) {
-		flush();
+		finalFlush();
 
         try(GZIPOutputStream zip = new GZIPOutputStream(new FileOutputStream(new File(compressedOutputFile)))) {
             byte [] buff = new byte[1024];
@@ -204,12 +201,12 @@ public class NpyWriter {
 	}
 
 
-	public void flush() {
+	private void finalFlush() {
 		writeHeader();  // ensure header is correct length
 		try {
 			// write any remaining data
-			raf.write(lineBuffer.array());
-			lineBuffer.clear();
+			raf.write(buf.array());
+			buf.clear();
 		} catch (IOException e) {
 			e.printStackTrace();
         }
@@ -217,7 +214,7 @@ public class NpyWriter {
 
 
 	public void close() {
-		flush();
+		finalFlush();
 
 		try {
             raf.close();
@@ -234,5 +231,109 @@ public class NpyWriter {
 		file.delete();
 	}
 
+
+	/**
+	 * Writes a little-endian short to the given output stream
+	 * @param out the stream
+	 * @param value the short value
+	 * @throws IOException
+	 */
+	private static void writeLEShort(RandomAccessFile out, short value) throws IOException
+	{
+
+		// convert to little endian
+		value = (short) ((short) ((short) value << 8) & 0xFF00 | (value >> 8));
+
+		out.writeShort( value );
+
+	}
+
+
+	/**
+	 * Writes a little-endian int to the given output stream
+	 * @param out the stream
+	 * @param value the short value
+	 * @throws IOException
+	 */
+	private static void writeLEInt(RandomAccessFile out, int value) throws IOException
+	{
+		System.out.println("writing:" + value);
+		out.writeByte(value & 0x00FF);
+		out.writeByte((value >> 8) & 0x00FF);
+		out.writeByte((value >> 16) & 0x00FF);
+		out.writeByte((value >> 24) & 0x00FF);
+	}
+
+
+	private static LinkedHashMap<String, String> getDefaultItemNamesAndTypes() {
+		LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+		itemNamesAndTypes.put("time", "Long");
+		itemNamesAndTypes.put("x", "Float");
+		itemNamesAndTypes.put("y", "Float");
+		itemNamesAndTypes.put("z", "Float");
+		return itemNamesAndTypes;
+	}
+
+
+	private static int getBytesPerLine(LinkedHashMap<String, String> itemNamesAndTypes) {
+		int bytesPerLine = 0;
+		for(String type : itemNamesAndTypes.values()) {
+			bytesPerLine += getBytesPerType(type);
+		}
+		return bytesPerLine;
+	}
+
+
+	private static int getBytesPerType(String type) {
+		switch(type) {
+
+			case "Integer":
+				return Integer.BYTES;
+
+			case "Short":
+				return Short.BYTES;
+
+			case "Long":
+				return Long.BYTES;
+
+			case "Float":
+				return Float.BYTES;
+
+			case "Double":
+				return Double.BYTES;
+
+			default:
+				throw new IllegalArgumentException("Unrecognized item type: " + type);
+
+		}
+	}
+
+
+	private static String toNpyTypeStr(String type) {
+
+		switch(type) {
+
+			case "Integer":
+				return NUMPY_BYTE_ORDER+"i4";
+
+			case "Short":
+				return NUMPY_BYTE_ORDER+"i2";
+
+			case "Long":
+				return NUMPY_BYTE_ORDER+"i8";
+
+			case "Float":
+				return NUMPY_BYTE_ORDER+"f4";
+
+			case "Double":
+				return NUMPY_BYTE_ORDER+"f8";
+
+			default:
+				throw new IllegalArgumentException("Unrecognized item type: " + type);
+
+		}
+
+    }
     
+
 }
