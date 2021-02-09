@@ -3,6 +3,8 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -12,6 +14,7 @@ public class GENEActivParser {
 
     final private static int EXIT_SUCCESS = 0;
     final private static int EXIT_FAILURE = 1;
+    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
 
 
     public static int parse(
@@ -24,7 +27,7 @@ public class GENEActivParser {
         int pageHeaderSize = 9;
         int[] errCounter = new int[] { 0 };
 
-        NpyWriter writer = new NpyWriter(outFile);
+        NpyWriter writer = new NpyWriter(outFile, ITEM_NAMES_AND_TYPES);
 
         try {
             BufferedReader rawAccReader = new BufferedReader(new FileReader(accFile));
@@ -96,11 +99,8 @@ public class GENEActivParser {
                     y = (yRaw * 100.0d - mfrOffset[1]) / mfrGain[1];
                     z = (zRaw * 100.0d - mfrOffset[2]) / mfrGain[2];
 
-                    //TODO
-                    // writer.newValues(getEpochMillis(blockTime), x, y, z, temperature, errCounter);
-
                     try {
-                        writer.writeData(getEpochMillis(blockTime), (float) x, (float) y, (float) z);
+                        writer.write(toItems(getEpochMillis(blockTime), x, y, z, temperature));
                     } catch (Exception e) {
                         System.err.println("Line write error: " + e.toString());
                     }
@@ -201,5 +201,30 @@ public class GENEActivParser {
     private static long secs2Nanos(double num) {
         return (long) (TimeUnit.SECONDS.toNanos(1) * num);
     }
+
+
+    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
+        HashMap<String, Object> items = new HashMap<String, Object>();
+        items.put("time", t);
+        items.put("x", x);
+        items.put("y", y);
+        items.put("z", z);
+        items.put("T", temperature);
+        // items.put("lux", light);
+        return items;
+    }
+
+
+    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
+        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        itemNamesAndTypes.put("T", "Double");
+        // itemNamesAndTypes.put("lux", "Integer");
+        return itemNamesAndTypes;
+    }
     
+
 }

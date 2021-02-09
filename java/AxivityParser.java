@@ -1,3 +1,4 @@
+
 //BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.FileInputStream;
 import java.nio.ByteOrder;
@@ -9,14 +10,17 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRules;
 import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 
 public class AxivityParser {
 
-    final private static int EXIT_SUCCESS = 0;
-    final private static int EXIT_FAILURE = 1;
-    final private static boolean USE_PRECISE_TIME = true;
-    final private static int BUFSIZE = 512;
+    private static final int EXIT_SUCCESS = 0;
+    private static final int EXIT_FAILURE = 1;
+    private static final boolean USE_PRECISE_TIME = true;
+    private static final int BUFSIZE = 512;
+    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
 
     private String accFile;
     private String outFile;
@@ -73,9 +77,6 @@ public class AxivityParser {
     }
 
 
-    /** 
-     * Simple wrapper to do AxivityParser.parse(...) instead of AxivityParser(...).parse()
-    */
     public static int parse(String accFile, String outFile, String timeZone, int timeShift) {
 
         return new AxivityParser(accFile, outFile, timeZone, timeShift).parse();
@@ -92,6 +93,7 @@ public class AxivityParser {
         buf.order(ByteOrder.LITTLE_ENDIAN);
         String header = (char) buf.get() + "";
         header += (char) buf.get() + "";
+
         if (header.equals("MD")) {
             // Read first page (& data-block) to get time, temp,
             // measurement frequency, and start of epoch values
@@ -101,13 +103,15 @@ public class AxivityParser {
                 System.out.println("Device was programmed with delayed start time");
                 System.out.println("Session start: " + sessionStart);
             } catch (Exception e) {
+                // e.printStackTrace();
             }
+
         } else if (header.equals("AX")) {
             // read each individual page block, and process epochs...
             try {
                 // read block header items
                 long blockTimestamp = getUnsignedInt(buf, 14);
-                int light = getUnsignedShort(buf, 18);
+                // int light = getUnsignedShort(buf, 18);
                 double temperature = (getUnsignedShort(buf, 20) * 150.0 - 20500) / 1000;
                 short rateCode = (short) (buf.get(24) & 0xff);
                 short numAxesBPS = (short) (buf.get(25) & 0xff);
@@ -170,8 +174,7 @@ public class AxivityParser {
                 }
 
                 // determine time for indexed sample within block
-                LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp,
-                                                    fractional);
+                LocalDateTime blockTime = getCwaTimestamp((int) blockTimestamp, fractional);
 
                 // if sessionStart not set yet, this is the first block
                 if (sessionStart == null) {
@@ -266,9 +269,10 @@ public class AxivityParser {
                     t = zonedWithDSTCorrection(blockTime).toInstant().toEpochMilli();
 
                     try {
-                        writer.writeData(t, (float) x, (float) y, (float) z);
+                        writer.write(toItems(t, x, y, z, temperature));
                     } catch (Exception e) {
                         System.err.println("Line write error: " + e.toString());
+                        System.exit(-1);
                     }
 
                 }
@@ -323,20 +327,6 @@ public class AxivityParser {
     }
 
 
-    private void setupWriter() {
-        writer = new NpyWriter(outFile);
-    }
-
-
-    private void closeWriter() {
-        try {
-            writer.close();
-        } catch (Exception e) {
-            // ignore
-        }
-    }
-
-
     private void setSessionStart(LocalDateTime ldt) {
         sessionStart = ldt.atZone(zoneId);
         isSessionStartDST = rules.isDaylightSavings(sessionStart.toInstant());
@@ -353,34 +343,58 @@ public class AxivityParser {
     }
 
 
-    protected static long secs2Nanos(double num) {
+    private static long secs2Nanos(double num) {
         return (long) (TimeUnit.SECONDS.toNanos(1) * num);
     }
 
 
     // http://stackoverflow.com/questions/9883472/is-it-possiable-to-have-an-unsigned-bytebuffer-in-java
-    protected static long getUnsignedInt(ByteBuffer bb, int position) {
+    private static long getUnsignedInt(ByteBuffer bb, int position) {
         return ((long) bb.getInt(position) & 0xffffffffL);
     }
 
 
     // http://stackoverflow.com/questions/9883472/is-it-possiable-to-have-an-unsigned-bytebuffer-in-java
-    protected static int getUnsignedShort(ByteBuffer bb, int position) {
+    private static int getUnsignedShort(ByteBuffer bb, int position) {
         return (bb.getShort(position) & 0xffff);
     }
 
 
-    protected static int getSignedIntFromHex(String dataBlock, int startPos, int length) {
-        // input hex base is 16
-        int rawVal = Integer.parseInt(dataBlock.substring(startPos, startPos + length), 16);
-        int unsignedLimit = 4096; // 2^[length*4] #i.e. 3 hexBytes (12 bits)
-                                    // limit = 4096
-        int signedLimit = 2048; // 2^[length*(4-1)] #i.e. 3 hexBytes - 1 bit (11
-                                // bits) limit = 2048
-        if (rawVal > signedLimit) {
-            rawVal = rawVal - unsignedLimit;
+    private void setupWriter() {
+        writer = new NpyWriter(outFile, ITEM_NAMES_AND_TYPES);
+    }
+
+
+    private void closeWriter() {
+        try {
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return rawVal;
+    }
+
+
+    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
+        HashMap<String, Object> items = new HashMap<String, Object>();
+        items.put("time", t);
+        items.put("x", x);
+        items.put("y", y);
+        items.put("z", z);
+        items.put("T", temperature);
+        // items.put("lux", light);
+        return items;
+    }
+
+
+    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
+        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        itemNamesAndTypes.put("T", "Double");
+        // itemNamesAndTypes.put("lux", "Integer");
+        return itemNamesAndTypes;
     }
 
 

@@ -7,6 +7,8 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -22,6 +24,7 @@ public class ActigraphParser {
     private static final int VALID_GT3_V1_FILE = 1;
     private static final int VALID_GT3_V2_FILE = 2;
     private static final int GT3_HEADER_SIZE = 8;
+    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
 
     private static Logger logger;
     static {
@@ -54,7 +57,7 @@ public class ActigraphParser {
         // readers for the 'activity.bin' & 'info.txt' files inside the .zip
         BufferedReader infoReader = null;
         InputStream activityReader = null;
-        NpyWriter writer = new NpyWriter(outFile);
+        NpyWriter writer = new NpyWriter(outFile, ITEM_NAMES_AND_TYPES);
 
         try {
             zip = new ZipFile( new File(accFile), ZipFile.OPEN_READ);
@@ -378,11 +381,9 @@ public class ActigraphParser {
                     double z = twoSamples[5-twoSampleCounter*3];
                     double temp = 1.0d; // don't know temp yet
                     time = getTrueUnixTime(time, infoTimeShift);
-                    //TODO
-                    // writer.newValues(time, x, y, z, temp, errCounter);
 
                     try {
-                        writer.writeData(time, (float) x, (float) y, (float) z);
+                        writer.write(toItems(time, x, y, z, temp));
                     } catch (Exception e) {
                         System.err.println("Line write error: " + e.toString());
                     }
@@ -458,12 +459,10 @@ public class ActigraphParser {
                 samples += 1;
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
                 myTime = getTrueUnixTime(myTime, infoTimeShift);
-                //TODO
-                // writer.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
 
                 // Yes, sample[1] and sample[0] are swapped. Not the case elsewhere.
                 try {
-                    writer.writeData(myTime, (float) sample[1], (float) sample[0], (float) sample[2]);
+                    writer.write(toItems(myTime, sample[1], sample[0], sample[2], temp));
                 } catch (Exception e) {
                     System.err.println("Line write error: " + e.toString());
                 }
@@ -472,7 +471,6 @@ public class ActigraphParser {
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
             System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
-            //TODO
             System.exit(-2);
         }
 
@@ -480,7 +478,7 @@ public class ActigraphParser {
     }
 
 
-    public static long getTrueUnixTime(long myTime, String infoTimeShift) {
+    private static long getTrueUnixTime(long myTime, String infoTimeShift) {
         int shiftSign = 1;
         if (infoTimeShift.charAt(0) == '-') {
             shiftSign = -1;
@@ -540,11 +538,9 @@ public class ActigraphParser {
 
                 logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
                         "\nTime:" + myTime);
-                //TODO
-                // writer.newValues(myTime, sample[0], sample[1], sample[2], temp, errCounter);
 
                 try {
-                    writer.writeData(myTime, (float) sample[0], (float) sample[1], (float) sample[2]);
+                    writer.write(toItems(myTime, sample[0], sample[1], sample[2], temp));
                 } catch (Exception e) {
                     System.err.println("Line write error: " + e.toString());
                 }
@@ -553,7 +549,6 @@ public class ActigraphParser {
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
             System.err.println("error when reading activity at byte " + i + ": " + ex.toString());
-            //TODO
             System.exit(-2);
         }
 
@@ -633,7 +628,6 @@ public class ActigraphParser {
         if (checkSum != target_value) {
             logger.log(Level.SEVERE, "Packet parsing failed at byte "+ i + "\nChecksum does not match!"
                     + String.format("\nExpected 0x%08X", target_value) +String.format("\nObtained 0x%08X", checkSum));
-            //TODO
             System.exit(-1);
         } else {
             logger.log(Level.FINER, "Verification succeeds");
@@ -681,7 +675,7 @@ public class ActigraphParser {
      * This was translated into Java from
      * https://github.com/actigraph/GT3X-File-Format/blob/master/LogRecords/Parameters.md
      */
-    public static double decodePara(int value) {
+    private static double decodePara(int value) {
         final double FLOAT_MAXIMUM = 8388608.0;                  /* 2^23  */
         final int ENCODED_MINIMUM = 0x00800000;
         final int ENCODED_MAXIMUM = 0x007FFFFF;
@@ -732,7 +726,7 @@ public class ActigraphParser {
      * Unit: .NET has a unit of 100 naooseconds
      * https://docs.microsoft.com/en-us/dotnet/api/system.datetime.ticks?view=netcore-3.1
      **/
-    public static long GT3XfromTickToMillisecond(final long ticks)
+    private static long GT3XfromTickToMillisecond(final long ticks)
     {
         Date date = new Date((ticks - 621355968000000000L) / 10000);
         return date.getTime();
@@ -769,6 +763,30 @@ public class ActigraphParser {
         }
 
         return INVALID_GT3_FILE;
+    }
+
+
+    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
+        HashMap<String, Object> items = new HashMap<String, Object>();
+        items.put("time", t);
+        items.put("x", x);
+        items.put("y", y);
+        items.put("z", z);
+        items.put("T", temperature);
+        // items.put("lux", light);
+        return items;
+    }
+
+
+    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
+        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        itemNamesAndTypes.put("T", "Double");
+        // itemNamesAndTypes.put("lux", "Integer");
+        return itemNamesAndTypes;
     }
 
     
