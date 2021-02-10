@@ -29,14 +29,14 @@ public class NpyWriter {
 	}
 
     private String outputFile;
-	private LinkedHashMap<String, String> itemNamesAndTypes;
+	private Map<String, String> itemNamesAndTypes;
 	private ByteBuffer buf;
 	private File file;
     private RandomAccessFile raf;
 	private int linesWritten = 0;
 
 
-	public NpyWriter(String outputFile, LinkedHashMap<String, String> itemNamesAndTypes) {
+	public NpyWriter(String outputFile, Map<String, String> itemNamesAndTypes) {
         this.outputFile = outputFile;
 		this.itemNamesAndTypes = itemNamesAndTypes;
 		this.buf = ByteBuffer.allocate(BUFSIZE * getBytesPerLine(itemNamesAndTypes)).order(NATIVE_BYTE_ORDER);
@@ -62,7 +62,7 @@ public class NpyWriter {
 	}
 
 
-	public void write(HashMap<String, Object> items) throws IOException {
+	public void write(Map<String, Object> items) throws IOException {
 		putItems(items);
 
 		if (!buf.hasRemaining()) {
@@ -74,7 +74,7 @@ public class NpyWriter {
 	}
 
 
-	private void putItems(HashMap<String, Object> items) {
+	private void putItems(Map<String, Object> items) {
 		for(Map.Entry<String, String> entry : itemNamesAndTypes.entrySet()) {
 			String name = entry.getKey();
 			String type = entry.getValue();
@@ -265,8 +265,8 @@ public class NpyWriter {
 	}
 
 
-	private static LinkedHashMap<String, String> getDefaultItemNamesAndTypes() {
-		LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+	private static Map<String, String> getDefaultItemNamesAndTypes() {
+		Map<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
 		itemNamesAndTypes.put("time", "Long");
 		itemNamesAndTypes.put("x", "Float");
 		itemNamesAndTypes.put("y", "Float");
@@ -275,7 +275,7 @@ public class NpyWriter {
 	}
 
 
-	private static int getBytesPerLine(LinkedHashMap<String, String> itemNamesAndTypes) {
+	private static int getBytesPerLine(Map<String, String> itemNamesAndTypes) {
 		int bytesPerLine = 0;
 		for(String type : itemNamesAndTypes.values()) {
 			bytesPerLine += getBytesPerType(type);
