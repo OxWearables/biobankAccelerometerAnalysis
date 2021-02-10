@@ -1,14 +1,14 @@
-
-//BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -24,7 +24,19 @@ public class ActigraphParser {
     private static final int VALID_GT3_V1_FILE = 1;
     private static final int VALID_GT3_V2_FILE = 2;
     private static final int GT3_HEADER_SIZE = 8;
-    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
+
+    // Specification of items to be written
+    private static final Map<String, String> ITEM_NAMES_AND_TYPES;
+    static{
+        Map<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        // itemNamesAndTypes.put("T", "Double");
+        // itemNamesAndTypes.put("lux", "Integer");
+        ITEM_NAMES_AND_TYPES = Collections.unmodifiableMap(itemNamesAndTypes);
+    }
 
     private static Logger logger;
     static {
@@ -379,11 +391,11 @@ public class ActigraphParser {
                     double x = twoSamples[3-twoSampleCounter*3];
                     double y = twoSamples[4-twoSampleCounter*3];
                     double z = twoSamples[5-twoSampleCounter*3];
-                    double temp = 1.0d; // don't know temp yet
+                    // double temp = 1.0d; // don't know temp yet
                     time = getTrueUnixTime(time, infoTimeShift);
 
                     try {
-                        writer.write(toItems(time, x, y, z, temp));
+                        writer.write(toItems(time, x, y, z));
                     } catch (Exception e) {
                         System.err.println("Line write error: " + e.toString());
                     }
@@ -455,14 +467,14 @@ public class ActigraphParser {
                 logger.log(Level.FINER, "i: " + i);
                 logger.log(Level.FINER, "x y z: " + sample[1] + " " + sample[0] + " " + sample[2]);
 
-                double temp = 1.0d; // don't know temp yet
+                // double temp = 1.0d; // don't know temp yet
                 samples += 1;
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
                 myTime = getTrueUnixTime(myTime, infoTimeShift);
 
                 // Yes, sample[1] and sample[0] are swapped. Not the case elsewhere.
                 try {
-                    writer.write(toItems(myTime, sample[1], sample[0], sample[2], temp));
+                    writer.write(toItems(myTime, sample[1], sample[0], sample[2]));
                 } catch (Exception e) {
                     System.err.println("Line write error: " + e.toString());
                 }
@@ -530,7 +542,7 @@ public class ActigraphParser {
                     sample[axis] = (double) Math.round(sample[axis] * 1000d) / 1000d; // round to 3rd decimal
                 }
 
-                double temp = 1.0d; // don't know temp yet
+                // double temp = 1.0d; // don't know temp yet
                 samples += 1;
 
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
@@ -540,7 +552,7 @@ public class ActigraphParser {
                         "\nTime:" + myTime);
 
                 try {
-                    writer.write(toItems(myTime, sample[0], sample[1], sample[2], temp));
+                    writer.write(toItems(myTime, sample[0], sample[1], sample[2]));
                 } catch (Exception e) {
                     System.err.println("Line write error: " + e.toString());
                 }
@@ -766,28 +778,16 @@ public class ActigraphParser {
     }
 
 
-    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
-        HashMap<String, Object> items = new HashMap<String, Object>();
+    private static Map<String, Object> toItems(long t, double x, double y, double z) {
+        Map<String, Object> items = new HashMap<String, Object>();
         items.put("time", t);
         items.put("x", x);
         items.put("y", y);
         items.put("z", z);
-        items.put("T", temperature);
+        // items.put("T", temperature);
         // items.put("lux", light);
         return items;
     }
 
 
-    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
-        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
-        itemNamesAndTypes.put("time", "Long");
-        itemNamesAndTypes.put("x", "Double");
-        itemNamesAndTypes.put("y", "Double");
-        itemNamesAndTypes.put("z", "Double");
-        itemNamesAndTypes.put("T", "Double");
-        // itemNamesAndTypes.put("lux", "Integer");
-        return itemNamesAndTypes;
-    }
-
-    
 }

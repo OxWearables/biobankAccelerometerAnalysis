@@ -1,5 +1,3 @@
-
-//BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.FileInputStream;
 import java.nio.ByteOrder;
 import java.nio.ByteBuffer;
@@ -10,8 +8,10 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.zone.ZoneRules;
 import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 
 public class AxivityParser {
@@ -20,7 +20,20 @@ public class AxivityParser {
     private static final int EXIT_FAILURE = 1;
     private static final boolean USE_PRECISE_TIME = true;
     private static final int BUFSIZE = 512;
-    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
+
+    // Specification of items to be written
+    private static final Map<String, String> ITEM_NAMES_AND_TYPES;
+    static{
+        Map<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        itemNamesAndTypes.put("T", "Double");
+        // itemNamesAndTypes.put("lux", "Integer");
+        ITEM_NAMES_AND_TYPES = Collections.unmodifiableMap(itemNamesAndTypes);
+    }
+
 
     private String accFile;
     private String outFile;
@@ -374,8 +387,8 @@ public class AxivityParser {
     }
 
 
-    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
-        HashMap<String, Object> items = new HashMap<String, Object>();
+    private static Map<String, Object> toItems(long t, double x, double y, double z, double temperature) {
+        Map<String, Object> items = new HashMap<String, Object>();
         items.put("time", t);
         items.put("x", x);
         items.put("y", y);
@@ -383,18 +396,6 @@ public class AxivityParser {
         items.put("T", temperature);
         // items.put("lux", light);
         return items;
-    }
-
-
-    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
-        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
-        itemNamesAndTypes.put("time", "Long");
-        itemNamesAndTypes.put("x", "Double");
-        itemNamesAndTypes.put("y", "Double");
-        itemNamesAndTypes.put("z", "Double");
-        itemNamesAndTypes.put("T", "Double");
-        // itemNamesAndTypes.put("lux", "Integer");
-        return itemNamesAndTypes;
     }
 
 

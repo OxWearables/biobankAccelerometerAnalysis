@@ -1,10 +1,11 @@
 
-//BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -14,7 +15,18 @@ public class GENEActivParser {
 
     final private static int EXIT_SUCCESS = 0;
     final private static int EXIT_FAILURE = 1;
-    private static final LinkedHashMap<String, String> ITEM_NAMES_AND_TYPES = getItemNamesAndTypes();
+
+    // Specification of items to be written
+    private static final Map<String, String> ITEM_NAMES_AND_TYPES;
+    static{
+        Map<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
+        itemNamesAndTypes.put("time", "Long");
+        itemNamesAndTypes.put("x", "Double");
+        itemNamesAndTypes.put("y", "Double");
+        itemNamesAndTypes.put("z", "Double");
+        itemNamesAndTypes.put("T", "Double");
+        ITEM_NAMES_AND_TYPES = Collections.unmodifiableMap(itemNamesAndTypes);
+    }
 
 
     public static int parse(
@@ -203,28 +215,15 @@ public class GENEActivParser {
     }
 
 
-    private static HashMap<String, Object> toItems(long t, double x, double y, double z, double temperature) {
-        HashMap<String, Object> items = new HashMap<String, Object>();
+    private static Map<String, Object> toItems(long t, double x, double y, double z, double temperature) {
+        Map<String, Object> items = new HashMap<String, Object>();
         items.put("time", t);
         items.put("x", x);
         items.put("y", y);
         items.put("z", z);
         items.put("T", temperature);
-        // items.put("lux", light);
         return items;
     }
 
-
-    private static LinkedHashMap<String, String> getItemNamesAndTypes() {
-        LinkedHashMap<String, String> itemNamesAndTypes = new LinkedHashMap<String, String>();
-        itemNamesAndTypes.put("time", "Long");
-        itemNamesAndTypes.put("x", "Double");
-        itemNamesAndTypes.put("y", "Double");
-        itemNamesAndTypes.put("z", "Double");
-        itemNamesAndTypes.put("T", "Double");
-        // itemNamesAndTypes.put("lux", "Integer");
-        return itemNamesAndTypes;
-    }
-    
 
 }
