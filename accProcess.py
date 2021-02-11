@@ -418,7 +418,11 @@ def main():
         timeShift=args.timeShift
     )
 
-    processing.Processing(npyFile, args.sampleRate, args.epochPeriod, args.epochFile)
+    processing.Processing(
+        sampleRate=args.sampleRate, 
+        epochPeriod=args.epochPeriod, 
+        epochFile=args.epochFile
+    ).run(npyFile)
 
 
 def str2bool(v):
