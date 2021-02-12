@@ -240,6 +240,11 @@ def main():
                             help="""amount of heap space allocated to the java
                             subprocesses,useful for limiting RAM usage (default
                             : unlimited)""")
+    # enable to use Python backend
+    parser.add_argument('--pythonMode',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Use new Python backend to process file
+                            (default : %(default)s)""")
 
 
     args = parser.parse_args()
@@ -336,93 +341,112 @@ def main():
         if not (isinstance(value, str) and len(value)==0):
             print(key.ljust(15), ':', value)
 
-    ##########################
+    #########################
     # Start processing file
-    ##########################
-    # summary = {}
-    # # Now process the .CWA file
-    # if args.processInputFile:
-    #     summary['file-name'] = args.inputFile
-    #     accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
-    #         args.timeShift, args.epochFile, args.stationaryFile, summary,
-    #         skipCalibration=args.skipCalibration,
-    #         stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
-    #         xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
-    #         rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
-    #         useFilter=args.useFilter, sampleRate=args.sampleRate,
-    #         epochPeriod=args.epochPeriod,
-    #         activityClassification=args.activityClassification,
-    #         rawOutput=args.rawOutput, rawFile=args.rawFile,
-    #         npyOutput=args.npyOutput, npyFile=args.npyFile,
-    #         startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
-    #         csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
-    #         csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-    #         csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
-    # else:
-    #     summary['file-name'] = args.epochFile
+    #########################
+    summary = {}
+    # Now process the .CWA file
+    if args.processInputFile:
+        summary['file-name'] = args.inputFile
 
-    # # Summarise epoch
-    # epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
-    #     args.epochFile, args.nonWearFile, summary,
-    #     activityClassification=args.activityClassification,
-    #     timeZone=args.timeZone, startTime=args.startTime,
-    #     endTime=args.endTime, epochPeriod=args.epochPeriod,
-    #     stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
-    #     mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
-    #     intensityDistribution=args.intensityDistribution,
-    #     useRecommendedImputation=args.useRecommendedImputation,
-    #     psd=args.psd, fourierFrequency=args.fourierFrequency,
-    #     fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
-    #     verbose=args.verbose)
+        if args.pythonMode:
 
-    # # Generate time series file
-    # accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
+            args.activityClassification = False
+            warnings.warn('--activityClassification True not yet implemented in Python mode.'
+                          'Using --activityClassification False')
 
-    # # Print short summary
-    # accelerometer.accUtils.toScreen("=== Short summary ===")
-    # summaryVals = ['file-name', 'file-startTime', 'file-endTime',
-    #         'acc-overall-avg','wearTime-overall(days)',
-    #         'nonWearTime-overall(days)', 'quality-goodWearTime']
-    # summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
-    # print(json.dumps(summaryDict, indent=4))
+            if args.npyOutput:
+                npyFile = args.npyFile
+            else:
+                npyFileFd, npyFile = mkstemp()
+                @atexit.register
+                def closeTemp():
+                    os.close(npyFileFd)
+                    os.unlink(npyFile)
 
-    # # Write summary to file
-    # with open(args.summaryFile,'w') as f:
-    #     json.dump(summary, f, indent=4)
-    # print('Full summary written to: ' + args.summaryFile)
+            device.parse(
+                inputFile=args.inputFile,
+                outputFile=npyFile,
+                timeZone=args.timeZone,
+                timeShift=args.timeShift
+            )
 
-    # ##########################
-    # # Closing
-    # ##########################
-    # processingEndTime = datetime.datetime.now()
-    # processingTime = (processingEndTime - processingStartTime).total_seconds()
-    # accelerometer.accUtils.toScreen(
-    #     "In total, processing took " + str(processingTime) + " seconds"
-    # )
+            processing.Processing(
+                timeZone=args.timeZone,
+                timeShift=args.timeShift,
+                epochFile=args.epochFile,
+                skipCalibration=args.skipCalibration,
+                stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
+                xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
+                rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
+                useFilter=args.useFilter, sampleRate=args.sampleRate,
+                epochPeriod=args.epochPeriod,
+                activityClassification=args.activityClassification,
+                rawOutput=args.rawOutput, rawFile=args.rawFile,
+                npyOutput=args.npyOutput, npyFile=args.npyFile,
+                startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
+                csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
+                csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
+                csvTimeXYZColsIndex=args.csvTimeXYZColsIndex
+            ).run(npyFile)
 
-    if args.npyOutput:
-        npyFile = args.npyFile
-
+        else:
+            accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,
+                args.timeShift, args.epochFile, args.stationaryFile, summary,
+                skipCalibration=args.skipCalibration,
+                stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
+                xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
+                rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
+                useFilter=args.useFilter, sampleRate=args.sampleRate,
+                epochPeriod=args.epochPeriod,
+                activityClassification=args.activityClassification,
+                rawOutput=args.rawOutput, rawFile=args.rawFile,
+                npyOutput=args.npyOutput, npyFile=args.npyFile,
+                startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
+                csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
+                csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
+                csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
     else:
-        npyFileFd, npyFile = mkstemp()
+        summary['file-name'] = args.epochFile
 
-        @atexit.register
-        def closeTemp():
-            os.close(npyFileFd)
-            os.unlink(npyFile)
+    # Summarise epoch
+    epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
+        args.epochFile, args.nonWearFile, summary,
+        activityClassification=args.activityClassification,
+        timeZone=args.timeZone, startTime=args.startTime,
+        endTime=args.endTime, epochPeriod=args.epochPeriod,
+        stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
+        mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
+        intensityDistribution=args.intensityDistribution,
+        useRecommendedImputation=args.useRecommendedImputation,
+        psd=args.psd, fourierFrequency=args.fourierFrequency,
+        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
+        verbose=args.verbose)
 
-    device.parse(
-        args.inputFile,
-        npyFile,
-        timeZone=args.timeZone,
-        timeShift=args.timeShift
+    # Generate time series file
+    accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
+
+    # Print short summary
+    accelerometer.accUtils.toScreen("=== Short summary ===")
+    summaryVals = ['file-name', 'file-startTime', 'file-endTime',
+            'acc-overall-avg','wearTime-overall(days)',
+            'nonWearTime-overall(days)', 'quality-goodWearTime']
+    summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
+    print(json.dumps(summaryDict, indent=4))
+
+    # Write summary to file
+    with open(args.summaryFile,'w') as f:
+        json.dump(summary, f, indent=4)
+    print('Full summary written to: ' + args.summaryFile)
+
+    ##########################
+    # Closing
+    ##########################
+    processingEndTime = datetime.datetime.now()
+    processingTime = (processingEndTime - processingStartTime).total_seconds()
+    accelerometer.accUtils.toScreen(
+        "In total, processing took " + str(processingTime) + " seconds"
     )
-
-    processing.Processing(
-        sampleRate=args.sampleRate, 
-        epochPeriod=args.epochPeriod, 
-        epochFile=args.epochFile
-    ).run(npyFile)
 
 
 def str2bool(v):

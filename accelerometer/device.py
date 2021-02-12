@@ -11,10 +11,23 @@ from subprocess import call
 import sys
 import jpype
 import atexit
+import shutil
+from tempfile import mkstemp
+import re
 
 
 
 def parse(inputFile, outputFile, **kwargs):
+
+    if inputFile.endswith('.gz'):  # Decompress to temporary file
+        ext = re.search(r'(\.\w+)\.gz', inputFile).group(1)
+
+        _inputFileFd, _inputFile = mkstemp(suffix=ext)
+
+        with open(_inputFile, 'wb') as _:
+            shutil.copyfileobj(gzip.open(inputFile), _)
+
+        inputFile = _inputFile
 
     # Start JVM
     if not jpype.isJVMStarted():
@@ -39,6 +52,10 @@ def parse(inputFile, outputFile, **kwargs):
         )
     else:
         raise ValueError(f"Unrecognized file extension {inputFile}")
+
+    jpype.shutdownJVM()
+    os.close(_inputFileFd)
+    os.unlink(_inputFile)
 
 
 
