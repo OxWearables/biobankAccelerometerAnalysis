@@ -19,6 +19,11 @@ import re
 
 def parse(inputFile, outputFile, **kwargs):
 
+    info = {}
+    info['file-name'] = inputFile
+    info['file-size'] = os.path.getsize(inputFile)
+    info['file-deviceID'] = getDeviceId(inputFile)
+
     if inputFile.endswith('.gz'):  # Decompress to temporary file
         ext = re.search(r'(\.\w+)\.gz', inputFile).group(1)
         _inputFileFd, _inputFile = mkstemp(suffix=ext)
@@ -36,21 +41,23 @@ def parse(inputFile, outputFile, **kwargs):
 
     # Parsing -- parsed data is stored at outputFile
     if inputFile.endswith('.cwa'):
-        jpype.JClass('AxivityParser').parse(
+        errs = jpype.JClass('AxivityParser').parse(
             inputFile, outputFile, 
             kwargs.get('timeZone', 'Europe/London'), 
             kwargs.get('timeShift', 0)
         )
     elif inputFile.endswith('.gt3x'):
-        jpype.JClass('ActigraphParser').parse(
+        errs = jpype.JClass('ActigraphParser').parse(
             inputFile, outputFile, True
         )
     elif inputFile.endswith('.bin'):
-        jpype.JClass('GENEActivParser').parse(
+        errs = jpype.JClass('GENEActivParser').parse(
             inputFile, outputFile, True
         )
     else:
         raise ValueError(f"Unrecognized file extension {inputFile}")
+
+    info['read-errs'] = int(errs)
 
     jpype.shutdownJVM()
 
@@ -58,6 +65,8 @@ def parse(inputFile, outputFile, **kwargs):
         os.close(_inputFileFd)
     if _inputFile is not None:
         os.unlink(_inputFile)
+
+    return info
 
 
 

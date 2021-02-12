@@ -18,8 +18,6 @@ import java.time.LocalTime;
 
 public class ActigraphParser {
 
-    private static final int EXIT_SUCCESS = 0;
-    private static final int EXIT_FAILURE = 1;
     private static final int INVALID_GT3_FILE = 0;
     private static final int VALID_GT3_V1_FILE = 1;
     private static final int VALID_GT3_V2_FILE = 2;
@@ -65,6 +63,7 @@ public class ActigraphParser {
         String outFile,
         boolean verbose) {
 
+        int errCounter = 0;
         ZipFile zip = null;
         // readers for the 'activity.bin' & 'info.txt' files inside the .zip
         BufferedReader infoReader = null;
@@ -77,7 +76,7 @@ public class ActigraphParser {
             int gt3Version = getGT3XVersion(zip);
             if (gt3Version == INVALID_GT3_FILE) {
                 System.err.println("file " + accFile + " is not a valid V1 or V2 g3tx file");
-                return EXIT_FAILURE;
+                return -1;
             }
 
             for (Enumeration<?> e = zip.entries(); e.hasMoreElements();) {
@@ -130,7 +129,7 @@ public class ActigraphParser {
 
             if ((sampleFreq==-1 || accelerationScale==-1 || firstSampleTime==-1) && gt3Version != VALID_GT3_V2_FILE) {
                 System.err.println("error parsing "+accFile+", info.txt must contain 'Sample Rate', ' Start Date', and (usually) 'Acceleration Scale'.");
-                return EXIT_FAILURE;
+                return -1;
             }
 
             double sampleDelta = setSampleDelta(sampleFreq);
@@ -154,7 +153,7 @@ public class ActigraphParser {
         } catch (IOException excep) {
             excep.printStackTrace(System.err);
             System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
-            return EXIT_FAILURE;
+            return -1;
         } finally {
             try {
                 zip.close();
@@ -166,7 +165,7 @@ public class ActigraphParser {
             }
         }
 
-        return EXIT_SUCCESS;
+        return errCounter;  // currently not calculated
 
     }
 

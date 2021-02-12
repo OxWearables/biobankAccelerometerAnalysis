@@ -16,8 +16,6 @@ import java.util.Map;
 
 public class AxivityParser {
 
-    private static final int EXIT_SUCCESS = 0;
-    private static final int EXIT_FAILURE = 1;
     private static final boolean USE_PRECISE_TIME = true;
     private static final int BUFSIZE = 512;
 
@@ -76,12 +74,12 @@ public class AxivityParser {
                 buf.clear();
             }
 
-            return EXIT_SUCCESS;
+            return errCounter;
 
         } catch (Exception e) {
             e.printStackTrace(System.err);
             System.err.println("Error reading/writing file " + accFile + ": " + e.toString());
-            return EXIT_FAILURE;
+            return -1;
 
         } finally {
             closeWriter();

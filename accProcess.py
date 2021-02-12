@@ -364,7 +364,7 @@ def main():
                     os.close(npyFileFd)
                     os.unlink(npyFile)
 
-            device.parse(
+            info = device.parse(
                 inputFile=args.inputFile,
                 outputFile=npyFile,
                 timeZone=args.timeZone,

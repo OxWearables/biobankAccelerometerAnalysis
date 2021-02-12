@@ -13,9 +13,6 @@ import java.time.ZoneOffset;
 
 public class GENEActivParser {
 
-    final private static int EXIT_SUCCESS = 0;
-    final private static int EXIT_FAILURE = 1;
-
     // Specification of items to be written
     private static final Map<String, String> ITEM_NAMES_AND_TYPES;
     static{
@@ -37,7 +34,7 @@ public class GENEActivParser {
         int fileHeaderSize = 59;
         int linesToAxesCalibration = 47;
         int pageHeaderSize = 9;
-        int[] errCounter = new int[] { 0 };
+        int errCounter = 0;
 
         NpyWriter writer = new NpyWriter(outFile, ITEM_NAMES_AND_TYPES);
 
@@ -98,7 +95,7 @@ public class GENEActivParser {
                         yRaw = getSignedIntFromHex(dataBlock, hexPosition + 3, 3);
                         zRaw = getSignedIntFromHex(dataBlock, hexPosition + 6, 3);
                     } catch (Exception excep) {
-                        errCounter[0] += 1;
+                        errCounter++;
                         System.err.println("block err @ " + blockTime.toString() + ": " + excep.toString());
                         break; // rest of block/page could be corrupted
                     }
@@ -130,7 +127,7 @@ public class GENEActivParser {
         } catch (Exception excep) {
             excep.printStackTrace(System.err);
             System.err.println("error reading/writing file " + accFile + ": " + excep.toString());
-            return EXIT_FAILURE;
+            return -1;
         } finally {
             try{
                 writer.close();
@@ -139,7 +136,7 @@ public class GENEActivParser {
             }
         }
 
-        return EXIT_SUCCESS;
+        return errCounter;
 
     }
 
