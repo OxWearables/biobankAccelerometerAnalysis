@@ -21,13 +21,12 @@ def parse(inputFile, outputFile, **kwargs):
 
     if inputFile.endswith('.gz'):  # Decompress to temporary file
         ext = re.search(r'(\.\w+)\.gz', inputFile).group(1)
-
         _inputFileFd, _inputFile = mkstemp(suffix=ext)
-
-        with open(_inputFile, 'wb') as _:
+        with open(_inputFileFd, 'wb') as _:
             shutil.copyfileobj(gzip.open(inputFile), _)
-
         inputFile = _inputFile
+    else:
+        _inputFileFd = _inputFile = None
 
     # Start JVM
     if not jpype.isJVMStarted():
@@ -35,7 +34,7 @@ def parse(inputFile, outputFile, **kwargs):
         jpype.addClassPath('../java/JTransforms-3.1-with-dependencies.jar')
         jpype.startJVM(convertStrings=False)
 
-    # Parsing -- parsed data is stored at tempOutFile
+    # Parsing -- parsed data is stored at outputFile
     if inputFile.endswith('.cwa'):
         jpype.JClass('AxivityParser').parse(
             inputFile, outputFile, 
@@ -54,8 +53,11 @@ def parse(inputFile, outputFile, **kwargs):
         raise ValueError(f"Unrecognized file extension {inputFile}")
 
     jpype.shutdownJVM()
-    os.close(_inputFileFd)
-    os.unlink(_inputFile)
+
+    if _inputFileFd is not None:
+        os.close(_inputFileFd)
+    if _inputFile is not None:
+        os.unlink(_inputFile)
 
 
 
