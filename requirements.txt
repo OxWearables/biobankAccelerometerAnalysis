@@ -36,3 +36,6 @@ sphinxcontrib-serializinghtml==1.1.4
 statsmodels==0.12.1
 threadpoolctl==2.1.0
 urllib3==1.26.4
+tqdm==4.47.0
+Jpype1==0.7.5
+
