@@ -166,12 +166,12 @@ class FeatureExtractor():
             feats['zxCorr'] = np.nan_to_num(np.corrcoef(z, x)[0,1])
 
         m = np.linalg.norm(xyz, axis=1)
-        # Separating Movement and Gravity Components in an Acceleration Signal
-        # and Implications for the Assessment of Human Daily Physical Activity
+        # "Separating Movement and Gravity Components in an Acceleration Signal
+        # and Implications for the Assessment of Human Daily Physical Activity"
         # https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0061691
         feats['enmoTrunc'] = np.mean(np.maximum(m - 1.0, 0.0))
-        # A universal, accurate intensity-based classification of different
-        # physical activities using raw data of accelerometer
+        # "A universal, accurate intensity-based classification of different
+        # physical activities using raw data of accelerometer"
         # https://pubmed.ncbi.nlm.nih.gov/24393233/
         feats['std'] = np.std(m)
         feats['mad'] = stats.median_abs_deviation(m)
@@ -193,10 +193,9 @@ class FeatureExtractor():
 
     @staticmethod
     def sanDiegoFeatures(xyz, sampleRate):
-        """ Hip and Wrist Accelerometer Algorithms for Free-Living Behavior Classification 
+        ''' "Hip and Wrist Accelerometer Algorithms for Free-Living Behavior Classification"
         https://pubmed.ncbi.nlm.nih.gov/26673126/ 
-        The FFT features computations are refactored out -- see fftFeatures()
-        """
+        Computation of the FFT features are refactored out -- see fftFeatures() '''
 
         feats = {}
 
@@ -237,8 +236,8 @@ class FeatureExtractor():
         feats['yawgAvg'], feats['rollgAvg'], feats['pitchgAvg'] = np.mean(yawg), np.mean(rollg), np.mean(pitchg)
 
         # -----------------------------------------------------------------
-        # Spectral features. Legacy code computes on the raw stream, which
-        # makes sense given the search 0.3Hz - 3Hz range.
+        # Spectral features. Legacy code uses the raw stream, which
+        # makes sense given the search range of 0.3Hz - 3Hz.
         # -----------------------------------------------------------------
         m = np.linalg.norm(xyz, axis=1)
 
@@ -290,9 +289,8 @@ class FeatureExtractor():
 
     @staticmethod
     def unileverFeatures(xyz, sampleRate):
-        """ Physical Activity Classification Using the GENEA Wrist-Worn Accelerometer
-        https://pubmed.ncbi.nlm.nih.gov/21988935/
-        """
+        ''' "Physical Activity Classification Using the GENEA Wrist-Worn Accelerometer"
+        https://pubmed.ncbi.nlm.nih.gov/21988935/ '''
         feats = {}
         m = np.linalg.norm(xyz, axis=1)
 
@@ -348,9 +346,7 @@ def butterfilt(x, cutoffs, fs, order=4, axis=0):
 
 
 def date_strftime(t):
-    '''
-    Convert to time format of the form e.g.
-    2020-06-14 19:01:15.123+0100 [Europe/London]
-    '''
+    ''' Convert to time format of the form e.g.
+    2020-06-14 19:01:15.123+0100 [Europe/London] '''
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
