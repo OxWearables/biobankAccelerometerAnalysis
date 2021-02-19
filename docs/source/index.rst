@@ -17,7 +17,8 @@ Dependancies include: unix, java 8 (`Java 8 JDK <http://www.oracle.com/technetwo
 ::
 	$ git clone git@github.com:activityMonitoring/biobankAccelerometerAnalysis.git
         $ bash utilities/downloadDataModels.sh
-        $ pip3 install --user .
+        $ pip install --upgrade pip 
+        $ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work. 
         $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
 
 
