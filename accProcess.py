@@ -1,5 +1,5 @@
 """Command line tool to extract meaningful health info from accelerometer data."""
-
+import sys
 import accelerometer.accUtils
 import accelerometer.accClassification
 import argparse
@@ -364,14 +364,14 @@ def main():
                     os.close(npyFileFd)
                     os.unlink(npyFile)
 
-            info = device.parse(
+            info_parsing = device.parse(
                 inputFile=args.inputFile,
                 outputFile=npyFile,
                 timeZone=args.timeZone,
                 timeShift=args.timeShift
             )
 
-            processing.Processing(
+            info_processing = processing.Processing(
                 timeZone=args.timeZone,
                 timeShift=args.timeShift,
                 epochFile=args.epochFile,
@@ -380,7 +380,7 @@ def main():
                 xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
                 rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
                 useFilter=args.useFilter, sampleRate=args.sampleRate,
-                epochPeriod=args.epochPeriod,
+                epochLen=args.epochPeriod,
                 activityClassification=args.activityClassification,
                 rawOutput=args.rawOutput, rawFile=args.rawFile,
                 npyOutput=args.npyOutput, npyFile=args.npyFile,
@@ -388,7 +388,14 @@ def main():
                 csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
                 csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
                 csvTimeXYZColsIndex=args.csvTimeXYZColsIndex
-            ).run(npyFile)
+            ).run(processing.loadNpyToFrame(npyFile))
+
+            # Write summary to file
+            with open(args.summaryFile,'w') as f:
+                json.dump({**info_parsing, **info_processing}, f, indent=4)
+            print('Full summary written to: ' + args.summaryFile)
+
+            sys.exit()
 
         else:
             accelerometer.device.processInputFileToEpoch(args.inputFile, args.timeZone,

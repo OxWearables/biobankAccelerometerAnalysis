@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -5,123 +6,269 @@ from scipy.signal import butter, sosfiltfilt, welch
 from scipy.stats import entropy, median_abs_deviation
 from scipy.ndimage import median_filter
 from tqdm.auto import tqdm
+import statsmodels.api as sm
 
 
 GRAVITY_CUTOFF_HZ = 0.5
 NOISE_CUTOFF_HZ = 20
-MAXVAL, MINVAL = 6, -6  # Note: GENEActiv has a range of +/-6g whereas Axivity and Actigraph +/-8 or more
+MAXVAL = 6  # Note: GENEActiv has a range of +/-6g whereas Axivity and Actigraph +/-8 or more
 
 
 class Processing():
     def __init__(self, **kwargs):
         self.sampleRate = kwargs['sampleRate']
-        self.epochPeriod = kwargs['epochPeriod']
-        self.epochFile = kwargs['epochFile']
         self.timeZone = kwargs['timeZone']
+        self.epochLen = kwargs['epochLen']
         self.extractor = None
         if kwargs.get('extractFeatures', True):
             self.extractor = FeatureExtractor(
                 sampleRate=self.sampleRate,
-                epochPeriod=self.epochPeriod
+                epochLen=self.epochLen
             )
 
 
-    def run(self, npyFile):
-        data = loadNpyToFrame(npyFile)
+    def run(self, data):
+        infoTime = setTimeZone(data, tz=self.timeZone)
+        data, infoResample = regulariseSampleRate(data, self.sampleRate)
+        infoFilter = filterNoise(data, self.sampleRate)
+        infoCalibr = calibrateGravity(data)
+        infoNonwear = detectNonwear(data)
 
-        #TODO quality control
-
-        data = Processing.regularizeSampleRate(data, self.sampleRate)
-        data = Processing.filterNoise(data, self.sampleRate)
-
-        #TODO
-        # Used to be done in device.py but would make sense to do it here.
-        # data = calibrateGravity(...)
-
-        #TODO
-        # Currently done in summariseEpoch but would make more sense to do it
-        # here. Also the approach is slightly different to the paper.
-        # data = detectNonwear(...)
-
+        epochFeats = None
         if self.extractor is not None:
             epochFeats = self.extractor.run(data)
 
-            #TODO Completely fake news!
-            epochFeats['rawSamples'] = 0
-            epochFeats['clipsBeforeCalibr'] = 0
-            epochFeats['clipsAfterCalibr'] = 0
+            # # Saving...
+            # if self.epochFile.endswith('.pkl'):
+            #     epochFeats.to_pickle(self.epochFile)
 
-            # Saving...
-            # Make output time format contain timezone
-            # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
-            epochFeats.index = epochFeats.index.to_series().apply(date_strftime)
-            epochFeats.to_csv(
-                self.epochFile, 
-                index=True, 
-                index_label='time', 
-                compression='gzip',
-                date_format=date_strftime)
+            # else:
+            #     # epochFeats.index = epochFeats.index.to_series().apply(date_strftime)
+            #     epochFeats.to_csv(
+            #         self.epochFile, 
+            #         index=True, 
+            #         index_label='time', 
+            #         compression='gzip',
+            #         date_format=date_strftime)
 
+        info = {**infoTime,
+                **infoResample,
+                **infoFilter,
+                **infoCalibr,
+                **infoNonwear}
 
-    @staticmethod
-    def regularizeSampleRate(data, sampleRate, method='nearest'):
-        samplePeriodNanos = int(1000_000_000/sampleRate)  # in nanos
-        if method == 'nearest':
-            return data.resample(f'{samplePeriodNanos}N').nearest(limit=1)
-        elif method == 'linear':
-            raise NotImplementedError
-        else:
-            raise ValueError
+        return epochFeats, info
 
 
-    @staticmethod
-    def filterNoise(data, sampleRate):
-        xyzCols = ['x', 'y', 'z']
-
-        # Temporarily fill nan values
-        mask = data[xyzCols].isna().any(1)
-        data[xyzCols] = data[xyzCols].fillna(method='ffill')
-
-        # Clip unrealistically high values
-        data[xyzCols] = np.clip(data[xyzCols].values, MINVAL, MAXVAL)
-        # Noise removal by median filtering
-        data[xyzCols] = median_filter(data[xyzCols].values, (5,1), mode='nearest')
-        # Noise removal by lowpass filtering
-        data[xyzCols] = butterfilt(data[xyzCols].values, NOISE_CUTOFF_HZ, sampleRate, axis=0)
-
-        # Restore NaN values
-        data.loc[mask, xyzCols] = np.nan
-
-        return data
+def loadNpyToFrame(npyFile):
+    data = pd.DataFrame(np.load(npyFile))
+    data['time'] = data['time'].astype('datetime64[ms]').dt.tz_localize('UTC')
+    data.set_index('time', inplace=True)
+    return data
 
 
-    #TODO
-    @staticmethod
-    def calibrateGravity():
-        pass
+def setTimeZone(data, tz='Europe/London'):
+    data.index = data.index.tz_convert(tz)
+    info = {}
+    startTime, endTime = data.index[0], data.index[-1]
+    info['file-start'] = date_strftime(startTime)
+    info['file-end'] = date_strftime(endTime)
+    info['file-first-day(0=mon,6=sun)'] = startTime.weekday()
+
+    if data.index[0].dst() < data.index[-1].dst():
+        info['daylight-savings-time'] = 1
+    elif data.index[0].dst() > data.index[-1].dst():
+        info['daylight-savings-time'] = -1
+    else:
+        info['daylight-savings-time'] = 0
+
+    return info
 
 
-    #TODO
-    @staticmethod
-    def detectNonwear():
-        pass
+def regulariseSampleRate(data, sampleRate, method='nearest'):
+    info = {}
+    info['num-ticks'] = len(data)
+
+    gap = data.index.to_series().diff()
+    interrupt = gap > pd.Timedelta('1s')
+    interruptLen = gap[interrupt].sum()
+    info['num-interrupts'] = int(interrupt.sum())
+    info['interrupts-overall(mins)'] = interruptLen.total_seconds() / 60
+
+    samplePeriodNanos = int(1000_000_000/sampleRate)  # in nanos
+    if method == 'nearest':
+        dataResampled = data.resample(f'{samplePeriodNanos}N').nearest(limit=1)
+    elif method == 'linear':
+        raise NotImplementedError
+    else:
+        raise ValueError
+
+    info['num-ticks-resampled'] = len(dataResampled)
+
+    return dataResampled, info
+
+
+def filterNoise(data, sampleRate):
+    info = {}
+
+    xyzCols = ['x', 'y', 'z']
+
+    # Clip unrealistically high values
+    info['num-clips'] = int((data[xyzCols].abs() > MAXVAL).any(1).sum())
+    data[xyzCols] = np.clip(data[xyzCols].values, -MAXVAL, MAXVAL)
+
+    # Remove stuck values
+    rolling = data[xyzCols].rolling('10s', min_periods=10*sampleRate)
+    stationary = (rolling.std()==0).any(1)
+    values = rolling.mean()
+    stuck = stationary & ((values > 1.5).any(1) | (values < -1.5).any(1))
+    info['num-stuck-values'] = int(stuck.sum())
+    data[stuck] = np.nan  # replace stuck values with NaNs
+
+    # Temporarily fill nan values
+    mask = data[xyzCols].isna().any(1)
+    data[xyzCols] = data[xyzCols].fillna(method='ffill').fillna(method='bfill')
+
+    # Noise removal by median filtering -- removes outliers
+    data[xyzCols] = median_filter(data[xyzCols].values, (5,1), mode='nearest')
+    # Noise removal by lowpass filtering -- removes high freqs
+    data[xyzCols] = butterfilt(data[xyzCols].values, NOISE_CUTOFF_HZ, sampleRate, axis=0)
+
+    # Restore NaN values
+    data.loc[mask, xyzCols] = np.nan
+
+    return info
+
+
+def calibrateGravity(data, stdWindow='10s', stdTol=13/1000, calibCritSphere=0.3):
+    ''' Autocalibration of accelerometer data for free-living physical
+    activity assessment using local gravity and temperature: an
+    evaluation on four continents. https://pubmed.ncbi.nlm.nih.gov/25103964/ '''
+
+    info = {}
+
+    # The paper uses window means instead of raw values. This sort of
+    # reduces the influence of outliers and computational cost
+    grouped = data.groupby(pd.Grouper(freq=stdWindow))
+    statioData = grouped.mean()[(grouped[['x','y','z']].std() < stdTol).all(1)]
+
+    xyz, T = statioData[['x','y','z']], statioData['T']
+    Tref = T.mean()
+    dT = T - Tref
+
+    xyz, dT = xyz.values, dT.values
+
+    intercept = np.array([0.0, 0.0, 0.0])
+    slope = np.array([1.0, 1.0, 1.0])
+    Tslope = np.array([0.0, 0.0, 0.0])
+    bestIntercept = np.copy(intercept)
+    bestSlope = np.copy(slope)
+    bestTslope = np.copy(Tslope)
+
+    curr = xyz
+    target = curr / np.linalg.norm(curr, axis=1)[:,None]
+    initError = np.sqrt(np.mean(np.square(curr-target)))  # root mean square error
+    bestError = 1e16
+
+    MAXITER = 1000
+    TOL = 0.0001  # 0.1mg
+
+    for _ in range(MAXITER):
+
+        for i in range(3):
+            inp = np.column_stack((curr[:,i], dT))
+            out = target[:,i]
+            inp = sm.add_constant(inp, prepend=True)  # add bias/intercept term
+            _intercept, _slope, _Tslope = sm.OLS(out, inp).fit().params
+            intercept[i] = _intercept + (intercept[i] * _slope)
+            slope[i] = _slope * slope[i]
+            Tslope[i] = _Tslope + (Tslope[i] * _slope)
+
+        curr = intercept + (xyz * slope) + (dT[:,None] * Tslope)
+        target = curr / np.linalg.norm(curr, axis=1)[:,None]
+
+        rms = np.sqrt(np.mean(np.square(curr-target)))
+        improvement = (bestError-rms)/bestError
+        if rms < bestError:
+            bestIntercept = np.copy(intercept)
+            bestSlope = np.copy(slope)
+            bestTslope = np.copy(Tslope)
+            bestError = rms
+        if improvement < TOL:
+            break
+
+    # Quality control
+    if (np.max(xyz, axis=0) < calibCritSphere).any() \
+        or (np.min(xyz, axis=0) > -calibCritSphere).any() \
+        or bestError > 0.01:
+        info['calibration-OK'] = 0
+        # Restore default values as calibration failed
+        bestIntercept = np.array([0.0, 0.0, 0.0])
+        bestSlope = np.array([1.0, 1.0, 1.0])
+        bestTslope = np.array([0.0, 0.0, 0.0])
+        bestError = initError
+
+    else:
+        info['calibration-OK'] = 1
+        # Calibrate
+        data[['x','y','z']] = \
+            bestIntercept + \
+            bestSlope * data[['x','y','z']].values + \
+            bestTslope * (data['T'].values[:, None] - Tref)
+
+    info['calibration-numStaticWindows'] = len(statioData)
+    info['calibration-errsBefore(mg)'] = initError * 1000
+    info['calibration-errsAfter(mg)'] = bestError * 1000
+    info['calibration-xIntercept'] = bestIntercept[0]
+    info['calibration-yIntercept'] = bestIntercept[1]
+    info['calibration-zIntercept'] = bestIntercept[2]
+    info['calibration-xSlope'] = bestSlope[0]
+    info['calibration-ySlope'] = bestSlope[1]
+    info['calibration-zSlope'] = bestSlope[2]
+    info['calibration-xTSlope'] = bestTslope[0]
+    info['calibration-yTSlope'] = bestTslope[1]
+    info['calibration-zTSlope'] = bestTslope[2]
+    info['calibration-Tref'] = Tref
+
+    return info
+
+
+def detectNonwear(data, nonwearPatience='1h', stdWindow='10s', stdTol=13/1000):
+    info = {}
+
+    stationary = (data[['x','y','z']].rolling(stdWindow).std() < stdTol).all(1)
+
+    group = (stationary != stationary.shift(1)).cumsum()  # group by consecutive values
+    groupLen = group.groupby(group).apply(lambda g: g.index[-1] - g.index[0])
+    stationaryLen = groupLen[stationary.groupby(group).any()]
+    nonwearLen = stationaryLen[stationaryLen > pd.Timedelta(nonwearPatience)]
+
+    info['num-nonwear-episodes'] = len(nonwearLen)
+    info['nonwear-overall(days)'] = nonwearLen.sum().total_seconds() / (60*60*24)
+    info['wear-overall(days)'] = (groupLen.sum() - nonwearLen.sum()).total_seconds() / (60*60*24)
+
+    # Fill nonwear with NaNs
+    nonwear = group.isin(nonwearLen.index)
+    data[nonwear] = np.nan
+
+    return info
 
 
 class FeatureExtractor():
     def __init__(self, **kwargs) -> None:
         self.sampleRate = kwargs['sampleRate']
-        self.epochPeriod = kwargs['epochPeriod']
+        self.epochLen = kwargs['epochLen']
 
 
     def run(self, data):
-        epochs = data.groupby(pd.Grouper(freq=f'{self.epochPeriod}S'))
+        epochs = data.groupby(pd.Grouper(freq=f'{self.epochLen}S'))
 
         featsFrame = {}
         for t, epoch in tqdm(epochs):
             xyz = epoch[['x', 'y', 'z']].values
 
             # Check if good chunk else return NaNs
-            if (np.isfinite(xyz).all() and (len(xyz) == self.epochPeriod * self.sampleRate)):
+            if (np.isfinite(xyz).all() and (len(xyz) == self.epochLen * self.sampleRate)):
                 feats = FeatureExtractor.extract(xyz, self.sampleRate)
             else:
                 feats = {name:np.nan for name in FeatureExtractor.featureNames()}
@@ -166,10 +313,12 @@ class FeatureExtractor():
             feats['zxCorr'] = np.nan_to_num(np.corrcoef(z, x)[0,1])
 
         m = np.linalg.norm(xyz, axis=1)
+
         # "Separating Movement and Gravity Components in an Acceleration Signal
         # and Implications for the Assessment of Human Daily Physical Activity"
         # https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0061691
         feats['enmoTrunc'] = np.mean(np.maximum(m - 1.0, 0.0))
+
         # "A universal, accurate intensity-based classification of different
         # physical activities using raw data of accelerometer"
         # https://pubmed.ncbi.nlm.nih.gov/24393233/
@@ -261,12 +410,12 @@ class FeatureExtractor():
         return ['bodyMean', 'bodyStd', 'bodyCoefVar',
                 'bodyMin', 'bodyMax', 'body25p', 'bodyMedian', 'body75p', 
                 'bodyAutocorr',
-                'bodyYawAvg', 'bodyRollAvg', 'bodyPitchAvg', 
-                'bodyYawStd', 'bodyRollStd', 'bodyPitchStd', 
-                'bodyYawgAvg', 'bodyRollgAvg', 'bodyPitchgAvg',
-                'bodyEntropy', 
-                'bodyDominantFreq', 'bodyDominantPower', 
-                'bodyDominantFreq_0.3_3', 'bodyDominantPower_0.3_3']
+                'yawAvg', 'rollAvg', 'pitchAvg', 
+                'yawStd', 'rollStd', 'pitchStd', 
+                'yawgAvg', 'rollgAvg', 'pitchgAvg',
+                'entropy', 
+                'dominantFreq', 'dominantPower', 
+                'dominantFreq_0.3_3', 'dominantPower_0.3_3']
 
 
     @staticmethod
@@ -324,13 +473,6 @@ class FeatureExtractor():
                 'dominantFreq_0.6_2.5', 'dominantPower_0.6_2.5']
 
 
-def loadNpyToFrame(npyFile, tz='Europe/London'):
-    data = pd.DataFrame(np.load(npyFile))
-    data['time'] = data['time'].astype('datetime64[ms]').dt.tz_localize('UTC').dt.tz_convert(tz)
-    data.set_index('time', inplace=True)
-    return data
-
-
 def butterfilt(x, cutoffs, fs, order=4, axis=0):
     nyq = 0.5 * fs
     if isinstance(cutoffs, tuple):
@@ -350,3 +492,4 @@ def date_strftime(t):
     2020-06-14 19:01:15.123+0100 [Europe/London] '''
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
+
