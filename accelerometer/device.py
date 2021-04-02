@@ -35,15 +35,15 @@ def parse(inputFile, outputFile, **kwargs):
 
     # Start JVM
     if not jpype.isJVMStarted():
-        jpype.addClassPath('../java/')
-        jpype.addClassPath('../java/JTransforms-3.1-with-dependencies.jar')
+        jpype.addClassPath('java/')
+        jpype.addClassPath('java/JTransforms-3.1-with-dependencies.jar')
         jpype.startJVM(convertStrings=False)
 
     # Parsing -- parsed data is stored at outputFile
     if inputFile.endswith('.cwa'):
         errs = jpype.JClass('AxivityParser').parse(
-            inputFile, outputFile, 
-            kwargs.get('timeZone', 'Europe/London'), 
+            inputFile, outputFile,
+            kwargs.get('timeZone', 'Europe/London'),
             kwargs.get('timeShift', 0)
         )
     elif inputFile.endswith('.gt3x'):
