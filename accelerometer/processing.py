@@ -45,9 +45,9 @@ class Processing():
             # else:
             #     # epochFeats.index = epochFeats.index.to_series().apply(date_strftime)
             #     epochFeats.to_csv(
-            #         self.epochFile, 
-            #         index=True, 
-            #         index_label='time', 
+            #         self.epochFile,
+            #         index=True,
+            #         index_label='time',
             #         compression='gzip',
             #         date_format=date_strftime)
 
@@ -97,6 +97,7 @@ def regulariseSampleRate(data, sampleRate, method='nearest'):
 
     samplePeriodNanos = int(1000_000_000/sampleRate)  # in nanos
     if method == 'nearest':
+        # dataResampled = data.resample(f'{samplePeriodNanos}N', origin='start').nearest(limit=1)
         dataResampled = data.resample(f'{samplePeriodNanos}N').nearest(limit=1)
     elif method == 'linear':
         raise NotImplementedError
@@ -297,7 +298,7 @@ class FeatureExtractor():
             *FeatureExtractor.unileverFeaturesNames()
         ]
 
-    
+
     @staticmethod
     def basicFeatures(xyz, sampleRate):
         feats = {}
@@ -336,21 +337,21 @@ class FeatureExtractor():
                 'xStd', 'yStd', 'zStd',
                 'xRange', 'yRange', 'zRange',
                 'xyCorr', 'yzCorr', 'zxCorr',
-                'enmoTrunc', 
+                'enmoTrunc',
                 'std', 'mad', 'kurt', 'skew']
 
 
     @staticmethod
     def sanDiegoFeatures(xyz, sampleRate):
         ''' "Hip and Wrist Accelerometer Algorithms for Free-Living Behavior Classification"
-        https://pubmed.ncbi.nlm.nih.gov/26673126/ 
+        https://pubmed.ncbi.nlm.nih.gov/26673126/
         Computation of the FFT features are refactored out -- see fftFeatures() '''
 
         feats = {}
 
         # It is not really clear from the paper whether some of the features
-        # are computed on the raw stream or the body stream ("gravity removed", bandpassed), 
-        # but the legacy code uses body stream so we follow that. 
+        # are computed on the raw stream or the body stream ("gravity removed", bandpassed),
+        # but the legacy code uses body stream so we follow that.
 
         # Body stream
         xyzb = butterfilt(xyz, (GRAVITY_CUTOFF_HZ, NOISE_CUTOFF_HZ), sampleRate, axis=0)
@@ -408,13 +409,13 @@ class FeatureExtractor():
     @staticmethod
     def sanDiegoFeaturesNames():
         return ['bodyMean', 'bodyStd', 'bodyCoefVar',
-                'bodyMin', 'bodyMax', 'body25p', 'bodyMedian', 'body75p', 
+                'bodyMin', 'bodyMax', 'body25p', 'bodyMedian', 'body75p',
                 'bodyAutocorr',
-                'yawAvg', 'rollAvg', 'pitchAvg', 
-                'yawStd', 'rollStd', 'pitchStd', 
+                'yawAvg', 'rollAvg', 'pitchAvg',
+                'yawStd', 'rollStd', 'pitchStd',
                 'yawgAvg', 'rollgAvg', 'pitchgAvg',
-                'entropy', 
-                'dominantFreq', 'dominantPower', 
+                'entropy',
+                'dominantFreq', 'dominantPower',
                 'dominantFreq_0.3_3', 'dominantPower_0.3_3']
 
 
