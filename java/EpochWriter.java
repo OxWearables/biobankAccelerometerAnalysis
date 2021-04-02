@@ -50,6 +50,7 @@ public class EpochWriter {
 	private double[] tempCoef;
 	private double meanTemp;
 	private int intendedSampleRate;
+    private String resampleMethod;
 	private int range;
 	private Filter filter;
 	private long startTime; // milliseconds since epoch
@@ -73,6 +74,7 @@ public class EpochWriter {
               String timeZone,
 		      int epochPeriod,
 		      int intendedSampleRate,
+              String resampleMethod,
 		      int range,
 		      double[] swIntercept,
 		      double[] swSlope,
@@ -91,6 +93,7 @@ public class EpochWriter {
 		this.timeFormat = timeFormat;
 		this.epochPeriod = epochPeriod;
 		this.intendedSampleRate = intendedSampleRate;
+        this.resampleMethod = resampleMethod;
 		this.range = range;
 		this.swIntercept = swIntercept;
 		this.swSlope = swSlope;
@@ -326,8 +329,16 @@ public class EpochWriter {
 		for (int i = 0; i < timeResampled.length; i++) {
 			timeResampled[i] = Math.round((epochPeriod * 1000d * i) / timeResampled.length);
 		}
-		Resample.interpLinear(timeVals, xVals, yVals, zVals,
-			timeResampled, xResampled, yResampled, zResampled);
+        if (resampleMethod.equalsIgnoreCase("linear")) {
+            Resample.interpLinear(timeVals, xVals, yVals, zVals,
+                timeResampled, xResampled, yResampled, zResampled);
+        } else if (resampleMethod.equalsIgnoreCase("nearest")) {
+            Resample.interpNearest(timeVals, xVals, yVals, zVals,
+                timeResampled, xResampled, yResampled, zResampled);
+        } else {
+			System.err.println("Unknown resample method: " + resampleMethod);
+			System.exit(-1);
+        }
 
 		//write out raw values ...
 		if (rawWriter != null) {

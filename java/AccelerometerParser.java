@@ -66,6 +66,7 @@ public class AccelerometerParser {
     	double meanTemp = 0.0;
     	int range = 8;
     	int sampleRate = 100;
+        String resampleMethod = "linear";
     	boolean useFilter = true;
     	long startTime = -1; // milliseconds since epoch
     	long endTime = -1;
@@ -144,6 +145,8 @@ public class AccelerometerParser {
 					meanTemp = Double.parseDouble(funcParam);
 				} else if (funcName.equals("sampleRate")) {
 					sampleRate= Integer.parseInt(funcParam);
+				} else if (funcName.equals("resampleMethod")) {
+					resampleMethod = funcParam;
 				} else if (funcName.equals("range")) {
 					range = Integer.parseInt(funcParam);
 				} else if (funcName.equals("rawOutput")) {
@@ -206,7 +209,7 @@ public class AccelerometerParser {
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
         		npyFile, getFeatures, numFFTbins, timeFormat, timeZone,
-        		epochPeriod, sampleRate, range, swIntercept, swSlope, tempCoef,
+        		epochPeriod, sampleRate, resampleMethod, range, swIntercept, swSlope, tempCoef,
         		meanTemp, getStationaryBouts, stationaryStd,
         		startTime, endTime, verbose
    				);
@@ -222,7 +225,7 @@ public class AccelerometerParser {
 				ActigraphReader.readG3TXEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".csv") ||
                         accFile.toLowerCase().endsWith(".csv.gz") ){
-				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow, 
+				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow,
                     csvTimeXYZColsIndex, csvTimeFormat, verbose);
 			} else {
 				System.err.println("Unrecognised file format for: " + accFile);

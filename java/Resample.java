@@ -49,7 +49,7 @@ public class Resample{
             yIntercept[i] = y.get(i) - time.get(i) * ySlope[i];
             zIntercept[i] = z.get(i) - time.get(i) * zSlope[i];
         }
-        
+
         // Perform the interpolation here
         for (int i = 0; i < timeI.length; i++) {
             if (timeI[i] > time.get(time.size() - 1)) {
@@ -75,6 +75,50 @@ public class Resample{
                 }
             }
         }
+    }
+
+
+    /** Nearest neighbor interpolation
+     */
+    public static final void interpNearest(
+            List<Long> t, //time in milliseconds
+            List<Double> x,
+            List<Double> y,
+            List<Double> z,
+            long[] tNew, //time in milliseconds
+            double[] xNew,
+            double[] yNew,
+            double[] zNew) throws IllegalArgumentException {
+        if (t.size() != x.size()) {
+            throw new IllegalArgumentException("time and x must be the same length");
+        }
+        if (t.size() == 1) {
+            throw new IllegalArgumentException("time must contain more than one value");
+        }
+
+        for (int i = 0; i < tNew.length; i++) {
+            int j = nearestIndex(t, tNew[i]);
+            xNew[i] = x.get(j);
+            yNew[i] = y.get(j);
+            zNew[i] = z.get(j);
+        }
+
+    }
+
+
+    /**
+     * Find index of the closest element to key
+     */
+    private static int nearestIndex(List<Long> elems, long key) {
+        if (key <= elems.get(0)) { return 0; }
+        if (key >= elems.get(elems.size() - 1)) { return elems.size() - 1; }
+
+        int result = Collections.binarySearch(elems, key);
+        if (result >= 0) { return result; }
+
+        int insertionPoint = -result - 1;
+        return (elems.get(insertionPoint) - key) < (key - elems.get(insertionPoint - 1)) ?
+                insertionPoint : insertionPoint - 1;
     }
 
 }

@@ -72,6 +72,10 @@ def main():
                             metavar='Hz, or samples/second', default=100,
                             type=int, help="""resample data to n Hz (default
                              : %(default)ss, must be an integer)""")
+    parser.add_argument('--resampleMethod',
+                            metavar='linear/nearest', default="linear",
+                            type=str, help="""Method to use for resampling
+                            (default : %(default)s)""")
     parser.add_argument('--useFilter',
                             metavar='True/False', default=True, type=str2bool,
                             help="""Filter ENMOtrunc values?
@@ -152,7 +156,7 @@ def main():
                              definition (default : %(default)s)""")
     parser.add_argument('--mgCutPointVPA',
                             metavar="mg", default=425, type=int,
-                            help="""VPA threshold for cut point based activity 
+                            help="""VPA threshold for cut point based activity
                             definition (default : %(default)s)""")
     parser.add_argument('--intensityDistribution',
                             metavar='True/False', default=False, type=str2bool,
@@ -296,7 +300,7 @@ def main():
             f"Either folder '{path}' does not exist "
             "or you do not have write permission"
         )
-    if args.processInputFile: 
+    if args.processInputFile:
         assert os.access(args.epochFolder, os.W_OK), (
             f"Either folder '{args.epochFolder}' does not exist "
             "or you do not have write permission"
@@ -341,7 +345,7 @@ def main():
             stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
             xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
             rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
-            useFilter=args.useFilter, sampleRate=args.sampleRate,
+            useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
             epochPeriod=args.epochPeriod,
             activityClassification=args.activityClassification,
             rawOutput=args.rawOutput, rawFile=args.rawFile,
