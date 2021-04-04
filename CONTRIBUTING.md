@@ -2,7 +2,7 @@
 
 *This document is based on [CONTRIBUTING.md](https://github.com/spring-projects/spring-framework/blob/master/CONTRIBUTING.md) of the popular Spring Framework repository*
 
-First off, thank you for taking the time to contribute! :+1: :tada: 
+First off, thank you for taking the time to contribute! :+1: :tada:
 
 ### Table of Contents
 
@@ -70,6 +70,11 @@ feedback can help to shape the implementation of new features. When reviewing
 pull requests, however, please refrain from approving or rejecting a PR
 unless you are a maintainer.
 
+For maintainers, you can [check out the PR
+locally](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/checking-out-pull-requests-locally)
+to run your own tests.
+
+
 #### Keep Calm and Drink Tea
 We are a team of researchers first and developers second, so please be patient if your issue or PR is taking long to be addressed. Just sit and relax!
 
@@ -95,7 +100,7 @@ There are a number of git workflows for collaboration -- see this [tutorial](htt
 1. Clone the fork to your own local computer. Note that you
 clone your fork and *not* the original repository. At this stage, there are three repository copies that matter to you: the original repository, your server-side clone (fork), and your local clone. You can do *whatever you want* with the last two.
 
-1. When you cloned your fork to your local computer, your clone automatically kept a reference to your fork, usually labelled as "origin" (you can check this with `git remote -v`). Now add a reference to the original repository, labelled as "upstream": 
+1. When you cloned your fork to your local computer, your clone automatically kept a reference to your fork, usually labelled as "origin" (you can check this with `git remote -v`). Now add a reference to the original repository, labelled as "upstream":
 
     ```bash
     # In general: git remote add my_new_remote https://github.com/username/reponame.git
@@ -195,7 +200,7 @@ The Fork and Pull Request Workflow may look complicated but you get used to it p
 
 1. Your local clone is your main workplace, while your remote fork is your communication port with the original repository. Your remote fork is where you make your changes visible to the maintainers so that they can review and pull them.
 
-1. Any branch other than master should be short-lived, associated with a temporal piece of work and a PR submission (e.g. a bugfix, a new feature). This is reflected in the way Github and Bitbucket will prompt you to delete the branch once the PR has been accepted and merged. Note that other workflows may not follow this (for example, some repositories have a permanent "development branch"). 
+1. Any branch other than master should be short-lived, associated with a temporal piece of work and a PR submission (e.g. a bugfix, a new feature). This is reflected in the way Github and Bitbucket will prompt you to delete the branch once the PR has been accepted and merged. Note that other workflows may not follow this (for example, some repositories have a permanent "development branch").
 
 1. Check for upstream changes regularly to incorporate them into your work as you go. Merge conflicts are hard enough, but it's easier if you deal with them in small chunks. It also helps to see what others have done so that you don't duplicate or undo any work. At the very least, try to keep your master branch up-to-date.
 
