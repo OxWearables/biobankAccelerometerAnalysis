@@ -147,8 +147,8 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
     nonWearDir = os.path.join(outDir, 'nonWear')
     stationaryDir = os.path.join(outDir, 'stationary')
     logsDir = os.path.join(outDir, 'clusterLogs')
-    rawDir = os.path.join(outDir, 'raw') 
-    npyDir = os.path.join(outDir, 'npy') 
+    rawDir = os.path.join(outDir, 'raw')
+    npyDir = os.path.join(outDir, 'npy')
 
     createDirIfNotExists(summaryDir)
     createDirIfNotExists(epochDir)
@@ -179,12 +179,12 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
                 '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
                 '--nonWearFolder "{:s}"'.format(nonWearDir),
                 '--stationaryFolder "{:s}"'.format(stationaryDir),
-                '--rawFolder "{:s}"'.format(rawDir), 
+                '--rawFolder "{:s}"'.format(rawDir),
                 '--npyFolder "{:s}"'.format(npyDir),
                 '--outputFolder "{:s}"'.format(outDir)
                 ]
 
-            # Grab additional arguments provided in filesCSV (e.g. calibration params) 
+            # Grab additional arguments provided in filesCSV (e.g. calibration params)
             cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
 
             if cmdOptions:
@@ -478,6 +478,6 @@ def writeTimeSeries(e, labels, tsFile):
 
     # make output time format contain timezone
     # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
-    e_new.index = e_new.index.to_series(keep_tz=True).apply(date_strftime)
-    
+    e_new.index = e_new.index.to_series().apply(date_strftime)
+
     e_new.to_csv(tsFile, compression='gzip')
