@@ -9,20 +9,29 @@ Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwo
 ```
 $ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
 $ cd biobankAccelerometerAnalysis
-$ bash utilities/downloadDataModels.sh 
-$ pip install --upgrade pip
-$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work. 
-$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
+$ pip install --upgrade pip # Upgrades pip version if required
+$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
+$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
+$ 
+$ # Now to install the package, run: 
+$ pip3 install --user . 
 ```
-**Note a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages. You therefore need to download the updated files to achieve this**.
+Note for developers: If you are actively developing the package, you may wish to skip the installation step.
+
+## Keeping up to date 
+`biobankAccelerometerAnalysis` is regularly updated (e.g. a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages). To install the most recent version with the most recent set of dependencies: 
 ```
 $ git pull
-$ bash utilities/downloadDataModels.sh
-$ pip install --upgrade pip
-$ pip3 install --upgrade -r requirements.txt.
-$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+$ cd biobankAccelerometerAnalysis
+$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
+$ pip install --upgrade pip # Upgrades pip version if required
+$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
+$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
+$ 
+$ # Now to install the package, run: 
+$ pip3 install --user . 
 ```
-
 
 ## Usage
 To extract a summary of movement (average sample vector magnitude) and
