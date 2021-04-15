@@ -3,6 +3,7 @@
 [![Github all releases](https://img.shields.io/github/release/activityMonitoring/biobankAccelerometerAnalysis.svg)](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/releases/)
 ![Build](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/build/badge.svg)
 ![Gt3X](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/gt3x/badge.svg)
+![CWA](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/cwa_regression/badge.svg)
 
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
