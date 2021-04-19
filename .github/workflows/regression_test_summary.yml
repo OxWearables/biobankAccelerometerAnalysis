@@ -1,4 +1,4 @@
-name: regression test for processing sample data to epoch file
+name: cwa_regression
 
 on:
   push:
