@@ -9,18 +9,36 @@
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
 
-
-************
+*****
 Installation
-************
-Dependancies include: unix, java 8 (`Java 8 JDK <http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html>`_) and python 3.7 (`Anaconda's Python 3 <https://www.anaconda.com/download/>`_ or installation via `Brew <https://docs.python-guide.org/starting/install3/osx/>`_ should do the trick).
+*****
+Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
 ::
-	$ git clone git@github.com:activityMonitoring/biobankAccelerometerAnalysis.git
-        $ bash utilities/downloadDataModels.sh
-        $ pip install --upgrade pip 
-        $ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work. 
-        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
+	$ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
+	$ cd biobankAccelerometerAnalysis
+	$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
+	$ pip install --upgrade pip # Upgrades pip version if required
+	$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
+	$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
+	$ 
+	$ # Now to install the package, run: 
+	$ pip3 install --user . 
 
+Note for developers: If you are actively developing the package, you may wish to skip the installation step.
+
+*****
+Keeping up to date
+*****
+`biobankAccelerometerAnalysis` is regularly updated (e.g. a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages). To install the most recent version with the most recent set of dependencies, run (from within the folder): 
+::
+	$ git pull # Pulls any changes
+	$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
+	$ pip install --upgrade pip # Upgrades pip version if required
+	$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
+	$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
+	$ 
+	$ # Now to install the package, run: 
+	$ pip3 install --user . 
 
 
 *****
