@@ -9,6 +9,10 @@ A tool to extract meaningful health information from large accelerometer dataset
 
 ## Installation
 Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
+
+Note for developers: If you are actively developing the package, you may wish to skip the installation step.
+
+### OS X/Linux
 ```
 $ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
 $ cd biobankAccelerometerAnalysis
@@ -20,7 +24,23 @@ $
 $ # Now to install the package, run: 
 $ pip3 install --user . 
 ```
-Note for developers: If you are actively developing the package, you may wish to skip the installation step.
+
+### Windows
+Open Anaconda prompt and run:
+```
+$ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
+$ cd biobankAccelerometerAnalysis
+$ utilities\downloadDataModels.bat # Downloads example data and models for behaviour classification
+$ pip install --upgrade pip # Upgrades pip version if required
+$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
+$ javac -cp java\JTransforms-3.1-with-dependencies.jar java\*.java # Compiles Java code
+$ 
+$ # Now to install the package, run: 
+$ pip3 install --user . 
+```
+Note: You may need to open Anaconda prompt as administrator depending on how it was installed. Alternatively, create a virtual environment.
+
+For Windows, you always want to run "utilities\downloadDataModels.bat" and "python" rather than "bash utilities/downloadDataModels.sh" or "python3".
 
 ## Keeping up to date 
 `biobankAccelerometerAnalysis` is regularly updated (e.g. a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages). To install the most recent version with the most recent set of dependencies: 
