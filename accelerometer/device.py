@@ -266,8 +266,9 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     bestTemp = np.copy(tempCoef)
     # record initial uncalibrated error
     curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
-    target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:, None]
-    initError = np.sqrt(np.mean(np.square(curr-target)))  # root mean square error
+    target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
+    errors = np.linalg.norm(curr - target, axis=1)
+    initError = np.sqrt(np.mean(np.square(errors)))  # root mean square error
     # iterate through linear model fitting
     try:
         for i in range(1, maxIter):
@@ -284,8 +285,9 @@ def getCalibrationCoefs(staticBoutsFile, summary):
                 tempCoef[a] = newT + (tempCoef[a] * newS)
             # update vals (and targed) based on new intercept/slope/temp coeffs
             curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
-            target = curr / np.sqrt(np.sum(np.square(curr), axis=1))[:,None]
-            rms = np.sqrt(np.mean(np.square(curr-target)))  # root mean square error
+            target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
+            errors = np.linalg.norm(curr - target, axis=1)
+            rms = np.sqrt(np.mean(np.square(errors)))  # root mean square error
             # assess iterative error convergence
             improvement = (bestError-rms)/bestError
             if rms < bestError:
