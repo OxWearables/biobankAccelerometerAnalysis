@@ -12,6 +12,7 @@ import accelerometer.summariseEpoch
 import pandas as pd
 import atexit
 import warnings
+import subprocess
 
 
 def main():
@@ -336,6 +337,8 @@ def main():
     # Start processing file
     ##########################
     summary = {}
+    
+    
     # Now process the .CWA file
     if args.processInputFile:
         summary['file-name'] = args.inputFile
@@ -374,6 +377,9 @@ def main():
     # Generate time series file
     accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
 
+    # Record git hash used for this processing 
+    summary['git-hash'] = str(subprocess.check_output(["git", "describe"]).strip())
+   
     # Print short summary
     accelerometer.accUtils.toScreen("=== Short summary ===")
     summaryVals = ['file-name', 'file-startTime', 'file-endTime',
