@@ -42,8 +42,8 @@ This may take a few minutes. When done, there will be four files (default in the
 
 To visualise the time output:
 ::
-  $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
-    <output plot written to data/sample-plot.png>
+  $ python3 accPlot.py data/sample-timeSeries.csv.gz
+    <output plot written to data/sample-timeSeries-plot.png>
 
 .. figure:: samplePlot.png
 
@@ -254,9 +254,9 @@ Scientific Reports paper:
 
 To visualise the time series and new activity classification output:
 ::
-    $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png \
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz \
         --activityModel activityModels/willetts2018-apr20Update.tar
-    <output plot written to data/sample-plot.png>
+    <output plot written to data/sample-timeSeries-plot.png>
 
 .. figure:: samplePlotWilletts.png
     

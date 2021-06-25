@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import numpy as np
+import os
 import pandas as pd
 import sys
 
@@ -37,7 +38,7 @@ def main():
     # required
     parser.add_argument('timeSeriesFile', metavar='input file', type=str,
                             help="input .csv.gz time series file to plot")
-    parser.add_argument('plotFile', metavar='output file', type=str,
+    parser.add_argument('--plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/walmsley-nov20.tar",
@@ -61,13 +62,20 @@ def main():
                             image (default : %(default)s)""")
 
     # check input is ok
-    if len(sys.argv) < 3:
-        msg = "\nInvalid input, please enter at least 2 parameters, e.g."
-        msg += "\npython accPlot.py timeSeries.csv.gz plot.png \n"
+    if len(sys.argv) < 2:
+        msg = "\nInvalid input, please enter at least 1 parameter, e.g."
+        msg += "\npython accPlot.py timeSeries.csv.gz \n"
         accUtils.toScreen(msg)
         parser.print_help()
         sys.exit(-1)
     args = parser.parse_args()
+
+    # determine output file name
+    if args.plotFile == None:
+        inputFileFolder, inputFileName = os.path.split(args.timeSeriesFile)
+        inputFileName = inputFileName.split('.')[0]  # remove any extension
+        args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
+    
 
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
