@@ -55,6 +55,10 @@ def main():
                             type=float, help="""Proportion of plot labels take
                             if activity classification during imputed
                             period will be displayed (default : %(default)s)""")
+    parser.add_argument('--showFileName',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Toggle showing filename as title in output
+                            image (default : %(default)s)""")
 
     # check input is ok
     if len(sys.argv) < 3:
@@ -70,7 +74,8 @@ def main():
         activityModel=args.activityModel,
         useRecommendedImputation=args.useRecommendedImputation,
         imputedLabels=args.imputedLabels,
-        imputedLabelsHeight=args.imputedLabelsHeight)
+        imputedLabelsHeight=args.imputedLabelsHeight,
+        showFileName=args.showFileName)
 
 
 
@@ -80,6 +85,7 @@ def plotTimeSeries(
         activityModel="activityModels/walmsley-nov20.tar",
         useRecommendedImputation=True,
         imputedLabels=False,
+        showFileName=False,
         imputedLabelsHeight=0.9):
     """Plot overall activity and classified activity types
 
@@ -92,6 +98,7 @@ def plotTimeSeries(
         will be displayed
     :param float imputedLabelsHeight: Proportion of plot labels take up if
         <imputedLabels> is True
+    :param float showFileName: Toggle showing filename as title in output image
 
     :return: Writes plot to <plotFile>
     :rtype: void
@@ -144,7 +151,8 @@ def plotTimeSeries(
 
     # create overall figure
     fig = plt.figure(1, figsize=(10,nrows), dpi=100)
-    fig.canvas.set_window_title(tsFile)
+    if showFileName:
+        plt.suptitle(tsFile)
 
     # create individual plot for each day
     i = 0
