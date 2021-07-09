@@ -23,7 +23,8 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     verbose=False,
     csvStartTime=None, csvSampleRate=None,
     csvTimeFormat="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
-    csvStartRow=1, csvTimeXYZColsIndex=None):
+    csvStartRow=1, csvTimeXYZColsIndex=None,
+    javaClassPath='java'):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -64,6 +65,7 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     :param str csvTimeFormat: time format for csv file when time column is available
     :param int csvStartRow: start row for accelerometer data in csv file
     :param str csvTimeXYZColsIndex: index of column positions for XYZT columns, e.g. "1,2,3,0"
+    :param str javaClassPath: path to java class, by default "java"
 
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
@@ -79,7 +81,7 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     summary['file-size'] = os.path.getsize(inputFile)
     summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
-    javaClassPath = "java:java/JTransforms-3.1-with-dependencies.jar"
+    javaClassPath = "{jcp}:{jcp}/JTransforms-3.1-with-dependencies.jar".format(jcp=javaClassPath)
     staticStdG = stationaryStd / 1000.0 #java expects units of G (not mg)
 
     if xyzIntercept != [0, 0 ,0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
