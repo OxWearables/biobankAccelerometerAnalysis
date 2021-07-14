@@ -407,3 +407,13 @@ The underlying modules can also be called in custom python scripts:
         "data/sample-epoch.csv.gz", "data/sample-nonWear.csv.gz", summary)
     # <nonWear file written to "data/sample-nonWear.csv.gz" and dict "summary" \
     #    updated with outcomes>
+
+To plot just the first few days of a time series file (e.g. n=3):
+::
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz --showFirstNDays 3
+
+To show the file name in the plot of a time series file:
+::
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz --showFileName True
+
+

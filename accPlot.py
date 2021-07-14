@@ -60,6 +60,9 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Toggle showing filename as title in output
                             image (default : %(default)s)""")
+    parser.add_argument('--showFirstNDays',
+                            metavar='days', default=None,
+                            type=int, help="Show just first n days")
 
     # check input is ok
     if len(sys.argv) < 2:
@@ -79,6 +82,7 @@ def main():
 
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
+        showFirstNDays=args.showFirstNDays,
         activityModel=args.activityModel,
         useRecommendedImputation=args.useRecommendedImputation,
         imputedLabels=args.imputedLabels,
@@ -90,6 +94,7 @@ def main():
 def plotTimeSeries(
         tsFile,
         plotFile,
+        showFirstNDays=None,
         activityModel="activityModels/walmsley-nov20.tar",
         useRecommendedImputation=True,
         imputedLabels=False,
@@ -99,6 +104,7 @@ def plotTimeSeries(
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
+    :param int showFirstNDays: Only show first n days of time series (if specified)
     :param str activityModel: Input tar model file used for activity classification
     :param bool useRecommendedImputation: Highly recommended method to show
         imputed values for missing data
@@ -122,6 +128,9 @@ def plotTimeSeries(
         tsFile, index_col='time',
         parse_dates=['time'], date_parser=accUtils.date_parser
     )
+    if showFirstNDays is not None:
+        d = d.first(str(showFirstNDays) + 'D')
+
     d['acc'] = d['acc'].rolling(window=12, min_periods=1).mean() # smoothing
     d['time'] = d.index.time
     ymin = d['acc'].min()
