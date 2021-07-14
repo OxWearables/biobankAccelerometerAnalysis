@@ -71,7 +71,7 @@ def main():
     args = parser.parse_args()
 
     # determine output file name
-    if args.plotFile == None:
+    if args.plotFile is None:
         inputFileFolder, inputFileName = os.path.split(args.timeSeriesFile)
         inputFileName = inputFileName.split('.')[0]  # remove any extension
         args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
