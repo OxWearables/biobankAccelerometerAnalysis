@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import numpy as np
+import os
 import pandas as pd
 import sys
 
@@ -37,7 +38,7 @@ def main():
     # required
     parser.add_argument('timeSeriesFile', metavar='input file', type=str,
                             help="input .csv.gz time series file to plot")
-    parser.add_argument('plotFile', metavar='output file', type=str,
+    parser.add_argument('--plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
     parser.add_argument('--activityModel', type=str,
                             default="activityModels/walmsley-nov20.tar",
@@ -55,36 +56,55 @@ def main():
                             type=float, help="""Proportion of plot labels take
                             if activity classification during imputed
                             period will be displayed (default : %(default)s)""")
+    parser.add_argument('--showFileName',
+                            metavar='True/False', default=False, type=str2bool,
+                            help="""Toggle showing filename as title in output
+                            image (default : %(default)s)""")
+    parser.add_argument('--showFirstNDays',
+                            metavar='days', default=None,
+                            type=int, help="Show just first n days")
 
     # check input is ok
-    if len(sys.argv) < 3:
-        msg = "\nInvalid input, please enter at least 2 parameters, e.g."
-        msg += "\npython accPlot.py timeSeries.csv.gz plot.png \n"
+    if len(sys.argv) < 2:
+        msg = "\nInvalid input, please enter at least 1 parameter, e.g."
+        msg += "\npython accPlot.py timeSeries.csv.gz \n"
         accUtils.toScreen(msg)
         parser.print_help()
         sys.exit(-1)
     args = parser.parse_args()
 
+    # determine output file name
+    if args.plotFile is None:
+        inputFileFolder, inputFileName = os.path.split(args.timeSeriesFile)
+        inputFileName = inputFileName.split('.')[0]  # remove any extension
+        args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
+    
+
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
+        showFirstNDays=args.showFirstNDays,
         activityModel=args.activityModel,
         useRecommendedImputation=args.useRecommendedImputation,
         imputedLabels=args.imputedLabels,
-        imputedLabelsHeight=args.imputedLabelsHeight)
+        imputedLabelsHeight=args.imputedLabelsHeight,
+        showFileName=args.showFileName)
 
 
 
 def plotTimeSeries(
         tsFile,
         plotFile,
+        showFirstNDays=None,
         activityModel="activityModels/walmsley-nov20.tar",
         useRecommendedImputation=True,
         imputedLabels=False,
+        showFileName=False,
         imputedLabelsHeight=0.9):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
+    :param int showFirstNDays: Only show first n days of time series (if specified)
     :param str activityModel: Input tar model file used for activity classification
     :param bool useRecommendedImputation: Highly recommended method to show
         imputed values for missing data
@@ -92,6 +112,7 @@ def plotTimeSeries(
         will be displayed
     :param float imputedLabelsHeight: Proportion of plot labels take up if
         <imputedLabels> is True
+    :param float showFileName: Toggle showing filename as title in output image
 
     :return: Writes plot to <plotFile>
     :rtype: void
@@ -107,6 +128,9 @@ def plotTimeSeries(
         tsFile, index_col='time',
         parse_dates=['time'], date_parser=accUtils.date_parser
     )
+    if showFirstNDays is not None:
+        d = d.first(str(showFirstNDays) + 'D')
+
     d['acc'] = d['acc'].rolling(window=12, min_periods=1).mean() # smoothing
     d['time'] = d.index.time
     ymin = d['acc'].min()
@@ -144,7 +168,8 @@ def plotTimeSeries(
 
     # create overall figure
     fig = plt.figure(1, figsize=(10,nrows), dpi=100)
-    fig.canvas.set_window_title(tsFile)
+    if showFileName:
+        plt.suptitle(tsFile)
 
     # create individual plot for each day
     i = 0

@@ -42,8 +42,8 @@ This may take a few minutes. When done, there will be four files (default in the
 
 To visualise the time output:
 ::
-  $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
-    <output plot written to data/sample-plot.png>
+  $ python3 accPlot.py data/sample-timeSeries.csv.gz
+    <output plot written to data/sample-timeSeries-plot.png>
 
 .. figure:: samplePlot.png
 
@@ -254,9 +254,9 @@ Scientific Reports paper:
 
 To visualise the time series and new activity classification output:
 ::
-    $ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png \
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz \
         --activityModel activityModels/willetts2018-apr20Update.tar
-    <output plot written to data/sample-plot.png>
+    <output plot written to data/sample-timeSeries-plot.png>
 
 .. figure:: samplePlotWilletts.png
     
@@ -407,3 +407,13 @@ The underlying modules can also be called in custom python scripts:
         "data/sample-epoch.csv.gz", "data/sample-nonWear.csv.gz", summary)
     # <nonWear file written to "data/sample-nonWear.csv.gz" and dict "summary" \
     #    updated with outcomes>
+
+To plot just the first few days of a time series file (e.g. n=3):
+::
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz --showFirstNDays 3
+
+To show the file name in the plot of a time series file:
+::
+    $ python3 accPlot.py data/sample-timeSeries.csv.gz --showFileName True
+
+

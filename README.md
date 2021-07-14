@@ -61,8 +61,8 @@ The main JSON output will look like:
 
 To visualise the time series and activity classification output:
 ```
-$ python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
- <output plot written to data/sample-plot.png>
+$ python3 accPlot.py data/sample-timeSeries.csv.gz
+ <output plot written to data/sample-timeSeries-plot.png>
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
