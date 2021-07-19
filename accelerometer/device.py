@@ -468,8 +468,8 @@ def getAxivityDeviceId(cwaFile):
         f = gzip.open(cwaFile,'rb')
     header = f.read(2)
     if header == b'MD':
-        # blockSize = struct.unpack('H', f.read(2))[0]
-        # performClear = struct.unpack('B', f.read(1))[0]
+        blockSize = struct.unpack('H', f.read(2))[0]
+        performClear = struct.unpack('B', f.read(1))[0]
         deviceId = struct.unpack('H', f.read(2))[0]
     else:
         print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
