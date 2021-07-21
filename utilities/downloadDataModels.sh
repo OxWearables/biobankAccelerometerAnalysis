@@ -19,13 +19,12 @@ rm activityModels/willetts-jan21.tar
 rm activityModels/walmsley-jan21.tar
 wget ${downloadDir}doherty-may20.tar -P activityModels/ || wget ${downloadDir}doherty-may20.tar -P activityModels/ --no-check-certificate
 wget ${downloadDir}willetts-may20.tar -P activityModels/ || wget ${downloadDir}willetts-may20.tar -P activityModels/ --no-check-certificate
-wget ${downloadDir}walmsley-nov20.tar -P activityModels/ || wget ${downloadDir}willetts-may20.tar -P activityModels/ --no-check-certificate
-wget ${downloadDir}doherty-jan21.tar -P activityModels/ || wget ${downloadDir}willetts-may20.tar -P activityModels/ --no-check-certificate
-wget ${downloadDir}willetts-jan21.tar -P activityModels/ || wget ${downloadDir}willetts-may20.tar -P activityModels/ --no-check-certificate
-wget ${downloadDir}walmsley-jan21.tar -P activityModels/ || wget ${downloadDir}willetts-may20.tar -P activityModels/ --no-check-certificate
+wget ${downloadDir}walmsley-nov20.tar -P activityModels/ || wget ${downloadDir}walmsley-nov20.tar -P activityModels/ --no-check-certificate
+wget ${downloadDir}doherty-jan21.tar -P activityModels/ || wget ${downloadDir}doherty-jan21.tar -P activityModels/ --no-check-certificate
+wget ${downloadDir}willetts-jan21.tar -P activityModels/ || wget ${downloadDir}willetts-jan21.tar -P activityModels/ --no-check-certificate
 
 # download sample training file
 if ! [ -f "activityModels/labelled-acc-epochs.csv" ]
 then
-    wget ${downloadDir}labelled-acc-epochs.csv -P activityModels/
+    wget ${downloadDir}labelled-acc-epochs.csv -P activityModels/ || wget ${downloadDir}labelled-acc-epochs.csv -P activityModels/ --no-check-certificate
 fi
