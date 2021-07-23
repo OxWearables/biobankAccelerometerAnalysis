@@ -76,7 +76,7 @@ public class AccelerometerParser {
     	int numFFTbins = 12; // number of fft bins to print
         // Must supply additional information when loading from a .csv file
     	int csvStartRow = 1;
-    	List<Integer> csvTimeXYZColsIndex = Arrays.asList( 0,1,2 );
+    	List<Integer> csvTimeXYZTempColsIndex = Arrays.asList( 0,1,2,3 );
 
 
 		if (args.length < 1) {
@@ -161,16 +161,17 @@ public class AccelerometerParser {
                 	startTimeStr = funcParam;
 				} else if (funcName.equals("endTime")) {
                 	endTimeStr = funcParam;
-				} else if (funcName.equals("csvTimeXYZColsIndex")) {
-					String[] timeXYZ = funcParam.split(",");
-					if (timeXYZ.length != 4) {
-						System.err.println("error parsing csvTimeXYZColsIndex: "
-                            + timeXYZ.toString() + "\n must be 4 integers");
+				} else if (funcName.equals("csvTimeXYZTempColsIndex")) {
+					String[] timeXYZTemp = funcParam.split(",");
+					if (timeXYZTemp.length != 5 && timeXYZTemp.length != 4) {
+						System.err.println("error parsing csvTimeXYZTempColsIndex: " 
+								+ timeXYZTemp.toString()
+								+ "\n must be 4 or 5 comma separated integers");
 						System.exit(-2);
 					}
-					csvTimeXYZColsIndex = new LinkedList<Integer>();
-					for( int i = 0; i<timeXYZ.length; i++ ) {
-						csvTimeXYZColsIndex.add(Integer.parseInt(timeXYZ[i]));
+					csvTimeXYZTempColsIndex = new LinkedList<Integer>();
+					for( int i = 0; i<timeXYZTemp.length; i++ ) {
+						csvTimeXYZTempColsIndex.add(Integer.parseInt(timeXYZTemp[i]));
 					}
 				} else if (funcName.equals("csvStartRow")) {
 					csvStartRow = Integer.parseInt(funcParam);
@@ -226,7 +227,7 @@ public class AccelerometerParser {
 			} else if (accFile.toLowerCase().endsWith(".csv") ||
                         accFile.toLowerCase().endsWith(".csv.gz") ){
 				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow,
-                    csvTimeXYZColsIndex, csvTimeFormat, verbose);
+                    csvTimeXYZTempColsIndex, csvTimeFormat, verbose);
 			} else {
 				System.err.println("Unrecognised file format for: " + accFile);
 				System.exit(-1);

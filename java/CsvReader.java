@@ -16,12 +16,13 @@ import java.util.zip.GZIPInputStream;
  */
 public class CsvReader extends DeviceReader {
 
+    private static int NO_TEMPERATURE = -99;
 
     public static void readCSVEpochs(
             String accFile,
             EpochWriter epochWriter,
             int csvStartRow,
-            List<Integer> csvTimeXYZColsIndex,
+            List<Integer> csvTimeXYZTempColsIndex,
             DateTimeFormatter csvTimeFormat,
             Boolean verbose) {
 
@@ -40,16 +41,21 @@ public class CsvReader extends DeviceReader {
             String line = "";
             int lineNumber = 0;
             String csvSplitBy = ",";
-            int timeCol = csvTimeXYZColsIndex.get(0);
-            int xCol = csvTimeXYZColsIndex.get(1);
-            int yCol = csvTimeXYZColsIndex.get(2);
-            int zCol = csvTimeXYZColsIndex.get(3);
-            
+            int timeCol = csvTimeXYZTempColsIndex.get(0);
+            int xCol = csvTimeXYZTempColsIndex.get(1);
+            int yCol = csvTimeXYZTempColsIndex.get(2);
+            int zCol = csvTimeXYZTempColsIndex.get(3);
+            int temperatureCol = NO_TEMPERATURE;
+            if (csvTimeXYZTempColsIndex.size() == 5){
+                temperatureCol = csvTimeXYZTempColsIndex.get(4);
+            }
+
             String[] cols;
             long time = Long.MIN_VALUE;
             double x;
             double y;
             double z;
+            double temperature = 0;
             while (true) {
                 line = accReader.readLine();
 
@@ -65,12 +71,15 @@ public class CsvReader extends DeviceReader {
 
                 // read csv line
                 cols = line.split(csvSplitBy);
-                time = getEpochMillis(LocalDateTime.parse(cols[timeCol], 
+                time = getEpochMillis(LocalDateTime.parse(cols[timeCol],
                         csvTimeFormat));
                 x = Double.parseDouble(cols[xCol]);
                 y = Double.parseDouble(cols[yCol]);
                 z = Double.parseDouble(cols[zCol]);
-                epochWriter.newValues(time, x, y, z, 0, new int[] {0});                
+                if (temperatureCol != NO_TEMPERATURE){
+                    temperature = Double.parseDouble(cols[temperatureCol]);
+                }
+                epochWriter.newValues(time, x, y, z, temperature, new int[] {0});
             }
 
         } catch (Exception excep) {

@@ -23,7 +23,7 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     verbose=False,
     csvStartTime=None, csvSampleRate=None,
     csvTimeFormat="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
-    csvStartRow=1, csvTimeXYZColsIndex=None):
+    csvStartRow=1, csvTimeXYZTempColsIndex=None):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -63,7 +63,7 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     :param float csvSampleRate: sample rate for csv file when time column is not available
     :param str csvTimeFormat: time format for csv file when time column is available
     :param int csvStartRow: start row for accelerometer data in csv file
-    :param str csvTimeXYZColsIndex: index of column positions for XYZT columns, e.g. "1,2,3,0"
+    :param str csvTimeXYZTempColsIndex: index of column positions for XYZT columns, e.g. "1,2,3,0"
 
     :return: Raw processing summary values written to dict <summary>
     :rtype: void
@@ -113,9 +113,9 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
                 commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
             if csvStartRow is not None:
                 commandArgs.append("csvStartRow:" + str(csvStartRow))
-            if csvTimeXYZColsIndex:
-                javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZColsIndex])
-                commandArgs.append("csvTimeXYZColsIndex:" + javaStrCsvTXYZ)
+            if csvTimeXYZTempColsIndex:
+                javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZTempColsIndex])
+                commandArgs.append("csvTimeXYZTempColsIndex:" + javaStrCsvTXYZ)
             # call process to identify stationary epochs
             exitCode = call(commandArgs)
             if exitCode != 0:
@@ -178,9 +178,9 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
             commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
         if csvStartRow:
             commandArgs.append("csvStartRow:" + str(csvStartRow))
-        if csvTimeXYZColsIndex:
-            javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZColsIndex])
-            commandArgs.append("csvTimeXYZColsIndex:" + javaStrCsvTXYZ)
+        if csvTimeXYZTempColsIndex:
+            javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZTempColsIndex])
+            commandArgs.append("csvTimeXYZTempColsIndex:" + javaStrCsvTXYZ)
         exitCode = call(commandArgs)
         if exitCode != 0:
             print(commandArgs)

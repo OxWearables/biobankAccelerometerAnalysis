@@ -13,7 +13,6 @@ import pandas as pd
 import atexit
 import warnings
 
-
 def main():
     """
     Application entry point responsible for parsing command line requests
@@ -100,11 +99,11 @@ def main():
                             metavar='start row', default=1, type=int,
                             help="""start row for accelerometer data in csv file (default
                              : %(default)s, must be an integer)""")
-    parser.add_argument('--csvTimeXYZColsIndex',
-                            metavar=('time', 'x', 'y', 'z'), nargs=4,
-                            default=[0,1,2,3],
-                            type=int, help="""index of column positions for time
-                            and x/y/z columns, e.g. "0,1,2,3" (default
+    parser.add_argument('--csvTimeXYZTempColsIndex',
+                            metavar='time,x,y,z,temperature',
+                            default="0,1,2,3,4", type=str,
+                            help="""index of column positions for time
+                            and x/y/z/temperature columns, e.g. "0,1,2,3,4" (default
                              : %(default)s)""")
     # optional outputs
     parser.add_argument('--rawOutput',
@@ -246,7 +245,6 @@ def main():
         warnings.warn("Skipping lowpass filter (--useFilter False) as sampleRate too low (<= 40)")
         args.useFilter = False
 
-
     processingStartTime = datetime.datetime.now()
 
     ##########################
@@ -353,7 +351,7 @@ def main():
             startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
             csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
             csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-            csvTimeXYZColsIndex=args.csvTimeXYZColsIndex)
+            csvTimeXYZTempColsIndex=list(map(int, args.csvTimeXYZTempColsIndex.split(','))))
     else:
         summary['file-name'] = args.epochFile
 
