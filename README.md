@@ -95,7 +95,7 @@ to extract overall activity from your accelerometer data, please cite [Doherty20
 
 When using this tool to extract sleep duration and physical activity behaviours
 from your accelerometer data, please cite [Willetts2018], [Doherty2018], and 
-[Walmsley2020]
+[Walmsley2021]
 
 ```
 [Doherty2017] Doherty A, Jackson D, et al. (2017) 
@@ -106,14 +106,14 @@ accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
 Statistical machine learning of sleep and physical activity phenotypes from 
 sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
 
-[Doherty2018] Doherty A, Smith-Bryne K, et al. (2018) 
+[Doherty2018] Doherty A, Smith-Byrne K, et al. (2018) 
 GWAS identifies 14 loci for device-measured physical activity and sleep 
 duration. Nature Communications. 9(1):5257
 
-[Walmsley2020] Walmsley R, Chan S, et al. (2020)
-Reallocating time from machine-learned sleep, sedentary behaviour or light 
-physical activity to moderate-to-vigorous physical activity is associated with 
-lower cardiovascular disease risk (preprint https://doi.org/10.1101/2020.11.10.20227769)
+[Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021)
+Reallocation of time between device-measured movement behaviours and risk 
+of incident cardiovascular disease. British Journal of Sports Medicine.
+Published Online First. doi: 10.1136/bjsports-2021-104050
 ```
 
 ###### Licence
