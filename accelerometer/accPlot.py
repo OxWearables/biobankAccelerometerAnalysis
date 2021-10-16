@@ -41,7 +41,7 @@ def main():
     parser.add_argument('--plotFile', metavar='output file', type=str,
                             help="output .png file to plot to")
     parser.add_argument('--activityModel', type=str,
-                            default="activityModels/walmsley-nov20.tar",
+                            default="walmsley",
                             help="""trained activity model .tar file""")
     parser.add_argument('--useRecommendedImputation',
                             metavar='True/False', default=True, type=str2bool,
@@ -78,7 +78,7 @@ def main():
         inputFileFolder, inputFileName = os.path.split(args.timeSeriesFile)
         inputFileName = inputFileName.split('.')[0]  # remove any extension
         args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
-    
+
 
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
@@ -95,7 +95,7 @@ def plotTimeSeries(
         tsFile,
         plotFile,
         showFirstNDays=None,
-        activityModel="activityModels/walmsley-nov20.tar",
+        activityModel="walmsley",
         useRecommendedImputation=True,
         imputedLabels=False,
         showFileName=False,

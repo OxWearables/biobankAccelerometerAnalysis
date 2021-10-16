@@ -1,6 +1,7 @@
 """Module to support machine learning of activity states from acc data"""
 
 from accelerometer import accUtils
+from accelerometer.models import MODELS
 from io import BytesIO
 import numpy as np
 import os
@@ -12,10 +13,13 @@ from sklearn.metrics import confusion_matrix
 import joblib
 import tarfile
 import warnings
+import urllib
+import pathlib
+import shutil
 
 
-def activityClassification(epochFile,
-    activityModel="activityModels/walmsley-nov20.tar"):
+
+def activityClassification(epochFile, activityModel="walmsley"):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -34,6 +38,8 @@ def activityClassification(epochFile,
     :return: Activity state labels
     :rtype: list(str)
     """
+
+    activityModel = resolveModelPath(activityModel)
 
     X = epochFile
     featureColsFile = getFileFromTar(activityModel, 'featureCols.txt').getvalue()
@@ -362,18 +368,18 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     d_summary['accuracy'] = pIDAccuracy
     # print out values to html string
     kappaSDHTML = "Mean Kappa (SD) = "
-    kappaSDHTML += accUtils.meanSDstr(d_summary['kappa'].mean(), 
+    kappaSDHTML += accUtils.meanSDstr(d_summary['kappa'].mean(),
         d_summary['kappa'].std(), 2)
-    accuracySDHTML = "Mean accuracy (SD) = " 
-    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean()*100, 
+    accuracySDHTML = "Mean accuracy (SD) = "
+    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean()*100,
         d_summary['accuracy'].std()*100, 1) + ' %'
-    kappaCIHTML = "Mean Kappa (95% CI) = " 
-    kappaCIHTML += accUtils.meanCIstr(d_summary['kappa'].mean(), 
+    kappaCIHTML = "Mean Kappa (95% CI) = "
+    kappaCIHTML += accUtils.meanCIstr(d_summary['kappa'].mean(),
         d_summary['kappa'].std(), len(d_summary), 2)
-    accuracyCIHTML = "Mean accuracy (95% CI) = " 
-    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean()*100, 
+    accuracyCIHTML = "Mean accuracy (95% CI) = "
+    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean()*100,
         d_summary['accuracy'].std()*100, len(d_summary), 1) + ' %'
-    
+
     # get confusion matrix to pandas dataframe
     y_true = dfParam[yTrueCol]
     y_pred = dfParam[yPredCol]
@@ -381,7 +387,7 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     cnf_matrix = confusion_matrix(y_true, y_pred, labels)
     df_confusion = pd.DataFrame(data=cnf_matrix, columns=labels, index=labels)
     confusionHTML = df_confusion.to_html()
-    
+
     # construct final output string
     htmlStr = '<html><head><title>Classification summary</title></head><body>'
     htmlStr += kappaSDHTML + '<br>\n' + accuracySDHTML + '<br><br>\n'
@@ -484,11 +490,11 @@ def addReferenceLabelsToNewFeatures(
     """Append reference annotations to newly extracted feature data
 
     This method helps add existing curated labels (from referenceLabelsFile)
-    to a file with newly extracted features (both pre-sorted by participant 
+    to a file with newly extracted features (both pre-sorted by participant
     and time).
 
     :param str featuresFile: Input csv file of new features data, pre-sorted by time
-    :param str referenceLabelsFile: Input csv file of reference labelled data, 
+    :param str referenceLabelsFile: Input csv file of reference labelled data,
         pre-sorted by time
     :param str outputFile: Output csv file of new features data with refernce labels
     :param str featuresTxt: Input txt file listing feature column names
@@ -497,13 +503,13 @@ def addReferenceLabelsToNewFeatures(
     :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
         vs. 'walking'
     :param str metCol: Input MET column
-    
+
     :return: New csv file written to <outputFile>
     :rtype: void
 
     :Example:
     >>> from accelerometer import accClassification
-    >>> accClassification.addReferenceLabelsToNewFeatures("newFeats.csv", 
+    >>> accClassification.addReferenceLabelsToNewFeatures("newFeats.csv",
             "refLabels.csv", "newFeatsPlusLabels.csv")
     <file written to newFeatsPlusLabels.csv>
     """
@@ -511,10 +517,10 @@ def addReferenceLabelsToNewFeatures(
     # load new features file
     featureCols = getListFromTxtFile(featuresTxt)
     dFeat = pd.read_csv(featuresFile, usecols=featureCols+[participantCol, 'time'])
-    
+
     # load in reference annotations file
-    refCols = [participantCol, 'age', 'sex', 'time', atomicLabelCol, labelCol, 
-                'code', metCol, 'MET_label'] 
+    refCols = [participantCol, 'age', 'sex', 'time', atomicLabelCol, labelCol,
+                'code', metCol, 'MET_label']
     dRef = pd.read_csv(referenceLabelsFile, usecols=refCols)
 
     # join dataframes
@@ -559,3 +565,32 @@ def getListFromTxtFile(inputFile):
         items.append(l.strip())
     f.close()
     return items
+
+
+
+def resolveModelPath(pathOrModelName):
+
+    if pathlib.Path(pathOrModelName).exists():
+        return pathOrModelName
+
+    else:
+        model = MODELS.get(pathOrModelName, None)
+        if model is None:
+            raise FileNotFoundError(f"Model file {pathOrModelName} not found")
+        if model["pth"].exists():
+            return model["pth"]
+        else:
+            return downloadModel(model)
+
+
+
+def downloadModel(model):
+    url = model["url"]
+    pth = model["pth"]
+
+    print(f"Downloading {url}...")
+
+    with urllib.request.urlopen(url) as f_src, open(pth, "wb") as f_dst:
+        shutil.copyfileobj(f_src, f_dst)
+
+    return pth
