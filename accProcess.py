@@ -161,6 +161,10 @@ def main():
                             metavar='True/False', default=False, type=str2bool,
                             help="""Save intensity distribution
                              (default : %(default)s)""")
+    parser.add_argument('--intensityDistributionVals',
+                             metavar = "values of intensity distribution", default= "accelerometer/intensityVals.txt", type=str, nargs ='*',
+                            help="""Intensity distribution values
+                            (default : %(default)s)""")
     parser.add_argument('--useRecommendedImputation',
                             metavar='True/False', default=True, type=str2bool,
                             help="""Highly recommended method to impute missing
@@ -363,7 +367,7 @@ def main():
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
         mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
-        intensityDistribution=args.intensityDistribution,
+        intensityDistribution=args.intensityDistribution, intensityDistributionVals = args.intensityDistributionVals, 
         useRecommendedImputation=args.useRecommendedImputation,
         psd=args.psd, fourierFrequency=args.fourierFrequency,
         fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
