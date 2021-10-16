@@ -8,80 +8,81 @@
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
 ## Installation
-Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
-```
-$ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
-$ cd biobankAccelerometerAnalysis
-$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
-$ pip install --upgrade pip # Upgrades pip version if required
-$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
-$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
-$ 
-$ # Now to install the package, run: 
-$ pip3 install --user . 
-```
-Note for developers: If you are actively developing the package, you may wish to skip the installation step.
 
-## Keeping up to date 
-`biobankAccelerometerAnalysis` is regularly updated (e.g. a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages). To install the most recent version with the most recent set of dependencies: 
+```bash
+pip install accelerometer
 ```
-$ git pull
-$ cd biobankAccelerometerAnalysis
-$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
-$ pip install --upgrade pip # Upgrades pip version if required
-$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
-$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
-$ 
-$ # Now to install the package, run: 
-$ pip3 install --user . 
+
+You also need Java 8 (1.8.0) or greater. Check with the following:
+
+```bash
+java -version
 ```
+
+You can try the following to check if everything works properly:
+```bash
+# Create an isolated environment
+$ mkdir test_baa/ ; cd test_baa/
+$ python -m venv baa
+$ source baa/bin/activate
+
+# Install and test
+$ pip install accelerometer
+$ wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz  # download a sample file
+$ accProcess data/sample.cwa.gz
+$ accPlot data/sample-timeSeries.csv.gz
+```
+
 
 ## Usage
 To extract a summary of movement (average sample vector magnitude) and
 (non)wear time from raw Axivity .CWA (or gzipped .cwa.gz) accelerometer files:
 
-```
-$ python3 accProcess.py data/sample.cwa.gz
+```bash
+$ accProcess data/sample.cwa.gz
+
  <output written to data/sample-outputSummary.json>
  <time series output written to data/sample-timeSeries.csv.gz>
 ```
 
 The main JSON output will look like:
-```
+```json
 {
-    "file-name": "sample.cwa.gz", 
-    "file-startTime": "2014-05-07 13:29:50", 
-    "file-endTime": "2014-05-13 09:49:50", 
-    "acc-overall-avg(mg)": 32.78149, 
-    "wearTime-overall(days)": 5.8, 
+    "file-name": "sample.cwa.gz",
+    "file-startTime": "2014-05-07 13:29:50",
+    "file-endTime": "2014-05-13 09:49:50",
+    "acc-overall-avg(mg)": 32.78149,
+    "wearTime-overall(days)": 5.8,
     "nonWearTime-overall(days)": 0.04,
     "quality-goodWearTime": 1
 }
 ```
 
 To visualise the time series and activity classification output:
-```
-$ python3 accPlot.py data/sample-timeSeries.csv.gz
+```bash
+$ accPlot data/sample-timeSeries.csv.gz
  <output plot written to data/sample-timeSeries-plot.png>
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
-The underlying modules can also be called in custom python scripts:
+You can also import the underlying modules to use in your custom python scripts:
 ```Python
-    from accelerometer import summariseEpoch
-    summary = {}
-    epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz", 
-            "sample-nonWear.csv.gz", summary)
-    # <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
-    # with outcomes>
+from accelerometer import summariseEpoch
+summary = {}
+epochData, labels = summariseEpoch.getActivitySummary(
+    "sample-epoch.csv.gz",
+    "sample-nonWear.csv.gz",
+    summary)
+# <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
+# with outcomes>
 ```
 
 ## Under the hood
-Interpreted levels of physical activity can vary, as many approaches can be 
-taken to extract summary physical activity information from raw accelerometer 
-data. To minimise error and bias, our tool uses published methods to calibrate, 
-resample, and summarise the accelerometer data. [Click here for detailed 
-information on the 
+Interpreted levels of physical activity can vary, as many approaches can be
+taken to extract summary physical activity information from raw accelerometer
+data. To minimise error and bias, our tool uses published methods to calibrate,
+resample, and summarise the accelerometer data. [Click here for detailed
+information on the
 data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html)
 
 ![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
@@ -90,31 +91,26 @@ data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/
 
 
 ## Citing our work
-When describing or using the UK Biobank accelerometer dataset, or using this tool
-to extract overall activity from your accelerometer data, please cite [Doherty2017].
+When describing or using the *UK Biobank accelerometer dataset*, please cite [Doherty2017].
+When using *this tool* to extract sleep duration and physical activity behaviours from your accelerometer data, please cite:
 
-When using this tool to extract sleep duration and physical activity behaviours
-from your accelerometer data, please cite [Willetts2018], [Doherty2018], and 
-[Walmsley2021]
 
-```
-[Doherty2017] Doherty A, Jackson D, et al. (2017) 
-Large scale population assessment of physical activity using wrist worn 
+1. [Doherty2017] Doherty A, Jackson D, et al. (2017)
+Large scale population assessment of physical activity using wrist worn
 accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
 
-[Willetts2018] Willetts M, Hollowell S, et al. (2018) 
-Statistical machine learning of sleep and physical activity phenotypes from 
+1. [Willetts2018] Willetts M, Hollowell S, et al. (2018)
+Statistical machine learning of sleep and physical activity phenotypes from
 sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
 
-[Doherty2018] Doherty A, Smith-Byrne K, et al. (2018) 
-GWAS identifies 14 loci for device-measured physical activity and sleep 
+1. [Doherty2018] Doherty A, Smith-Byrne K, et al. (2018)
+GWAS identifies 14 loci for device-measured physical activity and sleep
 duration. Nature Communications. 9(1):5257
 
-[Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021)
-Reallocation of time between device-measured movement behaviours and risk 
+1. [Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021)
+Reallocation of time between device-measured movement behaviours and risk
 of incident cardiovascular disease. British Journal of Sports Medicine.
-Published Online First. doi: 10.1136/bjsports-2021-104050
-```
+Published Online First. DOI: 10.1136/bjsports-2021-104050
 
 ###### Licence
 This project is released under a [BSD 2-Clause Licence](http://opensource.org/licenses/BSD-2-Clause) (see LICENCE file)
