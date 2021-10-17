@@ -1,0 +1,36 @@
+name: junit
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  junit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: accelerometer/java/
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup java
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Compile java files
+        run: javac -cp JTransforms-3.1-with-dependencies.jar *.java
+
+      - name: Download Junit
+        run: wget -O junit.jar https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.6.0/junit-platform-console-standalone-1.6.0.jar
+
+      - name: Compile tests
+        run: javac -cp .:Tests:junit.jar Tests/*.java
+
+      - name: Run tests
+        run: java -jar junit.jar -cp . --scan-class-path
+
+
