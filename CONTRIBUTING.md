@@ -6,17 +6,34 @@ First off, thank you for taking the time to contribute! :+1: :tada:
 
 ### Table of Contents
 
+* [Installation for developers](#installation-for-developers)
 * [How to Contribute](#how-to-contribute)
     * [Create an Issue](#create-an-issue)
     * [Submit a Pull Request](#submit-a-pull-request)
     * [Participate in Reviews](#participate-in-reviews)
     * [Keep Calm and Drink Tea](#keep-calm-and-drink-tea)
 * [Source Code Style](#source-code-style)
+* [Packaging (maintainers only)](#packaging-maintainers-only)
 * [Fork and Pull Request Workflow](#fork-and-pull-request-workflow)
     * [Setup](#workflow)
     * [Workflow](#workflow)
     * [Tips](#tips)
 * [References](#references)
+
+### Installation for developers
+If you previously installed the package from PyPI using the general user instructions (`pip install acceleromter`), then either uninstall it or create a new virtual environment.
+
+As you will be editing and testing the code, pull the latest version from the repository and install it in editable mode (`--editable`):
+
+```bash
+$ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
+$ cd biobankAccelerometerAnalysis/
+$ javac -cp accelerometer/java/JTransforms-3.1-with-dependencies.jar accelerometer/java/*.java
+$ pip install --editable .
+```
+
+The `--editable` flag makes sure changes in `biobankAccelerometerAnalysis/` get reflected in the Python environment.
+
 
 ### How to Contribute
 
@@ -88,6 +105,62 @@ use camelCase for Python too. This is a spillover from Java as the codebase
 was mostly Java-based in the beginning (and still is for many important parts). Finally, we recommend that you use a
 Python linter (e.g. [flake8](https://flake8.pycqa.org/en/latest/)) -- this will
 help you follow standard [Python coding style](https://www.python.org/dev/peps/pep-0008/).
+
+
+### Packaging (maintainers only)
+
+#### Requirements
+- [setuptools](https://pypi.org/project/setuptools/)
+- [twine](https://pypi.org/project/twine/)
+- [PyPI](https://pypi.org/) and [TestPyPI](https://test.pypi.org/) accounts
+- [Anaconda](https://anaconda.org/) account
+
+#### Packaging for PyPI
+
+##### Build
+```bash
+# Compile java files. The *.class files will be shipped so that users don't need to do this
+$ javac -cp accelerometer/java/JTransforms-3.1-with-dependencies.jar accelerometer/java/*.java
+# Build
+$ python setup.py sdist bdist_wheel
+# Run some checks
+$ twine check dist/*
+```
+
+##### Publish
+
+```bash
+# First upload to the test repository TestPyPI
+$ twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+# Test that installation works
+$ mkdir test_install/ ; cd test_install/
+$ python -m venv env ; source env/bin/activate
+$ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ accelerometer
+# If everything worked, then go back
+$ deactivate ; cd -
+
+# Finally, upload for real
+$ twine upload dist/*
+```
+
+#### Packaging for Conda
+This is easier to start from an existing PyPI package, so *publish on PyPI first*.
+
+```bash
+# Prepare build
+$ conda skeleton pypi accelerometer --output-dir conda-recipe
+# Build
+$ conda build conda-recipe/accelerometer
+# Publish
+anaconda login
+anaconda upload --user oxwear /path/to/package.tar.bz2
+```
+
+#### Versioning
+The package version is set with the `version=...` argument in the `setup.py` script. A standard format is [`MAJOR.MINOR.PATCH`](https://semver.org/).
+
+*Important:* Neither PyPI nor even TestPyPI will let you upload a package with a version that already exists. When uploading to TestPyPI, you could use one more level, e.g. `4.0.1.0`, `4.0.1.1`, ... for TestPyPI and `4.0.1` for the final upload to PyPI. Double-check `version=...` in `setup.py` before the final upload as it cannot be reversed.
 
 ### Fork and Pull Request Workflow
 
