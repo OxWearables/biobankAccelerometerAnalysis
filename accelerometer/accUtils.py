@@ -173,7 +173,7 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
         for i, row in fileList.iterrows():
 
             cmd = [
-                'python3 accProcess.py "{:s}"'.format(os.path.join(accDir, row['fileName'])),
+                'accProcess "{:s}"'.format(os.path.join(accDir, row['fileName'])),
                 '--summaryFolder "{:s}"'.format(summaryDir),
                 '--epochFolder "{:s}"'.format(epochDir),
                 '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
