@@ -14,7 +14,8 @@ import pathlib
 ROOT_DIR = pathlib.Path(__file__).parent
 
 
-def processInputFileToEpoch(inputFile, timeZone, timeShift,
+def processInputFileToEpoch(  # noqa: C901
+    inputFile, timeZone, timeShift,
     epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
     xyzSlope=[1.0, 1.0, 1.0], xyzTemp=[0.0, 0.0, 0.0], meanTemp=20.0,
@@ -26,7 +27,8 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     verbose=False,
     csvStartTime=None, csvSampleRate=None,
     csvTimeFormat="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
-    csvStartRow=1, csvTimeXYZTempColsIndex=None):
+    csvStartRow=1, csvTimeXYZTempColsIndex=None
+):
     """Process raw accelerometer file, writing summary epoch stats to file
 
     This is usually achieved by
@@ -83,7 +85,7 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
     javaClassPath = f"{ROOT_DIR}/java/:{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
-    staticStdG = stationaryStd / 1000.0 #java expects units of G (not mg)
+    staticStdG = stationaryStd / 1000.0  # java expects units of G (not mg)
 
     if xyzIntercept != [0, 0, 0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
         skipCalibration = True
@@ -97,15 +99,15 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
             # identify 10sec stationary epochs
             accUtils.toScreen("=== Calibrating ===")
             commandArgs = ["java", "-classpath", javaClassPath,
-                "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
-                "timeZone:" + timeZone,
-                "timeShift:" + str(timeShift),
-                "outputFile:" + stationaryFile,
-                "verbose:" + str(verbose),
-                "filter:"+str(useFilter),
-                "getStationaryBouts:true", "epochPeriod:10",
-                "stationaryStd:" + str(staticStdG),
-                "sampleRate:" + str(sampleRate)]
+                           "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
+                           "timeZone:" + timeZone,
+                           "timeShift:" + str(timeShift),
+                           "outputFile:" + stationaryFile,
+                           "verbose:" + str(verbose),
+                           "filter:" + str(useFilter),
+                           "getStationaryBouts:true", "epochPeriod:10",
+                           "stationaryStd:" + str(staticStdG),
+                           "sampleRate:" + str(sampleRate)]
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
             if csvStartTime:
@@ -134,8 +136,8 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
                         summary['calibration-ySlope(g)'],
                         summary['calibration-zSlope(g)']]
             xyzTemp = [summary['calibration-xTemp(C)'],
-                        summary['calibration-yTemp(C)'],
-                        summary['calibration-zTemp(C)']]
+                       summary['calibration-yTemp(C)'],
+                       summary['calibration-zTemp(C)']]
             meanTemp = summary['calibration-meanDeviceTemp(C)']
         else:
             storeCalibrationParams(summary, xyzIntercept, xyzSlope, xyzTemp, meanTemp)
@@ -144,29 +146,29 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
 
         accUtils.toScreen('=== Extracting features ===')
         commandArgs = ["java", "-classpath", javaClassPath,
-            "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
-            "timeZone:" + timeZone,
-            "timeShift:" + str(timeShift),
-            "outputFile:" + epochFile, "verbose:" + str(verbose),
-            "filter:"+str(useFilter),
-            "sampleRate:" + str(sampleRate),
-            "resampleMethod:" + str(resampleMethod),
-            "xIntercept:" + str(xyzIntercept[0]),
-            "yIntercept:" + str(xyzIntercept[1]),
-            "zIntercept:" + str(xyzIntercept[2]),
-            "xSlope:" + str(xyzSlope[0]),
-            "ySlope:" + str(xyzSlope[1]),
-            "zSlope:" + str(xyzSlope[2]),
-            "xTemp:" + str(xyzTemp[0]),
-            "yTemp:" + str(xyzTemp[1]),
-            "zTemp:" + str(xyzTemp[2]),
-            "meanTemp:" + str(meanTemp),
-            "epochPeriod:" + str(epochPeriod),
-            "rawOutput:" + str(rawOutput),
-            "rawFile:" + str(rawFile),
-            "npyOutput:" + str(npyOutput),
-            "npyFile:" + str(npyFile),
-            "getFeatures:" + str(activityClassification)]
+                       "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
+                       "timeZone:" + timeZone,
+                       "timeShift:" + str(timeShift),
+                       "outputFile:" + epochFile, "verbose:" + str(verbose),
+                       "filter:" + str(useFilter),
+                       "sampleRate:" + str(sampleRate),
+                       "resampleMethod:" + str(resampleMethod),
+                       "xIntercept:" + str(xyzIntercept[0]),
+                       "yIntercept:" + str(xyzIntercept[1]),
+                       "zIntercept:" + str(xyzIntercept[2]),
+                       "xSlope:" + str(xyzSlope[0]),
+                       "ySlope:" + str(xyzSlope[1]),
+                       "zSlope:" + str(xyzSlope[2]),
+                       "xTemp:" + str(xyzTemp[0]),
+                       "yTemp:" + str(xyzTemp[1]),
+                       "zTemp:" + str(xyzTemp[2]),
+                       "meanTemp:" + str(meanTemp),
+                       "epochPeriod:" + str(epochPeriod),
+                       "rawOutput:" + str(rawOutput),
+                       "rawFile:" + str(rawFile),
+                       "npyOutput:" + str(npyOutput),
+                       "npyFile:" + str(npyFile),
+                       "getFeatures:" + str(activityClassification)]
         if javaHeapSpace:
             commandArgs.insert(1, javaHeapSpace)
         if startTime:
@@ -193,15 +195,15 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     else:
         if not skipCalibration:
             commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
-                    "-svm-file", epochFile, "-info", stationaryFile,
-                    "-svm-extended", "3", "-calibrate", "1",
-                    "-interpolate-mode", "2",
-                    "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
-                    "-svm-filter", "2"]
+                           "-svm-file", epochFile, "-info", stationaryFile,
+                           "-svm-extended", "3", "-calibrate", "1",
+                           "-interpolate-mode", "2",
+                           "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
+                           "-svm-filter", "2"]
         else:
-            calArgs = str(xSlope) + ','
-            calArgs += str(ySlope) + ','
-            calArgs += str(zSlope) + ','
+            calArgs = str(xyzSlope[0]) + ','
+            calArgs += str(xyzSlope[1]) + ','
+            calArgs += str(xyzSlope[2]) + ','
             calArgs += str(xyzIntercept[0]) + ','
             calArgs += str(xyzIntercept[1]) + ','
             calArgs += str(xyzIntercept[2]) + ','
@@ -210,14 +212,13 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
             calArgs += str(xyzTemp[2]) + ','
             calArgs += str(meanTemp)
             commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
-                "-svm-file", epochFile, "-info", stationaryFile,
-                "-svm-extended", "3", "-calibrate", "0",
-                "-calibration", calArgs, "-interpolate-mode", "2",
-                "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
-                "-svm-filter", "2"]
+                           "-svm-file", epochFile, "-info", stationaryFile,
+                           "-svm-extended", "3", "-calibrate", "0",
+                           "-calibration", calArgs, "-interpolate-mode", "2",
+                           "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
+                           "-svm-filter", "2"]
         call(commandArgs)
         getOmconvertInfo(stationaryFile, summary)
-
 
 
 def getCalibrationCoefs(staticBoutsFile, summary):
@@ -235,26 +236,26 @@ def getCalibrationCoefs(staticBoutsFile, summary):
 
     # learning/research parameters
     maxIter = 1000
-    minIterImprovement = 0.0001 #0.1mg
+    minIterImprovement = 0.0001  # 0.1mg
     # use python NUMPY framework to store stationary episodes from epoch file
     if isinstance(staticBoutsFile, pd.DataFrame):
 
-        axesVals = staticBoutsFile[['xMean','yMean','zMean']].values
+        axesVals = staticBoutsFile[['xMean', 'yMean', 'zMean']].values
         tempVals = staticBoutsFile[['temperature']].values
     else:
         cols = ['xMean', 'yMean', 'zMean', 'temp', 'dataErrors']
         d = pd.read_csv(staticBoutsFile, usecols=cols, compression='gzip')
         d = d.to_numpy()
-        if len(d)<=5:
-            storeCalibrationInformation(summary, [0.0,0.0,0.0], [1.0,1.0,1.0],
-                [0.0,0.0,0.0], 20, np.nan, np.nan,
-                np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
+        if len(d) <= 5:
+            storeCalibrationInformation(summary, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0],
+                                        [0.0, 0.0, 0.0], 20, np.nan, np.nan,
+                                        np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
             return
-        stationaryPoints = d[d[:,4] == 0] # don't consider episodes with data errors
-        axesVals = stationaryPoints[:,[0,1,2]]
-        tempVals = stationaryPoints[:,[3]]
+        stationaryPoints = d[d[:, 4] == 0]  # don't consider episodes with data errors
+        axesVals = stationaryPoints[:, [0, 1, 2]]
+        tempVals = stationaryPoints[:, [3]]
     meanTemp = np.mean(tempVals)
-    tempVals = np.copy(tempVals-meanTemp)
+    tempVals = np.copy(tempVals - meanTemp)
     # store information on spread of stationary points
     xMin, yMin, zMin = np.amin(axesVals, axis=0)
     xMax, yMax, zMax = np.amax(axesVals, axis=0)
@@ -276,11 +277,11 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     try:
         for i in range(1, maxIter):
             # iterate through each axis, refitting its intercept/slope vals
-            for a in range(0,3):
+            for a in range(0, 3):
                 x = np.concatenate([curr[:, [a]], tempVals], axis=1)
                 x = sm.add_constant(x, prepend=True)  # add bias/intercept term
                 y = target[:, a]
-                newI, newS, newT = sm.OLS(y,x).fit().params
+                newI, newS, newT = sm.OLS(y, x).fit().params
                 # update values as part of iterative closest point fitting process
                 # refer to wiki as there is quite a bit of math behind next 3 lines
                 intercept[a] = newI + (intercept[a] * newS)
@@ -292,7 +293,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
             errors = np.linalg.norm(curr - target, axis=1)
             rms = np.sqrt(np.mean(np.square(errors)))  # root mean square error
             # assess iterative error convergence
-            improvement = (bestError-rms)/bestError
+            improvement = (bestError - rms) / bestError
             if rms < bestError:
                 bestIntercept = np.copy(intercept)
                 bestSlope = np.copy(slope)
@@ -307,9 +308,8 @@ def getCalibrationCoefs(staticBoutsFile, summary):
         sys.stderr.write('WARNING: Calibration error\n ' + str(exceptStr))
     # store output to summary dictionary
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
-        bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-        zMax, len(axesVals))
-
+                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
+                                zMax, len(axesVals))
 
 
 def getOmconvertInfo(omconvertInfoFile, summary):
@@ -324,7 +324,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
     :rtype: void
     """
 
-    file = open(omconvertInfoFile,'r')
+    file = open(omconvertInfoFile, 'r')
     for line in file:
         elements = line.split(':')
         name, value = elements[0], elements[1]
@@ -332,7 +332,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
             vals = value.split(',')
             bestIntercept = float(vals[3]), float(vals[4]), float(vals[5])
             bestSlope = float(vals[0]), float(vals[1]), float(vals[2])
-            bestTemp = float(vals[6]), float(vals[7]),float(vals[8])
+            bestTemp = float(vals[6]), float(vals[7]), float(vals[8])
             meanTemp = float(vals[-1])
         elif name == 'Calibration-Stationary-Error-Pre':
             initError = float(value)
@@ -349,14 +349,13 @@ def getOmconvertInfo(omconvertInfoFile, summary):
     file.close()
     # store output to summary dictionary
     storeCalibrationInformation(summary, bestIntercept, bestSlope,
-        bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-        zMax, nStatic)
-
+                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
+                                zMax, nStatic)
 
 
 def storeCalibrationInformation(summary, bestIntercept, bestSlope,
-        bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-        zMax, nStatic, calibrationSphereCriteria=0.3):
+                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
+                                zMax, nStatic, calibrationSphereCriteria=0.3):
     """Store calibration information to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
@@ -381,8 +380,8 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
     """
 
     # store output to summary dictionary
-    summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initError*1000, 2)
-    summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestError*1000, 2)
+    summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initError * 1000, 2)
+    summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestError * 1000, 2)
     storeCalibrationParams(summary, bestIntercept, bestSlope, bestTemp, meanTemp)
     summary['calibration-numStaticPoints'] = nStatic
     summary['calibration-staticXmin(g)'] = accUtils.formatNum(xMin, 2)
@@ -401,7 +400,6 @@ def storeCalibrationInformation(summary, bestIntercept, bestSlope,
             summary['quality-goodCalibration'] = 0
     except UnboundLocalError:
         summary['quality-goodCalibration'] = 0
-
 
 
 def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzTemp, meanTemp):
@@ -430,7 +428,6 @@ def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzTemp, meanTemp):
     summary['calibration-meanDeviceTemp(C)'] = accUtils.formatNum(meanTemp, 2)
 
 
-
 def getDeviceId(inputFile):
     """Get serial number of device
 
@@ -454,7 +451,6 @@ def getDeviceId(inputFile):
         print("ERROR: Cannot get deviceId for file: " + inputFile)
 
 
-
 def getAxivityDeviceId(cwaFile):
     """Get serial number of Axivity device
 
@@ -468,7 +464,7 @@ def getAxivityDeviceId(cwaFile):
     if cwaFile.lower().endswith('.cwa'):
         f = open(cwaFile, 'rb')
     elif cwaFile.lower().endswith('.cwa.gz'):
-        f = gzip.open(cwaFile,'rb')
+        f = gzip.open(cwaFile, 'rb')
     header = f.read(2)
     if header == b'MD':
         blockSize = struct.unpack('H', f.read(2))[0]
@@ -484,7 +480,6 @@ def getAxivityDeviceId(cwaFile):
     return deviceId
 
 
-
 def getGeneaDeviceId(binFile):
     """Get serial number of GENEActiv device
 
@@ -496,12 +491,11 @@ def getGeneaDeviceId(binFile):
     :rtype: int
     """
 
-    f = open(binFile, 'r') # 'Universal' newline mode
-    next(f) # Device Identity
-    deviceId = next(f).split(':')[1].rstrip() # Device Unique Serial Code:011710
+    f = open(binFile, 'r')  # 'Universal' newline mode
+    next(f)  # Device Identity
+    deviceId = next(f).split(':')[1].rstrip()  # Device Unique Serial Code:011710
     f.close()
     return deviceId
-
 
 
 def getGT3XDeviceId(gt3xFile):
@@ -520,7 +514,7 @@ def getGT3XDeviceId(gt3xFile):
         with zipfile.ZipFile(gt3xFile, 'r') as z:
             contents = z.infolist()
             print("\n".join(map(lambda x: str(x.filename).rjust(20, " ") + ", "
-                + str(x.file_size), contents)))
+                                + str(x.file_size), contents)))
 
             if 'info.txt' in map(lambda x: x.filename, contents):
                 print('info.txt found..')
@@ -530,7 +524,7 @@ def getGT3XDeviceId(gt3xFile):
                     if line.startswith(b"Serial Number:"):
                         newline = line.decode("utf-8")
                         newline = newline.split("Serial Number: ")[1]
-                        print("Serial Number: "+newline)
+                        print("Serial Number: " + newline)
                         return newline
             else:
                 print("Could not find info.txt file")

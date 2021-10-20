@@ -5,7 +5,6 @@ import datetime
 import glob
 import json
 import math
-import numpy as np
 import os
 import pandas as pd
 import re
@@ -35,7 +34,6 @@ def formatNum(num, decimalPlaces):
     return float(fmt % num)
 
 
-
 def meanSDstr(mean, std, numDecimalPlaces):
     """return str of mean and stdev numbers formatted to number of decimalPlaces
 
@@ -57,7 +55,6 @@ def meanSDstr(mean, std, numDecimalPlaces):
     return outStr
 
 
-
 def meanCIstr(mean, std, n, numDecimalPlaces):
     """return str of mean and 95% confidence interval numbers formatted
 
@@ -74,8 +71,8 @@ def meanCIstr(mean, std, n, numDecimalPlaces):
     2.57 (0.09)
     """
     stdErr = std / math.sqrt(n)
-    lowerCI = mean - 1.96*stdErr
-    upperCI = mean + 1.96*stdErr
+    lowerCI = mean - 1.96 * stdErr
+    upperCI = mean + 1.96 * stdErr
     outStr = str(formatNum(mean, numDecimalPlaces))
     outStr += ' ('
     outStr += str(formatNum(lowerCI, numDecimalPlaces))
@@ -83,7 +80,6 @@ def meanCIstr(mean, std, n, numDecimalPlaces):
     outStr += str(formatNum(upperCI, numDecimalPlaces))
     outStr += ')'
     return outStr
-
 
 
 def toScreen(msg):
@@ -103,9 +99,8 @@ def toScreen(msg):
     print(f"\n{datetime.datetime.now().strftime(timeFormat)}\t{msg}")
 
 
-
 def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
-        accExt="cwa", cmdOptions=None, filesCSV="files.csv"):
+                             accExt="cwa", cmdOptions=None, filesCSV="files.csv"):
     """Read files to process and write out list of processing commands
 
     This creates the following output directory structure containing all
@@ -182,7 +177,7 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
                 '--rawFolder "{:s}"'.format(rawDir),
                 '--npyFolder "{:s}"'.format(npyDir),
                 '--outputFolder "{:s}"'.format(outDir)
-                ]
+            ]
 
             # Grab additional arguments provided in filesCSV (e.g. calibration params)
             cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
@@ -198,7 +193,6 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
 
     print('Processing list written to ', cmdsFile)
     print('Suggested dir for log files: ', logsDir)
-
 
 
 def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
@@ -219,12 +213,13 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
     <summary CSV of all participants/files written to "data/sumamry-all-files.csv">
     """
 
-    ### First combine into <tmpJsonFile> the processed outputs from <inputJsonDir>
-    tmpJsonFile = outputCsvFile.replace('.csv','-tmp.json')
+    # First combine into <tmpJsonFile> the processed outputs from <inputJsonDir>
+    tmpJsonFile = outputCsvFile.replace('.csv', '-tmp.json')
     count = 0
-    with open(tmpJsonFile,'w') as fSummary:
+    with open(tmpJsonFile, 'w') as fSummary:
         for fStr in glob.glob(inputJsonDir + "*.json"):
-            if fStr == tmpJsonFile: continue
+            if fStr == tmpJsonFile:
+                continue
             with open(fStr) as f:
                 if count == 0:
                     fSummary.write('[')
@@ -234,18 +229,17 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
                 count += 1
         fSummary.write(']')
 
-    ### Convert temporary json file into csv file
-    dict = json.load(open(tmpJsonFile,"r"), object_pairs_hook=OrderedDict) #read json
-    df = pd.DataFrame.from_dict(dict) #create pandas object from json dict
+    # Convert temporary json file into csv file
+    dict = json.load(open(tmpJsonFile, "r"), object_pairs_hook=OrderedDict)  # read json
+    df = pd.DataFrame.from_dict(dict)  # create pandas object from json dict
     refColumnItem = next((item for item in dict if item['quality-goodWearTime'] == 1), None)
-    dAcc = df[list(refColumnItem.keys())] #maintain intended column ordering
+    dAcc = df[list(refColumnItem.keys())]  # maintain intended column ordering
     # infer participant ID
-    dAcc['eid'] = dAcc['file-name'].str.split('/').str[-1].str.replace('.CWA','.cwa').str.replace('.cwa','')
+    dAcc['eid'] = dAcc['file-name'].str.split('/').str[-1].str.replace('.CWA', '.cwa').str.replace('.cwa', '')
     dAcc.to_csv(outputCsvFile, index=False)
-    #remove tmpJsonFile
+    # remove tmpJsonFile
     os.remove(tmpJsonFile)
     print('Summary of', str(len(dAcc)), 'participants written to:', outputCsvFile)
-
 
 
 def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
@@ -278,8 +272,7 @@ def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
     output.to_csv(outputFilesCsv, index=False)
 
     print('Reprocessing for ', len(output), 'participants written to:',
-        outputFilesCsv)
-
+          outputFilesCsv)
 
 
 def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
@@ -304,47 +297,49 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
     """
 
     d = pd.read_csv(inputCsvFile)
-    #select participants with good spread of stationary values for calibration
-    goodCal = d.loc[(d['quality-calibratedOnOwnData']==1) & (d['quality-goodCalibration']==1)]
-    #now only select participants whose data was NOT calibrated on a good spread of stationary values
-    badCal = d.loc[(d['quality-calibratedOnOwnData']==1) & (d['quality-goodCalibration']==0)]
+    # select participants with good spread of stationary values for calibration
+    goodCal = d.loc[(d['quality-calibratedOnOwnData'] == 1) & (d['quality-goodCalibration'] == 1)]
+    # now only select participants whose data was NOT calibrated on a good spread of stationary values
+    badCal = d.loc[(d['quality-calibratedOnOwnData'] == 1) & (d['quality-goodCalibration'] == 0)]
 
-    #sort files by start time, which makes selection of most recent value easier
+    # sort files by start time, which makes selection of most recent value easier
     goodCal = goodCal.sort_values(['file-startTime'])
     badCal = badCal.sort_values(['file-startTime'])
 
-    calCols = ['calibration-xOffset(g)','calibration-yOffset(g)','calibration-zOffset(g)',
-               'calibration-xSlope(g)','calibration-ySlope(g)','calibration-zSlope(g)',
-               'calibration-xTemp(C)','calibration-yTemp(C)','calibration-zTemp(C)',
+    calCols = ['calibration-xOffset(g)', 'calibration-yOffset(g)', 'calibration-zOffset(g)',
+               'calibration-xSlope(g)', 'calibration-ySlope(g)', 'calibration-zSlope(g)',
+               'calibration-xTemp(C)', 'calibration-yTemp(C)', 'calibration-zTemp(C)',
                'calibration-meanDeviceTemp(C)']
 
-    #print output CSV file with suggested calibration parameters
+    # print output CSV file with suggested calibration parameters
     noOtherUses = 0
     nextUses = 0
     previousUses = 0
-    f = open(outputCsvFile,'w')
+    f = open(outputCsvFile, 'w')
     f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
     for ix, row in badCal.iterrows():
-        #first get current 'bad' file
-        participant, device, startTime = row[['file-name','file-deviceID','file-startTime']]
+        # first get current 'bad' file
+        participant, device, startTime = row[['file-name', 'file-deviceID', 'file-startTime']]
         device = int(device)
-        #get calibration values from most recent previous use of this device
+        # get calibration values from most recent previous use of this device
         # (when it had a 'good' calibration)
-        prevUse = goodCal[calCols][(goodCal['file-deviceID']==device) & (goodCal['file-startTime']<startTime)].tail(1)
+        prevUse = goodCal[calCols][(goodCal['file-deviceID'] == device) &
+                                   (goodCal['file-startTime'] < startTime)].tail(1)
         try:
             ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = prevUse.iloc[0]
             previousUses += 1
-        except:
-            nextUse = goodCal[calCols][(goodCal['file-deviceID']==device) & (goodCal['file-startTime']>startTime)].head(1)
-            if len(nextUse)<1:
+        except Exception:
+            nextUse = goodCal[calCols][(goodCal['file-deviceID'] == device) &
+                                       (goodCal['file-startTime'] > startTime)].head(1)
+            if len(nextUse) < 1:
                 print('no other uses for this device at all: ', str(device),
-                    str(participant))
+                      str(participant))
                 noOtherUses += 1
                 continue
             nextUses += 1
             ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = nextUse.iloc[0]
 
-        #now construct output
+        # now construct output
         out = participant + ','
         out += str(ofX) + ' ' + str(ofY) + ' ' + str(ofZ) + ','
         out += str(slpX) + ' ' + str(slpY) + ' ' + str(slpZ) + ','
@@ -357,8 +352,7 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
     print('noOtherUses', noOtherUses)
 
     print('Reprocessing for ', str(previousUses + nextUses),
-        'participants written to:', outputCsvFile)
-
+          'participants written to:', outputCsvFile)
 
 
 def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
@@ -382,19 +376,19 @@ def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
 
     d = pd.read_csv(inputCsvFile)
 
-    calCols = ['calibration-xOffset(g)','calibration-yOffset(g)','calibration-zOffset(g)',
-               'calibration-xSlope(g)','calibration-ySlope(g)','calibration-zSlope(g)',
-               'calibration-xTemp(C)','calibration-yTemp(C)','calibration-zTemp(C)',
+    calCols = ['calibration-xOffset(g)', 'calibration-yOffset(g)', 'calibration-zOffset(g)',
+               'calibration-xSlope(g)', 'calibration-ySlope(g)', 'calibration-zSlope(g)',
+               'calibration-xTemp(C)', 'calibration-yTemp(C)', 'calibration-zTemp(C)',
                'calibration-meanDeviceTemp(C)']
 
-    #print output CSV file with suggested calibration parameters
-    f = open(outputCsvFile,'w')
+    # print output CSV file with suggested calibration parameters
+    f = open(outputCsvFile, 'w')
     f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
     for ix, row in d.iterrows():
-        #first get current file information
+        # first get current file information
         participant = str(row['file-name'])
         ofX, ofY, ofZ, slpX, slpY, slpZ, tmpX, tmpY, tmpZ, calTempAvg = row[calCols]
-        #now construct output
+        # now construct output
         out = participant + ','
         out += str(ofX) + ' ' + str(ofY) + ' ' + str(ofZ) + ','
         out += str(slpX) + ' ' + str(slpY) + ' ' + str(slpZ) + ','
@@ -404,8 +398,7 @@ def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
     f.close()
 
     print('Files with calibration coefficients for ', str(len(d)),
-        'participants written to:', outputCsvFile)
-
+          'participants written to:', outputCsvFile)
 
 
 def createDirIfNotExists(folder):
@@ -426,7 +419,6 @@ def createDirIfNotExists(folder):
         os.makedirs(folder)
 
 
-
 def date_parser(t):
     '''
     Parse date a date string of the form e.g.
@@ -439,7 +431,6 @@ def date_parser(t):
     return pd.to_datetime(t, utc=True).tz_convert(tz)
 
 
-
 def date_strftime(t):
     '''
     Convert to time format of the form e.g.
@@ -447,7 +438,6 @@ def date_strftime(t):
     '''
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
-
 
 
 def writeTimeSeries(e, labels, tsFile):
@@ -473,7 +463,7 @@ def writeTimeSeries(e, labels, tsFile):
 
     e_new = pd.DataFrame(index=e.index)
     e_new.index.name = 'time'
-    e_new['imputed'] = e[['acc']+labels].isna().any(1).astype('int')
+    e_new['imputed'] = e[['acc'] + labels].isna().any(1).astype('int')
     e_new[cols_new] = e[cols]
 
     # make output time format contain timezone
