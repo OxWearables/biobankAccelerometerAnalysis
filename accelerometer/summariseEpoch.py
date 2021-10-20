@@ -7,12 +7,10 @@ import numpy as np
 import pandas as pd
 import pytz
 import sys
-import scipy as sp
-from scipy import fftpack
-from datetime import timedelta
 
 
-def getActivitySummary(epochFile, nonWearFile, summary,
+def getActivitySummary(
+    epochFile, nonWearFile, summary,
     activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
@@ -20,7 +18,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     activityModel="walmsley",
     intensityDistribution=False, useRecommendedImputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
-    verbose=False):
+    verbose=False
+):
     """Calculate overall activity summary from <epochFile> data
 
     Get overall activity summary from input <epochFile>. This is achieved by
@@ -114,12 +113,11 @@ def getActivitySummary(epochFile, nonWearFile, summary,
 
     # Calculate wear-time statistics, and write nonWear episodes to file
     get_wear_time_stats(e, epochPeriod, stationaryStd, minNonWearDuration,
-        nonWearFile, summary)
+                        nonWearFile, summary)
 
     # Calculate and include data quality statistics
     get_total_reads(e, epochPeriod, summary)
     get_clips(e, epochPeriod, summary)
-
 
     # Predict activity from features, and add label column
     if activityClassification:
@@ -131,7 +129,7 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     # Trunc :  negative values truncated to zero (i.e never negative)
     # emmo = 1 - sqrt(x, y, z)
     # enmoTrunc = max(enmo, 0)
-    e['acc'] = e['enmoTrunc'] * 1000 # convert enmoTrunc to milli-G units
+    e['acc'] = e['enmoTrunc'] * 1000  # convert enmoTrunc to milli-G units
 
     # Calculate imputation values to replace nan PA metric values
     e = perform_wearTime_imputation(e, verbose)
@@ -157,16 +155,13 @@ def getActivitySummary(epochFile, nonWearFile, summary,
     return e, labels
 
 
-
 def get_clips(e, epochPeriod, summary):
     summary['clipsBeforeCalibration'] = e['clipsBeforeCalibr'].sum().item()
     summary['clipsAfterCalibration'] = e['clipsAfterCalibr'].sum().item()
 
 
-
 def get_total_reads(e, epochPeriod, summary):
     summary['totalReads'] = e['rawSamples'].sum().item()
-
 
 
 def get_interrupts(e, epochPeriod, summary):
@@ -183,20 +178,19 @@ def get_interrupts(e, epochPeriod, summary):
     epochNs = epochPeriod * np.timedelta64(1, 's')
     interrupts = np.where(e.index.to_series().diff() > epochNs)[0]
     # Get duration of each interrupt in minutes
-    interruptMins = [e.index[i-1:i+1].to_series().diff().sum(skipna=True).seconds / 60 for i in interrupts]
+    interruptMins = [e.index[i - 1:i + 1].to_series().diff().sum(skipna=True).seconds / 60 for i in interrupts]
     # Record to output summary
     summary['errs-interrupts-num'] = len(interruptMins)
     summary['errs-interrupt-mins'] = accUtils.formatNum(np.sum(interruptMins), 1)
 
     frames = [e]
     for i in interrupts:
-        start, end = e.index[i-1:i+1]
-        dti = pd.date_range(start=start, end=end, freq=str(epochPeriod)+'s')[1:-1]
+        start, end = e.index[i - 1:i + 1]
+        dti = pd.date_range(start=start, end=end, freq=str(epochPeriod) + 's')[1:-1]
         frames.append(dti.to_frame().drop(columns=0))
     e = pd.concat(frames).sort_index()
 
     return e
-
 
 
 def check_daylight_savings_crossovers(e, summary):
@@ -208,9 +202,7 @@ def check_daylight_savings_crossovers(e, summary):
         summary['quality-daylightSavingsCrossover'] = 0
 
 
-
-def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
-    summary):
+def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile, summary):
     """Calculate nonWear time, write episodes to file, and return wear statistics
 
     If daylight savings crossover, update times after time-change by +/- 1hr.
@@ -233,20 +225,20 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     :rtype: void
     """
 
-    maxStd = maxStd / 1000.0 # java uses Gravity units (not mg)
-    e['nw'] = np.where((e['xStd']<maxStd) & (e['yStd']<maxStd) &
-            (e['zStd']<maxStd), 1, 0)
+    maxStd = maxStd / 1000.0  # java uses Gravity units (not mg)
+    e['nw'] = np.where((e['xStd'] < maxStd) & (e['yStd'] < maxStd) &
+                       (e['zStd'] < maxStd), 1, 0)
     starts = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(1).fillna(0).astype('bool'))]
     ends = e.index[e['nw'].astype('bool') & ~(e['nw'].shift(-1).fillna(0).astype('bool'))]
     nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
-            if end > start + np.timedelta64(minDuration,'m')]
+                       if end > start + np.timedelta64(minDuration, 'm')]
 
     # Set nonWear data to nan and record to nonWearBouts file
-    f = gzip.open(nonWearFile,'wb')
+    f = gzip.open(nonWearFile, 'wb')
     f.write('start,end,xStdMax,yStdMax,zStdMax\n'.encode())
     timeFormat = '%Y-%m-%d %H:%M:%S'
     for episode in nonWearEpisodes:
-        tmp = e[['xStd','yStd','zStd']][episode[0]:episode[1]]
+        tmp = e[['xStd', 'yStd', 'zStd']][episode[0]:episode[1]]
         nonWearBout = episode[0].strftime(timeFormat) + ','
         nonWearBout += episode[1].strftime(timeFormat) + ','
         nonWearBout += str(tmp['xStd'].mean()) + ','
@@ -265,23 +257,23 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     wearTimeMin = wearSamples * epochPeriod / 60.0
     nonWearTimeMin = nonWearSamples * epochPeriod / 60.0
     # Write to summary
-    summary['wearTime-overall(days)'] = accUtils.formatNum(wearTimeMin/1440.0, 2)
-    summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTimeMin/1440.0, 2)
+    summary['wearTime-overall(days)'] = accUtils.formatNum(wearTimeMin / 1440.0, 2)
+    summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTimeMin / 1440.0, 2)
 
     # Get wear time in each of 24 hours across week
     epochsInMin = 60.0 / epochPeriod
     for i, day in zip(range(0, 7), accUtils.DAYS):
         dayWear = e['enmoTrunc'][e.index.weekday == i].count() / epochsInMin
         # Write to summary
-        summary['wearTime-' + day + '(hrs)'] = accUtils.formatNum(dayWear/60.0, 2)
+        summary['wearTime-' + day + '(hrs)'] = accUtils.formatNum(dayWear / 60.0, 2)
     for i in range(0, 24):
         hourWear = e['enmoTrunc'][e.index.hour == i].count() / epochsInMin
         # Write to summary
         summary['wearTime-hourOfDay' + str(i) + '-(hrs)'] = \
-            accUtils.formatNum(hourWear/60.0, 2)
-    summary['wearTime-diurnalHrs'] = accUtils.formatNum( \
+            accUtils.formatNum(hourWear / 60.0, 2)
+    summary['wearTime-diurnalHrs'] = accUtils.formatNum(
         e['enmoTrunc'].groupby(e.index.hour).mean().count(), 2)
-    summary['wearTime-diurnalMins'] = accUtils.formatNum( \
+    summary['wearTime-diurnalMins'] = accUtils.formatNum(
         e['enmoTrunc'].groupby([e.index.hour, e.index.minute]).mean().count(), 2)
 
     # Write binary decision on whether weartime was good or not
@@ -289,9 +281,8 @@ def get_wear_time_stats(e, epochPeriod, maxStd, minDuration, nonWearFile,
     minWearDays = 3
     summary['quality-goodWearTime'] = 1
     if summary['wearTime-diurnalHrs'] < minDiurnalHrs or \
-         summary['wearTime-overall(days)'] < minWearDays:
+            summary['wearTime-overall(days)'] < minWearDays:
         summary['quality-goodWearTime'] = 0
-
 
 
 def perform_wearTime_imputation(e, verbose):
@@ -321,20 +312,19 @@ def perform_wearTime_imputation(e, verbose):
 
     # Now wearTime weight values
     for col in wearTimeWeights:
-        e[col+'Imputed'] = e[col].fillna(e[col+'_imputed'])
+        e[col + 'Imputed'] = e[col].fillna(e[col + '_imputed'])
 
     if verbose:
         # Features averaged over epochs - use imputed version of features for this.
         # This ignores rows with NaN and infinities
         imputedCols = e.filter(regex='Imputed').columns
-        print(e[imputedCols].isnull().any(axis=1).sum(), \
-            "NaN rows in imputed features")
+        print(e[imputedCols].isnull().any(axis=1).sum(),
+              "NaN rows in imputed features")
         with pd.option_context('mode.use_inf_as_null', True):
             null_rows = e[imputedCols].isnull().any(axis=1)
-        print(null_rows.sum(), " NaN or Inf rows in imputed features out of ",\
-            len(e))
+        print(null_rows.sum(), " NaN or Inf rows in imputed features out of ",
+              len(e))
     return e
-
 
 
 def calculateECDF(e, inputCol, summary, useRecommendedImputation):
@@ -382,7 +372,7 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
         # Calculate imputation values to replace nan metric values
         wearTimeWeights = ecdfData.groupby(['hour', 'minute'])[cols].mean()
         ecdfData = ecdfData.join(wearTimeWeights, on=['hour', 'minute'],
-                                rsuffix='Imputed')
+                                 rsuffix='Imputed')
         # For each ecdf xVal column, apply missing data imputation
         for col, imputed, adjusted in zip(cols, colsImputed, colsAdjusted):
             ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
@@ -393,13 +383,12 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
             accEcdf = ecdfData[cols].mean()
     else:
         accEcdf = pd.Series(data=[0.0 for i in ecdfXVals],
-                            index=[str(i)+'Adjusted' for i in ecdfXVals])
+                            index=[str(i) + 'Adjusted' for i in ecdfXVals])
 
     # And write to summary dict
     for x, ecdf in zip(ecdfXVals, accEcdf):
-        summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x,0)) + 'mg'] = \
+        summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x, 0)) + 'mg'] = \
             accUtils.formatNum(ecdf, 5)
-
 
 
 def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
@@ -434,23 +423,23 @@ def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
         # Overall / weekday / weekend summaries
         summary[accType + '-overall-avg'] = accUtils.formatNum(e[col].mean(), 5)
         summary[accType + '-overall-sd'] = accUtils.formatNum(e[col].std(), 2)
-        summary[accType + '-weekday-avg'] = accUtils.formatNum( \
-            e[col][e.index.weekday<=4].mean(), 2)
-        summary[accType + '-weekend-avg'] = accUtils.formatNum( \
-            e[col][e.index.weekday>=5].mean(), 2)
+        summary[accType + '-weekday-avg'] = accUtils.formatNum(
+            e[col][e.index.weekday <= 4].mean(), 2)
+        summary[accType + '-weekend-avg'] = accUtils.formatNum(
+            e[col][e.index.weekday >= 5].mean(), 2)
 
         # Daily summary
         for i, day in zip(range(0, 7), accUtils.DAYS):
-            summary[accType + '-' + day + '-avg'] = accUtils.formatNum( \
+            summary[accType + '-' + day + '-avg'] = accUtils.formatNum(
                 e[col][e.index.weekday == i].mean(), 2)
 
         # Hourly summaries
         for i in range(0, 24):
             hourOfDay = accUtils.formatNum(e[col][e.index.hour == i].mean(), 2)
-            hourOfWeekday = accUtils.formatNum( \
-                e[col][(e.index.weekday<=4) & (e.index.hour == i)].mean(), 2)
-            hourOfWeekend = accUtils.formatNum( \
-                e[col][(e.index.weekday>=5) & (e.index.hour == i)].mean(), 2)
+            hourOfWeekday = accUtils.formatNum(
+                e[col][(e.index.weekday <= 4) & (e.index.hour == i)].mean(), 2)
+            hourOfWeekend = accUtils.formatNum(
+                e[col][(e.index.weekday >= 5) & (e.index.hour == i)].mean(), 2)
             # Write derived hourly values to summary dictionary
             summary[accType + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[accType + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday

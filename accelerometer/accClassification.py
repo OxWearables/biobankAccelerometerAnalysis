@@ -18,7 +18,6 @@ import pathlib
 import shutil
 
 
-
 def activityClassification(epochFile, activityModel="walmsley"):
     """Perform classification of activity states from epoch feature data
 
@@ -44,7 +43,7 @@ def activityClassification(epochFile, activityModel="walmsley"):
     X = epochFile
     featureColsFile = getFileFromTar(activityModel, 'featureCols.txt').getvalue()
     featureColsList = featureColsFile.decode().split('\n')
-    featureCols = list(filter(None,featureColsList))
+    featureCols = list(filter(None, featureColsList))
 
     with pd.option_context('mode.use_inf_as_null', True):
         null_rows = X[featureCols].isnull().any(axis=1)
@@ -58,22 +57,22 @@ def activityClassification(epochFile, activityModel="walmsley"):
         warnings.simplefilter("ignore", category=UserWarning)
         rf = joblib.load(getFileFromTar(activityModel, 'rfModel.pkl'))
     labels = rf.classes_.tolist()
-    rfPredictions = rf.predict(X.loc[~null_rows,featureCols])
+    rfPredictions = rf.predict(X.loc[~null_rows, featureCols])
     # Free memory
     del rf
     # Setup HMM
     priors = np.load(getFileFromTar(activityModel, 'hmmPriors.npy'))
     transitions = np.load(getFileFromTar(activityModel, 'hmmTransitions.npy'))
     emissions = np.load(getFileFromTar(activityModel, 'hmmEmissions.npy'))
-    hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors, \
-        transitions, emissions)
+    hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors,
+                             transitions, emissions)
     # Save predictions to pandas dataframe
     X.loc[~null_rows, 'label'] = hmmPredictions
 
     # Perform MET prediction...
-    #! Pandas .replace method has a small bug
-    #! See https://github.com/pandas-dev/pandas/issues/23305
-    #! We need to force type
+    # Pandas .replace method has a small bug
+    # See https://github.com/pandas-dev/pandas/issues/23305
+    # We need to force type
     met_vals = np.load(getFileFromTar(activityModel, 'METs.npy'))
     met_dict = dict(zip(labels, met_vals))
     X.loc[~null_rows, 'MET'] = X.loc[~null_rows, 'label'].replace(met_dict).astype('float')
@@ -81,23 +80,26 @@ def activityClassification(epochFile, activityModel="walmsley"):
     # Apply one-hot encoding
     for l in labels:
         X[l] = 0
-        X.loc[X['label']==l, l] = 1
+        X.loc[X['label'] == l, l] = 1
     # Null values aren't one-hot encoded, so set such instances to NaN
     for l in labels:
         X.loc[X[labels].sum(axis=1) == 0, l] = np.nan
     return X, labels
 
 
-
 MIN_TRAIN_CLASS_COUNT = 100
-def trainClassificationModel(trainingFile,
-    labelCol="label", participantCol="participant",
-    atomicLabelCol="annotation", metCol="MET",
-    featuresTxt="activityModels/features.txt",
-    trainParticipants=None, testParticipants=None,
-    rfThreads=1, rfTrees=1000, rfFeats=None, rfDepth=None,
-    outputPredict="activityModels/test-predictions.csv",
-    outputModel=None):
+
+
+def trainClassificationModel(
+        trainingFile,
+        labelCol="label", participantCol="participant",
+        atomicLabelCol="annotation", metCol="MET",
+        featuresTxt="activityModels/features.txt",
+        trainParticipants=None, testParticipants=None,
+        rfThreads=1, rfTrees=1000, rfFeats=None, rfDepth=None,
+        outputPredict="activityModels/test-predictions.csv",
+        outputModel=None
+):
     """Train model to classify activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -155,28 +157,26 @@ def trainClassificationModel(trainingFile,
     forest._parallel_build_trees = _parallel_build_trees
     # Then train RF model (which include per-class balancing)
     rfClassifier = RandomForestClassifier(n_estimators=rfTrees,
-                                            n_jobs=rfThreads,
-                                            max_features=rfFeats,
-                                            max_depth=rfDepth,
-                                            oob_score=True)
+                                          n_jobs=rfThreads,
+                                          max_features=rfFeats,
+                                          max_depth=rfDepth,
+                                          oob_score=True)
 
     rfModel = rfClassifier.fit(train[featureCols], train[labelCol].tolist())
 
     # Train Hidden Markov Model
-    states, priors, emissions, transitions = train_HMM(rfModel, train[labelCol],
-                                                        labelCol)
-    rfModel.oob_decision_function_ = None # out of bound errors are no longer needed
+    states, priors, emissions, transitions = train_HMM(rfModel, train[labelCol], labelCol)
+    rfModel.oob_decision_function_ = None  # out of bound errors are no longer needed
 
     # Estimate usual METs-per-class
     METs = []
     for s in states:
-        MET = train[train[labelCol]==s].groupby(atomicLabelCol)[metCol].mean().mean()
+        MET = train[train[labelCol] == s].groupby(atomicLabelCol)[metCol].mean().mean()
         METs += [MET]
 
     # Now write out model
     if outputModel is not None:
-        saveModelsToTar(outputModel, featureCols, rfModel, priors, transitions,
-            emissions, METs)
+        saveModelsToTar(outputModel, featureCols, rfModel, priors, transitions, emissions, METs)
 
     # Assess model performance on test participants
     if testParticipants is not None:
@@ -184,13 +184,12 @@ def trainClassificationModel(trainingFile,
         labels = rfModel.classes_.tolist()
         rfPredictions = rfModel.predict(test[featureCols])
         hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors,
-            transitions, emissions)
+                                 transitions, emissions)
         test['predicted'] = hmmPredictions
         # And write out to file
         outCols = [participantCol, labelCol, 'predicted']
         test[outCols].to_csv(outputPredict, index=False)
         print('Output predictions written to: ', outputPredict)
-
 
 
 def train_HMM(rfModel, y_trainF, labelCol):
@@ -237,12 +236,12 @@ def train_HMM(rfModel, y_trainF, labelCol):
     emissions = np.zeros((len(states), len(states)))
     j = 0
     for predictedState in states:
-        k=0
+        k = 0
         for actualState in states:
-            emissions[j,k] = predOOB[actualState][predOOB['groundTruth'] == predictedState].sum()
-            emissions[j,k] /= len(predOOB[predOOB['groundTruth'] == predictedState])
-            k+=1
-        j+=1
+            emissions[j, k] = predOOB[actualState][predOOB['groundTruth'] == predictedState].sum()
+            emissions[j, k] /= len(predOOB[predOOB['groundTruth'] == predictedState])
+            k += 1
+        j += 1
 
     # Transition probabilities
     train = y_trainF.to_frame()
@@ -252,13 +251,13 @@ def train_HMM(rfModel, y_trainF, labelCol):
     for s1 in states:
         k = 0
         for s2 in states:
-            transitions[j, k] = len(train[(train[labelCol]==s1) & (train['nextLabel']==s2)]) / (len(train[train[labelCol]==s1]) * 1.0)
+            transitions[j, k] = len(train[(train[labelCol] == s1) & (train['nextLabel'] == s2)]
+                                    ) / (len(train[train[labelCol] == s1]) * 1.0)
             k += 1
         j += 1
 
     # Return HMM matrices
     return states, prior, emissions, transitions
-
 
 
 def viterbi(observations, states, priors, transitions, emissions,
@@ -284,41 +283,43 @@ def viterbi(observations, states, priors, transitions, emissions,
     tinyNum = 0.000001
     nObservations = len(observations)
     nStates = len(states)
-    v = np.zeros((nObservations,nStates)) # initialise viterbi table
+    v = np.zeros((nObservations, nStates))  # initialise viterbi table
     # Set prior state values for first observation...
     for state in range(0, len(states)):
-        v[0,state] = np.log(priors[state] * emissions[state,states.index(observations[0])]+tinyNum)
+        v[0, state] = np.log(priors[state] * emissions[state, states.index(observations[0])] + tinyNum)
     # Fill in remaning matrix observations
     # Use log space as multiplying successively smaller p values)
-    for k in range(1,nObservations):
+    for k in range(1, nObservations):
         for state in range(0, len(states)):
-            v[k,state] = np.log(emissions[state,states.index(observations[k])]+tinyNum) + \
-                        np.max(v[k-1,:] + np.log(transitions[:,state]+tinyNum), axis=0)
+            v[k, state] = np.log(emissions[state, states.index(observations[k])] + tinyNum) + \
+                np.max(v[k - 1, :] + np.log(transitions[:, state] + tinyNum), axis=0)
 
     # Now construct viterbiPath (propagating backwards)
     viterbiPath = observations
     # Pick most probable state for final observation
-    viterbiPath[nObservations-1] = states[np.argmax(v[nObservations-1,:],axis=0)]
+    viterbiPath[nObservations - 1] = states[np.argmax(v[nObservations - 1, :], axis=0)]
 
     # Probabilistic method will give probability of each label
     if probabilistic:
-        viterbiProba = np.zeros((nObservations,nStates)) # initialize table
-        viterbiProba[nObservations-1,:] = norm(v[nObservations-1,:])
+        viterbiProba = np.zeros((nObservations, nStates))  # initialize table
+        viterbiProba[nObservations - 1, :] = norm(v[nObservations - 1, :])
 
     # And then work backwards to pick most probable state for all other observations
-    for k in list(reversed(range(0,nObservations-1))):
-        viterbiPath[k] = states[np.argmax(v[k,:] + np.log(transitions[:,states.index(viterbiPath[k+1])]+tinyNum),axis=0)]
+    for k in list(reversed(range(0, nObservations - 1))):
+        viterbiPath[k] = states[np.argmax(
+            v[k, :] + np.log(transitions[:, states.index(viterbiPath[k + 1])] + tinyNum), axis=0)]
         if probabilistic:
-            viterbiProba[k,:] = norm(v[k,:] + np.log(transitions[:,states.index(viterbiPath[k+1])]+tinyNum))
+            viterbiProba[k, :] = norm(v[k, :] + np.log(transitions[:, states.index(viterbiPath[k + 1])] + tinyNum))
 
     # Output as list...
     return viterbiProba if probabilistic else viterbiPath
 
 
-
 GLOBAL_INDICES = []
+
+
 def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
-        verbose=0, class_weight=None, n_samples_bootstrap = None):
+                          verbose=0, class_weight=None, n_samples_bootstrap=None):
     """Monkeypatch scikit learn to use per-class balancing
 
     Private function used to fit a single tree in parallel.
@@ -329,16 +330,15 @@ def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
 
     indices = np.empty(shape=0, dtype='int64')
     for y_class in np.unique(y):
-        sample_indices, selected = np.where(y==y_class)
-        ## SELECT min_count FROM CLASS WITH REPLACEMENT
+        sample_indices, selected = np.where(y == y_class)
+        # SELECT min_count FROM CLASS WITH REPLACEMENT
         sample_indices = np.random.choice(sample_indices,
-            size=MIN_TRAIN_CLASS_COUNT, replace=True)
-        indices = np.concatenate((indices,sample_indices))
-    ## IGNORE sample_weight AND SIMPLY PASS SELECTED DATA
-    tree.fit(X[indices,:], y[indices], check_input=True)
+                                          size=MIN_TRAIN_CLASS_COUNT, replace=True)
+        indices = np.concatenate((indices, sample_indices))
+    # IGNORE sample_weight AND SIMPLY PASS SELECTED DATA
+    tree.fit(X[indices, :], y[indices], check_input=True)
     GLOBAL_INDICES.append(indices)
     return tree
-
 
 
 def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
@@ -359,7 +359,7 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     pIDKappa = []
     pIDAccuracy = []
     for pID in pIDs:
-        d_tmp = dfParam[dfParam[pidCol]==pID]
+        d_tmp = dfParam[dfParam[pidCol] == pID]
         pIDKappa += [metrics.cohen_kappa_score(d_tmp[yTrueCol], d_tmp[yPredCol])]
         pIDAccuracy += [metrics.accuracy_score(d_tmp[yTrueCol], d_tmp[yPredCol])]
     d_summary = pd.DataFrame()
@@ -369,16 +369,16 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     # print out values to html string
     kappaSDHTML = "Mean Kappa (SD) = "
     kappaSDHTML += accUtils.meanSDstr(d_summary['kappa'].mean(),
-        d_summary['kappa'].std(), 2)
+                                      d_summary['kappa'].std(), 2)
     accuracySDHTML = "Mean accuracy (SD) = "
-    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean()*100,
-        d_summary['accuracy'].std()*100, 1) + ' %'
+    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean() * 100,
+                                         d_summary['accuracy'].std() * 100, 1) + ' %'
     kappaCIHTML = "Mean Kappa (95% CI) = "
     kappaCIHTML += accUtils.meanCIstr(d_summary['kappa'].mean(),
-        d_summary['kappa'].std(), len(d_summary), 2)
+                                      d_summary['kappa'].std(), len(d_summary), 2)
     accuracyCIHTML = "Mean accuracy (95% CI) = "
-    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean()*100,
-        d_summary['accuracy'].std()*100, len(d_summary), 1) + ' %'
+    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean() * 100,
+                                         d_summary['accuracy'].std() * 100, len(d_summary), 1) + ' %'
 
     # get confusion matrix to pandas dataframe
     y_true = dfParam[yTrueCol]
@@ -401,11 +401,10 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     w.close()
 
 
-
 def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions,
-    emissions, METs, featuresTxt="featureCols.txt", rfModelFile="rfModel.pkl",
-    hmmPriors="hmmPriors.npy", hmmEmissions="hmmEmissions.npy",
-    hmmTransitions="hmmTransitions.npy", hmmMETs="METs.npy"):
+                    emissions, METs, featuresTxt="featureCols.txt", rfModelFile="rfModel.pkl",
+                    hmmPriors="hmmPriors.npy", hmmEmissions="hmmEmissions.npy",
+                    hmmTransitions="hmmTransitions.npy", hmmMETs="METs.npy"):
     """Save random forest and hidden markov models to tarArchive file
 
     Note we must use the same version of python and scikit learn as in the
@@ -458,7 +457,6 @@ def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions,
     print('Models saved to', tarArchive)
 
 
-
 def getFileFromTar(tarArchive, targetFile):
     """Read file from tar
 
@@ -479,14 +477,13 @@ def getFileFromTar(tarArchive, targetFile):
     return array_file
 
 
-
 def addReferenceLabelsToNewFeatures(
-    featuresFile,
-    referenceLabelsFile,
-    outputFile,
-    featuresTxt="activityModels/features.txt",
-    labelCol="label", participantCol="participant",
-    atomicLabelCol="annotation", metCol="MET"):
+        featuresFile,
+        referenceLabelsFile,
+        outputFile,
+        featuresTxt="activityModels/features.txt",
+        labelCol="label", participantCol="participant",
+        atomicLabelCol="annotation", metCol="MET"):
     """Append reference annotations to newly extracted feature data
 
     This method helps add existing curated labels (from referenceLabelsFile)
@@ -516,11 +513,11 @@ def addReferenceLabelsToNewFeatures(
 
     # load new features file
     featureCols = getListFromTxtFile(featuresTxt)
-    dFeat = pd.read_csv(featuresFile, usecols=featureCols+[participantCol, 'time'])
+    dFeat = pd.read_csv(featuresFile, usecols=featureCols + [participantCol, 'time'])
 
     # load in reference annotations file
     refCols = [participantCol, 'age', 'sex', 'time', atomicLabelCol, labelCol,
-                'code', metCol, 'MET_label']
+               'code', metCol, 'MET_label']
     dRef = pd.read_csv(referenceLabelsFile, usecols=refCols)
 
     # join dataframes
@@ -530,7 +527,6 @@ def addReferenceLabelsToNewFeatures(
     # write out new labelled features file
     dOut.to_csv(outputFile, index=True)
     print('New file written to: ', outputFile)
-
 
 
 def wristListToTxtFile(inputList, outputFile):
@@ -549,7 +545,6 @@ def wristListToTxtFile(inputList, outputFile):
     f.close()
 
 
-
 def getListFromTxtFile(inputFile):
     """Read list of items from txt file and return as list
 
@@ -560,12 +555,11 @@ def getListFromTxtFile(inputFile):
     """
 
     items = []
-    f = open(inputFile,'r')
+    f = open(inputFile, 'r')
     for l in f:
         items.append(l.strip())
     f.close()
     return items
-
 
 
 def resolveModelPath(pathOrModelName):
@@ -581,7 +575,6 @@ def resolveModelPath(pathOrModelName):
             return model["pth"]
         else:
             return downloadModel(model)
-
 
 
 def downloadModel(model):
