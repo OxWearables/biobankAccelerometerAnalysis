@@ -57,7 +57,7 @@ def activityClassification(epochFile, activityModel="walmsley"):
         warnings.simplefilter("ignore", category=UserWarning)
         rf = joblib.load(getFileFromTar(activityModel, 'rfModel.pkl'))
     labels = rf.classes_.tolist()
-    rfPredictions = rf.predict(X.loc[~null_rows, featureCols])
+    rfPredictions = rf.predict(X.loc[~null_rows, featureCols].to_numpy())
     # Free memory
     del rf
     # Setup HMM
