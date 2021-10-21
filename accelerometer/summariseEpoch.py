@@ -138,7 +138,7 @@ def getActivitySummary(
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
-        calculateECDF(e, 'acc', summary, useRecommendedImputation)
+        calculateECDF(e['acc'], summary)
 
     # Calculate circadian metrics
     if psd:
@@ -327,14 +327,14 @@ def perform_wearTime_imputation(e, verbose):
     return e
 
 
-def calculateECDF(e, inputCol, summary, useRecommendedImputation):
+def calculateECDF(x, summary):
     """Calculate activity intensity empirical cumulative distribution
 
     The input data must not be imputed, as ECDF requires different imputation
     where nan/non-wear data segments are IMPUTED FOR EACH INTENSITY LEVEL. Here,
     the average of similar time-of-day values is imputed with one minute
     granularity on different days of the measurement. Following intensity levels
-    are calculated
+    are calculated:
     1mg bins from 1-20mg
     5mg bins from 25-100mg
     25mg bins from 125-500mg
@@ -350,45 +350,23 @@ def calculateECDF(e, inputCol, summary, useRecommendedImputation):
     :rtype: void
     """
 
-    ecdf1, step = np.linspace(1, 20, 20, retstep=True)  # 1mg bins from 1-20mg
-    ecdf2, step = np.linspace(25, 100, 16, retstep=True)  # 5mg bins from 25-100mg
-    ecdf3, step = np.linspace(125, 500, 16, retstep=True)  # 25mg bins from 125-500mg
-    ecdf4, step = np.linspace(600, 2000, 15, retstep=True)  # 100mg bins from 500-2000mg
-    ecdfXVals = np.concatenate([ecdf1, ecdf2, ecdf3, ecdf4])
+    levels = np.concatenate([
+        np.linspace(1, 20, 20),  # 1mg bins from 1-20mg
+        np.linspace(25, 100, 16),  # 5mg bins from 25-100mg
+        np.linspace(125, 500, 16),  # 25mg bins from 125-500mg
+        np.linspace(600, 2000, 15),  # 100mg bins from 500-2000mg
+    ]).astype('int')
 
-    # Remove NaNs (necessary for statsmodels.api)
-    ecdfData = e[['hour', 'minute', inputCol]][~np.isnan(e[inputCol])]
-    if len(ecdfData) > 0:
-        # Set column names for actual, imputed, and adjusted intensity dist. vals
-        cols = []
-        colsImputed = []
-        colsAdjusted = []
-        for xVal in ecdfXVals:
-            col = 'ecdf' + str(xVal)
-            cols.append(col)
-            colsImputed.append(col + 'Imputed')
-            colsAdjusted.append(col + 'Adjusted')
-            ecdfData[col] = (ecdfData[inputCol] <= xVal) * 1.0
-        # Calculate imputation values to replace nan metric values
-        wearTimeWeights = ecdfData.groupby(['hour', 'minute'])[cols].mean()
-        ecdfData = ecdfData.join(wearTimeWeights, on=['hour', 'minute'],
-                                 rsuffix='Imputed')
-        # For each ecdf xVal column, apply missing data imputation
-        for col, imputed, adjusted in zip(cols, colsImputed, colsAdjusted):
-            ecdfData[adjusted] = ecdfData[col].fillna(ecdfData[imputed])
+    ecdf = (pd.DataFrame(x.to_numpy().reshape(-1, 1) <= levels.reshape(1, -1),
+                         index=x.index, columns=levels)
+            .groupby([x.index.hour, x.index.minute])
+            .mean()  # first average is across same time of day
+            .mean()  # second average is within each level
+            )
 
-        if useRecommendedImputation:
-            accEcdf = ecdfData[colsAdjusted].mean()
-        else:
-            accEcdf = ecdfData[cols].mean()
-    else:
-        accEcdf = pd.Series(data=[0.0 for i in ecdfXVals],
-                            index=[str(i) + 'Adjusted' for i in ecdfXVals])
-
-    # And write to summary dict
-    for x, ecdf in zip(ecdfXVals, accEcdf):
-        summary[inputCol + '-ecdf-' + str(accUtils.formatNum(x, 0)) + 'mg'] = \
-            accUtils.formatNum(ecdf, 5)
+    # Write to summary
+    for level, val in ecdf.iteritems():
+        summary[f'{x.name}-ecdf-{level}mg'] = accUtils.formatNum(val, 5)
 
 
 def writeMovementSummaries(e, labels, summary, useRecommendedImputation):
