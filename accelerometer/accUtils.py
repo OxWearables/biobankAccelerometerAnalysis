@@ -450,24 +450,17 @@ def writeTimeSeries(e, labels, tsFile):
     :return: None
     :rtype: void
     """
-    cols = ['accImputed']
-    cols_new = ['acc']
 
-    labelsImputed = [l + 'Imputed' for l in labels]
-    cols.extend(labelsImputed)
-    cols_new.extend(labels)
-
+    cols = ['acc'] + labels
     if 'MET' in e.columns:
-        cols.append('METImputed')
-        cols_new.append('MET')
+        cols.append('MET')
+    if 'imputed' in e.columns:
+        cols.append('imputed')
 
-    e_new = pd.DataFrame(index=e.index)
-    e_new.index.name = 'time'
-    e_new['imputed'] = e[['acc'] + labels].isna().any(1).astype('int')
-    e_new[cols_new] = e[cols]
+    e = e[cols]
 
     # make output time format contain timezone
     # e.g. 2020-06-14 19:01:15.123000+0100 [Europe/London]
-    e_new.index = e_new.index.to_series().apply(date_strftime)
+    e.index = e.index.to_series().apply(date_strftime)
 
-    e_new.to_csv(tsFile, compression='gzip')
+    e.to_csv(tsFile, compression='gzip')

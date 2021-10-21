@@ -162,7 +162,7 @@ def main():  # noqa: C901
                         metavar='True/False', default=False, type=str2bool,
                         help="""Save intensity distribution
                              (default : %(default)s)""")
-    parser.add_argument('--useRecommendedImputation',
+    parser.add_argument('--imputation',
                         metavar='True/False', default=True, type=str2bool,
                         help="""Highly recommended method to impute missing
                             data using data from other days around the same time
@@ -366,10 +366,9 @@ def main():  # noqa: C901
         stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
         mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
-        useRecommendedImputation=args.useRecommendedImputation,
+        imputation=args.imputation,
         psd=args.psd, fourierFrequency=args.fourierFrequency,
-        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
-        verbose=args.verbose)
+        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5)
 
     # Generate time series file
     accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
