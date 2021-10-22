@@ -4,7 +4,6 @@ from pandas.plotting import register_matplotlib_converters
 import sys
 import pandas as pd
 import os
-import numpy as np
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -43,19 +42,6 @@ def main():  # noqa: C901
     parser.add_argument('--activityModel', type=str,
                         default="walmsley",
                         help="""trained activity model .tar file""")
-    parser.add_argument('--useRecommendedImputation',
-                        metavar='True/False', default=True, type=str2bool,
-                        help="""Highly recommended method to show imputed
-                            missing data (default : %(default)s)""")
-    parser.add_argument('--imputedLabels',
-                        metavar='True/False', default=False, type=str2bool,
-                        help="""If activity classification during imputed
-                            period will be displayed (default : %(default)s)""")
-    parser.add_argument('--imputedLabelsHeight',
-                        metavar='Proportion i.e. 0-1.0', default=0.9,
-                        type=float, help="""Proportion of plot labels take
-                            if activity classification during imputed
-                            period will be displayed (default : %(default)s)""")
     parser.add_argument('--showFileName',
                         metavar='True/False', default=False, type=str2bool,
                         help="""Toggle showing filename as title in output
@@ -83,9 +69,6 @@ def main():  # noqa: C901
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
                    showFirstNDays=args.showFirstNDays,
                    activityModel=args.activityModel,
-                   useRecommendedImputation=args.useRecommendedImputation,
-                   imputedLabels=args.imputedLabels,
-                   imputedLabelsHeight=args.imputedLabelsHeight,
                    showFileName=args.showFileName)
 
 
@@ -94,22 +77,13 @@ def plotTimeSeries(  # noqa: C901
         plotFile,
         showFirstNDays=None,
         activityModel="walmsley",
-        useRecommendedImputation=True,
-        imputedLabels=False,
-        showFileName=False,
-        imputedLabelsHeight=0.9):
+        showFileName=False):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
     :param int showFirstNDays: Only show first n days of time series (if specified)
     :param str activityModel: Input tar model file used for activity classification
-    :param bool useRecommendedImputation: Highly recommended method to show
-        imputed values for missing data
-    :param bool imputedLabels: If activity classification during imputed period
-        will be displayed
-    :param float imputedLabelsHeight: Proportion of plot labels take up if
-        <imputedLabels> is True
     :param float showFileName: Toggle showing filename as title in output image
 
     :return: Writes plot to <plotFile>
@@ -122,85 +96,59 @@ def plotTimeSeries(  # noqa: C901
     """
 
     # read time series file to pandas DataFrame
-    d = pd.read_csv(
+    data = pd.read_csv(
         tsFile, index_col='time',
         parse_dates=['time'], date_parser=accUtils.date_parser
     )
     if showFirstNDays is not None:
-        d = d.first(str(showFirstNDays) + 'D')
+        data = data.first(str(showFirstNDays) + 'D')
 
-    d['acc'] = d['acc'].rolling(window=12, min_periods=1).mean()  # smoothing
-    d['time'] = d.index.time
-    ymin = d['acc'].min()
-    ymax = d['acc'].max()
+    # smoothing & normalize
+    data['acc'] = data['acc'].rolling(window=12, min_periods=1).mean()
+    data['acc'] /= data['acc'].max()
 
-    # infer labels
-    labels = []
-    for col in d.columns.tolist():
-        if col not in [accUtils.TIME_SERIES_COL, 'imputed', 'acc', 'MET']:
-            labels += [col]
-    print(labels)
     if 'walmsley' in activityModel:
-        labels_as_col = WALMSLEY_Nov2020_COLOURS
+        label_colours = WALMSLEY_Nov2020_COLOURS
     elif 'doherty' in activityModel:
-        labels_as_col = DOHERTY_NatComms_COLOURS
+        label_colours = DOHERTY_NatComms_COLOURS
     elif 'willetts' in activityModel:
-        labels_as_col = WILLETS_SciReports_COLOURS
-    # add imputation label colour
-    labels_as_col['imputed'] = '#fafc6f'
+        label_colours = WILLETS_SciReports_COLOURS
+    label_colours = {label: colour
+                     for label, colour in label_colours.items()
+                     if label in data.columns}
+    labels = list(label_colours.keys())
 
-    convert_date = np.vectorize(lambda day, x: matplotlib.dates.date2num(datetime.combine(day, x)))
+    if 'imputed' in data.columns:
+        labels.append('imputed')
+        label_colours['imputed'] = '#fafc6f'
+        data.loc[data['imputed'].astype('bool'), data.columns != 'imputed'] = None
 
     # number of rows to display in figure (all days + legend)
-    d['date'] = d.index.date
-    if not useRecommendedImputation:
-        d = d[d['imputed'] == 0]  # if requested, do not show imputed values
-
-    if imputedLabels:
-        labelsPosition = imputedLabelsHeight
-    else:
-        labelsPosition = 1
-
-    groupedDays = d[['acc', 'time', 'imputed'] + labels].groupby(by=d['date'])
+    data.index = data.index.tz_localize(None, ambiguous='NaT', nonexistent='NaT')  # tz-unaware local time
+    groupedDays = data.groupby(data.index.date)
     nrows = len(groupedDays) + 1
 
     # create overall figure
     fig = plt.figure(1, figsize=(10, nrows), dpi=100)
     if showFileName:
-        plt.suptitle(tsFile)
+        fig.suptitle(tsFile)
 
     # create individual plot for each day
     i = 0
-    ax_list = []
+    axs = []
     for day, group in groupedDays:
-        # set start and end to zero to avoid diagonal fill boxes
-        group['imputed'].values[0] = 0
-        group['imputed'].values[-1] = 0
 
-        # retrieve time series data for this day
-        timeSeries = convert_date(day, group['time'])
-        # and then plot time series data for this day
-        plt.subplot(nrows, 1, i + 1)
-        plt.plot(timeSeries, group['acc'], c='k')
-        if imputedLabels:
-            plt.fill_between(timeSeries,
-                             y1=np.multiply(group['imputed'], ymax),
-                             y2=np.multiply(group['imputed'], ymax * labelsPosition),
-                             color=labels_as_col['imputed'], alpha=1.0,
-                             where=group['imputed'] == 1)
-        else:
-            plt.fill(timeSeries, np.multiply(group['imputed'], ymax),
-                     labels_as_col['imputed'], alpha=1.0)
+        ax = fig.add_subplot(nrows, 1, i + 1)
 
-        # change display properties of this subplot
-        ax = plt.gca()
+        ax.plot(group.index, group['acc'].to_numpy(), c='k')
+
         if len(labels) > 0:
-            ax.stackplot(timeSeries,
-                         [np.multiply(group[l], ymax * labelsPosition) for l in labels],
-                         colors=[labels_as_col[l] for l in labels],
-                         alpha=0.5, edgecolor="none")
+            ax.stackplot(group.index, group[labels].astype('f4').to_numpy().T,
+                         colors=label_colours.values(),
+                         alpha=.5, edgecolor="none")
+
         # add date label to left hand side of each day's activity plot
-        plt.title(
+        ax.set_title(
             day.strftime("%A,\n%d %B"), weight='bold',
             x=-.2, y=0.5,
             horizontalalignment='left',
@@ -214,15 +162,14 @@ def plotTimeSeries(  # noqa: C901
         ax.get_xaxis().grid(True, which='major', color='grey', alpha=0.5)
         ax.get_xaxis().grid(True, which='minor', color='grey', alpha=0.25)
         # set x and y-axes
-        ax.set_xlim((datetime.combine(day, time(0, 0, 0, 0)),
-                     datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0))))
+        ax.set_xlim(group.index[0], group.index[-1])
         ax.set_xticks(pd.date_range(start=datetime.combine(day, time(0, 0, 0, 0)),
                                     end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
                                     freq='4H'))
         ax.set_xticks(pd.date_range(start=datetime.combine(day, time(0, 0, 0, 0)),
                                     end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
                                     freq='1H'), minor=True)
-        ax.set_ylim((ymin, ymax))
+        ax.set_ylim(0, 1)
         ax.get_yaxis().set_ticks([])  # hide y-axis lables
         # make border less harsh between subplots
         ax.spines['top'].set_color('#d3d3d3')  # lightgray
@@ -232,24 +179,19 @@ def plotTimeSeries(  # noqa: C901
         ax.set_facecolor('#d3d3d3')
 
         # append to list and incrament list counter
-        ax_list.append(ax)
+        axs.append(ax)
         i += 1
 
-    # create new subplot to display legend
-    plt.subplot(nrows, 1, i + 1)
-    ax = plt.gca()
-    ax.axis('off')  # don't display axis information
-    # create a 'patch' for each legend entry
-    legend_patches = [mpatches.Patch(color=labels_as_col['imputed'],
-                                     label='imputed', alpha=1.0),
-                      mlines.Line2D([], [], color='k', label='acceleration')]
-    # create lengend entry for each label
+    # create new subplot to display legends
+    ax = fig.add_subplot(nrows, 1, i + 1)
+    ax.axis('off')
+    legend_patches = [mlines.Line2D([], [], color='k', label='acceleration')]
     for label in labels:
-        col = labels_as_col[label]
+        col = label_colours[label]
         legend_patches.append(mpatches.Patch(color=col, label=label, alpha=0.5))
     # create overall legend
     plt.legend(handles=legend_patches, bbox_to_anchor=(0., 0., 1., 1.),
-               loc='center', ncol=min(4, len(legend_patches)), mode="best",
+               loc='center', ncol=4, mode="best",
                borderaxespad=0, framealpha=0.6, frameon=True, fancybox=True)
 
     # remove legend border
@@ -257,14 +199,14 @@ def plotTimeSeries(  # noqa: C901
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
-    ax_list.append(ax)
+    axs.append(ax)
 
     # format x-axis to show hours
-    plt.gcf().autofmt_xdate()
+    fig.autofmt_xdate()
     # add hour labels to top of plot
     hrLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00']
-    ax_list[0].set_xticklabels(hrLabels)
-    ax_list[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
+    axs[0].set_xticklabels(hrLabels)
+    axs[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
 
     plt.savefig(plotFile, dpi=200, bbox_inches='tight')
     print('Plot file written to:', plotFile)
