@@ -121,7 +121,8 @@ def plotTimeSeries(  # noqa: C901
     if 'imputed' in data.columns:
         labels.append('imputed')
         label_colours['imputed'] = '#fafc6f'
-        data.loc[data['imputed'].astype('bool'), data.columns != 'imputed'] = None
+        data.loc[data['imputed'], 'acc'] = None
+        data.loc[data['imputed'], [label for label in labels if label != 'imputed']] = 0
 
     # number of rows to display in figure (all days + legend)
     data.index = data.index.tz_localize(None, ambiguous='NaT', nonexistent='NaT')  # tz-unaware local time
