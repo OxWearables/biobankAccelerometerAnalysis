@@ -1,5 +1,5 @@
 name = "accelerometer"
-__version__ = "3.2.0"
+__version__ = "4.0.1"
 __author__ = "Aiden Doherty, Shing Chan, Rosemary Walmsley, Hang Yuan"
 __email__ = "aiden.doherty@ndph.ox.ac.uk, shing.chan@ndph.ox.ac.uk, rosemary.walmsley@gtc.ox.ac.uk, hang.yuan@keble.ox.ac.uk"
 __license__ = "2-Clause BSD"
