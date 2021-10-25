@@ -314,8 +314,11 @@ def calculateECDF(x, summary):
         np.linspace(600, 2000, 15),  # 100mg bins from 500-2000mg
     ]).astype('int')
 
-    ecdf = (pd.DataFrame(x.to_numpy().reshape(-1, 1) <= levels.reshape(1, -1),
-                         index=x.index, columns=levels)
+    whrnan = x.isna().to_numpy()
+    ecdf = x.to_numpy().reshape(-1, 1) <= levels.reshape(1, -1)
+    ecdf[whrnan] = np.nan
+
+    ecdf = (pd.DataFrame(ecdf, index=x.index, columns=levels)
             .groupby([x.index.hour, x.index.minute])
             .mean()  # first average is across same time of day
             .mean()  # second average is within each level
