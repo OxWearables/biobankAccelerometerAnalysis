@@ -42,7 +42,7 @@ def activityClassification(epochFile,
 
     with pd.option_context('mode.use_inf_as_null', True):
         null_rows = X[featureCols].isnull().any(axis=1)
-    print(null_rows.sum(), "rows with missing (NaN, None, or NaT) or Inf values, out of", len(X))
+    # print(null_rows.sum(), "rows with missing (NaN, None, or NaT) or Inf values, out of", len(X))
 
     X['label'] = 'none'
     X.loc[null_rows, 'label'] = 'inf_or_null'

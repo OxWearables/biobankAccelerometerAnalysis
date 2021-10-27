@@ -72,8 +72,8 @@ def getActivitySummary(epochFile, nonWearFile, summary,
             "nonWear.csv.gz", summary)
     <nonWear file written to "nonWear.csv.gz" and dict "summary" update with outcomes>
     """
-
-    accUtils.toScreen("=== Summarizing ===")
+    if verbose:
+        accUtils.toScreen("=== Summarizing ===")
 
     if isinstance(epochFile, pd.DataFrame):
         e = epochFile

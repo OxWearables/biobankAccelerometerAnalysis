@@ -82,9 +82,9 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
     javaClassPath = "{jcp}:{jcp}/JTransforms-3.1-with-dependencies.jar".format(jcp=javaClassPath)
-    staticStdG = stationaryStd / 1000.0 #java expects units of G (not mg)
+    staticStdG = stationaryStd / 1000.0  # java expects units of G (not mg)
 
-    if xyzIntercept != [0, 0 ,0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
+    if xyzIntercept != [0, 0, 0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
         skipCalibration = True
         print('\nSkipping calibration as input parameter supplied')
 
@@ -94,7 +94,8 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
     if useJava:
         if not skipCalibration:
             # identify 10sec stationary epochs
-            accUtils.toScreen("=== Calibrating ===")
+            if verbose:
+                accUtils.toScreen("=== Calibrating ===")
             commandArgs = ["java", "-classpath", javaClassPath,
                 "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                 "timeZone:" + timeZone,
@@ -141,7 +142,8 @@ def processInputFileToEpoch(inputFile, timeZone, timeShift,
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
-        accUtils.toScreen('=== Extracting features ===')
+        if verbose:
+            accUtils.toScreen('=== Extracting features ===')
         commandArgs = ["java", "-classpath", javaClassPath,
             "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
             "timeZone:" + timeZone,
