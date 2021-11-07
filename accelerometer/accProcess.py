@@ -294,12 +294,12 @@ def main():  # noqa: C901
         args.stationaryFolder, args.timeSeriesFolder,
         args.rawFolder, args.npyFolder, args.outputFolder
     ]:
-        assert os.access(path, os.W_OK), (
+        assert os.access(os.path.abspath(path), os.W_OK), (
             f"Either folder '{path}' does not exist "
             "or you do not have write permission"
         )
     if args.processInputFile:
-        assert os.access(args.epochFolder, os.W_OK), (
+        assert os.access(os.path.abspath(args.epochFolder), os.W_OK), (
             f"Either folder '{args.epochFolder}' does not exist "
             "or you do not have write permission"
         )
