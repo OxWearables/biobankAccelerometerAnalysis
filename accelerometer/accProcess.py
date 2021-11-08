@@ -311,6 +311,8 @@ def main():  # noqa: C901
             try:
                 if os.path.exists(args.stationaryFile):
                     os.remove(args.stationaryFile)
+                if os.path.exists(args.nonWearFile):
+                    os.remove(args.nonWearFile)
                 if os.path.exists(args.epochFile):
                     os.remove(args.epochFile)
             except OSError:
