@@ -213,33 +213,18 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
     <summary CSV of all participants/files written to "data/sumamry-all-files.csv">
     """
 
-    # First combine into <tmpJsonFile> the processed outputs from <inputJsonDir>
-    tmpJsonFile = outputCsvFile.replace('.csv', '-tmp.json')
-    count = 0
-    with open(tmpJsonFile, 'w') as fSummary:
-        for fStr in glob.glob(inputJsonDir + "*.json"):
-            if fStr == tmpJsonFile:
-                continue
-            with open(fStr) as f:
-                if count == 0:
-                    fSummary.write('[')
-                else:
-                    fSummary.write(',')
-                fSummary.write(f.read().rstrip())
-                count += 1
-        fSummary.write(']')
+    jdicts = []
+    for filename in glob.glob(os.path.join(inputJsonDir, "*.json")):
+        with open(filename, 'r') as f:
+            jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
 
-    # Convert temporary json file into csv file
-    dict = json.load(open(tmpJsonFile, "r"), object_pairs_hook=OrderedDict)  # read json
-    df = pd.DataFrame.from_dict(dict)  # create pandas object from json dict
-    refColumnItem = next((item for item in dict if item['quality-goodWearTime'] == 1), None)
-    dAcc = df[list(refColumnItem.keys())]  # maintain intended column ordering
-    # infer participant ID
-    dAcc['eid'] = dAcc['file-name'].str.split('/').str[-1].str.replace('.CWA', '.cwa').str.replace('.cwa', '')
-    dAcc.to_csv(outputCsvFile, index=False)
-    # remove tmpJsonFile
-    os.remove(tmpJsonFile)
-    print('Summary of', str(len(dAcc)), 'participants written to:', outputCsvFile)
+    df = pd.DataFrame.from_dict(jdicts)  # merge to a dataframe
+    refColumnItem = next((item for item in jdicts if item['quality-goodWearTime'] == 1), None)
+    df = df[list(refColumnItem.keys())]  # maintain intended column ordering
+    df['eid'] = df['file-name'].str.split('/').str[-1].str.split('.').str[0]  # infer participant ID
+    df = df.set_index('eid')
+    df.to_csv(outputCsvFile)
+    print('Summary of', str(len(df)), 'participants written to:', outputCsvFile)
 
 
 def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
