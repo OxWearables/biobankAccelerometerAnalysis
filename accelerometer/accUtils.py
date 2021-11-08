@@ -160,7 +160,7 @@ def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
         fileList = pd.read_csv(os.path.join(accDir, filesCSV))
     else:
         fileList = pd.DataFrame(
-            {'fileName': [f for f in os.listdir(accDir) if f.endswith(accExt)]}
+            {'fileName': [f for f in os.listdir(accDir) if f.lower().endswith(accExt.lower())]}
         )
         fileList.to_csv(os.path.join(accDir, filesCSV), index=False)
 
