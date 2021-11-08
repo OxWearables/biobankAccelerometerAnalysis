@@ -328,7 +328,7 @@ def main():  # noqa: C901
     print(f"Processing file '{args.inputFile}' with these arguments:\n")
     for key, value in sorted(vars(args).items()):
         if not (isinstance(value, str) and len(value) == 0):
-            print(key.ljust(15), ':', value)
+            print(key.ljust(25), ':', value)
 
     ##########################
     # Start processing file
