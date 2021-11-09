@@ -198,24 +198,8 @@ def main():  # noqa: C901
                                     least active acceleration periods for circadian rhythm analysis
                              (default : %(default)s)""")
     # optional outputs
-    parser.add_argument('--outputFolder', metavar='filename', default="",
-                        help="""folder for all of the output files, \
-                                unless specified using other options""")
-    parser.add_argument('--summaryFolder', metavar='filename', default="",
-                        help="folder for -summary.json summary stats")
-    parser.add_argument('--epochFolder', metavar='filename', default="",
-                        help="""folder -epoch.csv.gz - must be an existing
-                            file if "-processInputFile" is set to False""")
-    parser.add_argument('--timeSeriesFolder', metavar='filename', default="",
-                        help="folder for -timeSeries.csv.gz file")
-    parser.add_argument('--nonWearFolder', metavar='filename', default="",
-                        help="folder for -nonWearBouts.csv.gz file")
-    parser.add_argument('--stationaryFolder', metavar='filename', default="",
-                        help="folder -stationaryPoints.csv.gz file")
-    parser.add_argument('--rawFolder', metavar='filename', default="",
-                        help="folder for raw .csv.gz file")
-    parser.add_argument('--npyFolder', metavar='filename', default="",
-                        help="folder for raw .npy.gz file")
+    parser.add_argument('--outputFolder', '-o', metavar='filename', default=None,
+                        help="""folder for all of the output files (default : %(default)s)""")
     parser.add_argument('--verbose',
                         metavar='True/False', default=False, type=str2bool,
                         help="""enable verbose logging? (default :
@@ -239,70 +223,37 @@ def main():  # noqa: C901
 
     args = parser.parse_args()
 
+    processingStartTime = datetime.datetime.now()
+
     assert args.sampleRate >= 25, "sampleRate<25 currently not supported"
 
     if args.sampleRate <= 40:
         warnings.warn("Skipping lowpass filter (--useFilter False) as sampleRate too low (<= 40)")
         args.useFilter = False
 
-    processingStartTime = datetime.datetime.now()
+    # Parent folder and basename of input file
+    inputFileFolder = os.path.dirname(args.inputFile)
+    inputFileName = os.path.basename(args.inputFile).split(".")[0]
 
-    ##########################
-    # Check input/output files/dirs exist and validate input args
-    ##########################
-    if args.processInputFile:
-        assert os.path.isfile(args.inputFile), f"File '{args.inputFile}' does not exist"
-    else:
-        if len(args.inputFile.split('.')) < 2:
-            # TODO: edge case since we still need a name?
-            # TODO: does this work for cwa.gz files?
-            args.inputFile += '.cwa'
+    # Set default output folder if not specified
+    if args.outputFolder is None:
+        args.outputFolder = os.path.abspath(inputFileFolder)
 
-    # Folder and basename of raw input file
-    inputFileFolder, inputFileName = os.path.split(args.inputFile)
-    inputFileName = inputFileName.split('.')[0]  # remove any extension
+    os.makedirs(args.outputFolder, exist_ok=True)
 
-    # Set default output folders if not user-specified
-    if args.outputFolder == "":
-        args.outputFolder = inputFileFolder
-    if args.summaryFolder == "":
-        args.summaryFolder = args.outputFolder
-    if args.nonWearFolder == "":
-        args.nonWearFolder = args.outputFolder
-    if args.epochFolder == "":
-        args.epochFolder = args.outputFolder
-    if args.stationaryFolder == "":
-        args.stationaryFolder = args.outputFolder
-    if args.timeSeriesFolder == "":
-        args.timeSeriesFolder = args.outputFolder
-    if args.rawFolder == "":
-        args.rawFolder = args.outputFolder
-    if args.npyFolder == "":
-        args.npyFolder = args.outputFolder
+    assert os.access(args.outputFolder, os.W_OK), (
+        f"Either folder '{args.outputFolder}' does not exist "
+        "or you do not have write permission"
+    )
+
     # Set default output filenames
-    args.summaryFile = os.path.join(args.summaryFolder, inputFileName + "-summary.json")
-    args.nonWearFile = os.path.join(args.nonWearFolder, inputFileName + "-nonWearBouts.csv.gz")
-    args.epochFile = os.path.join(args.epochFolder, inputFileName + "-epoch.csv.gz")
-    args.stationaryFile = os.path.join(args.stationaryFolder, inputFileName + "-stationaryPoints.csv.gz")
-    args.tsFile = os.path.join(args.timeSeriesFolder, inputFileName + "-timeSeries.csv.gz")
-    args.rawFile = os.path.join(args.rawFolder, inputFileName + ".csv.gz")
-    args.npyFile = os.path.join(args.npyFolder, inputFileName + ".npy")
-
-    # Check if we can write to the output folders
-    for path in [
-        args.summaryFolder, args.nonWearFolder,
-        args.stationaryFolder, args.timeSeriesFolder,
-        args.rawFolder, args.npyFolder, args.outputFolder
-    ]:
-        assert os.access(os.path.abspath(path), os.W_OK), (
-            f"Either folder '{path}' does not exist "
-            "or you do not have write permission"
-        )
-    if args.processInputFile:
-        assert os.access(os.path.abspath(args.epochFolder), os.W_OK), (
-            f"Either folder '{args.epochFolder}' does not exist "
-            "or you do not have write permission"
-        )
+    args.summaryFile = os.path.join(args.outputFolder, inputFileName + "-summary.json")
+    args.nonWearFile = os.path.join(args.outputFolder, inputFileName + "-nonWearBouts.csv.gz")
+    args.epochFile = os.path.join(args.outputFolder, inputFileName + "-epoch.csv.gz")
+    args.stationaryFile = os.path.join(args.outputFolder, inputFileName + "-stationaryPoints.csv.gz")
+    args.tsFile = os.path.join(args.outputFolder, inputFileName + "-timeSeries.csv.gz")
+    args.rawFile = os.path.join(args.outputFolder, inputFileName + ".csv.gz")
+    args.npyFile = os.path.join(args.outputFolder, inputFileName + ".npy")  # .gz?
 
     # Schedule to delete intermediate files at program exit
     if args.deleteIntermediateFiles:
