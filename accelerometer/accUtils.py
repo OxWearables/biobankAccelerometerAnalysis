@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 import datetime
-import glob
 import json
 import math
 import os
@@ -99,109 +98,75 @@ def toScreen(msg):
     print(f"\n{datetime.datetime.now().strftime(timeFormat)}\t{msg}")
 
 
-def writeStudyAccProcessCmds(accDir, outDir, cmdsFile='processCmds.txt',
-                             accExt="cwa", cmdOptions=None, filesCSV="files.csv"):
-    """Read files to process and write out list of processing commands
+def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptions="", filesCSV="files.csv"):
+    """Generate a text file listing processing commands for files found under accDir/
 
-    This creates the following output directory structure containing all
-    processing results:
-    <outDir>/
-        summary/  #to store outputSummary.json
-        epoch/  #to store feature output for 30sec windows
-        timeSeries/  #simple csv time series output (VMag, activity binary predictions)
-        nonWear/  #bouts of nonwear episodes
-        stationary/  #temp store for features of stationary data for calibration
-        clusterLogs/  #to store terminal output for each processed file
-
-    If a filesCSV exists in accDir/, process the files listed there. If not,
-    all files in accDir/ are processed
-
-    Then an acc processing command is written for each file and written to cmdsFile
-
-    :param str accDirs: Directory(s) with accelerometer files to process
+    :param str accDir: Directory with accelerometer files to process
     :param str outDir: Output directory to be created containing the processing results
     :param str cmdsFile: Output .txt file listing all processing commands
     :param str accExt: Acc file type e.g. cwa, CWA, bin, BIN, gt3x...
     :param str cmdOptions: String of processing options e.g. "--epochPeriod 10"
         Type 'python3 accProccess.py -h' for full list of options
-    :param str filesCSV: Name of .csv file listing acc files to process
 
     :return: New file written to <cmdsFile>
     :rtype: void
 
     :Example:
     >>> import accUtils
-    >>> accUtils.writeStudyAccProcessingCmds("myAccDir/", "myResults/", "myProcessCmds.txt")
+    >>> accUtils.writeProcessingCommands("myAccDir/", "myResults/", "myProcessCmds.txt")
     <cmd options written to "myProcessCmds.txt">
     """
 
-    # Create output directory structure
-    summaryDir = os.path.join(outDir, 'summary')
-    epochDir = os.path.join(outDir, 'epoch')
-    timeSeriesDir = os.path.join(outDir, 'timeSeries')
-    nonWearDir = os.path.join(outDir, 'nonWear')
-    stationaryDir = os.path.join(outDir, 'stationary')
-    logsDir = os.path.join(outDir, 'clusterLogs')
-    rawDir = os.path.join(outDir, 'raw')
-    npyDir = os.path.join(outDir, 'npy')
-
-    createDirIfNotExists(summaryDir)
-    createDirIfNotExists(epochDir)
-    createDirIfNotExists(timeSeriesDir)
-    createDirIfNotExists(nonWearDir)
-    createDirIfNotExists(stationaryDir)
-    createDirIfNotExists(logsDir)
-    createDirIfNotExists(rawDir)
-    createDirIfNotExists(npyDir)
-    createDirIfNotExists(outDir)
-
-    # Use filesCSV if provided, else process everything in accDir (and create filesCSV)
+    # Use filesCSV if provided, else retrieve all accel files under accDir/
     if filesCSV in os.listdir(accDir):
-        fileList = pd.read_csv(os.path.join(accDir, filesCSV))
+        filesCSV = pd.read_csv(os.path.join(accDir, filesCSV), index_col="fileName")
+        filesCSV.index = accDir.rstrip("/") + "/" + filesCSV.index.astype('str')
+        filePaths = filesCSV.index.to_numpy()
+
     else:
-        fileList = pd.DataFrame(
-            {'fileName': [f for f in os.listdir(accDir) if f.lower().endswith(accExt.lower())]}
-        )
-        fileList.to_csv(os.path.join(accDir, filesCSV), index=False)
+        filesCSV = None
+        # List all accelerometer files under accDir/
+        filePaths = []
+        accExt = accExt.lower()
+        for root, dirs, files in os.walk(accDir):
+            for file in files:
+                if file.lower().endswith((accExt,
+                                          accExt + ".gz",
+                                          accExt + ".zip",
+                                          accExt + ".bz2",
+                                          accExt + ".xz")):
+                    filePaths.append(os.path.join(root, file))
 
     with open(cmdsFile, 'w') as f:
-        for i, row in fileList.iterrows():
+        for filePath in filePaths:
 
-            cmd = [
-                'accProcess "{:s}"'.format(os.path.join(accDir, row['fileName'])),
-                '--summaryFolder "{:s}"'.format(summaryDir),
-                '--epochFolder "{:s}"'.format(epochDir),
-                '--timeSeriesFolder "{:s}"'.format(timeSeriesDir),
-                '--nonWearFolder "{:s}"'.format(nonWearDir),
-                '--stationaryFolder "{:s}"'.format(stationaryDir),
-                '--rawFolder "{:s}"'.format(rawDir),
-                '--npyFolder "{:s}"'.format(npyDir),
-                '--outputFolder "{:s}"'.format(outDir)
-            ]
+            # Use the file name as the output folder name for the process,
+            # keeping the same directory structure of accDir/
+            # Example: If filePath is {accDir}/group0/subject123.cwa then
+            # outputFolder will be {outDir}/group0/subject123/
+            outputFolder = filePath.replace(accDir.rstrip("/"), outDir.rstrip("/")).split(".")[0]
 
-            # Grab additional arguments provided in filesCSV (e.g. calibration params)
-            cmdOptionsCSV = ' '.join(['--{} {}'.format(col, row[col]) for col in fileList.columns[1:]])
+            cmd = f"accProcess {filePath} --outputFolder {outputFolder} {cmdOptions}"
 
-            if cmdOptions:
-                cmd.append(cmdOptions)
-            if cmdOptionsCSV:
-                cmd.append(cmdOptionsCSV)
+            if filesCSV is not None:
+                # Grab additional options provided in filesCSV (e.g. calibration params)
+                cmdOptionsCSV = ' '.join(['--{} {}'.format(col, filesCSV.loc[filePath, col])
+                                          for col in filesCSV.columns])
+                cmd += " " + cmdOptionsCSV
 
-            cmd = ' '.join(cmd)
             f.write(cmd)
             f.write('\n')
 
     print('Processing list written to ', cmdsFile)
-    print('Suggested dir for log files: ', logsDir)
 
 
-def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
-    """read all summary *.json files and convert into one large CSV file
+def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
+    """Read all *-summary.json files under <resultsDir> and merge into one CSV file
 
-    Each json file represents summary data for one participant. Therefore output
-    CSV file contains summary for all participants.
+    Each json file represents summary data for one participant.
+    Therefore output CSV file contains summary for all participants.
 
-    :param str inputJsonDir: Directory containing JSON files
+    :param str resultsDir: Directory containing JSON files
     :param str outputCsvFile: Output CSV filename
 
     :return: New file written to <outputCsvFile>
@@ -209,22 +174,24 @@ def collateJSONfilesToSingleCSV(inputJsonDir, outputCsvFile):
 
     :Example:
     >>> import accUtils
-    >>> accUtils.collateJSONfilesToSingleCSV("data/", "data/summary-all-files.csv")
-    <summary CSV of all participants/files written to "data/sumamry-all-files.csv">
+    >>> accUtils.collateSummary("data/", "data/all-summary.csv")
+    <summary CSV of all participants/files written to "data/all-summary.csv">
     """
 
+    # Load all *-summary.json files under resultsDir/
     jdicts = []
-    for filename in glob.glob(os.path.join(inputJsonDir, "*.json")):
-        with open(filename, 'r') as f:
-            jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
+    for root, dirs, files in os.walk(resultsDir):
+        for file in files:
+            if file.lower().endswith("-summary.json"):
+                with open(os.path.join(root, file), 'r') as f:
+                    jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
 
-    df = pd.DataFrame.from_dict(jdicts)  # merge to a dataframe
-    refColumnItem = next((item for item in jdicts if item['quality-goodWearTime'] == 1), None)
-    df = df[list(refColumnItem.keys())]  # maintain intended column ordering
-    df['eid'] = df['file-name'].str.split('/').str[-1].str.split('.').str[0]  # infer participant ID
-    df = df.set_index('eid')
-    df.to_csv(outputCsvFile)
-    print('Summary of', str(len(df)), 'participants written to:', outputCsvFile)
+    summary = pd.DataFrame.from_dict(jdicts)  # merge to a dataframe
+    refColumnOrder = next((item for item in jdicts if item['quality-goodWearTime'] == 1), None)
+    summary = summary[list(refColumnOrder.keys())]  # maintain intended column ordering
+    summary['eid'] = summary['file-name'].str.split('/').str[-1].str.split('.').str[0]  # infer ID from filename
+    summary.to_csv(outputCsvFile, index=False)
+    print('Summary of', str(len(summary)), 'participants written to:', outputCsvFile)
 
 
 def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
@@ -384,24 +351,6 @@ def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
 
     print('Files with calibration coefficients for ', str(len(d)),
           'participants written to:', outputCsvFile)
-
-
-def createDirIfNotExists(folder):
-    """ Create directory if it doesn't currently exist
-
-    :param str folder: Directory to be checked/created
-
-    :return: Dir now exists (created if didn't exist before, otherwise untouched)
-    :rtype: void
-
-    :Example:
-    >>> import accUtils
-    >>> accUtils.createDirIfNotExists("/myStudy/summary/dec18/")
-        <folder "/myStudy/summary/dec18/" now exists>
-    """
-
-    if not os.path.exists(folder):
-        os.makedirs(folder)
 
 
 def date_parser(t):
