@@ -47,7 +47,9 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "accProcess=accelerometer.accProcess:main",
-            "accPlot=accelerometer.accPlot:main"
+            "accPlot=accelerometer.accPlot:main",
+            "accWriteCmds=accelerometer.accWriteCmds:main",
+            "accCollateSummary=accelerometer.accCollateSummary:main"
         ]
     },
 )
