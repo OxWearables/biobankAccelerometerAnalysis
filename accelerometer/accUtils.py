@@ -98,7 +98,7 @@ def toScreen(msg):
     print(f"\n{datetime.datetime.now().strftime(timeFormat)}\t{msg}")
 
 
-def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptions="", filesCSV="files.csv"):
+def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptions="", filesCSV=None):
     """Generate a text file listing processing commands for files found under accDir/
 
     :param str accDir: Directory with accelerometer files to process
