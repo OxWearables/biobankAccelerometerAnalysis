@@ -40,13 +40,13 @@ jobs:
     - name: Download a sample cwa file and process it
       run: |
         wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz --quiet
-        accProcess --deleteIntermediateFiles False data/sample.cwa.gz
+        accProcess data/sample.cwa.gz
 
     - name: Compare epoch output
       uses: tianhaoz95/mirror-action@v1.0.1
       with:
-         original: referenceFiles/epoch.csv.gz
-         mirror: data/sample-epoch.csv.gz
+         original: referenceFiles/sample-summary.json
+         mirror: data/sample-summary.json
 
 
 
