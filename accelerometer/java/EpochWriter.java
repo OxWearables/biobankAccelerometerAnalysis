@@ -45,10 +45,9 @@ public class EpochWriter {
     private String timeZone;
 	private boolean getStationaryBouts;
 	private double stationaryStd;
-	private double[] swIntercept;
-	private double[] swSlope;
-	private double[] tempCoef;
-	private double meanTemp;
+	private double[] xyzIntercept;
+	private double[] xyzSlope;
+	private double[] xyzSlopeT;
 	private int intendedSampleRate;
     private String resampleMethod;
 	private int range;
@@ -76,10 +75,9 @@ public class EpochWriter {
 		      int intendedSampleRate,
               String resampleMethod,
 		      int range,
-		      double[] swIntercept,
-		      double[] swSlope,
-		      double[] tempCoef,
-		      double meanTemp,
+		      double[] xyzIntercept,
+		      double[] xyzSlope,
+		      double[] xyzSlopeT,
 		      Boolean getStationaryBouts,
 		      double stationaryStd,
 		      Filter filter,
@@ -95,10 +93,9 @@ public class EpochWriter {
 		this.intendedSampleRate = intendedSampleRate;
         this.resampleMethod = resampleMethod;
 		this.range = range;
-		this.swIntercept = swIntercept;
-		this.swSlope = swSlope;
-		this.tempCoef = tempCoef;
-		this.meanTemp = meanTemp;
+		this.xyzIntercept = xyzIntercept;
+		this.xyzSlope = xyzSlope;
+		this.xyzSlopeT = xyzSlopeT;
 		this.getStationaryBouts = getStationaryBouts;
 		this.stationaryStd = stationaryStd;
 		this.filter = filter;
@@ -273,12 +270,13 @@ public class EpochWriter {
 		double x;
 		double y;
 		double z;
+        double temp;
 		for (int i = 0; i < xVals.size(); i++) {
 			Boolean isClipped = false;
 			x = xVals.get(i);
 			y = yVals.get(i);
 			z = zVals.get(i);
-			double mcTemp = temperatureVals.get(i) - meanTemp; // mean centred
+			temp = temperatureVals.get(i);
 																// temp
 			// check if any pre-calibration clipping present
 			//use >= range as it's clipped here
@@ -288,9 +286,9 @@ public class EpochWriter {
 			}
 
 			// update values to software calibrated values
-			x = swIntercept[0] + x * swSlope[0] + mcTemp * tempCoef[0];
-			y = swIntercept[1] + y * swSlope[1] + mcTemp * tempCoef[1];
-			z = swIntercept[2] + z * swSlope[2] + mcTemp * tempCoef[2];
+			x = xyzIntercept[0] + x * xyzSlope[0] + temp * xyzSlopeT[0];
+			y = xyzIntercept[1] + y * xyzSlope[1] + temp * xyzSlopeT[1];
+			z = xyzIntercept[2] + z * xyzSlope[2] + temp * xyzSlopeT[2];
 
 			// check if any new post-calibration clipping has happened
 			// find crossing of range threshold so use > rather than >=

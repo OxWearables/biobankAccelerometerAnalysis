@@ -18,7 +18,7 @@ def processInputFileToEpoch(  # noqa: C901
     inputFile, timeZone, timeShift,
     epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
-    xyzSlope=[1.0, 1.0, 1.0], xyzTemp=[0.0, 0.0, 0.0], meanTemp=20.0,
+    xyzSlope=[1.0, 1.0, 1.0], xyzSlopeT=[0.0, 0.0, 0.0],
     rawDataParser="AccelerometerParser", javaHeapSpace=None,
     useFilter=True, sampleRate=100, resampleMethod="linear", epochPeriod=30,
     activityClassification=True,
@@ -46,7 +46,6 @@ def processInputFileToEpoch(  # noqa: C901
     :param list(float) xyzIntercept: Calbiration offset [x, y, z]
     :param list(float) xyzSlope: Calbiration slope [x, y, z]
     :param list(float) xyzTemp: Calbiration temperature coefficient [x, y, z]
-    :param float meanTemp: Calibration mean temperature in file
     :param str rawDataParser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
     :param str javaHeapSpace: Amount of heap space allocated to java subprocesses.
@@ -128,15 +127,14 @@ def processInputFileToEpoch(  # noqa: C901
             xyzIntercept = [summary['calibration-xOffset(g)'],
                             summary['calibration-yOffset(g)'],
                             summary['calibration-zOffset(g)']]
-            xyzSlope = [summary['calibration-xSlope(g)'],
-                        summary['calibration-ySlope(g)'],
-                        summary['calibration-zSlope(g)']]
-            xyzTemp = [summary['calibration-xTemp(C)'],
-                       summary['calibration-yTemp(C)'],
-                       summary['calibration-zTemp(C)']]
-            meanTemp = summary['calibration-meanDeviceTemp(C)']
+            xyzSlope = [summary['calibration-xSlope'],
+                        summary['calibration-ySlope'],
+                        summary['calibration-zSlope']]
+            xyzSlopeT = [summary['calibration-xSlopeTemp'],
+                         summary['calibration-ySlopeTemp'],
+                         summary['calibration-zSlopeTemp']]
         else:
-            storeCalibrationParams(summary, xyzIntercept, xyzSlope, xyzTemp, meanTemp)
+            storeCalibrationParams(summary, xyzIntercept, xyzSlope, xyzSlopeT)
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
@@ -155,10 +153,9 @@ def processInputFileToEpoch(  # noqa: C901
                        "xSlope:" + str(xyzSlope[0]),
                        "ySlope:" + str(xyzSlope[1]),
                        "zSlope:" + str(xyzSlope[2]),
-                       "xTemp:" + str(xyzTemp[0]),
-                       "yTemp:" + str(xyzTemp[1]),
-                       "zTemp:" + str(xyzTemp[2]),
-                       "meanTemp:" + str(meanTemp),
+                       "xSlopeT:" + str(xyzSlopeT[0]),
+                       "ySlopeT:" + str(xyzSlopeT[1]),
+                       "zSlopeT:" + str(xyzSlopeT[2]),
                        "epochPeriod:" + str(epochPeriod),
                        "rawOutput:" + str(rawOutput),
                        "rawFile:" + str(rawFile),
@@ -203,10 +200,9 @@ def processInputFileToEpoch(  # noqa: C901
             calArgs += str(xyzIntercept[0]) + ','
             calArgs += str(xyzIntercept[1]) + ','
             calArgs += str(xyzIntercept[2]) + ','
-            calArgs += str(xyzTemp[0]) + ','
-            calArgs += str(xyzTemp[1]) + ','
-            calArgs += str(xyzTemp[2]) + ','
-            calArgs += str(meanTemp)
+            calArgs += str(xyzSlopeT[0]) + ','
+            calArgs += str(xyzSlopeT[1]) + ','
+            calArgs += str(xyzSlopeT[2]) + ','
             commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
                            "-svm-file", epochFile, "-info", stationaryFile,
                            "-svm-extended", "3", "-calibrate", "0",
@@ -230,82 +226,116 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     :rtype: void
     """
 
-    # learning/research parameters
-    maxIter = 1000
-    minIterImprovement = 0.0001  # 0.1mg
-    # use python NUMPY framework to store stationary episodes from epoch file
     if isinstance(staticBoutsFile, pd.DataFrame):
+        data = staticBoutsFile
 
-        axesVals = staticBoutsFile[['xMean', 'yMean', 'zMean']].values
-        tempVals = staticBoutsFile[['temperature']].values
     else:
-        cols = ['xMean', 'yMean', 'zMean', 'temp', 'dataErrors']
-        d = pd.read_csv(staticBoutsFile, usecols=cols, compression='gzip')
-        d = d.to_numpy()
-        if len(d) <= 5:
-            storeCalibrationInformation(summary, [0.0, 0.0, 0.0], [1.0, 1.0, 1.0],
-                                        [0.0, 0.0, 0.0], 20, np.nan, np.nan,
-                                        np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, len(d))
-            return
-        stationaryPoints = d[d[:, 4] == 0]  # don't consider episodes with data errors
-        axesVals = stationaryPoints[:, [0, 1, 2]]
-        tempVals = stationaryPoints[:, [3]]
-    meanTemp = np.mean(tempVals)
-    tempVals = np.copy(tempVals - meanTemp)
-    # store information on spread of stationary points
-    xMin, yMin, zMin = np.amin(axesVals, axis=0)
-    xMax, yMax, zMax = np.amax(axesVals, axis=0)
-    # initialise intercept/slope variables to assume no error initially present
-    intercept = np.array([0.0, 0.0, 0.0])
-    slope = np.array([1.0, 1.0, 1.0])
-    tempCoef = np.array([0.0, 0.0, 0.0])
-    # variables to support model fitting
-    bestError = 1e16
+        data = pd.read_csv(staticBoutsFile)
+
+    data = data[data['dataErrors'] == 0].dropna()  # drop segments with errors
+    xyz = data[['xMean', 'yMean', 'zMean']].to_numpy()
+    if 'temp' in data:
+        T = data['temp'].to_numpy()
+    else:  # use a dummy
+        T = np.zeros(len(xyz), dtype=xyz.dtype)
+
+    # Remove any zero vectors as they cause nan issues
+    nonzero = np.linalg.norm(xyz, axis=1) > 1e-8
+    xyz = xyz[nonzero]
+    T = T[nonzero]
+
+    intercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
+    slope = np.array([1.0, 1.0, 1.0], dtype=xyz.dtype)
+    slopeT = np.array([0.0, 0.0, 0.0], dtype=T.dtype)
     bestIntercept = np.copy(intercept)
     bestSlope = np.copy(slope)
-    bestTemp = np.copy(tempCoef)
-    # record initial uncalibrated error
-    curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+    bestSlopeT = np.copy(slopeT)
+
+    curr = xyz
     target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
+
     errors = np.linalg.norm(curr - target, axis=1)
-    initError = np.sqrt(np.mean(np.square(errors)))  # root mean square error
-    # iterate through linear model fitting
-    try:
-        for i in range(1, maxIter):
-            # iterate through each axis, refitting its intercept/slope vals
-            for a in range(0, 3):
-                x = np.concatenate([curr[:, [a]], tempVals], axis=1)
-                x = sm.add_constant(x, prepend=True)  # add bias/intercept term
-                y = target[:, a]
-                newI, newS, newT = sm.OLS(y, x).fit().params
-                # update values as part of iterative closest point fitting process
-                # refer to wiki as there is quite a bit of math behind next 3 lines
-                intercept[a] = newI + (intercept[a] * newS)
-                slope[a] = newS * slope[a]
-                tempCoef[a] = newT + (tempCoef[a] * newS)
-            # update vals (and targed) based on new intercept/slope/temp coeffs
-            curr = intercept + (np.copy(axesVals) * slope) + (np.copy(tempVals) * tempCoef)
+    err = np.median(errors)  # MAE more robust than RMSE. This is different from the paper
+    initErr = err
+    bestErr = 1e16
+    nStatic = len(xyz)
+
+    MAXITER = 1000
+    IMPROV_TOL = 0.0001  # 0.01%
+    ERR_TOL = 0.01  # 10mg
+    CALIB_CUBE = 0.3
+
+    # Check that we have enough uniformly distributed points:
+    # need at least one point outside each face of the cube
+    if (np.max(xyz, axis=0) < CALIB_CUBE).any() \
+            or (np.min(xyz, axis=0) > -CALIB_CUBE).any():
+        goodCalibration = 0
+
+    else:  # we do have enough uniformly distributed points
+
+        for it in range(MAXITER):
+
+            # Weighting. Outliers are zeroed out
+            # This is different from the paper
+            maxerr = np.quantile(errors, .995)
+            weights = np.maximum(1 - errors / maxerr, 0)
+
+            # Optimize params for each axis
+            for k in range(3):
+
+                inp = curr[:, k]
+                out = target[:, k]
+                inp = np.column_stack((inp, T))
+                inp = sm.add_constant(inp, prepend=True)
+                params = sm.WLS(out, inp, weights=weights).fit().params
+                # In the following,
+                # intercept == params[0]
+                # slope == params[1]
+                # slopeT == params[2]
+                intercept[k] = params[0] + (intercept[k] * params[1])
+                slope[k] = params[1] * slope[k]
+                slopeT[k] = params[2] + (slopeT[k] * params[1])
+
+            # Update current solution and target
+            curr = intercept + (xyz * slope)
+            curr = curr + (T[:, None] * slopeT)
             target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
+
+            # Update errors
             errors = np.linalg.norm(curr - target, axis=1)
-            rms = np.sqrt(np.mean(np.square(errors)))  # root mean square error
-            # assess iterative error convergence
-            improvement = (bestError - rms) / bestError
-            if rms < bestError:
+            err = np.median(errors)
+            errImprov = (bestErr - err) / bestErr
+
+            if err < bestErr:
                 bestIntercept = np.copy(intercept)
                 bestSlope = np.copy(slope)
-                bestTemp = np.copy(tempCoef)
-                bestError = rms
-            if improvement < minIterImprovement:
-                break  # break if not largely converged
-    except Exception as exceptStr:
-        # highlight problem with regression, and exit
-        xMin, yMin, zMin = float('nan'), float('nan'), float('nan')
-        xMax, yMax, zMax = float('nan'), float('nan'), float('nan')
-        sys.stderr.write('WARNING: Calibration error\n ' + str(exceptStr))
-    # store output to summary dictionary
-    storeCalibrationInformation(summary, bestIntercept, bestSlope,
-                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-                                zMax, len(axesVals))
+                bestSlopeT = np.copy(slopeT)
+                bestErr = err
+
+            if errImprov < IMPROV_TOL:
+                break
+
+        goodCalibration = int(not ((bestErr > ERR_TOL) or (it + 1 == MAXITER)))
+
+    if goodCalibration == 0:  # restore calibr params
+        bestIntercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
+        bestSlope = np.array([1.0, 1.0, 1.0], dtype=xyz.dtype)
+        bestSlopeT = np.array([0.0, 0.0, 0.0], dtype=T.dtype)
+        bestErr = initErr
+
+    storeCalibrationInformation(
+        summary,
+        bestIntercept=bestIntercept,
+        bestSlope=bestSlope,
+        bestSlopeT=bestSlopeT,
+        initErr=initErr,
+        bestErr=bestErr,
+        nStatic=nStatic,
+        calibratedOnOwnData=1,
+        goodCalibration=goodCalibration
+    )
+
+    return
 
 
 def getOmconvertInfo(omconvertInfoFile, summary):
@@ -328,8 +358,7 @@ def getOmconvertInfo(omconvertInfoFile, summary):
             vals = value.split(',')
             bestIntercept = float(vals[3]), float(vals[4]), float(vals[5])
             bestSlope = float(vals[0]), float(vals[1]), float(vals[2])
-            bestTemp = float(vals[6]), float(vals[7]), float(vals[8])
-            meanTemp = float(vals[-1])
+            bestSlopeT = float(vals[6]), float(vals[7]), float(vals[8])
         elif name == 'Calibration-Stationary-Error-Pre':
             initError = float(value)
         elif name == 'Calibration-Stationary-Error-Post':
@@ -344,68 +373,46 @@ def getOmconvertInfo(omconvertInfoFile, summary):
             nStatic = int(value)
     file.close()
     # store output to summary dictionary
-    storeCalibrationInformation(summary, bestIntercept, bestSlope,
-                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-                                zMax, nStatic)
+    storeCalibrationInformation(summary, bestIntercept, bestSlope, bestSlopeT,
+                                initError, bestError, nStatic, None, None)
 
 
-def storeCalibrationInformation(summary, bestIntercept, bestSlope,
-                                bestTemp, meanTemp, initError, bestError, xMin, xMax, yMin, yMax, zMin,
-                                zMax, nStatic, calibrationSphereCriteria=0.3):
+def storeCalibrationInformation(
+        summary, bestIntercept, bestSlope, bestSlopeT,
+        initErr, bestErr, nStatic, calibratedOnOwnData, goodCalibration
+):
     """Store calibration information to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
     :param list(float) bestIntercept: Best x/y/z intercept values
     :param list(float) bestSlope: Best x/y/z slope values
-    :param list(float) bestTemperature: Best x/y/z temperature values
-    :param float meanTemp: Calibration mean temperature in file
-    :param float initError: Root mean square error (in mg) before calibration
-    :param float initError: Root mean square error (in mg) after calibration
-    :param float xMin: xMin information on spread of stationary points
-    :param float xMax: xMax information on spread of stationary points
-    :param float yMin: yMin information on spread of stationary points
-    :param float yMax: yMax information on spread of stationary points
-    :param float zMin: zMin information on spread of stationary points
-    :param float zMax: zMax information on spread of stationary points
+    :param list(float) bestSlopeT: Best x/y/z temperature slope values
+    :param float initErr: Error (in mg) before calibration
+    :param float bestErr: Error (in mg) after calibration
     :param int nStatic: number of stationary points used for calibration
-    :param float calibrationSphereCriteria: Threshold to check how well file was
-        calibrated
+    :param calibratedOnOwnData: Whether params were self-derived
+    :param goodCalibration: Whether calibration succeded
 
     :return: Calibration summary values written to dict <summary>
     :rtype: void
     """
 
     # store output to summary dictionary
-    summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initError * 1000, 2)
-    summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestError * 1000, 2)
-    storeCalibrationParams(summary, bestIntercept, bestSlope, bestTemp, meanTemp)
+    storeCalibrationParams(summary, bestIntercept, bestSlope, bestSlopeT)
+    summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initErr * 1000, 2)
+    summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestErr * 1000, 2)
     summary['calibration-numStaticPoints'] = nStatic
-    summary['calibration-staticXmin(g)'] = accUtils.formatNum(xMin, 2)
-    summary['calibration-staticXmax(g)'] = accUtils.formatNum(xMax, 2)
-    summary['calibration-staticYmin(g)'] = accUtils.formatNum(yMin, 2)
-    summary['calibration-staticYmax(g)'] = accUtils.formatNum(yMax, 2)
-    summary['calibration-staticZmin(g)'] = accUtils.formatNum(zMin, 2)
-    summary['calibration-staticZmax(g)'] = accUtils.formatNum(zMax, 2)
-    # check how well calibrated file was
-    summary['quality-calibratedOnOwnData'] = 1
-    summary['quality-goodCalibration'] = 1
-    s = calibrationSphereCriteria
-    try:
-        if xMin > -s or xMax < s or yMin > -s or yMax < s or zMin > -s or zMax < s or \
-                np.isnan(xMin) or np.isnan(yMin) or np.isnan(zMin):
-            summary['quality-goodCalibration'] = 0
-    except UnboundLocalError:
-        summary['quality-goodCalibration'] = 0
+    summary['quality-calibratedOnOwnData'] = calibratedOnOwnData
+    summary['quality-goodCalibration'] = goodCalibration
 
 
-def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzTemp, meanTemp):
+def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
     """Store calibration parameters to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
     :param list(float) xyzOff: intercept [x, y, z]
     :param list(float) xyzSlope: slope [x, y, z]
-    :param list(float) xyzTemp: temperature [x, y, z]
-    :param float meanTemp: Calibration mean temperature in file
+    :param list(float) xyzSlopeT: temperature slope [x, y, z]
 
     :return: Calibration summary values written to dict <summary>
     :rtype: void
@@ -415,13 +422,12 @@ def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzTemp, meanTemp):
     summary['calibration-xOffset(g)'] = accUtils.formatNum(xyzOff[0], 4)
     summary['calibration-yOffset(g)'] = accUtils.formatNum(xyzOff[1], 4)
     summary['calibration-zOffset(g)'] = accUtils.formatNum(xyzOff[2], 4)
-    summary['calibration-xSlope(g)'] = accUtils.formatNum(xyzSlope[0], 4)
-    summary['calibration-ySlope(g)'] = accUtils.formatNum(xyzSlope[1], 4)
-    summary['calibration-zSlope(g)'] = accUtils.formatNum(xyzSlope[2], 4)
-    summary['calibration-xTemp(C)'] = accUtils.formatNum(xyzTemp[0], 4)
-    summary['calibration-yTemp(C)'] = accUtils.formatNum(xyzTemp[1], 4)
-    summary['calibration-zTemp(C)'] = accUtils.formatNum(xyzTemp[2], 4)
-    summary['calibration-meanDeviceTemp(C)'] = accUtils.formatNum(meanTemp, 2)
+    summary['calibration-xSlope'] = accUtils.formatNum(xyzSlope[0], 4)
+    summary['calibration-ySlope'] = accUtils.formatNum(xyzSlope[1], 4)
+    summary['calibration-zSlope'] = accUtils.formatNum(xyzSlope[2], 4)
+    summary['calibration-xSlopeTemp'] = accUtils.formatNum(xyzSlopeT[0], 4)
+    summary['calibration-ySlopeTemp'] = accUtils.formatNum(xyzSlopeT[1], 4)
+    summary['calibration-zSlopeTemp'] = accUtils.formatNum(xyzSlopeT[2], 4)
 
 
 def getDeviceId(inputFile):

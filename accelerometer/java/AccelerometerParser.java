@@ -60,10 +60,9 @@ public class AccelerometerParser {
     	DateTimeFormatter csvTimeFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'");
     	boolean getStationaryBouts = false;
     	double stationaryStd = 0.013;
-    	double[] swIntercept = new double[] { 0.0, 0.0, 0.0 };
-    	double[] swSlope = new double[] { 1.0, 1.0, 1.0 };
-    	double[] tempCoef = new double[] { 0.0, 0.0, 0.0 };
-    	double meanTemp = 0.0;
+    	double[] xyzIntercept = new double[] { 0.0, 0.0, 0.0 };
+    	double[] xyzSlope = new double[] { 1.0, 1.0, 1.0 };
+    	double[] xyzSlopeT = new double[] { 0.0, 0.0, 0.0 };
     	int range = 8;
     	int sampleRate = 100;
         String resampleMethod = "linear";
@@ -124,25 +123,23 @@ public class AccelerometerParser {
 				} else if (funcName.equals("stationaryStd")) {
 					stationaryStd = Double.parseDouble(funcParam);
 				} else if (funcName.equals("xIntercept")) {
-					swIntercept[0] = Double.parseDouble(funcParam);
+					xyzIntercept[0] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("yIntercept")) {
-					swIntercept[1] = Double.parseDouble(funcParam);
+					xyzIntercept[1] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("zIntercept")) {
-					swIntercept[2] = Double.parseDouble(funcParam);
+					xyzIntercept[2] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("xSlope")) {
-					swSlope[0] = Double.parseDouble(funcParam);
+					xyzSlope[0] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("ySlope")) {
-					swSlope[1] = Double.parseDouble(funcParam);
+					xyzSlope[1] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("zSlope")) {
-					swSlope[2] = Double.parseDouble(funcParam);
-				} else if (funcName.equals("xTemp")) {
-					tempCoef[0] = Double.parseDouble(funcParam);
-				} else if (funcName.equals("yTemp")) {
-					tempCoef[1] = Double.parseDouble(funcParam);
-				} else if (funcName.equals("zTemp")) {
-					tempCoef[2] = Double.parseDouble(funcParam);
-				} else if (funcName.equals("meanTemp")) {
-					meanTemp = Double.parseDouble(funcParam);
+					xyzSlope[2] = Double.parseDouble(funcParam);
+				} else if (funcName.equals("xSlopeT")) {
+					xyzSlopeT[0] = Double.parseDouble(funcParam);
+				} else if (funcName.equals("ySlopeT")) {
+					xyzSlopeT[1] = Double.parseDouble(funcParam);
+				} else if (funcName.equals("zSlopeT")) {
+					xyzSlopeT[2] = Double.parseDouble(funcParam);
 				} else if (funcName.equals("sampleRate")) {
 					sampleRate= Integer.parseInt(funcParam);
 				} else if (funcName.equals("resampleMethod")) {
@@ -164,7 +161,7 @@ public class AccelerometerParser {
 				} else if (funcName.equals("csvTimeXYZTempColsIndex")) {
 					String[] timeXYZTemp = funcParam.split(",");
 					if (timeXYZTemp.length != 5 && timeXYZTemp.length != 4) {
-						System.err.println("error parsing csvTimeXYZTempColsIndex: " 
+						System.err.println("error parsing csvTimeXYZTempColsIndex: "
 								+ timeXYZTemp.toString()
 								+ "\n must be 4 or 5 comma separated integers");
 						System.exit(-2);
@@ -210,8 +207,9 @@ public class AccelerometerParser {
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
         		npyFile, getFeatures, numFFTbins, timeFormat, timeZone,
-        		epochPeriod, sampleRate, resampleMethod, range, swIntercept, swSlope, tempCoef,
-        		meanTemp, getStationaryBouts, stationaryStd,
+        		epochPeriod, sampleRate, resampleMethod, range,
+                xyzIntercept, xyzSlope, xyzSlopeT,
+        		getStationaryBouts, stationaryStd,
         		startTime, endTime, verbose
    				);
 
