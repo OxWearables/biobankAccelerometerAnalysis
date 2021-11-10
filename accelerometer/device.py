@@ -87,10 +87,6 @@ def processInputFileToEpoch(  # noqa: C901
     javaClassPath = f"{ROOT_DIR}/java/:{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
     staticStdG = stationaryStd / 1000.0  # java expects units of G (not mg)
 
-    if xyzIntercept != [0, 0, 0] or xyzSlope != [1, 1, 1] or xyzTemp != [0, 0, 0]:
-        skipCalibration = True
-        print('\nSkipping calibration as input parameter supplied')
-
     if 'omconvert' in rawDataParser:
         useJava = False
 

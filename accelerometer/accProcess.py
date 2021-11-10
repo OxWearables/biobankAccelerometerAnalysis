@@ -225,6 +225,10 @@ def main():  # noqa: C901
 
     processingStartTime = datetime.datetime.now()
 
+    if args.calOffset != [0, 0, 0] or args.calSlope != [1, 1, 1] or args.calTemp != [0, 0, 0]:
+        args.skipCalibration = True
+        warnings.warn('Skipping calibration as coefficients supplied')
+
     assert args.sampleRate >= 25, "sampleRate<25 currently not supported"
 
     if args.sampleRate <= 40:
