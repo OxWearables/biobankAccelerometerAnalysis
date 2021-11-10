@@ -124,22 +124,21 @@ def main():  # noqa: C901
     parser.add_argument('--calOffset',
                         metavar=('x', 'y', 'z'), default=[0.0, 0.0, 0.0],
                         type=float, nargs=3,
-                        help="""accelerometer calibration offset (default :
-                             %(default)s)""")
+                        help="""accelerometer calibration offset in g
+                        (default : %(default)s)""")
     parser.add_argument('--calSlope',
                         metavar=('x', 'y', 'z'), default=[1.0, 1.0, 1.0],
                         type=float, nargs=3,
-                        help="""accelerometer calibration slope linking
-                            offset to temperature (default : %(default)s)""")
+                        help="""accelerometer slopes for calibration
+                        (default : %(default)s)""")
     parser.add_argument('--calTemp',
                         metavar=('x', 'y', 'z'), default=[0.0, 0.0, 0.0],
                         type=float, nargs=3,
-                        help="""mean temperature in degrees Celsius of
-                            stationary data for calibration
-                            (default : %(default)s)""")
+                        help="""temperature slopes for calibration
+                        (default : %(default)s)""")
     parser.add_argument('--meanTemp',
-                        metavar="temp", default=20.0, type=float,
-                        help="""mean calibration temperature in degrees
+                        metavar="temp", default=None, type=float,
+                        help="""(DEPRECATED) mean calibration temperature in degrees
                             Celsius (default : %(default)s)""")
     parser.add_argument('--stationaryStd',
                         metavar='mg', default=13, type=int,
@@ -229,6 +228,13 @@ def main():  # noqa: C901
         args.skipCalibration = True
         warnings.warn('Skipping calibration as coefficients supplied')
 
+    if args.meanTemp is not None:
+        warnings.warn("Passing --meanTemp is deprecated. Calibration will be performed (--skipCalibration False)")
+        args.skipCalibration = False
+        args.calOffset = [0, 0, 0]
+        args.calSlope = [1, 1, 1]
+        args.calTemp = [0, 0, 0]
+
     assert args.sampleRate >= 25, "sampleRate<25 currently not supported"
 
     if args.sampleRate <= 40:
@@ -299,7 +305,7 @@ def main():  # noqa: C901
             args.timeShift, args.epochFile, args.stationaryFile, summary,
             skipCalibration=args.skipCalibration,
             stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
-            xyzSlope=args.calSlope, xyzTemp=args.calTemp, meanTemp=args.meanTemp,
+            xyzSlope=args.calSlope, xyzSlopeT=args.calTemp,
             rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
             useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
             epochPeriod=args.epochPeriod,
