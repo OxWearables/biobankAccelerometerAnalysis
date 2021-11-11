@@ -166,12 +166,15 @@ def main():  # noqa: C901
                         help="""Highly recommended method to impute missing
                             data using data from other days around the same time
                              (default : %(default)s)""")
+    parser.add_argument('--extractFeatures',
+                        metavar='True/False', default=True, type=str2bool,
+                        help="""Whether to extract signal features. Needed for
+                            activity classification (default : %(default)s)""")
     # activity classification arguments
     parser.add_argument('--activityClassification',
                         metavar='True/False', default=True, type=str2bool,
                         help="""Use pre-trained random forest to predict
-                            activity type
-                            (default : %(default)s)""")
+                            activity type (default : %(default)s)""")
     parser.add_argument('--activityModel', type=str,
                         default="walmsley",
                         help="""trained activity model .tar file""")
@@ -234,6 +237,10 @@ def main():  # noqa: C901
         args.calOffset = [0, 0, 0]
         args.calSlope = [1, 1, 1]
         args.calTemp = [0, 0, 0]
+
+    if args.activityClassification and not args.extractFeatures:
+        args.extractFeatures = True
+        warnings.warn('Setting --extractFeatures True: Required for activity classification')
 
     assert args.sampleRate >= 25, "sampleRate<25 currently not supported"
 
@@ -309,7 +316,7 @@ def main():  # noqa: C901
             rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
             useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
             epochPeriod=args.epochPeriod,
-            activityClassification=args.activityClassification,
+            extractFeatures=args.extractFeatures,
             rawOutput=args.rawOutput, rawFile=args.rawFile,
             npyOutput=args.npyOutput, npyFile=args.npyFile,
             startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
