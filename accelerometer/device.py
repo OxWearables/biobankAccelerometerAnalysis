@@ -21,7 +21,7 @@ def processInputFileToEpoch(  # noqa: C901
     xyzSlope=[1.0, 1.0, 1.0], xyzSlopeT=[0.0, 0.0, 0.0],
     rawDataParser="AccelerometerParser", javaHeapSpace=None,
     useFilter=True, sampleRate=100, resampleMethod="linear", epochPeriod=30,
-    activityClassification=True,
+    extractFeatures=True,
     rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
     startTime=None, endTime=None,
     verbose=False,
@@ -161,7 +161,7 @@ def processInputFileToEpoch(  # noqa: C901
                        "rawFile:" + str(rawFile),
                        "npyOutput:" + str(npyOutput),
                        "npyFile:" + str(npyFile),
-                       "getFeatures:" + str(activityClassification)]
+                       "getFeatures:" + str(extractFeatures)]
         if javaHeapSpace:
             commandArgs.insert(1, javaHeapSpace)
         if startTime:
