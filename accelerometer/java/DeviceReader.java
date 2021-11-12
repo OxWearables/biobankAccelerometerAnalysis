@@ -43,7 +43,6 @@ public class DeviceReader {
         boolean npyOutput,
         String npyFile,
         boolean getFeatures,
-        int numFFTbins,
         DateTimeFormatter timeFormat,
         String timeZone,
         int epochPeriod,
@@ -110,9 +109,7 @@ public class DeviceReader {
                   filter,
                   startTime,
                   endTime,
-                  getFeatures,
-                  numFFTbins
-                  );
+                  getFeatures);
         } catch (IOException excep) {
             excep.printStackTrace(System.err);
             System.err.println("error closing file writer: " + excep.toString());

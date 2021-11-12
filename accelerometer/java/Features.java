@@ -28,12 +28,10 @@ public class Features {
             double[] y,
             double[] z,
             double[] filteredVM,
-            int sampleRate,
-            int numFFTbinsPerChannel){
+            int sampleRate){
 
         // get San Diego (Ellis) features
-        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate,
-                                                            numFFTbinsPerChannel);
+        double[] sanDiegoFeats = calculateSanDiegoFeatures(x, y, z, sampleRate);
 
         // get MAD features
         double[] madFeats = calculateMADFeatures(x, y, z);
@@ -44,45 +42,26 @@ public class Features {
         // get Unilever (Zhang/Rowlands) features
         double[] uniFeats = unileverFeatures(filteredVM, sampleRate);
 
-        // get Fourier bins for each of the channels
-        double[] xFFTfeats = getFFT(x, numFFTbinsPerChannel);
-        double[] yFFTfeats = getFFT(y, numFFTbinsPerChannel);
-        double[] zFFTfeats = getFFT(z, numFFTbinsPerChannel);
-        double[] vmFFTfeats = getFFT(filteredVM, numFFTbinsPerChannel);
-
         // construct final output array
         // don't forget to change header method immediately below !!!
         double[] output = AccStats.combineArrays(sanDiegoFeats, madFeats);
         output = AccStats.combineArrays(output, armFeats);
         output = AccStats.combineArrays(output, uniFeats);
-        output = AccStats.combineArrays(output, xFFTfeats);
-        output = AccStats.combineArrays(output, yFFTfeats);
-        output = AccStats.combineArrays(output, zFFTfeats);
-        output = AccStats.combineArrays(output, vmFFTfeats);
 
         return output;
         // todo method to write header line order (use static class variables )
     }
 
-    public static String getFeaturesHeader(int numFFTbins){
-        String header = getSanDiegoFeaturesHeader(numFFTbins);
+    public static String getFeaturesHeader() {
+        String header = getSanDiegoFeaturesHeader();
         header += "," + getMADFeaturesHeader();
         header += "," + getArmFeaturesHeader();
         header += "," + getUnileverFeaturesHeader();
-        header += "," + getFFFHeader(numFFTbins, "x");
-        header += "," + getFFFHeader(numFFTbins, "y");
-        header += "," + getFFFHeader(numFFTbins, "z");
-        header += "," + getFFFHeader(numFFTbins, "vm");
         return header;
     }
 
 
-    private static double[] calculateSanDiegoFeatures(
-            double[] x,
-            double[] y,
-            double[] z,
-            int sampleRate,
-            int numFFTbins) {
+    private static double[] calculateSanDiegoFeatures(double[] x, double[] y, double[] z, int sampleRate) {
 
         /*
             This function aims to replicate the following R-code:
@@ -175,19 +154,19 @@ public class Features {
             gzxAngle,
             gyxAngle,
         };
-        double[] fftVals = sanDiegoFFT(v, sampleRate, numFFTbins);
+        double[] fftVals = sanDiegoFFT(v, sampleRate);
         return AccStats.combineArrays(output, fftVals);
 
     }
 
-    private static String getSanDiegoFeaturesHeader(int numFFTbins){
+    private static String getSanDiegoFeaturesHeader() {
         String header = "mean,sd,coefvariation";
         header += ",median,min,max,25thp,75thp";
         header += ",autocorr,corrxy,corrxz,corryz";
         header += ",avgroll,avgpitch,avgyaw";
         header += ",sdroll,sdpitch,sdyaw";
         header += ",rollg,pitchg,yawg";
-        header += "," + getSanDiegoFFTHeader(numFFTbins);
+        header += "," + getSanDiegoFFTHeader();
         return header;
     }
 
@@ -249,10 +228,7 @@ public class Features {
     }
 
 
-    private static double[] sanDiegoFFT(
-            double[] v,
-            int sampleRate,
-            int numFFTbins)
+    private static double[] sanDiegoFFT(double[] v, int sampleRate)
     {
         final int n = v.length;
         final double vMean = AccStats.mean(v);
@@ -270,7 +246,6 @@ public class Features {
         /*
         Compute spectral entropy
         See https://www.mathworks.com/help/signal/ref/pentropy.html#mw_a57f549d-996c-47d9-8d45-e80cb739ed41
-        Note: the following is the spectral entropy of only half of the spectrum (which is symetric anyways)
         */
         double spectralEntropy = 0.0;  // spectral entropy
         final double vFFTpowsum = AccStats.sum(vFFTpow);
@@ -302,12 +277,12 @@ public class Features {
         p33 = Math.log(p33 + 1E-8);
 
         /*
-        Estimate powers for frequencies 0-14Hz using Welch's method
+        Estimate powers for frequencies 0-9 using Welch's method
         See: https://en.wikipedia.org/wiki/Welch%27s_method
         Note: Using the average magnitudes (instead of powers) yielded
         slightly better classification results in random forest
         */
-        final int numBins = numFFTbins;
+        final int numBins = 10;
         double[] binnedFFT = new double[numBins];
         for (int i = 0; i < numBins; i++){
             binnedFFT[i] = 0;
@@ -318,8 +293,8 @@ public class Features {
         double[] windowFFT = new double[sampleRate];
         DoubleFFT_1D windowTransformer = new DoubleFFT_1D(sampleRate);
         for (int i = 0; i < numWindows; i++ ) {
-            for (int j = 0; j < windowFFT.length; j++){
-                windowFFT[j] = v[i*windowOverlap+j];  // grab window
+            for (int j = 0; j < windowFFT.length; j++){  // slicing
+                windowFFT[j] = v[i*windowOverlap+j];
             }
             HanningWindow(windowFFT, windowFFT.length);
             windowTransformer.realForward(windowFFT);  // FFT library computes coefs inplace
@@ -346,9 +321,10 @@ public class Features {
 
     }
 
-    private static String getSanDiegoFFTHeader(int numFFTbins){
+    private static String getSanDiegoFFTHeader() {
         String header = "fmax,pmax,fmaxband,pmaxband,entropy";
-        for(int i=0; i<numFFTbins; i++){
+        final int numBins = 10;
+        for(int i=0; i<numBins; i++){
             header += ",fft" + (i+1);
         }
         return header;
@@ -429,42 +405,6 @@ public class Features {
     }
 
 
-    /*
-     * Gets [numFFTbins] FFT bins for each channel of information
-     */
-    private static double[] getFFT(
-            double[] channel,
-            int numFFTbinsPerChannel) {
-        // don't forget to change header method immediately below !!!
-        double[] outputFFT = new double[numFFTbinsPerChannel];
-
-        int n = channel.length;
-        DoubleFFT_1D transformer = new DoubleFFT_1D(n);
-        double[] input = new double[n*2];
-
-        //FFT for channel
-        for (int i = 0; i < n; i++) {
-            input[i] = channel[i];
-        }
-        HanningWindow(input, n);
-        transformer.realForward(input);
-        input = getFFTmagnitude(input);
-        for (int i = 0; i < outputFFT.length; i++) {
-            outputFFT[i] = input[i];
-        }
-
-        return outputFFT;
-    }
-
-    private static String getFFFHeader(int numFFTbins, String prefix){
-        String header = prefix + "fft1";
-        for (int i = 1; i < numFFTbins; i++) {
-            header += "," + prefix + "fft" + (i+1);
-        }
-        return header;
-    }
-
-
     private static double[] getFFTmagnitude(double[] FFT) {
         return getFFTmagnitude(FFT, true);
     }
@@ -532,7 +472,7 @@ public class Features {
         if (normalize) {
             // Divide by length of the signal
             for (int i=0; i<m; i++){
-                FFTpow[i] /= n*n;
+                FFTpow[i] /= n*n;  // square so that after sqrt becomes 1/n
             }
         }
 
@@ -566,8 +506,8 @@ public class Features {
         final double maxFreq = 15;
         final double minFreq = 0.3;
         final double FFTinterval = sampleRate / (1.0 * n); // (Hz)
-        double f1=-1, f2=-1, f625=-1, f33=-1;
-        double p1=0, p2=0, p625=0, p33=0;
+        double f1=-1, f2=-1, f625=-1;
+        double p1=0, p2=0, p625=0;
         double totalPower = 0.0;
         for (int i = 0; i < vFFTpow.length; i++) {
             double freq = FFTinterval * i;

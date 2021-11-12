@@ -72,7 +72,6 @@ public class AccelerometerParser {
     	String startTimeStr = "";
     	String endTimeStr = "";
     	boolean getFeatures = false;
-    	int numFFTbins = 12; // number of fft bins to print
         // Must supply additional information when loading from a .csv file
     	int csvStartRow = 1;
     	List<Integer> csvTimeXYZTempColsIndex = Arrays.asList( 0,1,2,3 );
@@ -174,8 +173,6 @@ public class AccelerometerParser {
 					csvStartRow = Integer.parseInt(funcParam);
 				} else if (funcName.equals("getFeatures")) {
 					getFeatures = Boolean.parseBoolean(funcParam.toLowerCase());
-				} else if (funcName.equals("numFFTbins")) {
-					numFFTbins = Integer.parseInt(funcParam);
 				} else if (funcName.equals("csvTimeFormat")) {
 					csvTimeFormat = DateTimeFormatter.ofPattern(funcParam);
 				} else {
@@ -206,7 +203,7 @@ public class AccelerometerParser {
 			System.out.println("Intermediate file: " + outputFile);
    			epochWriter = DeviceReader.setupEpochWriter(
    				outputFile, useFilter, rawOutput, rawFile, npyOutput,
-        		npyFile, getFeatures, numFFTbins, timeFormat, timeZone,
+        		npyFile, getFeatures, timeFormat, timeZone,
         		epochPeriod, sampleRate, resampleMethod, range,
                 xyzIntercept, xyzSlope, xyzSlopeT,
         		getStationaryBouts, stationaryStd,

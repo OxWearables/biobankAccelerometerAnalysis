@@ -55,7 +55,6 @@ public class EpochWriter {
 	private long startTime; // milliseconds since epoch
 	private long endTime;
 	private boolean getFeatures;
-	private int numFFTbins;
 
 	// file read/write objects
 	private BufferedWriter epochFileWriter;
@@ -83,8 +82,8 @@ public class EpochWriter {
 		      Filter filter,
 		      long startTime,
 		      long endTime,
-		      boolean getFeatures,
-		      int numFFTbins) {
+		      boolean getFeatures)
+    {
 		this.epochFileWriter = epochFileWriter;
 		this.rawWriter = rawWriter;
 		this.npyWriter = npyWriter;
@@ -102,7 +101,6 @@ public class EpochWriter {
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.getFeatures = getFeatures;
-        this.numFFTbins = numFFTbins;
 
         this.zoneId = ZoneId.of(timeZone);
 
@@ -118,7 +116,7 @@ public class EpochWriter {
         DF2.setRoundingMode(RoundingMode.CEILING);
 
 		String epochHeader = "time";
-		epochHeader += "," + AccStats.getStatsHeader(getFeatures, numFFTbins);
+		epochHeader += "," + AccStats.getStatsHeader(getFeatures);
     	epochHeader += ",temp,samples";
 		epochHeader += ",dataErrors,clipsBeforeCalibr,clipsAfterCalibr,rawSamples";
 
@@ -359,8 +357,7 @@ public class EpochWriter {
 		}
 
 		// extract necessary features for this epoch
-		double[] stats = AccStats.getAccStats(xResampled, yResampled, zResampled,
-							filter, getFeatures, intendedSampleRate, numFFTbins);
+		double[] stats = AccStats.getAccStats(xResampled, yResampled, zResampled, filter, getFeatures, intendedSampleRate);
 
 		// check if the values have likely been stuck during this epoch
 		errCounter[0] += AccStats.countStuckVals(xResampled, yResampled, zResampled);

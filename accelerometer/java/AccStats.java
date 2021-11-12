@@ -14,8 +14,7 @@ public class AccStats {
             double[] zArray,
             Filter filter,
             Boolean getFeatures,
-            int sampleRate,
-            int numFFTbins)
+            int sampleRate)
     {
         // calculate raw x/y/z summary values
         double xMean = mean(xArray);
@@ -53,8 +52,7 @@ public class AccStats {
         double[] outputFeats = null;
         //extract features if requested
         if (getFeatures){
-            double[] features = Features.getFeatures(xArray, yArray, zArray,
-                                            enmoTrunc, sampleRate, numFFTbins);
+            double[] features = Features.getFeatures(xArray, yArray, zArray, enmoTrunc, sampleRate);
             outputFeats = AccStats.combineArrays(basicStatistics, features);
         } else{
             outputFeats = basicStatistics;
@@ -63,13 +61,13 @@ public class AccStats {
         return outputFeats;
     }
 
-    public static String getStatsHeader(Boolean getFeatures, int numFFTbins){
+    public static String getStatsHeader(Boolean getFeatures){
         String header = "enmoTrunc,enmoAbs";
         header += ",xMean,yMean,zMean";
         header += ",xRange,yRange,zRange,xStd,yStd,zStd";
         header += ",xyCov,xzCov,yzCov";
         if(getFeatures){
-            header += "," + Features.getFeaturesHeader(numFFTbins);
+            header += "," + Features.getFeaturesHeader();
         }
         return header;
     }
