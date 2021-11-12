@@ -279,7 +279,7 @@ public class Features {
             if (p <= 0) continue;  // skip to next loop if power is non-positive
             spectralEntropy += -p * Math.log(p + 1E-8);
         }
-        spectralEntropy /= Math.log(n);  // Normalize spectral entropy
+        spectralEntropy /= Math.log(vFFTpow.length);  // Normalize spectral entropy
 
         //Find dominant frequencies overall, also between 0.3Hz and 3Hz
         final double FFTinterval = sampleRate / (1.0 * n); // (Hz)
