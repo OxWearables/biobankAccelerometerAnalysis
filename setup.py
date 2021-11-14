@@ -36,8 +36,8 @@ setuptools.setup(
         'matplotlib',
         'pandas>=1.2.5',
         'scikit-learn>=0.24.2',
-        'joblib',
-        'statsmodels',
+        'joblib==1.0.1',
+        'statsmodels>=0.12.2',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
