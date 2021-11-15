@@ -7,6 +7,7 @@ import math
 import os
 import pandas as pd
 import re
+from tqdm.auto import tqdm
 
 DAYS = ['mon', 'tue', 'wed', 'thur', 'fri', 'sat', 'sun']
 TIME_SERIES_COL = 'time'
@@ -179,12 +180,17 @@ def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
     """
 
     # Load all *-summary.json files under resultsDir/
+    sumfiles = []
     jdicts = []
     for root, dirs, files in os.walk(resultsDir):
         for file in files:
             if file.lower().endswith("-summary.json"):
-                with open(os.path.join(root, file), 'r') as f:
-                    jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
+                sumfiles.append(os.path.join(root, file))
+
+    print(f"Found {len(sumfiles)} summary files...")
+    for file in tqdm(sumfiles):
+        with open(file, 'r') as f:
+            jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
 
     summary = pd.DataFrame.from_dict(jdicts)  # merge to a dataframe
     refColumnOrder = next((item for item in jdicts if item['quality-goodWearTime'] == 1), None)
