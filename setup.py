@@ -38,6 +38,7 @@ setuptools.setup(
         'scikit-learn>=0.24.2',
         'joblib==1.0.1',
         'statsmodels>=0.12.2',
+        'tqdm>=4.59.0',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
