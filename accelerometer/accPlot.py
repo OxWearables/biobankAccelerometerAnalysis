@@ -1,8 +1,9 @@
 """Script to plot accelerometer traces."""
 
-from pandas.plotting import register_matplotlib_converters
 import sys
+import numpy as np
 import pandas as pd
+from pandas.plotting import register_matplotlib_converters
 import os
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
@@ -16,15 +17,24 @@ matplotlib.use('Agg')
 # http://pandas-docs.github.io/pandas-docs-travis/whatsnew/v0.21.1.html#restore-matplotlib-datetime-converter-registration
 register_matplotlib_converters()
 
-DOHERTY_NatComms_COLOURS = {'sleep': 'blue', 'sedentary': 'red',
-                            'tasks-light': 'darkorange', 'walking': 'lightgreen', 'moderate': 'green'}
-
-WILLETS_SciReports_COLOURS = {'sleep': 'blue', 'sit.stand': 'red',
-                              'vehicle': 'darkorange', 'walking': 'lightgreen', 'mixed': 'green',
-                              'bicycling': 'purple'}
-
-WALMSLEY_Nov2020_COLOURS = {'sleep': 'blue', 'sedentary': 'red',
-                            'light': 'darkorange', 'MVPA': 'green'}
+LABELS_AND_COLORS = {
+    'imputed': '#fafc6f',
+    'sleep': 'midnightblue',
+    'sit-stand': 'red',
+    'sedentary': 'red',
+    'vehicle': 'saddlebrown',
+    'light': 'darkorange',
+    'mixed': 'seagreen',
+    'walking': 'green',
+    'moderate-vigorous': 'green',
+    'bicycling': 'springgreen',
+    'tasks-light': 'darkorange',
+    'SB': 'red',  # sedentary behaviour
+    'LIPA': 'darkorange',  # light physical activity
+    'MVPA': 'green',  # moderate-vigorous physical activity
+    'MPA': 'green',  # moderate physical activity
+    'VPA': 'springgreen',  # vigorous physical activity
+}
 
 
 def main():  # noqa: C901
@@ -39,9 +49,6 @@ def main():  # noqa: C901
                         help="input .csv.gz time series file to plot")
     parser.add_argument('--plotFile', metavar='output file', type=str,
                         help="output .png file to plot to")
-    parser.add_argument('--activityModel', type=str,
-                        default="walmsley",
-                        help="""trained activity model .tar file""")
     parser.add_argument('--showFileName',
                         metavar='True/False', default=False, type=str2bool,
                         help="""Toggle showing filename as title in output
@@ -68,7 +75,6 @@ def main():  # noqa: C901
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
                    showFirstNDays=args.showFirstNDays,
-                   activityModel=args.activityModel,
                    showFileName=args.showFileName)
 
 
@@ -76,14 +82,12 @@ def plotTimeSeries(  # noqa: C901
         tsFile,
         plotFile,
         showFirstNDays=None,
-        activityModel="walmsley",
         showFileName=False):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
     :param str tsFile: Output filename for .png image
     :param int showFirstNDays: Only show first n days of time series (if specified)
-    :param str activityModel: Input tar model file used for activity classification
     :param float showFileName: Toggle showing filename as title in output image
 
     :return: Writes plot to <plotFile>
@@ -107,22 +111,14 @@ def plotTimeSeries(  # noqa: C901
     data['acc'] = data['acc'].rolling(window=12, min_periods=1).mean()
     data['acc'] /= data['acc'].max()
 
-    if 'walmsley' in activityModel:
-        label_colours = WALMSLEY_Nov2020_COLOURS
-    elif 'doherty' in activityModel:
-        label_colours = DOHERTY_NatComms_COLOURS
-    elif 'willetts' in activityModel:
-        label_colours = WILLETS_SciReports_COLOURS
-    label_colours = {label: colour
-                     for label, colour in label_colours.items()
-                     if label in data.columns}
-    labels = list(label_colours.keys())
+    labels = [label for label in LABELS_AND_COLORS.keys() if label in data.columns]
+    colors = [LABELS_AND_COLORS[label] for label in labels]
 
     if 'imputed' in data.columns:
-        labels.append('imputed')
-        label_colours['imputed'] = '#fafc6f'
-        data.loc[data['imputed'], 'acc'] = None
-        data.loc[data['imputed'], [label for label in labels if label != 'imputed']] = 0
+        mask = data['imputed'].astype('bool')
+        labels_excl_imputed = [label for label in labels if label != 'imputed']
+        data.loc[mask, labels_excl_imputed] = 0
+        data.loc[mask, "acc"] = np.nan
 
     # number of rows to display in figure (all days + legend)
     data.index = data.index.tz_localize(None, ambiguous='NaT', nonexistent='NaT')  # tz-unaware local time
@@ -144,9 +140,10 @@ def plotTimeSeries(  # noqa: C901
         ax.plot(group.index, group['acc'].to_numpy(), c='k')
 
         if len(labels) > 0:
-            ax.stackplot(group.index, group[labels].astype('f4').to_numpy().T,
-                         colors=label_colours.values(),
-                         alpha=.5, edgecolor="none")
+            ax.stackplot(group.index,
+                         group[labels].astype('f4').to_numpy().T,
+                         colors=colors,
+                         edgecolor="none")
 
         # add date label to left hand side of each day's activity plot
         ax.set_title(
@@ -187,9 +184,8 @@ def plotTimeSeries(  # noqa: C901
     ax = fig.add_subplot(nrows, 1, i + 1)
     ax.axis('off')
     legend_patches = [mlines.Line2D([], [], color='k', label='acceleration')]
-    for label in labels:
-        col = label_colours[label]
-        legend_patches.append(mpatches.Patch(color=col, label=label, alpha=0.5))
+    for label, color in zip(labels, colors):
+        legend_patches.append(mpatches.Patch(color=color, label=label))
     # create overall legend
     plt.legend(handles=legend_patches, bbox_to_anchor=(0., 0., 1., 1.),
                loc='center', ncol=4, mode="best",
