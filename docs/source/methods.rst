@@ -4,17 +4,18 @@ Methods
 
 Interpreted levels of physical activity can vary, as many approaches can be 
 taken to extract summary physical activity information from raw accelerometer 
-data. To minimise error and bias, our tool uses published methods to calibrate, resample, and summarise the accelerometer data e.g. [Doherty2017]_ [Willetts2018]_ [Doherty2018]_ and [Walmsley2020]_.
+data. To minimise error and bias, our tool uses published methods to calibrate, resample, and summarise the accelerometer data e.g. [Doherty2017]_ [Willetts2018]_ [Doherty2018]_ and [Walmsley2021]_. 
+
+Please note that data processing methods are under continual development. We periodically retrain the classifiers to reflect developments in data processing or the training data. This means data processed with different versions of the tool may not be directly comparable. In particular, to compare returned variables in UK Biobank and external data, we recommend:
+
+    - Either, reprocessing UK Biobank data alongside external data; 
+    - Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
 
 .. figure:: accMethodsOverview.png
 
     UK Biobank triaxial accelerometer and processing steps to extract physical activity information.
     
     Axivity AX3 triaxial accelerometer worn on dominant hand as used in UK Biobank (top left). Time series trace of processed accelerometer values after one week of wear (top right). Overview of process to extract proxy physical activity information from raw accelerometer data (bottom). 
-
-Please note that data processing methods are under continual development. We periodically retrain the classifiers to reflect developments in data processing or the training data. This means data processed with different versions of the tool may not be directly comparable. In particular, to compare returned variables in UK Biobank and external data, we recommend:
-    - Either, reprocessing UK Biobank data alongside external data; 
-    - Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
 
 
 ****************
