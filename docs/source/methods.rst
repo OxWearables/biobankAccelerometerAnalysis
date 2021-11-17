@@ -12,6 +12,9 @@ data. To minimise error and bias, our tool uses published methods to calibrate, 
     
     Axivity AX3 triaxial accelerometer worn on dominant hand as used in UK Biobank (top left). Time series trace of processed accelerometer values after one week of wear (top right). Overview of process to extract proxy physical activity information from raw accelerometer data (bottom). 
 
+Please note that data processing methods are under continual development. We periodically retrain the classifiers to reflect developments in data processing or the training data. This means data processed with different versions of the tool may not be directly comparable. In particular, to compare returned variables in UK Biobank and external data, we recommend:
+    - Either, reprocessing UK Biobank data alongside external data; 
+    - Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
 
 
 ****************
@@ -65,7 +68,7 @@ Activity classification
 
 Feature extraction
 ================
-For every non-overlapping 30-second time window (default epoch period our model is trained on), we extracted a 126-dimensional feature vector. These time and frequency domain features includ: vector magniture, it’s mean, standard deviation, coefficient of variation, median, min, max, 25th & 75th percentiles, mean amplitude deviation, mean power deviation, kurtosis & skew, and Fast Fourier Transform (FFT) 1–15 Hz. Features also includ the following in each individual axis of movement: mean, range, standard deviation, covariance, and FFT 1–15 Hz. Roll, pitch, yaw, x/y/z correlations, frequency and power bands are also extracted [Willetts2018]_ [Doherty2018]_ [Walmsley2020]_
+For every non-overlapping 30-second time window (default epoch period our model is trained on), we extracted a 126-dimensional feature vector. These time and frequency domain features includ: vector magniture, it’s mean, standard deviation, coefficient of variation, median, min, max, 25th & 75th percentiles, mean amplitude deviation, mean power deviation, kurtosis & skew, and Fast Fourier Transform (FFT) 1–15 Hz. Features also includ the following in each individual axis of movement: mean, range, standard deviation, covariance, and FFT 1–15 Hz. Roll, pitch, yaw, x/y/z correlations, frequency and power bands are also extracted [Willetts2018]_ [Doherty2018]_ [Walmsley2021]_
 
 
 Classification
@@ -75,7 +78,7 @@ For activity classification we use a two stage model consisting of balanced rand
 
 Balanced random forests
 =======================
-Balanced random forests offer a powerful nonparametric discriminative method for multi-activity classification. Predictions of a random forest are an aggregate of individual CART trees (Classification And Regression Trees). CART trees are binary trees consisting of split nodes and terminal leaf nodes. In our case, each tree is constructed from a training set of feature data (just described above) along with ground truth activity classes (free living camera data in [Willetts2018]_ [Doherty2018]_ [Walmsley2020]_).
+Balanced random forests offer a powerful nonparametric discriminative method for multi-activity classification. Predictions of a random forest are an aggregate of individual CART trees (Classification And Regression Trees). CART trees are binary trees consisting of split nodes and terminal leaf nodes. In our case, each tree is constructed from a training set of feature data (just described above) along with ground truth activity classes (free living camera data in [Willetts2018]_ [Doherty2018]_ [Walmsley2021]_).
 
 There is randomness in the model, as we only give each tree a subset of data and features. This ensures that the trees have low correlation and is necessary as the CART algorithm itself is deterministic. Given the unbalanced nature of our dataset, where some behaviours occur rarely, we use balanced Random Forests to train each tree with a balanced subset of training data. If we have n_rare instances of the rarest class, we pick n_rare samples, with replacement, of data of each of our classes to form our training set for each tree. As each tree is given only a small fraction of data, we make many more trees than in a standard random forest so that the same number of data points are sampled in training as with a standard application of random forests [Willetts2018]_. 
 
@@ -140,7 +143,7 @@ References
 
 .. [Doherty2018] Doherty A, Smith-Bryne K, Ferreira T, et al. (2018) GWAS identifies 14 loci for objectively-measured physical activity and sleep duration with causal roles in cardiometabolic disease. Nature Communications. 9(1):5257
 
-.. [Walmsley2020] Walmsley R, Chan S, et al. (2020) Reallocating time from machine-learned sleep, sedentary behaviour or light physical activity to moderate-to-vigorous physical activity is associated with  lower cardiovascular disease risk (preprint https://doi.org/10.1101/2020.11.10.20227769)
+.. [Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021) Reallocation of time between device-measured movement behaviours and risk of incident cardiovascular disease. British Journal of Sports Medicine. Published Online First. DOI: 10.1136/bjsports-2021-104050
 
 .. [vanHees2014] van Hees VT, Fang Z, Langford J, Assah F, Mohammad A, da Silva ICM, et al. Autocalibration of accelerometer data for free-living physical activity assessment using local gravity and temperature: an evaluation on four continents. J Appl Physiol. 2014;117: 738–44. pmid:25103964
 
