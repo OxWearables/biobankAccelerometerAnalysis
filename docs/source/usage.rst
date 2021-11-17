@@ -249,13 +249,6 @@ These 'reprocessed' files can then be processed as outlined in the section above
 ************************************
 Classifying different activity types
 ************************************
-**Note that a major fix/improvement was introduced in April 2020. You therefore need to download the updated files to achieve this**.
-::
-	$ git pull
-        $ bash utilities/downloadDataModels.sh
-        $ pip3 install --user .
-        $ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java
-
 
 Different activity classification models can be specified to identify different
 activity types. For example, to use activity states from the Willetts 2018
