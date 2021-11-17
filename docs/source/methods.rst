@@ -6,10 +6,7 @@ Interpreted levels of physical activity can vary, as many approaches can be
 taken to extract summary physical activity information from raw accelerometer 
 data. To minimise error and bias, our tool uses published methods to calibrate, resample, and summarise the accelerometer data e.g. [Doherty2017]_ [Willetts2018]_ [Doherty2018]_ and [Walmsley2021]_. 
 
-Please note that data processing methods are under continual development. We periodically retrain the classifiers to reflect developments in data processing or the training data. This means data processed with different versions of the tool may not be directly comparable. In particular, to compare returned variables in UK Biobank and external data, we recommend:
-
-    - Either, reprocessing UK Biobank data alongside external data; 
-    - Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
+Note that data processing methods are under continual development, and so data processed with different versions of the tool and of models may not be directly comparable.
 
 .. figure:: accMethodsOverview.png
 
