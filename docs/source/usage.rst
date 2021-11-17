@@ -4,8 +4,6 @@ Usage
 
 Our tool uses published methods to extract summary sleep and activity statistics from raw binary accelerometer data files.
 
-
-
 ***********
 Basic usage
 ***********
@@ -49,6 +47,16 @@ To visualise the time output:
 .. figure:: samplePlot.png
 
     Output plot of overall activity and class predictions for each 30sec time window
+    
+**************
+Tool versions
+**************
+
+Data processing methods are under continual development. We periodically retrain the classifiers to reflect developments in data processing or the training data. This means data processed with different versions of the tool may not be directly comparable. 
+
+In particular, to compare returned variables in UK Biobank and external data, we recommend:
+	- Either, reprocessing UK Biobank data alongside external data; 
+	- Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
 
 
 
