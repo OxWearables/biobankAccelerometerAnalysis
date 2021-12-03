@@ -349,6 +349,21 @@ def writeMovementSummaries(e, labels, summary):
     if 'MET' in e.columns:
         activityTypes.append('MET')
 
+    # Use a resampled version of the data so that we have multiple of 24h in
+    # order to compute daily stats. Impute if necessary
+    start = e.index[0].floor('D')
+    end = e.index[-1].ceil('D')
+    new_index = pd.date_range(start, end, freq='T', name='time', closed='left')
+
+    e = imputeMissing(
+        e[activityTypes]
+        .reindex(new_index,
+                 method='nearest',
+                 tolerance=pd.Timedelta('1m'),
+                 limit=1)
+        .astype('float')
+    )
+
     # Sumarise each type by: overall, week day/end, day, and hour of day
     for col in activityTypes:
 
@@ -360,7 +375,7 @@ def writeMovementSummaries(e, labels, summary):
         summary[col + '-weekend-avg'] = accUtils.formatNum(
             e[col][e.index.weekday >= 5].mean(), 2)
 
-        # Daily summary
+        # Day-of-week summary
         for i, day in zip(range(0, 7), accUtils.DAYS):
             summary[col + '-' + day + '-avg'] = accUtils.formatNum(
                 e[col][e.index.weekday == i].mean(), 2)
