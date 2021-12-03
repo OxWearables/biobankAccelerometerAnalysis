@@ -347,20 +347,33 @@ def writeMovementSummaries(data, labels, summary):
     :rtype: void
     """
 
-    # Identify activity types to summarise
-    activityTypes = ['acc', 'CutPointMVPA', 'CutPointVPA']
-    activityTypes += labels
-    if 'MET' in data.columns:
-        activityTypes.append('MET')
+    # Hours of activity for each recorded day
+    activityLabels = ['CutPointMVPA', 'CutPointVPA'] + labels
+    epochInHours = pd.Timedelta(pd.infer_freq(data.index)).total_seconds() / 3600
+    hoursByDay = (
+        data[activityLabels].astype('float')
+        .groupby(data.index.date)
+        .sum()
+        * epochInHours
+    ).reset_index(drop=True)
 
-    # Use a resampled version of the data so that we have multiple of 24h in
-    # order to compute daily stats. Impute if necessary
+    for i, row in hoursByDay.iterrows():
+        for label in activityLabels:
+            summary[f'day{i}-{label}-recorded(hrs)'] = accUtils.formatNum(row.loc[label], 2)
+
+    # Now to compute the day-of-week stats and overall stats we use a resampled
+    # version of the data so that we have a multiple of 24h
+
+    allCols = ['acc', 'CutPointMVPA', 'CutPointVPA'] + labels
+    if 'MET' in data.columns:
+        allCols.append('MET')
+
     start = data.index[0].floor('D')
     end = data.index[-1].ceil('D')
     new_index = pd.date_range(start, end, freq='T', name='time', closed='left')
 
     data = imputeMissing(
-        data[activityTypes]
+        data[allCols]
         .reindex(new_index,
                  method='nearest',
                  tolerance=pd.Timedelta('1m'),
@@ -369,7 +382,7 @@ def writeMovementSummaries(data, labels, summary):
     )
 
     # Sumarise each type by: overall, week day/end, day, and hour of day
-    for col in activityTypes:
+    for col in allCols:
 
         # Overall / weekday / weekend summaries
         summary[col + '-overall-avg'] = accUtils.formatNum(data[col].mean(), 5)
