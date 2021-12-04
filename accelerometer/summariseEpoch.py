@@ -134,10 +134,6 @@ def getActivitySummary(  # noqa: C901
     if m10l5:
         circadianRhythms.calculateM10L5(data, epochPeriod, summary)
 
-    # Impute missing values
-    if imputation:
-        data = imputeMissing(data)
-
     # Main movement summaries
     writeMovementSummaries(data, labels, summary)
 
@@ -248,7 +244,6 @@ def imputeMissing(data):
     :rtype: void
     """
 
-    data['imputed'] = data.isna().any(1)  # record where the NaNs were
     data = (
         data
         .groupby([data.index.hour, data.index.minute])
