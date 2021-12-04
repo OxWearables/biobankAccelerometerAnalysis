@@ -177,7 +177,6 @@ def resolveInterrupts(data, epochPeriod, summary):
     return data
 
 
-
 def resolveNonWear(data, stdTol, patience, summary):
     """Calculate nonWear time, write episodes to file, and return wear statistics
 
@@ -312,9 +311,10 @@ def writeMovementSummaries(data, labels, summary):
 
     data = data.copy()
     data['wear'] = ~data['missing']
+    freq = pd.infer_freq(data.index)
 
     # Hours of activity for each recorded day
-    epochInHours = pd.Timedelta(pd.infer_freq(data.index)).total_seconds() / 3600
+    epochInHours = pd.Timedelta(freq).total_seconds() / 3600
     activityLabels = ['wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     hoursByDay = (
         data[activityLabels].astype('float')
@@ -336,7 +336,7 @@ def writeMovementSummaries(data, labels, summary):
 
     start = data.index[0].floor('D')
     end = data.index[-1].ceil('D')
-    new_index = pd.date_range(start, end, freq='T', name='time', closed='left')
+    new_index = pd.date_range(start, end, freq=freq, name='time', closed='left')
 
     data = imputeMissing(
         data[allCols]
