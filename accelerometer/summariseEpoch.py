@@ -112,11 +112,10 @@ def getActivitySummary(  # noqa: C901
     data['CutPointMVPA'] = data['acc'] >= mgCutPointMVPA
     data['CutPointVPA'] = data['acc'] >= mgCutPointVPA
 
-    # Resolve read interrupts
+    # Resolve interrupts
     data = resolveInterrupts(data, epochPeriod, summary)
-
-    # Resolve nonwear segments
-    data = resolveNonWear(data, epochPeriod, stationaryStd, minNonWearDuration, nonWearFile, summary)
+    # Resolve non-wear
+    data = resolveNonWear(data, stationaryStd, minNonWearDuration, summary)
 
     # Predict activity from features, and add label column
     labels = []
@@ -161,7 +160,7 @@ def checkQuality(data, summary):
 
 
 def resolveInterrupts(data, epochPeriod, summary):
-    """Fix any read interrupts by resampling and filling with NaNs
+    """Fix any interrupts in the recording by resampling
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param int epochPeriod: Size of epoch time window (in seconds)
@@ -176,19 +175,19 @@ def resolveInterrupts(data, epochPeriod, summary):
     summary['errs-interrupts-num'] = len(gaps)
     summary['errs-interrupt-mins'] = accUtils.formatNum(gaps.sum().total_seconds() / 60, 1)
 
-    data = data.asfreq(epochPeriod, normalize=False, fill_value=None)  # resample and fill gaps with NaNs
+    data = data.asfreq(epochPeriod, normalize=False, fill_value=None)
+    data['missing'] = data.isna().any(1)
 
     return data
 
 
-def resolveNonWear(data, epochPeriod, maxStd, minDuration, nonWearFile, summary):
+
+def resolveNonWear(data, stdTol, patience, summary):
     """Calculate nonWear time, write episodes to file, and return wear statistics
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
-    :param int epochPeriod: Size of epoch time window (in seconds)
     :param int maxStd: Threshold (in mg units) for stationary vs not
     :param int minDuration: Minimum duration of nonwear events (minutes)
-    :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys 'wearTime-numNonWearEpisodes(>1hr)',
@@ -201,63 +200,32 @@ def resolveNonWear(data, epochPeriod, maxStd, minDuration, nonWearFile, summary)
     :rtype: void
     """
 
-    maxStd = maxStd / 1000.0  # java uses Gravity units (not mg)
-    nw = (data['xStd'] < maxStd) & (data['yStd'] < maxStd) & (data['zStd'] < maxStd)
-    starts = data.index[nw.astype('bool') & ~(nw.shift(1).fillna(0).astype('bool'))]
-    ends = data.index[nw.astype('bool') & ~(nw.shift(-1).fillna(0).astype('bool'))]
-    nonWearEpisodes = [(start, end) for start, end in zip(starts, ends)
-                       if end > start + np.timedelta64(minDuration, 'm')]
+    stdTol = stdTol / 1000.0  # mg to g
+    stationary = (data[['xStd', 'yStd', 'zStd']] < stdTol).all(1)
+    stationaryGroup = ((stationary != stationary.shift(1))
+                       .cumsum()
+                       .where(stationary))
+    stationaryLen = (stationaryGroup.groupby(stationaryGroup, dropna=True)
+                     .apply(lambda g: g.index[-1] - g.index[0]))
+    nonWearLen = stationaryLen[stationaryLen > pd.Timedelta(patience, 'm')]
+    nonWear = stationaryGroup.isin(nonWearLen.index)
+    missing = nonWear | data['missing']
+    data = data.mask(missing)  # set non wear rows to nan
+    data['missing'] = missing
 
-    # Set nonWear data to nan and record to nonWearBouts file
-    f = gzip.open(nonWearFile, 'wb')
-    f.write('start,end,xStdMax,yStdMax,zStdMax\n'.encode())
-    timeFormat = '%Y-%m-%d %H:%M:%S'
-    for episode in nonWearEpisodes:
-        tmp = data[['xStd', 'yStd', 'zStd']][episode[0]:episode[1]]
-        nonWearBout = episode[0].strftime(timeFormat) + ','
-        nonWearBout += episode[1].strftime(timeFormat) + ','
-        nonWearBout += str(tmp['xStd'].mean()) + ','
-        nonWearBout += str(tmp['yStd'].mean()) + ','
-        nonWearBout += str(tmp['zStd'].mean()) + '\n'
-        f.write(nonWearBout.encode())
-        # Set main dataframe values to nan
-        data[episode[0]:episode[1]] = np.nan
-    f.close()
-    # Write to summary
-    summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearEpisodes))
+    epochInDays = pd.Timedelta(pd.infer_freq(data.index)).total_seconds() / (60 * 60 * 24)
+    numMissingRows = missing.sum()
+    nonWearTime = numMissingRows * epochInDays
+    wearTime = (len(data) - numMissingRows) * epochInDays
+    isGoodCoverage = not (missing  # check there's at least some data for each hour pocket
+                          .groupby(missing.index.hour)
+                          .all().any())
+    isGoodWearTime = wearTime >= 3  # check there's at least 3 days of wear time
 
-    # Calculate wear statistics
-    wearSamples = data['enmoTrunc'].count()
-    nonWearSamples = len(data[np.isnan(data['enmoTrunc'])].index.values)
-    wearTimeMin = wearSamples * epochPeriod / 60.0
-    nonWearTimeMin = nonWearSamples * epochPeriod / 60.0
-    # Write to summary
-    summary['wearTime-overall(days)'] = accUtils.formatNum(wearTimeMin / 1440.0, 2)
-    summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTimeMin / 1440.0, 2)
-
-    # Get wear time in each of 24 hours across week
-    epochsInMin = 60.0 / epochPeriod
-    for i, day in zip(range(0, 7), accUtils.DAYS):
-        dayWear = data['enmoTrunc'][data.index.weekday == i].count() / epochsInMin
-        # Write to summary
-        summary['wearTime-' + day + '(hrs)'] = accUtils.formatNum(dayWear / 60.0, 2)
-    for i in range(0, 24):
-        hourWear = data['enmoTrunc'][data.index.hour == i].count() / epochsInMin
-        # Write to summary
-        summary['wearTime-hourOfDay' + str(i) + '-(hrs)'] = \
-            accUtils.formatNum(hourWear / 60.0, 2)
-    summary['wearTime-diurnalHrs'] = accUtils.formatNum(
-        data['enmoTrunc'].groupby(data.index.hour).mean().count(), 2)
-    summary['wearTime-diurnalMins'] = accUtils.formatNum(
-        data['enmoTrunc'].groupby([data.index.hour, data.index.minute]).mean().count(), 2)
-
-    # Write binary decision on whether weartime was good or not
-    minDiurnalHrs = 24
-    minWearDays = 3
-    summary['quality-goodWearTime'] = 1
-    if summary['wearTime-diurnalHrs'] < minDiurnalHrs or \
-            summary['wearTime-overall(days)'] < minWearDays:
-        summary['quality-goodWearTime'] = 0
+    summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearLen))
+    summary['wearTime-overall(days)'] = accUtils.formatNum(wearTime, 2)
+    summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTime, 2)
+    summary['quality-goodWearTime'] = int(isGoodCoverage and isGoodWearTime)
 
     return data
 
@@ -347,9 +315,12 @@ def writeMovementSummaries(data, labels, summary):
     :rtype: void
     """
 
+    data = data.copy()
+    data['wear'] = ~data['missing']
+
     # Hours of activity for each recorded day
-    activityLabels = ['CutPointMVPA', 'CutPointVPA'] + labels
     epochInHours = pd.Timedelta(pd.infer_freq(data.index)).total_seconds() / 3600
+    activityLabels = ['wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     hoursByDay = (
         data[activityLabels].astype('float')
         .groupby(data.index.date)
@@ -359,12 +330,12 @@ def writeMovementSummaries(data, labels, summary):
 
     for i, row in hoursByDay.iterrows():
         for label in activityLabels:
-            summary[f'day{i}-{label}-recorded(hrs)'] = accUtils.formatNum(row.loc[label], 2)
+            summary[f'day{i}-{label}(hrs)'] = accUtils.formatNum(row.loc[label], 2)
 
-    # Now to compute the day-of-week stats and overall stats we use a resampled
-    # version of the data so that we have a multiple of 24h
+    # Now to compute the day-of-week stats and overall stats we do
+    # resampling and imputation so that we have a multiple of 24h
 
-    allCols = ['acc', 'CutPointMVPA', 'CutPointVPA'] + labels
+    allCols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     if 'MET' in data.columns:
         allCols.append('MET')
 
@@ -381,14 +352,14 @@ def writeMovementSummaries(data, labels, summary):
         .astype('float')
     )
 
-    # Sumarise each type by: overall, week day/end, day, and hour of day
+    # Sumarise each type by: overall, week day/end, day of week, and hour of day
     for col in allCols:
 
         # Overall / weekday / weekend summaries
         summary[col + '-overall-avg'] = accUtils.formatNum(data[col].mean(), 5)
-        summary[col + '-overall-sd'] = accUtils.formatNum(data[col].std(), 2)
+        summary[col + '-overall-sd'] = accUtils.formatNum(data[col].std(), 5)
         summary[col + '-weekday-avg'] = accUtils.formatNum(
-            data[col][data.index.weekday <= 4].mean(), 2)
+            data[col][data.index.weekday < 5].mean(), 2)
         summary[col + '-weekend-avg'] = accUtils.formatNum(
             data[col][data.index.weekday >= 5].mean(), 2)
 
@@ -397,14 +368,13 @@ def writeMovementSummaries(data, labels, summary):
             summary[col + '-' + day + '-avg'] = accUtils.formatNum(
                 data[col][data.index.weekday == i].mean(), 2)
 
-        # Hourly summaries
+        # Hour-of-day summary
         for i in range(0, 24):
             hourOfDay = accUtils.formatNum(data[col][data.index.hour == i].mean(), 2)
             hourOfWeekday = accUtils.formatNum(
-                data[col][(data.index.weekday <= 4) & (data.index.hour == i)].mean(), 2)
+                data[col][(data.index.weekday < 5) & (data.index.hour == i)].mean(), 2)
             hourOfWeekend = accUtils.formatNum(
                 data[col][(data.index.weekday >= 5) & (data.index.hour == i)].mean(), 2)
-            # Write derived hourly values to summary dictionary
             summary[col + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[col + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
             summary[col + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
