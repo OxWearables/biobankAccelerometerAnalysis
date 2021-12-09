@@ -325,7 +325,7 @@ def writeMovementSummaries(data, labels, summary):
 
     for i, row in hoursByDay.iterrows():
         for label in activityLabels:
-            summary[f'day{i}-{label}(hrs)'] = accUtils.formatNum(row.loc[label], 2)
+            summary[f'day{i}-recorded-{label}(hrs)'] = accUtils.formatNum(row.loc[label], 2)
 
     # Now to compute the day-of-week stats and overall stats we do
     # resampling and imputation so that we have a multiple of 24h
