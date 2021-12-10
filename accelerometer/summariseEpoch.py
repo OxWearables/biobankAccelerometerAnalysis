@@ -225,7 +225,7 @@ def resolveNonWear(data, stdTol, patience, summary):
     return data
 
 
-def imputeMissing(data):
+def imputeMissing(data, extrapolate=True):
     """Impute missing/nonwear segments
 
     Impute non-wear data segments using the average of similar time-of-day values
@@ -243,10 +243,31 @@ def imputeMissing(data):
     :rtype: void
     """
 
+    if extrapolate:
+        # padding at the boundaries to have full 24h
+        data = data.reindex(
+            pd.date_range(
+                data.index[0].floor('D'),
+                data.index[-1].ceil('D'),
+                freq=pd.infer_freq(data.index),
+                closed='left',
+                name='time',
+            ),
+            method='nearest',
+            tolerance=pd.Timedelta('1m'),
+            limit=1)
+
     data = (
         data
+        # first try imputation using same day of week
+        .groupby([data.index.weekday, data.index.hour, data.index.minute])
+        .transform(lambda x: x.fillna(x.mean()))
+        # then try imputation within weekday/weekend
+        .groupby([data.index.weekday >= 5, data.index.hour, data.index.minute])
+        .transform(lambda x: x.fillna(x.mean()))
+        # finally try imputation using any day
         .groupby([data.index.hour, data.index.minute])
-        .apply(lambda x: x.fillna(x.mean()))
+        .transform(lambda x: x.fillna(x.mean()))
     )
 
     return data
@@ -327,25 +348,13 @@ def writeMovementSummaries(data, labels, summary):
         for label in activityLabels:
             summary[f'day{i}-recorded-{label}(hrs)'] = accUtils.formatNum(row.loc[label], 2)
 
-    # Now to compute the day-of-week stats and overall stats we do
-    # resampling and imputation so that we have a multiple of 24h
-
     allCols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     if 'MET' in data.columns:
         allCols.append('MET')
 
-    start = data.index[0].floor('D')
-    end = data.index[-1].ceil('D')
-    new_index = pd.date_range(start, end, freq=freq, name='time', closed='left')
-
-    data = imputeMissing(
-        data[allCols]
-        .reindex(new_index,
-                 method='nearest',
-                 tolerance=pd.Timedelta('1m'),
-                 limit=1)
-        .astype('float')
-    )
+    # To compute the day-of-week stats and overall stats we do
+    # resampling and imputation so that we have a multiple of 24h
+    data = imputeMissing(data[allCols].astype('float'))
 
     # Sumarise each type by: overall, week day/end, day of week, and hour of day
     for col in allCols:
