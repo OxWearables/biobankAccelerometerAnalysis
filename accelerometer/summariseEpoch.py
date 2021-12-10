@@ -259,13 +259,13 @@ def imputeMissing(data, extrapolate=True):
 
     data = (
         data
-        # first try imputation using same day of week
+        # first attempt imputation using same day of week
         .groupby([data.index.weekday, data.index.hour, data.index.minute])
         .transform(lambda x: x.fillna(x.mean()))
-        # then try imputation within weekday/weekend
+        # then try within weekday/weekend
         .groupby([data.index.weekday >= 5, data.index.hour, data.index.minute])
         .transform(lambda x: x.fillna(x.mean()))
-        # finally try imputation using any day
+        # finally, use all other days
         .groupby([data.index.hour, data.index.minute])
         .transform(lambda x: x.fillna(x.mean()))
     )
