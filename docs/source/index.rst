@@ -8,38 +8,30 @@
 
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
-
 *****
 Installation
 *****
-Dependencies include: unix, java 8 ([Java 8 JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)) and python 3.7 ([Anaconda's Python 3](https://www.anaconda.com/download/) or installation via [Brew](https://docs.python-guide.org/starting/install3/osx/) should do the trick).
+
+.. code-block:: bash
+
+    $ pip install accelerometer
+
+You will also need Java 8 (1.8.0) or greater. Check with the following:
 ::
-	$ git clone https://github.com/activityMonitoring/biobankAccelerometerAnalysis.git
-	$ cd biobankAccelerometerAnalysis
-	$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
-	$ pip install --upgrade pip # Upgrades pip version if required
-	$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
-	$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
-	$ 
-	$ # Now to install the package, run: 
-	$ pip3 install --user . 
+    $ java -version
 
-Note for developers: If you are actively developing the package, you may wish to skip the installation step.
-
-*****
-Keeping up to date
-*****
-`biobankAccelerometerAnalysis` is regularly updated (e.g. a new dependency was introduced in January 2021, making the models compatible with the newest versions of dependency packages). To install the most recent version with the most recent set of dependencies, run (from within the folder): 
+You can try the following to check that everything works properly:
 ::
-	$ git pull # Pulls any changes
-	$ bash utilities/downloadDataModels.sh # Downloads example data and models for behaviour classification
-	$ pip install --upgrade pip # Upgrades pip version if required
-	$ pip3 install --upgrade -r requirements.txt # Installs a known working set of dependencies, other package versions may also work
-	$ javac -cp java/JTransforms-3.1-with-dependencies.jar java/*.java # Compiles Java code
-	$ 
-	$ # Now to install the package, run: 
-	$ pip3 install --user . 
+    # Create an isolated environment
+    $ mkdir test_baa/ ; cd test_baa/
+    $ python -m venv baa
+    $ source baa/bin/activate
 
+    # Install and test
+    $ pip install accelerometer
+    $ wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz  # download a sample file
+    $ accProcess data/sample.cwa.gz
+    $ accPlot data/sample-timeSeries.csv.gz
 
 *****
 Getting started
@@ -47,7 +39,8 @@ Getting started
 To extract a summary of movement (average sample vector magnitude) and
 (non)wear time from raw Axivity .CWA (or gzipped .cwa.gz) accelerometer files:
 ::
-	$ python3 accProcess.py data/sample.cwa.gz
+	$ accProcess data/sample.cwa.gz
+
         <output written to data/sample-outputSummary.json>
         <time series output written to data/sample-timeSeries.csv.gz>
 
@@ -65,22 +58,22 @@ The main output JSON will look like:
 
 To visualise the time series and activity classification output:
 ::
-  python3 accPlot.py data/sample-timeSeries.csv.gz data/sample-plot.png
+    accPlot data/sample-timeSeries.csv.gz
+
     <output plot written to data/sample-plot.png>
 
 .. figure:: samplePlot.png
-    
+
     Output plot of overall activity and class predictions for each 30sec time window
 
 The underlying modules can also be called in custom python scripts:
 ::
     from accelerometer import summariseEpoch
     summary = {}
-    epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz", 
+    epochData, labels = summariseEpoch.getActivitySummary("sample-epoch.csv.gz",
             "sample-nonWear.csv.gz", summary)
     # <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
     # with outcomes>
-
 
 
 ***************
