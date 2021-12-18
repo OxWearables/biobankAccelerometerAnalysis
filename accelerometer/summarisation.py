@@ -1,7 +1,7 @@
 """Module to generate overall activity summary from epoch data."""
-from accelerometer import accUtils
-from accelerometer import accClassification
-from accelerometer import circadianRhythms
+from accelerometer import utils
+from accelerometer import classification
+from accelerometer import circadian
 import gzip
 import numpy as np
 import pandas as pd
@@ -70,12 +70,12 @@ def getActivitySummary(  # noqa: C901
     <nonWear file written to "nonWear.csv.gz" and dict "summary" update with outcomes>
     """
 
-    accUtils.toScreen("=== Summarizing ===")
+    utils.toScreen("=== Summarizing ===")
 
     if isinstance(epochFile, pd.DataFrame):
         data = epochFile
     else:
-        data = pd.read_csv(epochFile, index_col=['time'], parse_dates=['time'], date_parser=accUtils.date_parser)
+        data = pd.read_csv(epochFile, index_col=['time'], parse_dates=['time'], date_parser=utils.date_parser)
 
     # Remove data before/after user specified start/end times
     rows = data.shape[0]
@@ -95,8 +95,8 @@ def getActivitySummary(  # noqa: C901
     # Get start & end times
     startTime = data.index[0]
     endTime = data.index[-1]
-    summary['file-startTime'] = accUtils.date_strftime(startTime)
-    summary['file-endTime'] = accUtils.date_strftime(endTime)
+    summary['file-startTime'] = utils.date_strftime(startTime)
+    summary['file-endTime'] = utils.date_strftime(endTime)
     summary['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
 
     # Quality checks
@@ -120,7 +120,7 @@ def getActivitySummary(  # noqa: C901
     # Predict activity from features, and add label column
     labels = []
     if activityClassification:
-        data, labels = accClassification.activityClassification(data, activityModel)
+        data, labels = classification.activityClassification(data, activityModel)
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
@@ -128,11 +128,11 @@ def getActivitySummary(  # noqa: C901
 
     # Calculate circadian metrics
     if psd:
-        circadianRhythms.calculatePSD(data, epochPeriod, fourierWithAcc, labels, summary)
+        circadian.calculatePSD(data, epochPeriod, fourierWithAcc, labels, summary)
     if fourierFrequency:
-        circadianRhythms.calculateFourierFreq(data, epochPeriod, fourierWithAcc, labels, summary)
+        circadian.calculateFourierFreq(data, epochPeriod, fourierWithAcc, labels, summary)
     if m10l5:
-        circadianRhythms.calculateM10L5(data, epochPeriod, summary)
+        circadian.calculateM10L5(data, epochPeriod, summary)
 
     # Main movement summaries
     writeMovementSummaries(data, labels, summary)
@@ -169,7 +169,7 @@ def resolveInterrupts(data, epochPeriod, summary):
     gaps = data.index.to_series().diff()
     gaps = gaps[gaps > epochPeriod]
     summary['errs-interrupts-num'] = len(gaps)
-    summary['errs-interrupt-mins'] = accUtils.formatNum(gaps.sum().total_seconds() / 60, 1)
+    summary['errs-interrupt-mins'] = utils.formatNum(gaps.sum().total_seconds() / 60, 1)
 
     data = data.asfreq(epochPeriod, normalize=False, fill_value=None)
     data['missing'] = data.isna().any(1)
@@ -218,8 +218,8 @@ def resolveNonWear(data, stdTol, patience, summary):
     isGoodWearTime = wearTime >= 3  # check there's at least 3 days of wear time
 
     summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearLen))
-    summary['wearTime-overall(days)'] = accUtils.formatNum(wearTime, 2)
-    summary['nonWearTime-overall(days)'] = accUtils.formatNum(nonWearTime, 2)
+    summary['wearTime-overall(days)'] = utils.formatNum(wearTime, 2)
+    summary['nonWearTime-overall(days)'] = utils.formatNum(nonWearTime, 2)
     summary['quality-goodWearTime'] = int(isGoodCoverage and isGoodWearTime)
 
     return data
@@ -313,7 +313,7 @@ def calculateECDF(x, summary):
 
     # Write to summary
     for level, val in ecdf.iteritems():
-        summary[f'{x.name}-ecdf-{level}mg'] = accUtils.formatNum(val, 5)
+        summary[f'{x.name}-ecdf-{level}mg'] = utils.formatNum(val, 5)
 
 
 def writeMovementSummaries(data, labels, summary):
@@ -346,7 +346,7 @@ def writeMovementSummaries(data, labels, summary):
 
     for i, row in hoursByDay.iterrows():
         for label in activityLabels:
-            summary[f'day{i}-recorded-{label}(hrs)'] = accUtils.formatNum(row.loc[label], 2)
+            summary[f'day{i}-recorded-{label}(hrs)'] = utils.formatNum(row.loc[label], 2)
 
     allCols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     if 'MET' in data.columns:
@@ -360,24 +360,24 @@ def writeMovementSummaries(data, labels, summary):
     for col in allCols:
 
         # Overall / weekday / weekend summaries
-        summary[col + '-overall-avg'] = accUtils.formatNum(data[col].mean(), 5)
-        summary[col + '-overall-sd'] = accUtils.formatNum(data[col].std(), 5)
-        summary[col + '-weekday-avg'] = accUtils.formatNum(
+        summary[col + '-overall-avg'] = utils.formatNum(data[col].mean(), 5)
+        summary[col + '-overall-sd'] = utils.formatNum(data[col].std(), 5)
+        summary[col + '-weekday-avg'] = utils.formatNum(
             data[col][data.index.weekday < 5].mean(), 2)
-        summary[col + '-weekend-avg'] = accUtils.formatNum(
+        summary[col + '-weekend-avg'] = utils.formatNum(
             data[col][data.index.weekday >= 5].mean(), 2)
 
         # Day-of-week summary
-        for i, day in zip(range(0, 7), accUtils.DAYS):
-            summary[col + '-' + day + '-avg'] = accUtils.formatNum(
+        for i, day in zip(range(0, 7), utils.DAYS):
+            summary[col + '-' + day + '-avg'] = utils.formatNum(
                 data[col][data.index.weekday == i].mean(), 2)
 
         # Hour-of-day summary
         for i in range(0, 24):
-            hourOfDay = accUtils.formatNum(data[col][data.index.hour == i].mean(), 2)
-            hourOfWeekday = accUtils.formatNum(
+            hourOfDay = utils.formatNum(data[col][data.index.hour == i].mean(), 2)
+            hourOfWeekday = utils.formatNum(
                 data[col][(data.index.weekday < 5) & (data.index.hour == i)].mean(), 2)
-            hourOfWeekend = accUtils.formatNum(
+            hourOfWeekend = utils.formatNum(
                 data[col][(data.index.weekday >= 5) & (data.index.hour == i)].mean(), 2)
             summary[col + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
             summary[col + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday

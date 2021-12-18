@@ -1,5 +1,5 @@
 import argparse
-from accelerometer.accUtils import collateSummary
+from accelerometer.utils import collateSummary
 
 
 def main():

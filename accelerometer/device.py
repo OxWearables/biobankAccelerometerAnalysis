@@ -1,6 +1,6 @@
 """Module to process raw accelerometer files into epoch data."""
 
-from accelerometer import accUtils
+from accelerometer import utils
 import gzip
 import numpy as np
 import os
@@ -92,7 +92,7 @@ def processInputFileToEpoch(  # noqa: C901
     if useJava:
         if not skipCalibration:
             # identify 10sec stationary epochs
-            accUtils.toScreen("=== Calibrating ===")
+            utils.toScreen("=== Calibrating ===")
             commandArgs = ["java", "-classpath", javaClassPath,
                            "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                            "timeZone:" + timeZone,
@@ -138,7 +138,7 @@ def processInputFileToEpoch(  # noqa: C901
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
-        accUtils.toScreen('=== Extracting features ===')
+        utils.toScreen('=== Extracting features ===')
         commandArgs = ["java", "-classpath", javaClassPath,
                        "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                        "timeZone:" + timeZone,
@@ -399,8 +399,8 @@ def storeCalibrationInformation(
 
     # store output to summary dictionary
     storeCalibrationParams(summary, bestIntercept, bestSlope, bestSlopeT)
-    summary['calibration-errsBefore(mg)'] = accUtils.formatNum(initErr * 1000, 2)
-    summary['calibration-errsAfter(mg)'] = accUtils.formatNum(bestErr * 1000, 2)
+    summary['calibration-errsBefore(mg)'] = utils.formatNum(initErr * 1000, 2)
+    summary['calibration-errsAfter(mg)'] = utils.formatNum(bestErr * 1000, 2)
     summary['calibration-numStaticPoints'] = nStatic
     summary['quality-calibratedOnOwnData'] = calibratedOnOwnData
     summary['quality-goodCalibration'] = goodCalibration
@@ -419,15 +419,15 @@ def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
     """
 
     # store output to summary dictionary
-    summary['calibration-xOffset(g)'] = accUtils.formatNum(xyzOff[0], 4)
-    summary['calibration-yOffset(g)'] = accUtils.formatNum(xyzOff[1], 4)
-    summary['calibration-zOffset(g)'] = accUtils.formatNum(xyzOff[2], 4)
-    summary['calibration-xSlope'] = accUtils.formatNum(xyzSlope[0], 4)
-    summary['calibration-ySlope'] = accUtils.formatNum(xyzSlope[1], 4)
-    summary['calibration-zSlope'] = accUtils.formatNum(xyzSlope[2], 4)
-    summary['calibration-xSlopeTemp'] = accUtils.formatNum(xyzSlopeT[0], 4)
-    summary['calibration-ySlopeTemp'] = accUtils.formatNum(xyzSlopeT[1], 4)
-    summary['calibration-zSlopeTemp'] = accUtils.formatNum(xyzSlopeT[2], 4)
+    summary['calibration-xOffset(g)'] = utils.formatNum(xyzOff[0], 4)
+    summary['calibration-yOffset(g)'] = utils.formatNum(xyzOff[1], 4)
+    summary['calibration-zOffset(g)'] = utils.formatNum(xyzOff[2], 4)
+    summary['calibration-xSlope'] = utils.formatNum(xyzSlope[0], 4)
+    summary['calibration-ySlope'] = utils.formatNum(xyzSlope[1], 4)
+    summary['calibration-zSlope'] = utils.formatNum(xyzSlope[2], 4)
+    summary['calibration-xSlopeTemp'] = utils.formatNum(xyzSlopeT[0], 4)
+    summary['calibration-ySlopeTemp'] = utils.formatNum(xyzSlopeT[1], 4)
+    summary['calibration-zSlopeTemp'] = utils.formatNum(xyzSlopeT[2], 4)
 
 
 def getDeviceId(inputFile):

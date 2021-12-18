@@ -1,6 +1,6 @@
 """Module to support machine learning of activity states from acc data"""
 
-from accelerometer import accUtils
+from accelerometer import utils
 from accelerometer.models import MODELS
 from io import BytesIO
 import numpy as np
@@ -368,16 +368,16 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     d_summary['accuracy'] = pIDAccuracy
     # print out values to html string
     kappaSDHTML = "Mean Kappa (SD) = "
-    kappaSDHTML += accUtils.meanSDstr(d_summary['kappa'].mean(),
+    kappaSDHTML += utils.meanSDstr(d_summary['kappa'].mean(),
                                       d_summary['kappa'].std(), 2)
     accuracySDHTML = "Mean accuracy (SD) = "
-    accuracySDHTML += accUtils.meanSDstr(d_summary['accuracy'].mean() * 100,
+    accuracySDHTML += utils.meanSDstr(d_summary['accuracy'].mean() * 100,
                                          d_summary['accuracy'].std() * 100, 1) + ' %'
     kappaCIHTML = "Mean Kappa (95% CI) = "
-    kappaCIHTML += accUtils.meanCIstr(d_summary['kappa'].mean(),
+    kappaCIHTML += utils.meanCIstr(d_summary['kappa'].mean(),
                                       d_summary['kappa'].std(), len(d_summary), 2)
     accuracyCIHTML = "Mean accuracy (95% CI) = "
-    accuracyCIHTML += accUtils.meanCIstr(d_summary['accuracy'].mean() * 100,
+    accuracyCIHTML += utils.meanCIstr(d_summary['accuracy'].mean() * 100,
                                          d_summary['accuracy'].std() * 100, len(d_summary), 1) + ' %'
 
     # get confusion matrix to pandas dataframe

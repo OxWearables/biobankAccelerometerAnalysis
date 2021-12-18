@@ -10,7 +10,7 @@ import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, time
 import argparse
-from accelerometer import accUtils
+from accelerometer import utils
 import matplotlib
 matplotlib.use('Agg')
 
@@ -61,7 +61,7 @@ def main():  # noqa: C901
     if len(sys.argv) < 2:
         msg = "\nInvalid input, please enter at least 1 parameter, e.g."
         msg += "\npython accPlot.py timeSeries.csv.gz \n"
-        accUtils.toScreen(msg)
+        utils.toScreen(msg)
         parser.print_help()
         sys.exit(-1)
     args = parser.parse_args()
@@ -102,7 +102,7 @@ def plotTimeSeries(  # noqa: C901
     # read time series file to pandas DataFrame
     data = pd.read_csv(
         tsFile, index_col='time',
-        parse_dates=['time'], date_parser=accUtils.date_parser
+        parse_dates=['time'], date_parser=utils.date_parser
     )
     if showFirstNDays is not None:
         data = data.first(str(showFirstNDays) + 'D')

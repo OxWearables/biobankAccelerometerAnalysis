@@ -1,5 +1,5 @@
 import argparse
-from accelerometer.accUtils import writeCmds
+from accelerometer.utils import writeCmds
 
 
 def main():

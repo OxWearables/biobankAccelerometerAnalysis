@@ -1,14 +1,14 @@
 """Command line tool to extract meaningful health info from accelerometer data."""
 
-import accelerometer.accUtils
-import accelerometer.accClassification
+import accelerometer.utils
+import accelerometer.classification
 import argparse
 import collections
 import datetime
 import accelerometer.device
 import json
 import os
-import accelerometer.summariseEpoch
+import accelerometer.summarisation
 import pandas as pd
 import atexit
 import warnings
@@ -279,7 +279,7 @@ def main():  # noqa: C901
                 if os.path.exists(args.epochFile):
                     os.remove(args.epochFile)
             except OSError:
-                accelerometer.accUtils.toScreen('Could not delete intermediate files')
+                accelerometer.utils.toScreen('Could not delete intermediate files')
 
     # Check user-specified end time is not before start time
     if args.startTime and args.endTime:
@@ -323,7 +323,7 @@ def main():  # noqa: C901
         summary['file-name'] = args.epochFile
 
     # Summarise epoch
-    epochData, labels = accelerometer.summariseEpoch.getActivitySummary(
+    epochData, labels = accelerometer.summarisation.getActivitySummary(
         args.epochFile, args.nonWearFile, summary,
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
@@ -335,10 +335,10 @@ def main():  # noqa: C901
         fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5)
 
     # Generate time series file
-    accelerometer.accUtils.writeTimeSeries(epochData, labels, args.tsFile)
+    accelerometer.utils.writeTimeSeries(epochData, labels, args.tsFile)
 
     # Print short summary
-    accelerometer.accUtils.toScreen("=== Short summary ===")
+    accelerometer.utils.toScreen("=== Short summary ===")
     summaryVals = ['file-name', 'file-startTime', 'file-endTime',
                    'acc-overall-avg', 'wearTime-overall(days)',
                    'nonWearTime-overall(days)', 'quality-goodWearTime']
@@ -355,7 +355,7 @@ def main():  # noqa: C901
     ##########################
     processingEndTime = datetime.datetime.now()
     processingTime = (processingEndTime - processingStartTime).total_seconds()
-    accelerometer.accUtils.toScreen(
+    accelerometer.utils.toScreen(
         "In total, processing took " + str(processingTime) + " seconds"
     )
 
