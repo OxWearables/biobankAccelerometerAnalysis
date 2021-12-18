@@ -107,10 +107,6 @@ def plotTimeSeries(  # noqa: C901
     if showFirstNDays is not None:
         data = data.first(str(showFirstNDays) + 'D')
 
-    # smoothing & normalize
-    data['acc'] = data['acc'].rolling(window=12, min_periods=1).mean()
-    data['acc'] /= data['acc'].max()
-
     labels = [label for label in LABELS_AND_COLORS.keys() if label in data.columns]
     colors = [LABELS_AND_COLORS[label] for label in labels]
 
@@ -119,6 +115,12 @@ def plotTimeSeries(  # noqa: C901
         labels_excl_imputed = [label for label in labels if label != 'imputed']
         data.loc[mask, labels_excl_imputed] = 0
         data.loc[mask, "acc"] = np.nan
+
+    # setup plotting range
+    MAXRANGE = 2 * 1000  # 2g (above this is very rare)
+    data['acc'] = data['acc'].rolling('1T').mean()  # minute average
+    data['acc'] = data['acc'].clip(0, MAXRANGE)
+    data[labels] = data[labels].astype('f4') * MAXRANGE
 
     # number of rows to display in figure (all days + legend)
     data.index = data.index.tz_localize(None, ambiguous='NaT', nonexistent='NaT')  # tz-unaware local time
@@ -141,7 +143,7 @@ def plotTimeSeries(  # noqa: C901
 
         if len(labels) > 0:
             ax.stackplot(group.index,
-                         group[labels].astype('f4').to_numpy().T,
+                         group[labels].to_numpy().T,
                          colors=colors,
                          edgecolor="none")
 
@@ -167,7 +169,7 @@ def plotTimeSeries(  # noqa: C901
         ax.set_xticks(pd.date_range(start=datetime.combine(day, time(0, 0, 0, 0)),
                                     end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
                                     freq='1H'), minor=True)
-        ax.set_ylim(0, 1)
+        ax.set_ylim(0, MAXRANGE)
         ax.get_yaxis().set_ticks([])  # hide y-axis lables
         # make border less harsh between subplots
         ax.spines['top'].set_color('#d3d3d3')  # lightgray
