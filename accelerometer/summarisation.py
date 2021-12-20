@@ -2,7 +2,6 @@
 from accelerometer import utils
 from accelerometer import classification
 from accelerometer import circadian
-import gzip
 import numpy as np
 import pandas as pd
 import pytz
@@ -316,7 +315,7 @@ def calculateECDF(x, summary):
         summary[f'{x.name}-ecdf-{level}mg'] = utils.formatNum(val, 5)
 
 
-def writeMovementSummaries(data, labels, summary):
+def writeMovementSummaries(data, labels, summary):  # noqa: C901
     """Write overall summary stats for each activity type to summary dict
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
@@ -336,49 +335,92 @@ def writeMovementSummaries(data, labels, summary):
 
     # Hours of activity for each recorded day
     epochInHours = pd.Timedelta(freq).total_seconds() / 3600
-    activityLabels = ['wear', 'CutPointMVPA', 'CutPointVPA'] + labels
-    hoursByDay = (
-        data[activityLabels].astype('float')
+    cols = ['wear', 'CutPointMVPA', 'CutPointVPA'] + labels
+    dailyStats = (
+        data[cols].astype('float')
         .groupby(data.index.date)
         .sum()
         * epochInHours
     ).reset_index(drop=True)
 
-    for i, row in hoursByDay.iterrows():
-        for label in activityLabels:
-            summary[f'day{i}-recorded-{label}(hrs)'] = utils.formatNum(row.loc[label], 2)
+    for i, row in dailyStats.iterrows():
+        for col in cols:
+            summary[f'day{i}-recorded-{col}(hrs)'] = utils.formatNum(row.loc[col], 2)
 
-    allCols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
+    # In the following, we resample, pad and impute the data so that we have a
+    # multiple of 24h for the stats calculations
+    tStart, tEnd = data.index[0], data.index[-1]
+    cols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
     if 'MET' in data.columns:
-        allCols.append('MET')
+        cols.append('MET')
+    data = imputeMissing(data[cols].astype('float'))
 
-    # To compute the day-of-week stats and overall stats we do
-    # resampling and imputation so that we have a multiple of 24h
-    data = imputeMissing(data[allCols].astype('float'))
+    # Overall stats (no padding, i.e. only within recording period)
+    overallStats = data[tStart:tEnd].apply(['mean', 'std'])
+    for col in overallStats:
+        summary[f'{col}-overall-avg'] = utils.formatNum(overallStats[col].loc['mean'], 5)
+        summary[f'{col}-overall-sd'] = utils.formatNum(overallStats[col].loc['std'], 5)
 
-    # Sumarise each type by: overall, week day/end, day of week, and hour of day
-    for col in allCols:
+    dayOfWeekStats = (
+        data
+        .groupby([data.index.weekday, data.index.hour])
+        .mean()
+    )
+    dayOfWeekStats.index = dayOfWeekStats.index.set_levels(
+        dayOfWeekStats
+        .index.levels[0].to_series()
+        .replace({0: 'mon', 1: 'tue', 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat', 6: 'sun'})
+        .to_list(),
+        level=0
+    )
+    dayOfWeekStats.index.set_names(['DayOfWeek', 'Hour'], inplace=True)
 
-        # Overall / weekday / weekend summaries
-        summary[col + '-overall-avg'] = utils.formatNum(data[col].mean(), 5)
-        summary[col + '-overall-sd'] = utils.formatNum(data[col].std(), 5)
-        summary[col + '-weekday-avg'] = utils.formatNum(
-            data[col][data.index.weekday < 5].mean(), 2)
-        summary[col + '-weekend-avg'] = utils.formatNum(
-            data[col][data.index.weekday >= 5].mean(), 2)
+    # Week stats
+    for col, value in dayOfWeekStats.mean().items():
+        summary[f'{col}-week-avg'] = utils.formatNum(value, 2)
 
-        # Day-of-week summary
-        for i, day in zip(range(0, 7), utils.DAYS):
-            summary[col + '-' + day + '-avg'] = utils.formatNum(
-                data[col][data.index.weekday == i].mean(), 2)
+    # Stats by day of week (Mon, Tue, ...)
+    for col, stats in dayOfWeekStats.groupby(level=0).mean().to_dict().items():
+        for dayOfWeek, value in stats.items():
+            summary[f'{col}-{dayOfWeek}-avg'] = utils.formatNum(value, 2)
 
-        # Hour-of-day summary
-        for i in range(0, 24):
-            hourOfDay = utils.formatNum(data[col][data.index.hour == i].mean(), 2)
-            hourOfWeekday = utils.formatNum(
-                data[col][(data.index.weekday < 5) & (data.index.hour == i)].mean(), 2)
-            hourOfWeekend = utils.formatNum(
-                data[col][(data.index.weekday >= 5) & (data.index.hour == i)].mean(), 2)
-            summary[col + '-hourOfDay-' + str(i) + '-avg'] = hourOfDay
-            summary[col + '-hourOfWeekday-' + str(i) + '-avg'] = hourOfWeekday
-            summary[col + '-hourOfWeekend-' + str(i) + '-avg'] = hourOfWeekend
+    # Stats by hour of day
+    for col, stats in dayOfWeekStats.groupby(level=1).mean().to_dict().items():
+        for hour, value in stats.items():
+            summary[f'{col}-hourOfDay-{hour}-avg'] = utils.formatNum(value, 2)
+
+    # (not included but could be) Stats by hour of day AND day of week
+    # for col, stats in dayOfWeekStats.to_dict().items():
+    #     for key, value in stats.items():
+    #         dayOfWeek, hour = key
+    #         summary[f'{col}-hourOf{dayOfWeek}-{hour}-avg'] = utils.formatNum(value, 2)
+
+    weekdayOrWeekendStats = (
+        dayOfWeekStats
+        .groupby([
+            dayOfWeekStats.index.get_level_values('DayOfWeek').str.contains('sat|sun'),
+            dayOfWeekStats.index.get_level_values('Hour')
+        ])
+        .mean()
+    )
+    weekdayOrWeekendStats.index = weekdayOrWeekendStats.index.set_levels(
+        weekdayOrWeekendStats
+        .index.levels[0].to_series()
+        .replace({True: 'Weekend', False: 'Weekday'})
+        .to_list(),
+        level=0
+    )
+    weekdayOrWeekendStats.index.set_names(['WeekdayOrWeekend', 'Hour'], inplace=True)
+
+    # Weekday/weekend stats
+    for col, stats in weekdayOrWeekendStats.groupby(level=0).mean().to_dict().items():
+        for weekdayOrWeekend, value in stats.items():
+            summary[f'{col}-{weekdayOrWeekend}-avg'] = utils.formatNum(value, 2)
+
+    # Stats by hour of day AND by weekday/weekend
+    for col, stats in weekdayOrWeekendStats.to_dict().items():
+        for key, value in stats.items():
+            weekdayOrWeekend, hour = key
+            summary[f'{col}-hourOf{weekdayOrWeekend}-{hour}-avg'] = utils.formatNum(value, 2)
+
+    return
