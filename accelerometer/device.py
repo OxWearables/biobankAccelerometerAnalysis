@@ -255,7 +255,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
 
     errors = np.linalg.norm(curr - target, axis=1)
-    err = np.median(errors)  # MAE more robust than RMSE. This is different from the paper
+    err = np.mean(errors)  # MAE more robust than RMSE. This is different from the paper
     initErr = err
     bestErr = 1e16
     nStatic = len(xyz)
@@ -303,7 +303,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
 
             # Update errors
             errors = np.linalg.norm(curr - target, axis=1)
-            err = np.median(errors)
+            err = np.mean(errors)
             errImprov = (bestErr - err) / bestErr
 
             if err < bestErr:
