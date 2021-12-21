@@ -23,6 +23,7 @@
 .tags
 .cache/
 .vscode/
+*.code-workspace
 
 # Compiled source #
 ###################
@@ -123,5 +124,6 @@ doc/tmp.sv
 env/
 doc/source/savefig/
 
-# Sample files
+# Sample files, etc.
 data/
+accelerometer/activityModels/
