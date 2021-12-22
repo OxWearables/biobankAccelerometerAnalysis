@@ -3,22 +3,21 @@
 from accelerometer import utils
 from accelerometer.models import MODELS
 from io import BytesIO
+import tempfile
 import numpy as np
 import os
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-import sklearn.ensemble._forest as forest
+from imblearn.ensemble import BalancedRandomForestClassifier
 import sklearn.metrics as metrics
 from sklearn.metrics import confusion_matrix
 import joblib
 import tarfile
-import warnings
 import urllib
 import pathlib
 import shutil
 
 
-def activityClassification(epochFile, activityModel="walmsley"):
+def activityClassification(epoch, activityModel="walmsley"):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -26,7 +25,7 @@ def activityClassification(epochFile, activityModel="walmsley"):
     free-living groundtruth to identify pre-defined classes of behaviour from
     accelerometer data.
 
-    :param str epochFile: Input csv file of processed epoch data
+    :param str epoch: Dataframe of processed epoch data
     :param str activityModel: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METs for each activity state
@@ -40,65 +39,46 @@ def activityClassification(epochFile, activityModel="walmsley"):
 
     activityModel = resolveModelPath(activityModel)
 
-    X = epochFile
-    featureColsFile = getFileFromTar(activityModel, 'featureCols.txt').getvalue()
-    featureColsList = featureColsFile.decode().split('\n')
-    featureCols = list(filter(None, featureColsList))
+    featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols.pkl'))
 
-    with pd.option_context('mode.use_inf_as_null', True):
-        null_rows = X[featureCols].isnull().any(axis=1)
-    print(null_rows.sum(), "rows with missing (NaN, None, or NaT) or Inf values, out of", len(X))
+    X = epoch[featureCols].to_numpy()
+    mask = np.isfinite(X).any(axis=1)
+    X = X[mask]
+    print(f"{len(epoch) - np.sum(mask)} rows with NaN or Inf values, out of {len(epoch)}")
 
-    X['label'] = 'none'
-    X.loc[null_rows, 'label'] = 'inf_or_null'
-    # Setup RF
-    # Ignore warnings on deployed model using different version of pandas
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        rf = joblib.load(getFileFromTar(activityModel, 'rfModel.pkl'))
-    labels = rf.classes_.tolist()
-    rfPredictions = rf.predict(X.loc[~null_rows, featureCols].to_numpy())
-    # Free memory
-    del rf
-    # Setup HMM
-    priors = np.load(getFileFromTar(activityModel, 'hmmPriors.npy'))
-    transitions = np.load(getFileFromTar(activityModel, 'hmmTransitions.npy'))
-    emissions = np.load(getFileFromTar(activityModel, 'hmmEmissions.npy'))
-    hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors,
-                             transitions, emissions)
-    # Save predictions to pandas dataframe
-    X.loc[~null_rows, 'label'] = hmmPredictions
+    model = joblib.load(getFileFromTar(activityModel, 'model.pkl'))
+    hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams.pkl'))
+    Y = viterbi(model.predict(X), hmmParams)
 
-    # Perform MET prediction...
-    # Pandas .replace method has a small bug
-    # See https://github.com/pandas-dev/pandas/issues/23305
-    # We need to force type
-    met_vals = np.load(getFileFromTar(activityModel, 'METs.npy'))
-    met_dict = dict(zip(labels, met_vals))
-    X.loc[~null_rows, 'MET'] = X.loc[~null_rows, 'label'].replace(met_dict).astype('float')
+    # Append predicted activities to epoch dataframe
+    epoch["label"] = np.nan
+    epoch.loc[mask, "label"] = Y
 
-    # Apply one-hot encoding
-    for l in labels:
-        X[l] = 0
-        X.loc[X['label'] == l, l] = 1
+    # MET prediction
+    METs = joblib.load(getFileFromTar(activityModel, 'METs.pkl'))
+    epoch["MET"] = epoch["label"].replace(METs)
+
+    labels = joblib.load(getFileFromTar(activityModel, 'labels.pkl')).tolist()
+
+    # One-hot encoding
+    for lab in labels:
+        epoch[lab] = 0
+        epoch.loc[epoch['label'] == lab, lab] = 1
     # Null values aren't one-hot encoded, so set such instances to NaN
-    for l in labels:
-        X.loc[X[labels].sum(axis=1) == 0, l] = np.nan
-    return X, labels
+    for lab in labels:
+        epoch.loc[epoch[labels].sum(axis=1) == 0, lab] = np.nan
 
-
-MIN_TRAIN_CLASS_COUNT = 100
+    return epoch, labels
 
 
 def trainClassificationModel(
         trainingFile,
         labelCol="label", participantCol="participant",
-        atomicLabelCol="annotation", metCol="MET",
+        annotationCol="annotation", metCol="MET",
         featuresTxt="activityModels/features.txt",
+        nTrees=1000, nJobs=1,
         trainParticipants=None, testParticipants=None,
-        rfThreads=1, rfTrees=1000, rfFeats=None, rfDepth=None,
-        outputPredict="activityModels/test-predictions.csv",
-        outputModel=None
+        outputPredict="predictions.csv", outputModel=None
 ):
     """Train model to classify activity states from epoch feature data
 
@@ -110,7 +90,7 @@ def trainClassificationModel(
     :param str trainingFile: Input csv file of training data, pre-sorted by time
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
-    :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
+    :param str annotationCol: Input text annotation e.g. 'walking with dog'
         vs. 'walking'
     :param str metCol: Input MET column
     :param str featuresTxt: Input txt file listing feature column names
@@ -118,8 +98,8 @@ def trainClassificationModel(
         to train on.
     :param str testParticipants: Input comma separated list of participant IDs
         to test on.
-    :param int rfThreads: Input num threads to use when training random forest
-    :param int rfTrees: Input num decision trees to include in random forest
+    :param int nJobs: Input num threads to use when training random forest
+    :param int nTrees: Input num decision trees to include in random forest
     :param str outputPredict: Output CSV of person, label, predicted
     :param str outputModel: Output tarfile object which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
@@ -132,14 +112,13 @@ def trainClassificationModel(
     """
 
     # Load list of features to use in analysis
-    featureCols = getListFromTxtFile(featuresTxt)
+    featureCols = np.loadtxt(featuresTxt, dtype='str')
 
     # Load in participant information, and remove null/messy labels/features
-    train = pd.read_csv(trainingFile)
-    train = train[~pd.isnull(train[labelCol])]
-    allCols = [participantCol, labelCol, atomicLabelCol, metCol] + featureCols
+    allCols = [participantCol, labelCol, annotationCol, metCol] + featureCols.tolist()
+    train = pd.read_csv(trainingFile, usecols=allCols)
     with pd.option_context('mode.use_inf_as_null', True):
-        train = train[allCols].dropna(axis=0, how='any')
+        train = train.dropna(axis=0, how='any')
 
     # Reduce size of train/test sets if we are training/testing on some people
     if testParticipants is not None:
@@ -150,195 +129,124 @@ def trainClassificationModel(
         trainPIDs = trainParticipants.split(',')
         train = train[train[participantCol].isin(trainPIDs)]
 
-    # Train Random Forest model
-    # First "monkeypatch" RF function to perform per-class balancing
-    global MIN_TRAIN_CLASS_COUNT
-    MIN_TRAIN_CLASS_COUNT = train[labelCol].value_counts().min()
-    forest._parallel_build_trees = _parallel_build_trees
-    # Then train RF model (which include per-class balancing)
-    rfClassifier = RandomForestClassifier(n_estimators=rfTrees,
-                                          n_jobs=rfThreads,
-                                          max_features=rfFeats,
-                                          max_depth=rfDepth,
-                                          oob_score=True)
+    X, Y = train[featureCols].to_numpy(), train[labelCol].to_numpy()
 
-    rfModel = rfClassifier.fit(train[featureCols], train[labelCol].tolist())
+    model = BalancedRandomForestClassifier(
+        n_estimators=nTrees,
+        replacement=True,
+        sampling_strategy='not minority',
+        n_jobs=nJobs,
+        oob_score=True,
+        verbose=True,
+        random_state=42)
+
+    model = model.fit(X, Y)
+    labels = model.classes_
 
     # Train Hidden Markov Model
-    states, priors, emissions, transitions = train_HMM(rfModel, train[labelCol], labelCol)
-    rfModel.oob_decision_function_ = None  # out of bound errors are no longer needed
+    hmmParams = trainHMM(model.oob_decision_function_, Y, labels)
 
-    # Estimate usual METs-per-class
-    METs = []
-    for s in states:
-        MET = train[train[labelCol] == s].groupby(atomicLabelCol)[metCol].mean().mean()
-        METs += [MET]
+    model.oob_decision_function_ = None  # out-of-bag predictions no longer needed
+    model.verbose = False  # silence future calls to .predict()
+
+    # Estimate METs via per-class averaging
+    METs = {y: train[Y == y].groupby(annotationCol)[metCol].mean().mean()
+            for y in model.classes_}
 
     # Now write out model
     if outputModel is not None:
-        saveModelsToTar(outputModel, featureCols, rfModel, priors, transitions, emissions, METs)
+        saveModelsToTar(outputModel, model, labels, featureCols, hmmParams, METs)
 
     # Assess model performance on test participants
     if testParticipants is not None:
-        print('test on participant(s):, ', testParticipants)
-        labels = rfModel.classes_.tolist()
-        rfPredictions = rfModel.predict(test[featureCols])
-        hmmPredictions = viterbi(rfPredictions.tolist(), labels, priors,
-                                 transitions, emissions)
-        test['predicted'] = hmmPredictions
+        print('Test on participant(s):', testParticipants)
+        X_test, Y_test = test[featureCols].to_numpy(), test[labelCol].to_numpy()
+        Y_pred = model.predict(X_test)
+        Y_pred_hmm = viterbi(Y_pred, hmmParams)
+        test['predicted'] = Y_pred_hmm
         # And write out to file
         outCols = [participantCol, labelCol, 'predicted']
         test[outCols].to_csv(outputPredict, index=False)
         print('Output predictions written to: ', outputPredict)
+        print(metrics.classification_report(Y_test, Y_pred_hmm))
 
 
-def train_HMM(rfModel, y_trainF, labelCol):
-    """Train Hidden Markov Model
+def trainHMM(Y_prob, Y_true, labels=None, uniform_prior=True):
+    """ https://en.wikipedia.org/wiki/Hidden_Markov_model
 
-    Use data not considered in construction of random forest to estimate
-    probabilities of: i) starting in a given state; ii) transitioning from
-    one state to another; and iii) probabilitiy of the random forest being
-    correct when predicting a given class (emission probability)
+    :return: Dictionary containing prior, emission and transition
+        matrices, and corresponding labels.
+    :rtype: dict
 
-    :param sklearn.RandomForestClassifier rfModel: Input random forest object
-    :param dataframe.Column y_trainF: Input groundtruth for each intance
-    :param str labelCol: Input label column
-
-    :return: states - List of unique activity state labels
-    rtype: numpy.array
-
-    :return: priors - Prior probabilities for each activity state
-    rtype: numpy.array
-
-    :return: transitions - Probability matrix of transitioning from one activity
-        state to another
-    rtype: numpy.array
-
-    :return: emissions - Probability matrix of RF prediction being true
-    rtype: numpy.array
     """
 
-    states = rfModel.classes_
+    if labels is None:
+        labels = np.unique(Y_true)
 
-    # Get out of bag (OOB) predictions from Random Forest
-    predOOB = pd.DataFrame(rfModel.oob_decision_function_)
-    predOOB.columns = states
-    predOOB['labelOOB'] = predOOB.idxmax(axis=1)
-    predOOB['groundTruth'] = y_trainF.values
+    if uniform_prior:
+        # All labels with equal probability
+        prior = np.ones(len(labels)) / len(labels)
+    else:
+        # Label probability equals empirical rate
+        prior = np.mean(Y_true.reshape(-1, 1) == labels, axis=0)
 
-    # Initial state probabilities
-    prior = []
-    for s in states:
-        sProb = len(y_trainF[y_trainF == s]) / (len(y_trainF) * 1.0)
-        prior += [sProb]
+    emission = np.vstack(
+        [np.mean(Y_prob[Y_true == label], axis=0) for label in labels]
+    )
+    transition = np.vstack(
+        [np.mean(Y_true[1:][(Y_true == label)[:-1]].reshape(-1, 1) == labels, axis=0)
+            for label in labels]
+    )
 
-    # Emission probabilities
-    emissions = np.zeros((len(states), len(states)))
-    j = 0
-    for predictedState in states:
-        k = 0
-        for actualState in states:
-            emissions[j, k] = predOOB[actualState][predOOB['groundTruth'] == predictedState].sum()
-            emissions[j, k] /= len(predOOB[predOOB['groundTruth'] == predictedState])
-            k += 1
-        j += 1
+    params = {'prior': prior, 'emission': emission, 'transition': transition, 'labels': labels}
 
-    # Transition probabilities
-    train = y_trainF.to_frame()
-    train['nextLabel'] = train[labelCol].shift(-1)
-    transitions = np.zeros((len(states), len(states)))
-    j = 0
-    for s1 in states:
-        k = 0
-        for s2 in states:
-            transitions[j, k] = len(train[(train[labelCol] == s1) & (train['nextLabel'] == s2)]
-                                    ) / (len(train[train[labelCol] == s1]) * 1.0)
-            k += 1
-        j += 1
-
-    # Return HMM matrices
-    return states, prior, emissions, transitions
+    return params
 
 
-def viterbi(observations, states, priors, transitions, emissions,
-            probabilistic=False):
-    """Perform HMM smoothing over observations via Viteri algorithm
+def viterbi(Y_obs, hmm_params):
+    """ Perform HMM smoothing over observations via Viteri algorithm
 
-    :param list(str) observations: List/sequence of activity states
-    :param numpy.array states: List of unique activity state labels
-    :param numpy.array priors: Prior probabilities for each activity state
-    :param numpy.array transitions: Probability matrix of transitioning from one
-        activity state to another
-    :param numpy.array emissions: Probability matrix of RF prediction being true
-    :param bool probabilistic: Write probabilistic output for each state, rather
-        than writing most likely state for any given prediction.
+    https://en.wikipedia.org/wiki/Viterbi_algorithm
 
-    :return: Smoothed list/sequence of activity states
-    :rtype: list(str)
+    :param dict hmm_params: Dictionary containing prior, emission and transition
+        matrices, and corresponding labels
+
+    :return: Smoothed sequence of activities
+    :rtype: numpy.array
     """
 
-    def norm(x):
-        return x / x.sum()
+    def log(x):
+        SMALL_NUMBER = 1e-16
+        return np.log(x + SMALL_NUMBER)
 
-    tinyNum = 0.000001
-    nObservations = len(observations)
-    nStates = len(states)
-    v = np.zeros((nObservations, nStates))  # initialise viterbi table
-    # Set prior state values for first observation...
-    for state in range(0, len(states)):
-        v[0, state] = np.log(priors[state] * emissions[state, states.index(observations[0])] + tinyNum)
-    # Fill in remaning matrix observations
-    # Use log space as multiplying successively smaller p values)
-    for k in range(1, nObservations):
-        for state in range(0, len(states)):
-            v[k, state] = np.log(emissions[state, states.index(observations[k])] + tinyNum) + \
-                np.max(v[k - 1, :] + np.log(transitions[:, state] + tinyNum), axis=0)
+    prior = hmm_params['prior']
+    emission = hmm_params['emission']
+    transition = hmm_params['transition']
+    labels = hmm_params['labels']
 
-    # Now construct viterbiPath (propagating backwards)
-    viterbiPath = observations
-    # Pick most probable state for final observation
-    viterbiPath[nObservations - 1] = states[np.argmax(v[nObservations - 1, :], axis=0)]
+    nobs = len(Y_obs)
+    nlabels = len(labels)
 
-    # Probabilistic method will give probability of each label
-    if probabilistic:
-        viterbiProba = np.zeros((nObservations, nStates))  # initialize table
-        viterbiProba[nObservations - 1, :] = norm(v[nObservations - 1, :])
+    Y_obs = np.where(Y_obs.reshape(-1, 1) == labels)[1]  # to numeric
 
-    # And then work backwards to pick most probable state for all other observations
-    for k in list(reversed(range(0, nObservations - 1))):
-        viterbiPath[k] = states[np.argmax(
-            v[k, :] + np.log(transitions[:, states.index(viterbiPath[k + 1])] + tinyNum), axis=0)]
-        if probabilistic:
-            viterbiProba[k, :] = norm(v[k, :] + np.log(transitions[:, states.index(viterbiPath[k + 1])] + tinyNum))
+    probs = np.zeros((nobs, nlabels))
+    probs[0, :] = log(prior) + log(emission[:, Y_obs[0]])
+    for j in range(1, nobs):
+        for i in range(nlabels):
+            probs[j, i] = np.max(
+                log(emission[i, Y_obs[j]]) +
+                log(transition[:, i]) +
+                probs[j - 1, :])  # probs already in log scale
+    viterbi_path = np.zeros_like(Y_obs)
+    viterbi_path[-1] = np.argmax(probs[-1, :])
+    for j in reversed(range(nobs - 1)):
+        viterbi_path[j] = np.argmax(
+            log(transition[:, viterbi_path[j + 1]]) +
+            probs[j, :])  # probs already in log scale
 
-    # Output as list...
-    return viterbiProba if probabilistic else viterbiPath
+    viterbi_path = labels[viterbi_path]  # to labels
 
-
-GLOBAL_INDICES = []
-
-
-def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
-                          verbose=0, class_weight=None, n_samples_bootstrap=None):
-    """Monkeypatch scikit learn to use per-class balancing
-
-    Private function used to fit a single tree in parallel.
-    """
-
-    if verbose > 1:
-        print("building tree %d of %d" % (tree_idx + 1, n_trees))
-
-    indices = np.empty(shape=0, dtype='int64')
-    for y_class in np.unique(y):
-        sample_indices, selected = np.where(y == y_class)
-        # SELECT min_count FROM CLASS WITH REPLACEMENT
-        sample_indices = np.random.choice(sample_indices,
-                                          size=MIN_TRAIN_CLASS_COUNT, replace=True)
-        indices = np.concatenate((indices, sample_indices))
-    # IGNORE sample_weight AND SIMPLY PASS SELECTED DATA
-    tree.fit(X[indices, :], y[indices], check_input=True)
-    GLOBAL_INDICES.append(indices)
-    return tree
+    return viterbi_path
 
 
 def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
@@ -401,60 +309,61 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     w.close()
 
 
-def saveModelsToTar(tarArchive, featureCols, rfModel, priors, transitions,
-                    emissions, METs, featuresTxt="featureCols.txt", rfModelFile="rfModel.pkl",
-                    hmmPriors="hmmPriors.npy", hmmEmissions="hmmEmissions.npy",
-                    hmmTransitions="hmmTransitions.npy", hmmMETs="METs.npy"):
+def saveModelsToTar(tarOut, model, labels, featureCols, hmmParams, METs):
     """Save random forest and hidden markov models to tarArchive file
 
     Note we must use the same version of python and scikit learn as in the
     intended deployment environment
 
     :param str tarArchive: Output tarfile
-    :param list featureCols: Input list of feature columns
-    :param sklearn.RandomForestClassifier rfModel: Input random forest model
-    :param numpy.array priors: Input prior probabilities for each activity state
-    :param numpy.array transitions: Input probability matrix of transitioning
-        from one activity state to another
-    :param numpy.array emissions: Input probability matrix of RF prediction
-        being true
-    :param numpy.array METs: Input array of average METs per activity state
-    :param str featuresTxt: Intermediate output txt file of features
-    :param str rfModelFile: Intermediate output random forest pickle model
-    :param str hmmPriors: Intermediate output HMM priors npy
-    :param str hmmEmissions: Intermediate output HMM emissions npy
-    :param str hmmTransitions: Intermediate output HMM transitions npy
-    :param str hmmMETs: Intermediate output HMM METs npy
+    :param sklearn.RandomForestClassifier rfModel: Random forest model
+    :param numpy array labels: Array of labels
+    :param numpy.array featureCols: Array of feature column names
+    :param dict hmmParams: Dictionary containing HMM params
+    :param dict METs: Dictionary mapping labels to MET values
 
-    :return: tar file of RF + HMM written to tarArchive
+    :return: tar file of RF + HMM written to <tarOut>
     :rtype: void
     """
 
-    wristListToTxtFile(featureCols, featuresTxt)
-    np.save(hmmPriors, priors)
-    np.save(hmmEmissions, emissions)
-    np.save(hmmTransitions, transitions)
-    np.save(hmmMETs, METs)
-    joblib.dump(rfModel, rfModelFile, compress=9)
+    try:
 
-    # Create single .tar file...
-    tarOut = tarfile.open(tarArchive, mode='w')
-    tarOut.add(featuresTxt)
-    tarOut.add(hmmPriors)
-    tarOut.add(hmmEmissions)
-    tarOut.add(hmmTransitions)
-    tarOut.add(hmmMETs)
-    tarOut.add(rfModelFile)
-    tarOut.close()
+        tmpdir = tempfile.mkdtemp()
 
-    # Remove intermediate files
-    os.remove(featuresTxt)
-    os.remove(hmmPriors)
-    os.remove(hmmEmissions)
-    os.remove(hmmTransitions)
-    os.remove(hmmMETs)
-    os.remove(rfModelFile)
-    print('Models saved to', tarArchive)
+        modelFile = "model.pkl"
+        labelsFile = "labels.pkl"
+        featureColsFile = "featureCols.pkl"
+        hmmParamsFile = "hmmParams.pkl"
+        METsFile = "METs.pkl"
+
+        modelPath = os.path.join(tmpdir, modelFile)
+        labelsPath = os.path.join(tmpdir, labelsFile)
+        featureColsPath = os.path.join(tmpdir, featureColsFile)
+        hmmParamsPath = os.path.join(tmpdir, hmmParamsFile)
+        METsPath = os.path.join(tmpdir, METsFile)
+
+        joblib.dump(model, modelPath, compress=True)
+        joblib.dump(labels, labelsPath, compress=True)
+        joblib.dump(featureCols, featureColsPath, compress=True)
+        joblib.dump(hmmParams, hmmParamsPath, compress=True)
+        joblib.dump(METs, METsPath, compress=True)
+
+        # Create .tar file...
+        with tarfile.open(tarOut, mode='w') as t:
+            t.add(modelPath, arcname=modelFile)
+            t.add(labelsPath, arcname=labelsFile)
+            t.add(featureColsPath, arcname=featureColsFile)
+            t.add(hmmParamsPath, arcname=hmmParamsFile)
+            t.add(METsPath, arcname=METsFile)
+
+        print('Models saved to', tarOut)
+
+    finally:
+
+        try:
+            shutil.rmtree(tmpdir)
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
 
 
 def getFileFromTar(tarArchive, targetFile):
@@ -470,10 +379,11 @@ def getFileFromTar(tarArchive, targetFile):
     :rtype: object
     """
 
-    t = tarfile.open(tarArchive, 'r')
-    array_file = BytesIO()
-    array_file.write(t.extractfile(targetFile).read())
-    array_file.seek(0)
+    with tarfile.open(tarArchive, 'r') as t:
+        array_file = BytesIO()
+        array_file.write(t.extractfile(targetFile).read())
+        array_file.seek(0)
+
     return array_file
 
 
@@ -483,7 +393,7 @@ def addReferenceLabelsToNewFeatures(
         outputFile,
         featuresTxt="activityModels/features.txt",
         labelCol="label", participantCol="participant",
-        atomicLabelCol="annotation", metCol="MET"):
+        annotationCol="annotation", metCol="MET"):
     """Append reference annotations to newly extracted feature data
 
     This method helps add existing curated labels (from referenceLabelsFile)
@@ -497,7 +407,7 @@ def addReferenceLabelsToNewFeatures(
     :param str featuresTxt: Input txt file listing feature column names
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
-    :param str atomicLabelCol: Input 'atomic' annotation e.g. 'walking with dog'
+    :param str annotationCol: Input text annotation e.g. 'walking with dog'
         vs. 'walking'
     :param str metCol: Input MET column
 
@@ -512,11 +422,11 @@ def addReferenceLabelsToNewFeatures(
     """
 
     # load new features file
-    featureCols = getListFromTxtFile(featuresTxt)
+    featureCols = np.loadtxt(featuresTxt, dtype='str')
     dFeat = pd.read_csv(featuresFile, usecols=featureCols + [participantCol, 'time'])
 
     # load in reference annotations file
-    refCols = [participantCol, 'age', 'sex', 'time', atomicLabelCol, labelCol,
+    refCols = [participantCol, 'age', 'sex', 'time', annotationCol, labelCol,
                'code', metCol, 'MET_label']
     dRef = pd.read_csv(referenceLabelsFile, usecols=refCols)
 
@@ -527,39 +437,6 @@ def addReferenceLabelsToNewFeatures(
     # write out new labelled features file
     dOut.to_csv(outputFile, index=True)
     print('New file written to: ', outputFile)
-
-
-def wristListToTxtFile(inputList, outputFile):
-    """Write list of items to txt file
-
-    :param list inputList: input list
-    :param str outputFile: Output txt file
-
-    :return: list of feature columns
-    :rtype: void
-    """
-
-    f = open(outputFile, 'w')
-    for item in inputList:
-        f.write(item + '\n')
-    f.close()
-
-
-def getListFromTxtFile(inputFile):
-    """Read list of items from txt file and return as list
-
-    :param str inputFile: Input file listing items
-
-    :return: list of items
-    :rtype: list
-    """
-
-    items = []
-    f = open(inputFile, 'r')
-    for l in f:
-        items.append(l.strip())
-    f.close()
-    return items
 
 
 def resolveModelPath(pathOrModelName):
