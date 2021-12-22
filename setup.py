@@ -39,6 +39,7 @@ setuptools.setup(
         'joblib==1.0.1',
         'statsmodels>=0.12.2',
         'tqdm>=4.59.0',
+        'imbalanced-learn>=0.8.1',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
