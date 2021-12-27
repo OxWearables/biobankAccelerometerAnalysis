@@ -37,8 +37,7 @@ $ accPlot data/sample-timeSeries.csv.gz
 
 
 ## Usage
-To extract a summary of movement (average sample vector magnitude) and
-(non)wear time from raw Axivity .CWA (or gzipped .cwa.gz) accelerometer files:
+To extract a summary of movement from a raw Axivity accelerometer file (.cwa):
 
 ```bash
 $ accProcess data/sample.cwa.gz
@@ -66,18 +65,6 @@ $ accPlot data/sample-timeSeries.csv.gz
  <output plot written to data/sample-timeSeries-plot.png>
 ```
 ![Time series plot](docs/source/samplePlot.png)
-
-You can also import the underlying modules to use in your custom python scripts:
-```Python
-from accelerometer import summariseEpoch
-summary = {}
-epochData, labels = summariseEpoch.getActivitySummary(
-    "sample-epoch.csv.gz",
-    "sample-nonWear.csv.gz",
-    summary)
-# <nonWear file written to "sample-nonWear.csv.gz" and dict "summary" updated
-# with outcomes>
-```
 
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be
