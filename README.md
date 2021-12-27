@@ -83,13 +83,11 @@ epochData, labels = summariseEpoch.getActivitySummary(
 Interpreted levels of physical activity can vary, as many approaches can be
 taken to extract summary physical activity information from raw accelerometer
 data. To minimise error and bias, our tool uses published methods to calibrate,
-resample, and summarise the accelerometer data. [Click here for detailed
-information on the
-data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html)
+resample, and summarise the accelerometer data. 
+<!-- [Click here for detailed information on the data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) -->
 
 ![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
 ![Activity classification](docs/source/accClassification.png)
-
 
 
 ## Citing our work
