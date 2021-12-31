@@ -66,6 +66,8 @@ $ accPlot data/sample-timeSeries.csv.gz
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
+See the [documentation](https://biobankaccanalysis.readthedocs.io/en/latest/index.html) for more.
+
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be
 taken to extract summary physical activity information from raw accelerometer
