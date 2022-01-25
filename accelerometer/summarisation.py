@@ -108,8 +108,8 @@ def getActivitySummary(  # noqa: C901
     data['acc'] = data['enmoTrunc'] * 1000  # convert enmoTrunc to milli-G units
 
     # Cut-point based MVPA and VPA
-    data['CutPointMVPA'] = data['acc'] >= mgCutPointMVPA
-    data['CutPointVPA'] = data['acc'] >= mgCutPointVPA
+    data['cutPointMVPA'] = data['acc'] >= mgCutPointMVPA
+    data['cutPointVPA'] = data['acc'] >= mgCutPointVPA
 
     # Resolve interrupts
     data = resolveInterrupts(data, epochPeriod, summary)
@@ -330,12 +330,12 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     """
 
     data = data.copy()
-    data['wear'] = ~data['missing']
+    data['wearTime'] = ~data['missing']
     freq = pd.infer_freq(data.index)
 
     # Hours of activity for each recorded day
     epochInHours = pd.Timedelta(freq).total_seconds() / 3600
-    cols = ['wear', 'CutPointMVPA', 'CutPointVPA'] + labels
+    cols = ['wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
     dailyStats = (
         data[cols].astype('float')
         .groupby(data.index.date)
@@ -350,7 +350,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
     tStart, tEnd = data.index[0], data.index[-1]
-    cols = ['acc', 'wear', 'CutPointMVPA', 'CutPointVPA'] + labels
+    cols = ['acc', 'wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
     if 'MET' in data.columns:
         cols.append('MET')
     data = imputeMissing(data[cols].astype('float'))
@@ -415,7 +415,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # Weekday/weekend stats
     for col, stats in weekdayOrWeekendStats.groupby(level=0).mean().to_dict().items():
         for weekdayOrWeekend, value in stats.items():
-            summary[f'{col}-{weekdayOrWeekend}-avg'] = utils.formatNum(value, 2)
+            summary[f'{col}-{weekdayOrWeekend.lower()}-avg'] = utils.formatNum(value, 2)
 
     # Stats by hour of day AND by weekday/weekend
     for col, stats in weekdayOrWeekendStats.to_dict().items():
