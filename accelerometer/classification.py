@@ -56,7 +56,8 @@ def activityClassification(epoch, activityModel="walmsley"):
 
     # MET prediction
     METs = joblib.load(getFileFromTar(activityModel, 'METs'))
-    epoch["MET"] = epoch["label"].replace(METs)
+    if METs is not None:
+        epoch["MET"] = epoch["label"].replace(METs)
 
     labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
 
@@ -115,7 +116,9 @@ def trainClassificationModel(
     featureCols = np.loadtxt(featuresTxt, dtype='str')
 
     # Load in participant information, and remove null/messy labels/features
-    allCols = [participantCol, labelCol, annotationCol, metCol] + featureCols.tolist()
+    allCols = [participantCol, labelCol, annotationCol] + featureCols.tolist()
+    if metCol:
+        allCols.append(metCol)
     train = pd.read_csv(trainingFile, usecols=allCols)
     with pd.option_context('mode.use_inf_as_null', True):
         train = train.dropna(axis=0, how='any')
@@ -150,8 +153,10 @@ def trainClassificationModel(
     model.verbose = False  # silence future calls to .predict()
 
     # Estimate METs via per-class averaging
-    METs = {y: train[Y == y].groupby(annotationCol)[metCol].mean().mean()
-            for y in model.classes_}
+    METs = None
+    if metCol:
+        METs = {y: train[Y == y].groupby(annotationCol)[metCol].mean().mean()
+                for y in model.classes_}
 
     # Now write out model
     if outputModel is not None:
@@ -282,16 +287,16 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     # print out values to html string
     kappaSDHTML = "Mean Kappa (SD) = "
     kappaSDHTML += utils.meanSDstr(d_summary['kappa'].mean(),
-                                      d_summary['kappa'].std(), 2)
+                                   d_summary['kappa'].std(), 2)
     accuracySDHTML = "Mean accuracy (SD) = "
     accuracySDHTML += utils.meanSDstr(d_summary['accuracy'].mean() * 100,
-                                         d_summary['accuracy'].std() * 100, 1) + ' %'
+                                      d_summary['accuracy'].std() * 100, 1) + ' %'
     kappaCIHTML = "Mean Kappa (95% CI) = "
     kappaCIHTML += utils.meanCIstr(d_summary['kappa'].mean(),
-                                      d_summary['kappa'].std(), len(d_summary), 2)
+                                   d_summary['kappa'].std(), len(d_summary), 2)
     accuracyCIHTML = "Mean accuracy (95% CI) = "
     accuracyCIHTML += utils.meanCIstr(d_summary['accuracy'].mean() * 100,
-                                         d_summary['accuracy'].std() * 100, len(d_summary), 1) + ' %'
+                                      d_summary['accuracy'].std() * 100, len(d_summary), 1) + ' %'
 
     # get confusion matrix to pandas dataframe
     y_true = dfParam[yTrueCol]
@@ -359,11 +364,14 @@ def getFileFromTar(tarArchive, targetFile):
     """
 
     with tarfile.open(tarArchive, 'r') as t:
-        array_file = BytesIO()
-        array_file.write(t.extractfile(targetFile).read())
-        array_file.seek(0)
+        b = BytesIO()
+        try:
+            b.write(t.extractfile(targetFile).read())
+        except KeyError:
+            return None
+        b.seek(0)
 
-    return array_file
+    return b
 
 
 def addReferenceLabelsToNewFeatures(
