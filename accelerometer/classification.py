@@ -39,15 +39,15 @@ def activityClassification(epoch, activityModel="walmsley"):
 
     activityModel = resolveModelPath(activityModel)
 
-    featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols.pkl'))
+    featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols'))
 
     X = epoch[featureCols].to_numpy()
     mask = np.isfinite(X).any(axis=1)
     X = X[mask]
     print(f"{len(epoch) - np.sum(mask)} rows with NaN or Inf values, out of {len(epoch)}")
 
-    model = joblib.load(getFileFromTar(activityModel, 'model.pkl'))
-    hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams.pkl'))
+    model = joblib.load(getFileFromTar(activityModel, 'model'))
+    hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams'))
     Y = viterbi(model.predict(X), hmmParams)
 
     # Append predicted activities to epoch dataframe
@@ -55,10 +55,10 @@ def activityClassification(epoch, activityModel="walmsley"):
     epoch.loc[mask, "label"] = Y
 
     # MET prediction
-    METs = joblib.load(getFileFromTar(activityModel, 'METs.pkl'))
+    METs = joblib.load(getFileFromTar(activityModel, 'METs'))
     epoch["MET"] = epoch["label"].replace(METs)
 
-    labels = joblib.load(getFileFromTar(activityModel, 'labels.pkl')).tolist()
+    labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
 
     # One-hot encoding
     for lab in labels:
@@ -155,7 +155,12 @@ def trainClassificationModel(
 
     # Now write out model
     if outputModel is not None:
-        saveModelsToTar(outputModel, model, labels, featureCols, hmmParams, METs)
+        saveToTar(outputModel,
+                  model=model,
+                  labels=labels,
+                  featureCols=featureCols,
+                  hmmParams=hmmParams,
+                  METs=METs)
 
     # Assess model performance on test participants
     if testParticipants is not None:
@@ -309,20 +314,13 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
     w.close()
 
 
-def saveModelsToTar(tarOut, model, labels, featureCols, hmmParams, METs):
-    """Save random forest and hidden markov models to tarArchive file
+def saveToTar(tarOut, **kwargs):
+    """Save objects to tar file. Objects must be passed as keyworded arguments,
+    then the key is used for the object name in the tar file.
 
-    Note we must use the same version of python and scikit learn as in the
-    intended deployment environment
+    :param **kwargs: Objects to be saved passed as keyworded arguments.
 
-    :param str tarArchive: Output tarfile
-    :param sklearn.RandomForestClassifier rfModel: Random forest model
-    :param numpy array labels: Array of labels
-    :param numpy.array featureCols: Array of feature column names
-    :param dict hmmParams: Dictionary containing HMM params
-    :param dict METs: Dictionary mapping labels to MET values
-
-    :return: tar file of RF + HMM written to <tarOut>
+    :return: tar file written to <tarOut>
     :rtype: void
     """
 
@@ -330,31 +328,12 @@ def saveModelsToTar(tarOut, model, labels, featureCols, hmmParams, METs):
 
         tmpdir = tempfile.mkdtemp()
 
-        modelFile = "model.pkl"
-        labelsFile = "labels.pkl"
-        featureColsFile = "featureCols.pkl"
-        hmmParamsFile = "hmmParams.pkl"
-        METsFile = "METs.pkl"
+        with tarfile.open(tarOut, mode='w') as tf:
 
-        modelPath = os.path.join(tmpdir, modelFile)
-        labelsPath = os.path.join(tmpdir, labelsFile)
-        featureColsPath = os.path.join(tmpdir, featureColsFile)
-        hmmParamsPath = os.path.join(tmpdir, hmmParamsFile)
-        METsPath = os.path.join(tmpdir, METsFile)
-
-        joblib.dump(model, modelPath, compress=True)
-        joblib.dump(labels, labelsPath, compress=True)
-        joblib.dump(featureCols, featureColsPath, compress=True)
-        joblib.dump(hmmParams, hmmParamsPath, compress=True)
-        joblib.dump(METs, METsPath, compress=True)
-
-        # Create .tar file...
-        with tarfile.open(tarOut, mode='w') as t:
-            t.add(modelPath, arcname=modelFile)
-            t.add(labelsPath, arcname=labelsFile)
-            t.add(featureColsPath, arcname=featureColsFile)
-            t.add(hmmParamsPath, arcname=hmmParamsFile)
-            t.add(METsPath, arcname=METsFile)
+            for key, val in kwargs.items():
+                pth = os.path.join(tmpdir, key)
+                joblib.dump(val, pth, compress=True)
+                tf.add(pth, arcname=key)
 
         print('Models saved to', tarOut)
 
