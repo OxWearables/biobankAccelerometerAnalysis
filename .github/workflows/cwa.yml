@@ -37,10 +37,13 @@ jobs:
         pip install --upgrade pip
         pip install .
 
-    - name: Download a sample cwa file and process it
+    - name: Download necessary files
       run: |
         wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz --quiet
-        accProcess data/sample.cwa.gz
+
+    - name: Processing
+      run: |
+        accProcess data/sample.cwa.gz --activityClassification f
 
     - name: Compare epoch output
       uses: tianhaoz95/mirror-action@v1.0.1
