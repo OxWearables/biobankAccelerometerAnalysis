@@ -15,6 +15,7 @@ import tarfile
 import urllib
 import pathlib
 import shutil
+import warnings
 
 
 def activityClassification(epoch, activityModel="walmsley"):
@@ -432,6 +433,18 @@ def resolveModelPath(pathOrModelName):
         return pathOrModelName
 
     else:
+
+        # versions before January 2022 no longer supported
+        if pathOrModelName in (
+            'walmsley-jan21', 'doherty-jan21', 'willetts-jan21',
+            'walmsley-may20', 'doherty-may20', 'willetts-may20'
+        ):
+            pathOrModelName = pathOrModelName.split("-")[0]
+            warnings.warn(
+                f"Activity model versions before January 2022 are no longer supported. "
+                f"Defaulting to --activityModel {pathOrModelName}"
+            )
+
         model = MODELS.get(pathOrModelName, None)
         if model is None:
             raise FileNotFoundError(f"Model file {pathOrModelName} not found")
