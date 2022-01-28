@@ -8,6 +8,7 @@ import numpy as np
 import os
 import pandas as pd
 from imblearn.ensemble import BalancedRandomForestClassifier
+from sklearn.model_selection import cross_val_predict, cross_val_score
 import sklearn.metrics as metrics
 from sklearn.metrics import confusion_matrix
 import joblib
@@ -16,6 +17,7 @@ import urllib
 import pathlib
 import shutil
 import warnings
+import json
 
 
 def activityClassification(epoch, activityModel="walmsley"):
@@ -78,9 +80,10 @@ def trainClassificationModel(
         labelCol="label", participantCol="participant",
         annotationCol="annotation", metCol="MET",
         featuresTxt="activityModels/features.txt",
-        nTrees=1000, nJobs=1,
-        trainParticipants=None, testParticipants=None,
-        outputPredict="predictions.csv", outputModel=None
+        nTrees=1000, maxDepth=None, minSamplesLeaf=1,
+        cv=None, testParticipants=None,
+        outDir='model/',
+        nJobs=1,
 ):
     """Train model to classify activity states from epoch feature data
 
@@ -96,62 +99,76 @@ def trainClassificationModel(
         vs. 'walking'
     :param str metCol: Input MET column
     :param str featuresTxt: Input txt file listing feature column names
-    :param str trainParticipants: Input comma separated list of participant IDs
-        to train on.
+    :param int cv: Number of CV folds. If None, CV is skipped.
     :param str testParticipants: Input comma separated list of participant IDs
         to test on.
-    :param int nJobs: Input num threads to use when training random forest
-    :param int nTrees: Input num decision trees to include in random forest
-    :param str outputPredict: Output CSV of person, label, predicted
-    :param str outputModel: Output tarfile object which contains random forest
-        pickle model, HMM priors/transitions/emissions npy files, and npy file
-        of METs for each activity state. Will only output trained model if this
-        is not null e.g. "activityModels/sample-model.tar"
+    :param int nTrees: Random forest n_estimators param.
+    :param int maxDepth: Random forest max_depth param.
+    :param int minSamplesLeaf: Random forest min_samples_leaf param.
+    :param int nJobs: Number of jobs to run in parallel.
+    :param str outDir: Output directory
 
-    :return: New model written to <outputModel> OR csv of test predictions
-        written to <outputPredict>
+    :return: Output files (trained model, predictions, etc.) written to <outDir>
     :rtype: void
     """
 
-    # Load list of features to use in analysis
+    report = {
+        'params__n_estimators': nTrees,
+        'params__max_depth': maxDepth,
+        'params__min_samples_leaf': minSamplesLeaf,
+    }
+
+    os.makedirs(outDir, exist_ok=True)
+
+    # Load list of features to use for training
     featureCols = np.loadtxt(featuresTxt, dtype='str')
 
     # Load in participant information, and remove null/messy labels/features
     allCols = [participantCol, labelCol, annotationCol] + featureCols.tolist()
     if metCol:
         allCols.append(metCol)
-    train = pd.read_csv(trainingFile, usecols=allCols)
+    data = pd.read_csv(trainingFile, usecols=allCols)
     with pd.option_context('mode.use_inf_as_null', True):
-        train = train.dropna(axis=0, how='any')
+        data = data.dropna(axis=0, how='any')
 
-    # Reduce size of train/test sets if we are training/testing on some people
+    # Train/test split if testParticipants provided
     if testParticipants is not None:
         testPIDs = testParticipants.split(',')
-        test = train[train[participantCol].isin(testPIDs)]
-        train = train[~train[participantCol].isin(testPIDs)]
-    if trainParticipants is not None:
-        trainPIDs = trainParticipants.split(',')
-        train = train[train[participantCol].isin(trainPIDs)]
+        test = data[data[participantCol].isin(testPIDs)].copy()
+        train = data[~data[participantCol].isin(testPIDs)].copy()
+    else:
+        train = data
 
-    X, Y = train[featureCols].to_numpy(), train[labelCol].to_numpy()
+    X, Y, pid = train[featureCols].to_numpy(), train[labelCol].to_numpy(), train[participantCol].to_numpy()
 
-    model = BalancedRandomForestClassifier(
-        n_estimators=nTrees,
-        replacement=True,
-        sampling_strategy='not minority',
-        n_jobs=nJobs,
-        oob_score=True,
-        verbose=True,
-        random_state=42)
+    def _Model(**kwargs):
+        return BalancedRandomForestClassifier(
+            n_estimators=nTrees,
+            max_depth=maxDepth,
+            min_samples_leaf=minSamplesLeaf,
+            replacement=True,
+            sampling_strategy='not minority',
+            random_state=42,
+            **kwargs
+        )
 
+    print('Training...')
+    model = _Model(n_jobs=nJobs, verbose=1)
     model = model.fit(X, Y)
+    model.verbose = 0  # silence future calls to .predict()
     labels = model.classes_
 
-    # Train Hidden Markov Model
-    hmmParams = trainHMM(model.oob_decision_function_, Y, labels)
-
-    model.oob_decision_function_ = None  # out-of-bag predictions no longer needed
-    model.verbose = False  # silence future calls to .predict()
+    print('Cross-predicting to derive the observations for HMM...')
+    NJOBS_PER_CV_MODEL = min(2, nJobs)
+    cvp = cross_val_predict(
+        _Model(n_jobs=NJOBS_PER_CV_MODEL), X, Y, groups=pid,
+        cv=10,
+        n_jobs=nJobs // NJOBS_PER_CV_MODEL,
+        method="predict_proba",
+        verbose=3,
+    )
+    print('Training HMM...')
+    hmmParams = trainHMM(cvp, Y, labels)
 
     # Estimate METs via per-class averaging
     METs = None
@@ -159,27 +176,64 @@ def trainClassificationModel(
         METs = {y: train[Y == y].groupby(annotationCol)[metCol].mean().mean()
                 for y in model.classes_}
 
-    # Now write out model
-    if outputModel is not None:
-        saveToTar(outputModel,
-                  model=model,
-                  labels=labels,
-                  featureCols=featureCols,
-                  hmmParams=hmmParams,
-                  METs=METs)
+    # Write model to file
+    outFile = os.path.join(outDir, 'model.tar')
+    saveToTar(outFile,
+              model=model,
+              labels=labels,
+              featureCols=featureCols,
+              hmmParams=hmmParams,
+              METs=METs)
+    print(f'Output trained model written to: {outFile}')
 
     # Assess model performance on test participants
     if testParticipants is not None:
-        print('Test on participant(s):', testParticipants)
-        X_test, Y_test = test[featureCols].to_numpy(), test[labelCol].to_numpy()
-        Y_pred = model.predict(X_test)
-        Y_pred_hmm = viterbi(Y_pred, hmmParams)
-        test['predicted'] = Y_pred_hmm
-        # And write out to file
+        print('Testing on participant(s):', testParticipants)
+        Xtest, Ytest = test[featureCols].to_numpy(), test[labelCol].to_numpy()
+        Ypred = model.predict(Xtest)
+        YpredHmm = viterbi(Ypred, hmmParams)
+        test['predicted'] = YpredHmm
+
+        # Write predictions to file
         outCols = [participantCol, labelCol, 'predicted']
-        test[outCols].to_csv(outputPredict, index=False)
-        print('Output predictions written to: ', outputPredict)
-        print(metrics.classification_report(Y_test, Y_pred_hmm))
+        outFile = os.path.join(outDir, 'test-predictions.csv')
+        test[outCols].to_csv(outFile, index=False)
+        print(f'Output test predictions written to: {outFile}')
+
+        print('\nTest performance (no HMM):')
+        print(metrics.classification_report(Ytest, Ypred))
+        testScore = metrics.f1_score(Ytest, Ypred, average='macro', zero_division=0)
+        print(f'Score: {testScore:.2f}')
+        report['test_score'] = testScore
+
+        print('\nTest performance (HMM):')
+        print(metrics.classification_report(Ytest, YpredHmm))
+        testHmmScore = metrics.f1_score(Ytest, YpredHmm, average='macro', zero_division=0)
+        print(f'Score: {testHmmScore:.2f}')
+        report['test_hmm_score'] = testHmmScore
+
+    if cv:
+        print("Cross-validating...")
+        cvScores = cross_val_score(
+            _Model(n_jobs=NJOBS_PER_CV_MODEL), 
+            # cv with whole data
+            data[featureCols].to_numpy(), data[labelCol].to_numpy(), groups=data[participantCol].to_numpy(),
+            scoring=metrics.make_scorer(metrics.f1_score, average='macro', zero_division=0),
+            cv=cv,
+            n_jobs=nJobs // NJOBS_PER_CV_MODEL,
+            verbose=3,
+        )
+        cvScoresAvg = np.mean(cvScores)
+        cvScores25th, cvScores75th = np.quantile(cvScores, (.25, .75))
+        print(f"CV score: {cvScoresAvg:.2f} ({cvScores25th:.2f}, {cvScores75th:.2f})")
+        report['cv_mean_score'] = cvScoresAvg
+        report['cv_25th_score'] = cvScores25th
+        report['cv_75th_score'] = cvScores75th
+
+    outFile = os.path.join(outDir, 'report.json')
+    with open(outFile, 'w') as f:
+        json.dump(report, f, indent=4)
+    print(f'\nOutput report file written to: {outFile}')
 
 
 def trainHMM(Y_prob, Y_true, labels=None, uniform_prior=True):
