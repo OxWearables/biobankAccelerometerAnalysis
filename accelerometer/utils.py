@@ -147,6 +147,10 @@ def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptio
             # outputFolder will be {outDir}/group0/subject123/
             outputFolder = filePath.replace(accDir.rstrip("/"), outDir.rstrip("/")).split(".")[0]
 
+            # Enclose with single quotes to handle spaces
+            filePath = "'" + filePath + "'"
+            outputFolder = "'" + outputFolder + "'"
+
             cmd = f"accProcess {filePath} --outputFolder {outputFolder} {cmdOptions}"
 
             if filesCSV is not None:
