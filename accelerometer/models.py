@@ -1,57 +1,36 @@
 import pathlib
 
 ROOT_DIR = pathlib.Path(__file__).parent
-MODEL_DIR = ROOT_DIR / "activityModels/"
-MODEL_DIR_URL = "http://gas.ndph.ox.ac.uk/aidend/accModels/"
+MODEL_VER = "10Feb2022"
+MODEL_DIR = ROOT_DIR / "models"
+MODEL_URL = "https://wearables-files.ndph.ox.ac.uk/files/models"
 
 
 MODELS = {
     'willetts': {
-        "pth": MODEL_DIR / "willetts-jan22.tar",
-        "url": MODEL_DIR_URL + "willetts-jan22.tar",
+        "pth": MODEL_DIR / MODEL_VER / "willetts/model.tar",
+        "url": f"{MODEL_URL}/{MODEL_VER}/willetts/model.tar",
     },
     'doherty': {
-        "pth": MODEL_DIR / "doherty-jan22.tar",
-        "url": MODEL_DIR_URL + "doherty-jan22.tar",
+        "pth": MODEL_DIR / MODEL_VER / "doherty/model.tar",
+        "url": f"{MODEL_URL}/{MODEL_VER}/doherty/model.tar",
     },
     'walmsley': {
-        "pth": MODEL_DIR / "walmsley-jan22.tar",
-        "url": MODEL_DIR_URL + "walmsley-jan22.tar",
+        "pth": MODEL_DIR / MODEL_VER / "walmsley/model.tar",
+        "url": f"{MODEL_URL}/{MODEL_VER}/walmsley/model.tar",
     },
-    'willetts-jan22': {
-        "pth": MODEL_DIR / "willetts-jan22.tar",
-        "url": MODEL_DIR_URL + "willetts-jan22.tar",
+
+    'willetts-10Feb2022': {
+        "pth": MODEL_DIR / "10Feb2022" / "willetts/model.tar",
+        "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
     },
-    'doherty-jan22': {
-        "pth": MODEL_DIR / "doherty-jan22.tar",
-        "url": MODEL_DIR_URL + "doherty-jan22.tar",
+    'doherty-10Feb2022': {
+        "pth": MODEL_DIR / "10Feb2022" / "doherty/model.tar",
+        "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
     },
-    'walmsley-jan22': {
-        "pth": MODEL_DIR / "walmsley-jan22.tar",
-        "url": MODEL_DIR_URL + "walmsley-jan22.tar",
+    'walmsley-10Feb2022': {
+        "pth": MODEL_DIR / "10Feb2022" / "walmsley/model.tar",
+        "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
     },
-    'willetts-jan21': {
-        "pth": MODEL_DIR / "willetts-jan21.tar",
-        "url": MODEL_DIR_URL + "willetts-jan21.tar",
-    },
-    'doherty-jan21': {
-        "pth": MODEL_DIR / "doherty-jan21.tar",
-        "url": MODEL_DIR_URL + "doherty-jan21.tar",
-    },
-    'walmsley-jan21': {
-        "pth": MODEL_DIR / "walmsley-jan21.tar",
-        "url": MODEL_DIR_URL + "walmsley-jan21.tar",
-    },
-    'willetts-may20': {
-        "pth": MODEL_DIR / "willetts-may20.tar",
-        "url": MODEL_DIR_URL + "willetts-may20.tar",
-    },
-    'doherty-may20': {
-        "pth": MODEL_DIR / "doherty-may20.tar",
-        "url": MODEL_DIR_URL + "doherty-may20.tar",
-    },
-    'walmsley-nov20': {
-        "pth": MODEL_DIR / "walmsley-nov20.tar",
-        "url": MODEL_DIR_URL + "walmsley-nov20.tar",
-    },
+
 }

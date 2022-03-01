@@ -215,7 +215,7 @@ def trainClassificationModel(
     if cv:
         print("Cross-validating...")
         cvScores = cross_val_score(
-            _Model(n_jobs=NJOBS_PER_CV_MODEL), 
+            _Model(n_jobs=NJOBS_PER_CV_MODEL),
             # cv with whole data
             data[featureCols].to_numpy(), data[labelCol].to_numpy(), groups=data[participantCol].to_numpy(),
             scoring=metrics.make_scorer(metrics.f1_score, average='macro', zero_division=0),
@@ -511,6 +511,8 @@ def resolveModelPath(pathOrModelName):
 def downloadModel(model):
     url = model["url"]
     pth = model["pth"]
+
+    os.makedirs(os.path.dirname(pth), exist_ok=True)
 
     print(f"Downloading {url}...")
 
