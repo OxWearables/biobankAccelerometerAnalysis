@@ -21,7 +21,7 @@ You also need Java 8 (1.8.0) or greater. Check with the following:
 java -version
 ```
 
-You can try the following to check if everything works properly:
+You can try the following to check that everything works properly:
 ```bash
 # Create an isolated environment
 $ mkdir test_baa/ ; cd test_baa/
@@ -37,7 +37,7 @@ $ accPlot data/sample-timeSeries.csv.gz
 
 
 ## Usage
-To extract a summary of movement from a raw Axivity accelerometer file (.cwa):
+To extract summary movement statistics from an Axivity file (.cwa):
 
 ```bash
 $ accProcess data/sample.cwa.gz
@@ -46,7 +46,7 @@ $ accProcess data/sample.cwa.gz
  <time series output written to data/sample-timeSeries.csv.gz>
 ```
 
-The main JSON output will look like:
+Movement statistics will be stored in a JSON file:
 ```json
 {
     "file-name": "sample.cwa.gz",
@@ -56,23 +56,26 @@ The main JSON output will look like:
     "wearTime-overall(days)": 5.8,
     "nonWearTime-overall(days)": 0.04,
     "quality-goodWearTime": 1
+    ...
 }
 ```
 
-To visualise the time series and activity classification output:
+See [here](https://biobankaccanalysis.readthedocs.io/en/latest/datadict.html) for the list of output variables.
+
+Actigraph and GENEActiv files are also supported, as well as custom CSV files.  See the [documentation](https://biobankaccanalysis.readthedocs.io/en/latest/index.html) for more details.
+
+To visualise the activity profile:
 ```bash
 $ accPlot data/sample-timeSeries.csv.gz
  <output plot written to data/sample-timeSeries-plot.png>
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
-See the [documentation](https://biobankaccanalysis.readthedocs.io/en/latest/index.html) for more.
-
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be
 taken to extract summary physical activity information from raw accelerometer
 data. To minimise error and bias, our tool uses published methods to calibrate,
-resample, and summarise the accelerometer data. 
+resample, and summarise the accelerometer data.
 <!-- [Click here for detailed information on the data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) -->
 
 ![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
