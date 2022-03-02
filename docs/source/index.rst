@@ -123,6 +123,7 @@ See https://github.com/activityMonitoring/biobankAccelerometerAnalysis/graphs/co
    usage
    methods
    cliapi
+   datadict
 
 
 ******************
