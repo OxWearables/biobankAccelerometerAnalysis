@@ -1,11 +1,13 @@
 """Module to generate overall activity summary from epoch data."""
+import sys
+import pytz
+import numpy as np
+import pandas as pd
+from pandas.tseries.frequencies import to_offset
+
 from accelerometer import utils
 from accelerometer import classification
 from accelerometer import circadian
-import numpy as np
-import pandas as pd
-import pytz
-import sys
 
 
 def getActivitySummary(  # noqa: C901
@@ -207,7 +209,8 @@ def resolveNonWear(data, stdTol, patience, summary):
     data = data.mask(missing)  # set non wear rows to nan
     data['missing'] = missing
 
-    epochInDays = pd.Timedelta(pd.infer_freq(data.index)).total_seconds() / (60 * 60 * 24)
+    freq = to_offset(pd.infer_freq(data.index))
+    epochInDays = pd.to_timedelta(freq).total_seconds() / (60 * 60 * 24)
     numMissingRows = missing.sum()
     nonWearTime = numMissingRows * epochInDays
     wearTime = (len(data) - numMissingRows) * epochInDays
@@ -248,7 +251,7 @@ def imputeMissing(data, extrapolate=True):
             pd.date_range(
                 data.index[0].floor('D'),
                 data.index[-1].ceil('D'),
-                freq=pd.infer_freq(data.index),
+                freq=to_offset(pd.infer_freq(data.index)),
                 closed='left',
                 name='time',
             ),
@@ -331,7 +334,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
 
     data = data.copy()
     data['wearTime'] = ~data['missing']
-    freq = pd.infer_freq(data.index)
+    freq = to_offset(pd.infer_freq(data.index))
 
     # Hours of activity for each recorded day
     epochInHours = pd.Timedelta(freq).total_seconds() / 3600
