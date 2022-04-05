@@ -176,39 +176,6 @@ subsequent analyses:
     <summary CSV for all participants written to "summary.csv">
 
 
-.. ===============
-.. Quality control
-.. ===============
-.. If is often necessary to check that all files have successfully processed. Our
-.. python utility function can write to file all participants' data that was not
-.. successfully processed:
-.. ::
-..     from accelerometer import accUtils
-..     accUtils.identifyUnprocessedFiles("myStudy/files.csv", "myStudyResults/summary-info.csv", \
-..           "myStudyResults/files-unprocessed.csv")
-..     # <Output CSV listing files to be reprocessed written to "myStudyResults/files-unprocessed.csv">
-
-
-.. On other occasions some participants' data may not have been calibrated properly.
-.. Our python utility function can assigns the calibration coefs from a previous
-.. good use of a given device in the same study dataset:
-.. ::
-..     from accelerometer import accUtils
-..     accUtils.updateCalibrationCoefs("myStudyResults/summary-info.csv", \
-..            "myStudyResults/files-recalibration.csv")
-..     # <CSV of files to be reprocessed written to "myStudyResults/files-recalibration.csv">
-
-
-.. Our python utility function can then re-write processing cmds as follows:
-.. ::
-..     from accelerometer import accUtils
-..     accUtils.writeStudyAccProcessCmds("myStudy/", cmdsFile="list-of-commands-recalibration.txt", \
-..        outDir="myStudyResults/", filesID="myStudyResults/files-calibration.csv", cmdOptions="--skipCalibration True")
-..     # <list of processing commands written to "list-of-commands-recalibration.txt">
-
-.. These 'reprocessed' files can then be processed as outlined in the section above.
-
-
 Classifying different activity types
 ====================================
 
@@ -392,6 +359,44 @@ Plot just the first few days of a time-series file (e.g. n=3):
 .. code-block:: console
 
     $ accPlot data/sample-timeSeries.csv.gz --showFirstNDays 3
+
+
+Quality control
+===============
+
+Check this notebook for guidance on how to perform quality control on studies
+involving large number of accelerometers:
+https://github.com/activityMonitoring/biobankAccelerometerAnalysis/blob/master/utilities/quality_control.ipynb
+
+.. If is often necessary to check that all files have successfully processed. Our
+.. python utility function can write to file all participants' data that was not
+.. successfully processed:
+.. ::
+..     from accelerometer import accUtils
+..     accUtils.identifyUnprocessedFiles("myStudy/files.csv", "myStudyResults/summary-info.csv", \
+..           "myStudyResults/files-unprocessed.csv")
+..     # <Output CSV listing files to be reprocessed written to "myStudyResults/files-unprocessed.csv">
+
+
+.. On other occasions some participants' data may not have been calibrated properly.
+.. Our python utility function can assigns the calibration coefs from a previous
+.. good use of a given device in the same study dataset:
+.. ::
+..     from accelerometer import accUtils
+..     accUtils.updateCalibrationCoefs("myStudyResults/summary-info.csv", \
+..            "myStudyResults/files-recalibration.csv")
+..     # <CSV of files to be reprocessed written to "myStudyResults/files-recalibration.csv">
+
+
+.. Our python utility function can then re-write processing cmds as follows:
+.. ::
+..     from accelerometer import accUtils
+..     accUtils.writeStudyAccProcessCmds("myStudy/", cmdsFile="list-of-commands-recalibration.txt", \
+..        outDir="myStudyResults/", filesID="myStudyResults/files-calibration.csv", cmdOptions="--skipCalibration True")
+..     # <list of processing commands written to "list-of-commands-recalibration.txt">
+
+.. These 'reprocessed' files can then be processed as outlined in the section above.
+
 
 Tool versions
 ==============
