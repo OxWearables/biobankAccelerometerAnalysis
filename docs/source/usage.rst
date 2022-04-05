@@ -95,7 +95,7 @@ If your CSV also has a :code:`temperature` column, it is possible to include it:
 
     $ accProcess data/awkwardFile.csv \
     --csvTimeFormat 'yyyy-MM-dd HH:mm:ss.SSS' --csvTimeXYZTempColsIndex 0,4,2,3,1
-    
+
 
 Processing multiple files
 =========================
@@ -115,21 +115,21 @@ commands to process each file:
 
 .. code-block:: console
 
-    $ accWriteCmds myStudy/ -d myStudyResults/ -f process-cmds.txt
-    <list of processing commands written to "process-cmds.txt">
+    $ accWriteCmds myStudy/ -d myStudyResults/ -f list-of-commands.txt
+    <list of processing commands written to "list-of-commands.txt">
 
-A `process-cmds.txt` text file will be created listing the processing commands
+A `list-of-commands.txt` text file will be created listing the processing commands
 for each file under `myStudy/`.
-By default, the tool will search for all Axivity (.cwa) files. 
+By default, the tool will search for all Axivity (.cwa) files.
 To process other file types, use the :code:`--accExt` flag. For example:
 
 .. code-block:: console
 
     # Process Actigraph (.gt3x) files
-    $ accWriteCmds myStudy/ -d myStudyResults/ -f process-cmds.txt --accExt gt3x
+    $ accWriteCmds myStudy/ -d myStudyResults/ -f list-of-commands.txt --accExt gt3x
 
     # Process GENEActiv (.bin) files
-    $ accWriteCmds myStudy/ -d myStudyResults/ -f process-cmds.txt --accExt bin
+    $ accWriteCmds myStudy/ -d myStudyResults/ -f list-of-commands.txt --accExt bin
 
 If you need to pass extra arguments to the processing commands, you can use the
 :code:`-x` flag, then pass the arguments within quotation marks. For example,
@@ -138,19 +138,19 @@ below we pass the arguments :code:`--mgCutPointMVPA 90` and
 
 .. code-block:: console
 
-    $ accWriteCmds myStudy/ -d myStudyResults/ -f process-cmds.txt -x '--mgCutPointMVPA 90 --mgCutPointVPA 435'
-    <list of processing commands written to "process-cmds.txt">
+    $ accWriteCmds myStudy/ -d myStudyResults/ -f list-of-commands.txt -x '--mgCutPointMVPA 90 --mgCutPointVPA 435'
+    <list of processing commands written to "list-of-commands.txt">
 
-Once the `process-cmds.txt` file has been created, you can kick-start the list of
+Once the `list-of-commands.txt` file has been created, you can kick-start the list of
 processes:
 
-.. note:: 
-    
+.. note::
+
     More advanced users will probably want to parallelise the below script.
 
 .. code-block:: console
 
-    $ bash process-cmds.txt
+    $ bash list-of-commands.txt
 
 Following the example, the results will be stored in `myStudyResults/` as follows:
 
@@ -202,9 +202,9 @@ subsequent analyses:
 .. Our python utility function can then re-write processing cmds as follows:
 .. ::
 ..     from accelerometer import accUtils
-..     accUtils.writeStudyAccProcessCmds("myStudy/", cmdsFile="process-cmds-recalibration.txt", \
+..     accUtils.writeStudyAccProcessCmds("myStudy/", cmdsFile="list-of-commands-recalibration.txt", \
 ..        outDir="myStudyResults/", filesID="myStudyResults/files-calibration.csv", cmdOptions="--skipCalibration True")
-..     # <list of processing commands written to "process-cmds-recalibration.txt">
+..     # <list of processing commands written to "list-of-commands-recalibration.txt">
 
 .. These 'reprocessed' files can then be processed as outlined in the section above.
 
@@ -375,7 +375,7 @@ Manually set calibration coefficients:
 
 .. code-block:: console
 
-    $ accProcess data/sample.cwa.gz 
+    $ accProcess data/sample.cwa.gz
         --skipCalibration True \
         --calOffset -0.2 -0.4 1.5 \
         --calSlope 0.7 0.8 0.7 \
@@ -402,6 +402,6 @@ This means data processed with different versions of the tool may not be
 directly comparable. In particular, to compare returned variables in UK Biobank
 and external data, we recommend:
 
-* Either, reprocessing UK Biobank data alongside external data; 
+* Either, reprocessing UK Biobank data alongside external data;
 
-* Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version). 
+* Or, using a version of the models and software to process external data which matches that used to process the returned UK Biobank data (to be achieved from November 2021 onwards through versioning of the package and associating each set of processed data with a particular version).

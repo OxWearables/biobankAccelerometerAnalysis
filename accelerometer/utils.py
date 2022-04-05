@@ -99,7 +99,7 @@ def toScreen(msg):
     print(f"\n{datetime.datetime.now().strftime(timeFormat)}\t{msg}")
 
 
-def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptions="", filesCSV=None):
+def writeCmds(accDir, outDir, cmdsFile='list-of-commands.txt', accExt="cwa", cmdOptions="", filesCSV=None):
     """Generate a text file listing processing commands for files found under accDir/
 
     :param str accDir: Directory with accelerometer files to process
@@ -162,7 +162,7 @@ def writeCmds(accDir, outDir, cmdsFile='processCmds.txt', accExt="cwa", cmdOptio
             f.write(cmd)
             f.write('\n')
 
-    print('Processing list written to ', cmdsFile)
+    print('List of commands written to ', cmdsFile)
 
 
 def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):

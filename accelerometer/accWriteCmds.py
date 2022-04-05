@@ -6,7 +6,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('accDir')
     parser.add_argument('--outDir', '-d', required=True)
-    parser.add_argument('--cmdsFile', '-f', type=str, default='processCmds.txt')
+    parser.add_argument('--cmdsFile', '-f', type=str, default='list-of-commands.txt')
     parser.add_argument('--accExt', '-a', default='cwa', help='Acc file type e.g. cwa, CWA, bin, BIN, gt3x...')
     parser.add_argument('--cmdOptions', '-x', type=str, default="",
                         help='String of processing options e.g. --epochPeriod 10')
