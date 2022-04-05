@@ -56,7 +56,6 @@ Movement statistics will be stored in a JSON file:
     "wearTime-overall(days)": 5.8,
     "nonWearTime-overall(days)": 0.04,
     "quality-goodWearTime": 1
-    ...
 }
 ```
 

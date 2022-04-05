@@ -364,9 +364,8 @@ Plot just the first few days of a time-series file (e.g. n=3):
 Quality control
 ===============
 
-Check this notebook for guidance on how to perform quality control on studies
-involving large number of accelerometers:
-https://github.com/activityMonitoring/biobankAccelerometerAnalysis/blob/master/utilities/quality_control.ipynb
+Check `this notebook <https://github.com/activityMonitoring/biobankAccelerometerAnalysis/blob/master/utilities/quality_control.ipynb>`_
+for guidance on how to perform quality control on studies involving large number of accelerometers.
 
 .. If is often necessary to check that all files have successfully processed. Our
 .. python utility function can write to file all participants' data that was not
