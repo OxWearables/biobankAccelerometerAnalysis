@@ -104,4 +104,4 @@ of incident cardiovascular disease. British Journal of Sports Medicine.
 Published Online First. DOI: 10.1136/bjsports-2021-104050
 
 ###### Licence
-This project is released under a [BSD 2-Clause Licence](http://opensource.org/licenses/BSD-2-Clause) (see LICENCE file)
+See [license](LICENSE.md) before using this software.
