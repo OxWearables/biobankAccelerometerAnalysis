@@ -2,17 +2,17 @@
 Methods
 #######
 
-Interpreted levels of physical activity can vary, as many approaches can be 
-taken to extract summary physical activity information from raw accelerometer 
-data. To minimise error and bias, our tool uses published methods to calibrate, resample, and summarise the accelerometer data e.g. [Doherty2017]_ [Willetts2018]_ [Doherty2018]_ and [Walmsley2021]_. 
+Interpreted levels of physical activity can vary, as many approaches can be
+taken to extract summary physical activity information from raw accelerometer
+data. To minimise error and bias, our tool uses published methods to calibrate, resample, and summarise the accelerometer data e.g. [Doherty2017]_ [Willetts2018]_ [Doherty2018]_ and [Walmsley2021]_.
 
 Note that data processing methods are under continual development, and so data processed with different versions of the tool and of models may not be directly comparable.
 
 .. figure:: accMethodsOverview.png
 
     UK Biobank triaxial accelerometer and processing steps to extract physical activity information.
-    
-    Axivity AX3 triaxial accelerometer worn on dominant hand as used in UK Biobank (top left). Time series trace of processed accelerometer values after one week of wear (top right). Overview of process to extract proxy physical activity information from raw accelerometer data (bottom). 
+
+    Axivity AX3 triaxial accelerometer worn on dominant hand as used in UK Biobank (top left). Time series trace of processed accelerometer values after one week of wear (top right). Overview of process to extract proxy physical activity information from raw accelerometer data (bottom).
 
 
 ****************
@@ -44,7 +44,8 @@ Vector magnitude processing
 
 Combine x/y/z axes
 ==================
-We compute the sample level Euclidean norm of the acceleration in x/y/z axes.
+We compute the Euclidean norm (magnitude) of the acceleration from the x/y/z
+values to obtain the magnitude stream, from which we extract signal features. See `note on the UK-Biobank dataset`_.
 
 
 Gravity and noise removal
@@ -76,14 +77,14 @@ Balanced random forests
 =======================
 Balanced random forests offer a powerful nonparametric discriminative method for multi-activity classification. Predictions of a random forest are an aggregate of individual CART trees (Classification And Regression Trees). CART trees are binary trees consisting of split nodes and terminal leaf nodes. In our case, each tree is constructed from a training set of feature data (just described above) along with ground truth activity classes (free living camera data in [Willetts2018]_ [Doherty2018]_ [Walmsley2021]_).
 
-There is randomness in the model, as we only give each tree a subset of data and features. This ensures that the trees have low correlation and is necessary as the CART algorithm itself is deterministic. Given the unbalanced nature of our dataset, where some behaviours occur rarely, we use balanced Random Forests to train each tree with a balanced subset of training data. If we have n_rare instances of the rarest class, we pick n_rare samples, with replacement, of data of each of our classes to form our training set for each tree. As each tree is given only a small fraction of data, we make many more trees than in a standard random forest so that the same number of data points are sampled in training as with a standard application of random forests [Willetts2018]_. 
+There is randomness in the model, as we only give each tree a subset of data and features. This ensures that the trees have low correlation and is necessary as the CART algorithm itself is deterministic. Given the unbalanced nature of our dataset, where some behaviours occur rarely, we use balanced Random Forests to train each tree with a balanced subset of training data. If we have n_rare instances of the rarest class, we pick n_rare samples, with replacement, of data of each of our classes to form our training set for each tree. As each tree is given only a small fraction of data, we make many more trees than in a standard random forest so that the same number of data points are sampled in training as with a standard application of random forests [Willetts2018]_.
 
 
 Hidden Markov models
 ====================
 Random forests are able to classify datapoints, but do not have an understanding of our data as having come from a time series. Therefore we use a hidden Markov model (HMM) to encode the temporal structure of the sequence of classes and thus obtain a more accurate sequence of predicted classes. The transition matrix (likelihood of moving from one activity type to another) and emission distribution (likelihood of random forest correctly classifying a given activity type) are empirically calculated. The transition matrix is calculated from the training set sequence of activity states. The calculation of emission probabilities comes from the out of bag class votes of the random forest. Recall that in a random forest each tree is trained on a subset of the training data. Thus by passing through each tree the training data that it was not trained on we get an estimate of the error of the forest. This gives us directly the probability of predicting each class given the true activity class [Willetts2018]_.
 
-With this empirically defined HMM, we can then run the Viterbi algorithm to find the most likely sequence of states given a sequence of observed emissions from the random forest. This smoothing corrects erroneous predictions from the random forest, such as where the error is a blip of one activity surrounded by another and the transitions between those two classes of activity are rare.  
+With this empirically defined HMM, we can then run the Viterbi algorithm to find the most likely sequence of states given a sequence of observed emissions from the random forest. This smoothing corrects erroneous predictions from the random forest, such as where the error is a blip of one activity surrounded by another and the transitions between those two classes of activity are rare.
 
 .. figure:: hmmOverview.png
 
@@ -124,6 +125,26 @@ Time series file
 ================
 A .csv time series file is generated for each participant. This provides researchers with a simple way to interrogate the epoch level data for each physical activity outcome variable, without the need for expertise in processing large complex raw data files.
 
+.. _note on the UK-Biobank dataset:
+
+**********************************************
+A note on the UK-Biobank accelerometer dataset
+**********************************************
+
+Different device versions were used during the UK-Biobank accelerometer study
+having slightly different specifications.
+In particular, this meant that the orientation of the axes of the tri-axial
+accelerometers were not standardised across participants.
+Further, participants could have worn the device on either wrist, which also affects axes orientation.
+For these reasons, we recommend the use of orientation-invariant features such
+as those based only on the acceleration vector norm.
+
+Below are axes orientations for two device versions used.
+
+.. image:: ax3-later-orientation.png
+    :width: 40%
+.. image:: ax3-original-orientation.png
+    :width: 50%
 
 **********
 References
