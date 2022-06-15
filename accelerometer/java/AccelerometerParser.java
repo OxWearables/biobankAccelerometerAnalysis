@@ -218,7 +218,7 @@ public class AccelerometerParser {
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
-				ActigraphReader.readG3TXEpochs(accFile, epochWriter, verbose);
+				ActigraphReader.readG3TXEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".csv") ||
                         accFile.toLowerCase().endsWith(".csv.gz") ){
 				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow,

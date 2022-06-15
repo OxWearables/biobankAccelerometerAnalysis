@@ -48,8 +48,12 @@ public class ActigraphReader extends DeviceReader {
      */
     public static void readG3TXEpochs(
         String accFile,
+        String timeZone,
+        int timeShift,
         EpochWriter epochWriter,
         Boolean verbose) {
+
+        setTimeSettings(timeZone, timeShift);
 
         ZipFile zip = null;
         // readers for the 'activity.bin' & 'info.txt' files inside the .zip
@@ -380,7 +384,6 @@ public class ActigraphReader extends DeviceReader {
                     double y = twoSamples[4-twoSampleCounter*3];
                     double z = twoSamples[5-twoSampleCounter*3];
                     double temp = 1.0d; // don't know temp yet
-                    time = getTrueUnixTime(time, infoTimeShift);
                     epochWriter.newValues(time, x, y, z, temp, errCounter);
 
                     samples += 1;
@@ -521,7 +524,6 @@ public class ActigraphReader extends DeviceReader {
                 samples += 1;
 
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
-                myTime = getTrueUnixTime(myTime, infoTimeShift);
 
                 logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
                         "\nTime:" + myTime);
