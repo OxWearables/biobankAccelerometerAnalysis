@@ -40,6 +40,7 @@ public class AccelerometerParser {
 
         String accFile = ""; // file to process
         String timeZone = "Europe/London";  // file timezone (default: Europe/London)
+        String offsetHour = "00:00:00"; // offset hour for gt3x (default: 00:00:00)
 		String outputFile = ""; // file name for epoch file
 		String rawFile = ""; // file name for epoch file
 		String npyFile = ""; // file name for epoch file
@@ -108,6 +109,8 @@ public class AccelerometerParser {
 					dateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
 				} else if (funcName.equals("timeShift")) {
 					timeShift = Integer.parseInt(funcParam);
+				} else if (funcName.equals("offsetHour")) {
+					offsetHour = funcParam;
                 } else if (funcName.equals("outputFile")) {
 					outputFile = funcParam;
 				} else if (funcName.equals("verbose")) {
@@ -218,7 +221,8 @@ public class AccelerometerParser {
             } else if (accFile.toLowerCase().endsWith(".bin")) {
 				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
-				ActigraphReader.readG3TXEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
+                System.out.println("Make sure to set the offsetHour and timeZone flags for gt3x files");
+				ActigraphReader.readG3TXEpochs(accFile, timeZone, offsetHour, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".csv") ||
                         accFile.toLowerCase().endsWith(".csv.gz") ){
 				CsvReader.readCSVEpochs(accFile, epochWriter, csvStartRow,

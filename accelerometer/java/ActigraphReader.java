@@ -49,11 +49,12 @@ public class ActigraphReader extends DeviceReader {
     public static void readG3TXEpochs(
         String accFile,
         String timeZone,
-        int timeShift,
+        String offSetHour,
         EpochWriter epochWriter,
         Boolean verbose) {
 
-        setTimeSettings(timeZone, timeShift);
+        int default_time_shift = 0;
+        setTimeSettings(timeZone, default_time_shift);
 
         ZipFile zip = null;
         // readers for the 'activity.bin' & 'info.txt' files inside the .zip
@@ -64,6 +65,8 @@ public class ActigraphReader extends DeviceReader {
             zip = new ZipFile( new File(accFile), ZipFile.OPEN_READ);
 
             int gt3Version = getGT3XVersion(zip);
+            System.out.println("GT3x version: " + gt3Version);
+
             if (gt3Version == INVALID_GT3_FILE) {
                 System.err.println("file " + accFile + " is not a valid V1 or V2 g3tx file");
                 System.exit(-2);
@@ -84,7 +87,6 @@ public class ActigraphReader extends DeviceReader {
             double sampleFreq = -1, accelerationScale = -1, _AccelerationMin, _AccelerationMax;
             long startDate = -1, stopDate = -1, firstSampleTime=-1;
             String serialNumber = "";
-            String infoTimeShift = "00:00:00"; // default to be UTC time difference
 
             while (infoReader.ready()) {
                 String line = infoReader.readLine();
@@ -93,8 +95,10 @@ public class ActigraphReader extends DeviceReader {
                     if ((tokens !=null)  && (tokens.length==2)){
                         if (tokens[0].trim().equals("Sample Rate"))
                             sampleFreq=Integer.parseInt(tokens[1].trim());
-                        else if (tokens[0].trim().equals("Start Date"))
-                            firstSampleTime=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
+                        else if (tokens[0].trim().equals("Start Date")) {
+                            startDate = Long.parseLong(tokens[1].trim());
+                            firstSampleTime=GT3XfromTickToMillisecond(startDate);
+                            }
                         else if (tokens[0].trim().equals("Acceleration Scale"))
                             accelerationScale=Double.parseDouble(tokens[1].trim());
                         else if (tokens[0].trim().equals("Acceleration Min"))
@@ -105,14 +109,14 @@ public class ActigraphReader extends DeviceReader {
                             stopDate=GT3XfromTickToMillisecond(Long.parseLong(tokens[1].trim()));
                         else if (tokens[0].trim().equals("Serial Number"))
                             serialNumber=tokens[1].trim();
-                        else if (tokens[0].trim().equals("TimeZone"))
-                            infoTimeShift=tokens[1].trim(); // gt3x calls time shift as time zone
                     }
                 }
             }
 
-            System.out.println("Device's initial offset: " + infoTimeShift);
-            System.out.println("Start date (local UNIX): " + startDate);
+            System.out.println("User provided time zone: " + timeZone);
+            System.out.println("Offset hour: " + offSetHour);
+            System.out.println("Start date C# tick (local): " + startDate);
+            System.out.println("First sample time (local UNIX): " + firstSampleTime);
             System.out.println("Stop date (local UNIX): " + stopDate);
 
             accelerationScale = setAccelerationScale(serialNumber);
@@ -127,7 +131,7 @@ public class ActigraphReader extends DeviceReader {
             // else leave as specified in info.txt?
             if (gt3Version == VALID_GT3_V1_FILE) readG3TXV1EpochPairs(
                     activityReader,
-                    infoTimeShift,
+                    offSetHour,
                     sampleDelta,
                     sampleFreq,
                     accelerationScale,
@@ -135,7 +139,7 @@ public class ActigraphReader extends DeviceReader {
                     epochWriter);
             if (gt3Version == VALID_GT3_V2_FILE) readG3TXV2Epoch(
                     activityReader,
-                    infoTimeShift,
+                    offSetHour,
                     sampleDelta,
                     sampleFreq,
                     accelerationScale,
@@ -167,7 +171,7 @@ public class ActigraphReader extends DeviceReader {
      **/
     private static void readG3TXV2Epoch(
             InputStream activityReader,
-            String infoTimeShift,
+            String userTimeShift,
             double sampleDelta,
             double sampleFreq,
             double accelerationScale,
@@ -197,6 +201,7 @@ public class ActigraphReader extends DeviceReader {
         // 3. validate checksum for each packet
         try {
             while ((datum=activityReader.read())!=-1){
+
                 // 1. Process header
                 byte current = (byte)datum;
                 if (isHeader) {
@@ -273,9 +278,9 @@ public class ActigraphReader extends DeviceReader {
                     } else if (type == ACTIVITY_ID && size > 1) {
                         // when Size = 1, it is a USB connection event thus ignore.
                         int [] res = processActivity(
-                                infoTimeShift,
                                 sampleFreq,
                                 date,
+                                userTimeShift,
                                 current,
                                 i,
                                 size,
@@ -289,9 +294,9 @@ public class ActigraphReader extends DeviceReader {
                     } else if (type == ACTIVITY2_ID && size > 1) {
                         // when Size = 1, it is a USB connection event thus ignore.
                         int [] res = processActivity2(
-                                infoTimeShift,
                                 sampleFreq,
                                 date,
+                                userTimeShift,
                                 current,
                                 i,
                                 size,
@@ -328,7 +333,7 @@ public class ActigraphReader extends DeviceReader {
         }
     }
 
-    
+
     /**
      ** Method to read all the x/y/z data from a GT3X (V1) activity.bin file.
      ** File specification at: https://github.com/actigraph/NHANES-GT3X-File-Format/blob/master/fileformats/activity.bin.md
@@ -339,7 +344,7 @@ public class ActigraphReader extends DeviceReader {
      **/
     private static void readG3TXV1EpochPairs(
             InputStream activityReader,
-            String infoTimeShift,
+            String userTimeShift,
             double sampleDelta,
             double sampleFreq,
             double accelerationScale,
@@ -384,6 +389,8 @@ public class ActigraphReader extends DeviceReader {
                     double y = twoSamples[4-twoSampleCounter*3];
                     double z = twoSamples[5-twoSampleCounter*3];
                     double temp = 1.0d; // don't know temp yet
+
+                    time = getTrueUnixTime(time, userTimeShift);
                     epochWriter.newValues(time, x, y, z, temp, errCounter);
 
                     samples += 1;
@@ -397,9 +404,9 @@ public class ActigraphReader extends DeviceReader {
 
 
     private static int [] processActivity(
-            String infoTimeShift,
             double sampleFreq,
             long firstSampleTime,
+            String userTimeShift,
             byte current,
             int i,
             int size,
@@ -455,7 +462,7 @@ public class ActigraphReader extends DeviceReader {
                 double temp = 1.0d; // don't know temp yet
                 samples += 1;
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
-                myTime = getTrueUnixTime(myTime, infoTimeShift);
+                myTime = getTrueUnixTime(myTime, userTimeShift);
                 epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
             }
         } catch (IOException ex) {
@@ -483,9 +490,9 @@ public class ActigraphReader extends DeviceReader {
 
 
     private static int [] processActivity2(
-            String infoTimeShift,
             double sampleFreq,
             long firstSampleTime,
+            String userTimeShift,
             byte current,
             int i,
             int size,
@@ -527,6 +534,7 @@ public class ActigraphReader extends DeviceReader {
 
                 logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
                         "\nTime:" + myTime);
+                myTime = getTrueUnixTime(myTime, userTimeShift);
                 epochWriter.newValues(myTime,
                                       sample[0], sample[1], sample[2], temp, errCounter);
             }

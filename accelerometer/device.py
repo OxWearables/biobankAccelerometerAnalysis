@@ -15,7 +15,7 @@ ROOT_DIR = pathlib.Path(__file__).parent
 
 
 def processInputFileToEpoch(  # noqa: C901
-    inputFile, timeZone, timeShift,
+    inputFile, timeZone, timeShift, offsetHour,
     epochFile, stationaryFile, summary,
     skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
     xyzSlope=[1.0, 1.0, 1.0], xyzSlopeT=[0.0, 0.0, 0.0],
@@ -97,6 +97,7 @@ def processInputFileToEpoch(  # noqa: C901
                            "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                            "timeZone:" + timeZone,
                            "timeShift:" + str(timeShift),
+                           "offsetHour:" + str(offsetHour),
                            "outputFile:" + stationaryFile,
                            "verbose:" + str(verbose),
                            "filter:" + str(useFilter),
@@ -143,6 +144,7 @@ def processInputFileToEpoch(  # noqa: C901
                        "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
                        "timeZone:" + timeZone,
                        "timeShift:" + str(timeShift),
+                       "offsetHour:" + str(offsetHour),
                        "outputFile:" + epochFile, "verbose:" + str(verbose),
                        "filter:" + str(useFilter),
                        "sampleRate:" + str(sampleRate),
