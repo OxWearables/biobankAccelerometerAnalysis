@@ -286,7 +286,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
                 inp = curr[:, k]
                 out = target[:, k]
                 inp = np.column_stack((inp, T))
-                inp = sm.add_constant(inp, prepend=True)
+                inp = sm.add_constant(inp, prepend=True, has_constant='add')
                 params = sm.WLS(out, inp, weights=weights).fit().params
                 # In the following,
                 # intercept == params[0]
