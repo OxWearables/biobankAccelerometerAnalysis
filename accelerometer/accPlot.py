@@ -56,6 +56,12 @@ def main():  # noqa: C901
     parser.add_argument('--showFirstNDays',
                         metavar='days', default=None,
                         type=int, help="Show just first n days")
+    parser.add_argument('--fillGaps',
+                        metavar='freq',
+                        type=str, help="Fill gaps in the input time series with empty values. "
+                                       "Use this if the input contains sporadic time jumps. "
+                                       "freq is a frequency string in pandas offset alias format, "
+                                       "and should be the original sample interval (e.g.: 30S).")
 
     # check input is ok
     if len(sys.argv) < 2:
@@ -75,14 +81,16 @@ def main():  # noqa: C901
     # and then call plot function
     plotTimeSeries(args.timeSeriesFile, args.plotFile,
                    showFirstNDays=args.showFirstNDays,
-                   showFileName=args.showFileName)
+                   showFileName=args.showFileName,
+                   fillGaps=args.fillGaps)
 
 
 def plotTimeSeries(  # noqa: C901
         tsFile,
         plotFile,
         showFirstNDays=None,
-        showFileName=False):
+        showFileName=False,
+        fillGaps=None):
     """Plot overall activity and classified activity types
 
     :param str tsFile: Input filename with .csv.gz time series data
@@ -104,6 +112,11 @@ def plotTimeSeries(  # noqa: C901
         tsFile, index_col='time',
         parse_dates=['time'], date_parser=utils.date_parser
     )
+
+    if fillGaps is not None:
+        new_index = pd.date_range(data.index[0], data.index[-1], freq=fillGaps)
+        data = data.reindex(new_index, fill_value=np.NaN)
+
     if showFirstNDays is not None:
         data = data.first(str(showFirstNDays) + 'D')
 
