@@ -12,7 +12,6 @@ from datetime import datetime, timedelta, time
 import argparse
 from accelerometer import utils
 import matplotlib
-matplotlib.use('Agg')
 
 # http://pandas-docs.github.io/pandas-docs-travis/whatsnew/v0.21.1.html#restore-matplotlib-datetime-converter-registration
 register_matplotlib_converters()
@@ -72,39 +71,55 @@ def main():  # noqa: C901
         inputFileName = inputFileName.split('.')[0]  # remove any extension
         args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
 
-    # and then call plot function
-    plotTimeSeries(args.timeSeriesFile, args.plotFile,
-                   showFirstNDays=args.showFirstNDays,
-                   showFileName=args.showFileName)
+    # read time series file to pandas DataFrame
+    data = pd.read_csv(
+        args.timeSeriesFile, index_col='time',
+        parse_dates=['time'], date_parser=utils.date_parser
+    )
+
+    # set backend if run from main
+    matplotlib.use('Agg')
+
+    # set plot title
+    title = args.timeSeriesFile if args.showFileName else None
+
+    # call plot function and save figure
+    fig = plotTimeSeries(data, title=title, showFirstNDays=args.showFirstNDays)
+    fig.savefig(args.plotFile, dpi=200, bbox_inches='tight')
+    print('Plot file written to:', args.plotFile)
 
 
 def plotTimeSeries(  # noqa: C901
-        tsFile,
-        plotFile,
-        showFirstNDays=None,
-        showFileName=False
+        data,
+        title=None,
+        showFirstNDays=None
     ):
     """Plot overall activity and classified activity types
 
-    :param str tsFile: Input filename with .csv.gz time series data
-    :param str tsFile: Output filename for .png image
+    :param pd.DataFrame data: Input DataFrame with time series data
+        Index: DatetimeIndex
+        Columns (4 class example):
+            Name: acc, dtype=float
+            Name: light, dtype=Any numeric, value=0 or 1
+            Name: moderate-vigorous, dtype=Any numeric, value=0 or 1
+            Name: sedentary, dtype=Any numeric, value=0 or 1
+            Name: sleep, dtype=Any numeric, value=0 or 1
+    :param str title: Optional plot title
     :param int showFirstNDays: Only show first n days of time series (if specified)
-    :param float showFileName: Toggle showing filename as title in output image
 
-    :return: Writes plot to <plotFile>
-    :rtype: void
+    :return: pyplot Figure
+    :rtype: plt.Figure
 
     :Example:
-    >>> import accPlot
-    >>> accPlot.plotTimeSeries("sample-timeSeries.csv.gz", "sample-plot.png")
-    <plot file written to sample-plot.png>
+    >>> from accelerometer.accPlot import plotTimeSeries
+    >>> df = pd.DataFrame(...)
+    >>> fig = plotTimeSeries(df)
+    >>> fig.show()
     """
 
-    # read time series file to pandas DataFrame
-    data = pd.read_csv(
-        tsFile, index_col='time',
-        parse_dates=['time'], date_parser=utils.date_parser
-    )
+    # double check time index
+    if 'time' in data.columns:
+        data = data.set_index('time')
 
     # fix gaps or irregular sampling
     if pd.infer_freq(data) is None:
@@ -136,9 +151,9 @@ def plotTimeSeries(  # noqa: C901
     nrows = len(groupedDays) + 1
 
     # create overall figure
-    fig = plt.figure(1, figsize=(10, nrows), dpi=100)
-    if showFileName:
-        fig.suptitle(tsFile)
+    fig = plt.figure(None, figsize=(10, nrows), dpi=100)
+    if title is not None:
+        fig.suptitle(title)
 
     # create individual plot for each day
     i = 0
@@ -156,16 +171,14 @@ def plotTimeSeries(  # noqa: C901
                          edgecolor="none")
 
         # add date label to left hand side of each day's activity plot
-        ax.set_title(
-            day.strftime("%A,\n%d %B"), weight='bold',
-            x=-.2, y=0.5,
-            horizontalalignment='left',
-            verticalalignment='center',
-            rotation='horizontal',
-            transform=ax.transAxes,
-            fontsize='medium',
-            color='k'
-        )
+        ax.set_ylabel(day.strftime("%A\n%d %B"),
+                      weight='bold',
+                      horizontalalignment='right',
+                      verticalalignment='center',
+                      rotation='horizontal',
+                      fontsize='medium',
+                      color='k',
+                      labelpad=5)
         # run gridlines for each hour bar
         ax.get_xaxis().grid(True, which='major', color='grey', alpha=0.5)
         ax.get_xaxis().grid(True, which='minor', color='grey', alpha=0.25)
@@ -215,8 +228,10 @@ def plotTimeSeries(  # noqa: C901
     axs[0].set_xticklabels(hrLabels)
     axs[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
 
-    plt.savefig(plotFile, dpi=200, bbox_inches='tight')
-    print('Plot file written to:', plotFile)
+    # auto trim borders
+    fig.tight_layout()
+
+    return fig
 
 
 def str2bool(v):
