@@ -259,17 +259,31 @@ def imputeMissing(data, extrapolate=True):
             tolerance=pd.Timedelta('1m'),
             limit=1)
 
+    def fillna(subframe):
+        # Transform will first pass the subframe column-by-column as a Series.
+        # After passing all columns, it will pass the entire subframe again as a DataFrame.
+        # Processing the entire subframe is optional (return value can be omitted). See 'Notes' in transform doc.
+        if isinstance(subframe, pd.Series):
+            x = subframe.to_numpy()
+            nan = np.isnan(x)
+            nanlen = len(x[nan])
+            if 0 < nanlen < len(x):  # check x contains a NaN and is not all NaN
+                x[nan] = np.nanmean(x)
+                return x  # will be cast back to a Series automatically
+            else:
+                return subframe
+
     data = (
         data
         # first attempt imputation using same day of week
         .groupby([data.index.weekday, data.index.hour, data.index.minute])
-        .transform(lambda x: x.fillna(x.mean()))
+        .transform(fillna)
         # then try within weekday/weekend
         .groupby([data.index.weekday >= 5, data.index.hour, data.index.minute])
-        .transform(lambda x: x.fillna(x.mean()))
+        .transform(fillna)
         # finally, use all other days
         .groupby([data.index.hour, data.index.minute])
-        .transform(lambda x: x.fillna(x.mean()))
+        .transform(fillna)
     )
 
     return data
