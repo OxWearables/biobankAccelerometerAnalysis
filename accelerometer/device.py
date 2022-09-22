@@ -83,7 +83,8 @@ def processInputFileToEpoch(  # noqa: C901
     summary['file-size'] = os.path.getsize(inputFile)
     summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
-    javaClassPath = f"{ROOT_DIR}/java/:{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
+    pathSeparator = ';' if os.name == 'nt' else ':'
+    javaClassPath = f"{ROOT_DIR}/java/{pathSeparator}{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
     staticStdG = stationaryStd / 1000.0  # java expects units of G (not mg)
 
     if 'omconvert' in rawDataParser:
