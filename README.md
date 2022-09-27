@@ -35,7 +35,6 @@ $ accProcess data/sample.cwa.gz
 $ accPlot data/sample-timeSeries.csv.gz
 ```
 
-
 ## Usage
 To extract summary movement statistics from an Axivity file (.cwa):
 
@@ -59,9 +58,9 @@ Movement statistics will be stored in a JSON file:
 }
 ```
 
-See [here](https://biobankaccanalysis.readthedocs.io/en/latest/datadict.html) for the list of output variables.
+See [Data Dictionary](https://biobankaccanalysis.readthedocs.io/en/latest/datadict.html) for the list of output variables.
 
-Actigraph and GENEActiv files are also supported, as well as custom CSV files.  See the [documentation](https://biobankaccanalysis.readthedocs.io/en/latest/index.html) for more details.
+Actigraph and GENEActiv files are also supported, as well as custom CSV files. See [Usage](https://biobankaccanalysis.readthedocs.io/en/latest/usage.html#basic-usage) for more details.
 
 To visualise the activity profile:
 ```bash
@@ -70,38 +69,30 @@ $ accPlot data/sample-timeSeries.csv.gz
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
+
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be
 taken to extract summary physical activity information from raw accelerometer
 data. To minimise error and bias, our tool uses published methods to calibrate,
 resample, and summarise the accelerometer data.
-<!-- [Click here for detailed information on the data processing methods on our wiki.](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) -->
 
 ![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
 ![Activity classification](docs/source/accClassification.png)
 
+See [Methods](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) for more details.
+
 
 ## Citing our work
-When describing or using the *UK Biobank accelerometer dataset*, please cite [Doherty2017].
-When using *this tool* to extract sleep duration and physical activity behaviours from your accelerometer data, please cite:
+When using this tool, please consider the works listed in [CITATION.md](CITATION.md).
+
+## Licence
+See [LICENSE.md](LICENSE.md).
 
 
-1. [Doherty2017] Doherty A, Jackson D, et al. (2017)
-Large scale population assessment of physical activity using wrist worn
-accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
+## Acknowledgement
+We would like to thank Sven Hollowell, Vincent van Hees, Nick Wareham, 
+Soren Brage, Nils Hammerla and Dan Jackson, 
+all of whom thoroughly supported the early development of this software. 
+We would also like to thank all our code contributors. 
 
-1. [Willetts2018] Willetts M, Hollowell S, et al. (2018)
-Statistical machine learning of sleep and physical activity phenotypes from
-sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
-
-1. [Doherty2018] Doherty A, Smith-Byrne K, et al. (2018)
-GWAS identifies 14 loci for device-measured physical activity and sleep
-duration. Nature Communications. 9(1):5257
-
-1. [Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021)
-Reallocation of time between device-measured movement behaviours and risk
-of incident cardiovascular disease. British Journal of Sports Medicine.
-Published Online First. DOI: 10.1136/bjsports-2021-104050
-
-###### Licence
-See [license](LICENSE.md) before using this software.
+[Contributor Graph](https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors)

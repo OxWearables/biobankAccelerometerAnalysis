@@ -88,31 +88,23 @@ To visualise the time series and activity classification output:
 ***************
 Citing our work
 ***************
-When describing or using the UK Biobank accelerometer dataset, or using this tool
-to extract overall activity from your accelerometer data, please cite [Doherty2017]_.
-
-When using this tool to extract sleep duration and physical activity behaviours
-from your accelerometer data, please cite [Willetts2018]_ [Doherty2018]_ and [Walmsley2020]_.
-
-.. [Doherty2017] Doherty A, Jackson D, Hammerla N, et al. (2017) Large scale population assessment of physical activity using wrist worn accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
-
-.. [Willetts2018] Willetts M, Hollowell S, Aslett L, Holmes C, Doherty A. (2018) Statistical machine learning of sleep and physical activity phenotypes from sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
-
-.. [Doherty2018] Doherty A, Smith-Bryne K, Ferreira T, et al. (2018) GWAS identifies 14 loci for device-measured physical activity and sleep duration. Nature Communications. 9(1):5257
-
-.. [Walmsley2020] Walmsley R, Chan S, et al. (2020) Reallocating time from machine-learned sleep, sedentary behaviour or light physical activity to moderate-to-vigorous physical activity is associated with lower cardiovascular disease risk (preprint https://doi.org/10.1101/2020.11.10.20227769)
+When using this tool, please consider the works listed in `CITATION.md <https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/CITATION.md>`_.
 
 
 *******
 Licence
 *******
-See the `licence page <https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/LICENSE.md>`_.
+See `LICENSE.md <https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/LICENSE.md>`_.
 
 
 ************
-Contributors
+Acknowledgement
 ************
-See https://github.com/activityMonitoring/biobankAccelerometerAnalysis/graphs/contributors
+We would like to thank Sven Hollowell, Vincent van Hees, Nick Wareham, 
+Soren Brage, Nils Hammerla and Dan Jackson, 
+all of whom thoroughly supported the early development of this software. 
+We would also like to thank all our code contributors. 
+`Contributor Graph <https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors>`_.
 
 
 
