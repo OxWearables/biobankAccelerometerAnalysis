@@ -1,8 +1,8 @@
 When using this tool, please consider the following works:
 
 1. [Walmsley2021] Walmsley R, Chan S, Smith-Byrne K, et al. (2021)
-Reallocation of time between device-measured movement behaviours and risk
-of incident cardiovascular disease. British Journal of Sports Medicine.
+*Reallocation of time between device-measured movement behaviours and risk
+of incident cardiovascular disease.* British Journal of Sports Medicine.
 Published Online First. DOI: 10.1136/bjsports-2021-104050
     ```
     @article{walmsley2022reallocation,
@@ -19,8 +19,8 @@ Published Online First. DOI: 10.1136/bjsports-2021-104050
 
 
 1. [Doherty2018] Doherty A, Smith-Byrne K, et al. (2018)
-GWAS identifies 14 loci for device-measured physical activity and sleep
-duration. Nature Communications. 9(1):5257
+*GWAS identifies 14 loci for device-measured physical activity and sleep
+duration.* Nature Communications. 9(1):5257
     ```
     @article{doherty2018gwas,
      title={GWAS identifies 14 loci for device-measured physical activity and sleep duration},
@@ -36,8 +36,8 @@ duration. Nature Communications. 9(1):5257
 
 
 1. [Willetts2018] Willetts M, Hollowell S, et al. (2018)
-Statistical machine learning of sleep and physical activity phenotypes from
-sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
+*Statistical machine learning of sleep and physical activity phenotypes from
+sensor data in 96,220 UK Biobank participants.* Scientific Reports. 8(1):7961
     ```
     @article{willetts2018statistical,
      title={Statistical machine learning of sleep and physical activity phenotypes from sensor data in 96,220 UK Biobank participants},
@@ -53,8 +53,8 @@ sensor data in 96,220 UK Biobank participants. Scientific Reports. 8(1):7961
 
 
 1. [Doherty2017] Doherty A, Jackson D, et al. (2017)
-Large scale population assessment of physical activity using wrist worn
-accelerometers: the UK Biobank study. PLOS ONE. 12(2):e0169649
+*Large scale population assessment of physical activity using wrist worn
+accelerometers: the UK Biobank study.* PLOS ONE. 12(2):e0169649
     ```
     @article{doherty2017large,
      title={Large scale population assessment of physical activity using wrist worn accelerometers: the UK biobank study},

@@ -95,4 +95,4 @@ Soren Brage, Nils Hammerla and Dan Jackson,
 all of whom thoroughly supported the early development of this software. 
 We would also like to thank all our code contributors. 
 
-[Contributor Graph](https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors)
+[Contributors Graph](https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors)
