@@ -106,7 +106,7 @@ from your accelerometer data, please cite [Willetts2018]_ [Doherty2018]_ and [Wa
 *******
 Licence
 *******
-This project is released under a `BSD 2-Clause Licence <http://opensource.org/licenses/BSD-2-Clause>`_ (see LICENCE file).
+See the `licence page <https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/LICENSE.md>`_.
 
 
 ************

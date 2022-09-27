@@ -1,5 +1,4 @@
 
-//BSD 2-Clause (c) 2014: A.Doherty (Oxford), D.Jackson, N.Hammerla (Newcastle)
 import java.io.FileInputStream;
 import java.nio.ByteOrder;
 import java.nio.ByteBuffer;

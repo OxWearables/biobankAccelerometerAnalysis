@@ -1,8 +1,3 @@
-/* BSD 2-Clause (c) 2014: A.Doherty (Oxford), Shing Chan (Oxford)
- *
- * Code for extracting basic summary stats from raw triaxial
- * acceleration measurements.
- */
 import java.util.Arrays;
 import java.util.List;
 

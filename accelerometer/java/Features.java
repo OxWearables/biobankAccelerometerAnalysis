@@ -1,4 +1,4 @@
-/* BSD 2-Clause (c) 2014: A.Doherty (Oxford), Shing Chan (Oxford)
+/*
  *
  * Code for extracting features from raw triaxial acceleration measurements.
  * The features are derived from four papers:
