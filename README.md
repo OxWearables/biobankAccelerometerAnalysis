@@ -89,10 +89,7 @@ When using this tool, please consider the works listed in [CITATION.md](CITATION
 See [LICENSE.md](LICENSE.md).
 
 
-## Acknowledgement
-We would like to thank Sven Hollowell, Vincent van Hees, Nick Wareham, 
-Soren Brage, Nils Hammerla and Dan Jackson, 
-all of whom thoroughly supported the early development of this software. 
-We would also like to thank all our code contributors. 
+## Acknowledgements
+We would like to thank all our code contributors and manuscript co-authors.
 
 [Contributors Graph](https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors)
