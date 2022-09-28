@@ -16,8 +16,12 @@ public class GENEActivReader extends DeviceReader {
      */
     public static void readGeneaEpochs(
         String accFile,
+        String timeZone,
+        int timeShift,
         EpochWriter epochWriter,
         Boolean verbose) {
+
+        setTimeSettings(timeZone, timeShift);
 
         int fileHeaderSize = 59;
         int linesToAxesCalibration = 47;
@@ -54,6 +58,11 @@ public class GENEActivReader extends DeviceReader {
                         header = readLine(rawAccReader);
                         if (i == 3) {
                             blockTime = LocalDateTime.parse(header.split("Time:")[1], timeFmt);
+
+                            if (pageCount == 1) {
+                                setSessionStart(blockTime);
+                                System.out.println("Session start: " + sessionStart);
+                            }
                         } else if (i == 5) {
                             temperature = Double.parseDouble(header.split(":")[1]);
                         } else if (i == 8) {
@@ -69,6 +78,7 @@ public class GENEActivReader extends DeviceReader {
                 dataBlock = readLine(rawAccReader);
 
                 // raw reading values
+                long t = 0;  // Unix time in millis
                 int hexPosition = 0;
                 int xRaw = 0;
                 int yRaw = 0;
@@ -100,7 +110,8 @@ public class GENEActivReader extends DeviceReader {
                     y = (yRaw * 100.0d - mfrOffset[1]) / mfrGain[1];
                     z = (zRaw * 100.0d - mfrOffset[2]) / mfrGain[2];
 
-                    epochWriter.newValues(getEpochMillis(blockTime), x, y, z, temperature, errCounter);
+                    t = zonedWithDSTCorrection(blockTime).toInstant().toEpochMilli();
+                    epochWriter.newValues(t, x, y, z, temperature, errCounter);
 
                     hexPosition += 12;
                     blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));

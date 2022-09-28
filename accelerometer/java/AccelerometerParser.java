@@ -215,7 +215,7 @@ public class AccelerometerParser {
 			} else if (accFile.toLowerCase().endsWith(".cwa.gz")) {
                 AxivityReader.readCwaGzEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
             } else if (accFile.toLowerCase().endsWith(".bin")) {
-				GENEActivReader.readGeneaEpochs(accFile, epochWriter, verbose);
+				GENEActivReader.readGeneaEpochs(accFile, timeZone, timeShift, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".gt3x")) {
 				ActigraphReader.readG3TXEpochs(accFile, epochWriter, verbose);
 			} else if (accFile.toLowerCase().endsWith(".csv") ||
