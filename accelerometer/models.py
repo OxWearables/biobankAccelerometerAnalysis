@@ -22,11 +22,11 @@ MODELS = {
 
     'willetts-10Feb2022': {
         "pth": MODEL_DIR / "10Feb2022" / "willetts/model.tar",
-        "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
+        "url": f"{MODEL_URL}/10Feb2022/willetts/model.tar",
     },
     'doherty-10Feb2022': {
         "pth": MODEL_DIR / "10Feb2022" / "doherty/model.tar",
-        "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
+        "url": f"{MODEL_URL}/10Feb2022/doherty/model.tar",
     },
     'walmsley-10Feb2022': {
         "pth": MODEL_DIR / "10Feb2022" / "walmsley/model.tar",
