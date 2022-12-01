@@ -111,7 +111,8 @@ public class GENEActivReader extends DeviceReader {
                     z = (zRaw * 100.0d - mfrOffset[2]) / mfrGain[2];
 
                     t = zonedWithDSTCorrection(blockTime).toInstant().toEpochMilli();
-                    epochWriter.newValues(t, x, y, z, temperature, errCounter);
+                    double light = 1.0d; // don't know light yet
+                    epochWriter.newValues(t, x, y, z, temperature, light, errCounter);
 
                     hexPosition += 12;
                     blockTime = blockTime.plusNanos(secs2Nanos(1.0 / sampleFreq));

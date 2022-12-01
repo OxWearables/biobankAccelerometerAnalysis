@@ -16,12 +16,13 @@ import java.util.zip.GZIPInputStream;
 public class CsvReader extends DeviceReader {
 
     private static int NO_TEMPERATURE = -99;
+    private static int NO_LIGHT = -99;
 
     public static void readCSVEpochs(
             String accFile,
             EpochWriter epochWriter,
             int csvStartRow,
-            List<Integer> csvTimeXYZTempColsIndex,
+            List<Integer> csvTimeXYZTempLightColsIndex,
             DateTimeFormatter csvTimeFormat,
             Boolean verbose) {
 
@@ -40,13 +41,17 @@ public class CsvReader extends DeviceReader {
             String line = "";
             int lineNumber = 0;
             String csvSplitBy = ",";
-            int timeCol = csvTimeXYZTempColsIndex.get(0);
-            int xCol = csvTimeXYZTempColsIndex.get(1);
-            int yCol = csvTimeXYZTempColsIndex.get(2);
-            int zCol = csvTimeXYZTempColsIndex.get(3);
+            int timeCol = csvTimeXYZTempLightColsIndex.get(0);
+            int xCol = csvTimeXYZTempLightColsIndex.get(1);
+            int yCol = csvTimeXYZTempLightColsIndex.get(2);
+            int zCol = csvTimeXYZTempLightColsIndex.get(3);
             int temperatureCol = NO_TEMPERATURE;
-            if (csvTimeXYZTempColsIndex.size() == 5){
-                temperatureCol = csvTimeXYZTempColsIndex.get(4);
+            int lightCol = NO_LIGHT;
+            if (csvTimeXYZTempLightColsIndex.size() > 4){
+                temperatureCol = csvTimeXYZTempLightColsIndex.get(4);
+                if (csvTimeXYZTempLightColsIndex.size() == 6) {
+                    lightCol = csvTimeXYZTempLightColsIndex.get(5);
+                }
             }
 
             String[] cols;
@@ -55,6 +60,7 @@ public class CsvReader extends DeviceReader {
             double y;
             double z;
             double temperature = 0;
+            double light = 0;
             while (true) {
                 line = accReader.readLine();
 
@@ -78,7 +84,10 @@ public class CsvReader extends DeviceReader {
                 if (temperatureCol != NO_TEMPERATURE){
                     temperature = Double.parseDouble(cols[temperatureCol]);
                 }
-                epochWriter.newValues(time, x, y, z, temperature, new int[] {0});
+                if (lightCol != NO_LIGHT) {
+                    light = Double.parseDouble(cols[lightCol]);
+                }
+                epochWriter.newValues(time, x, y, z, temperature, light, new int[] {0});
             }
 
         } catch (Exception excep) {

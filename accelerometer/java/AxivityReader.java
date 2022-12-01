@@ -160,7 +160,7 @@ public class AxivityReader extends DeviceReader {
             try {
                 // read block header items
                 long blockTimestamp = getUnsignedInt(buf, 14);
-                int light = getUnsignedShort(buf, 18);
+                double light = getUnsignedShort(buf, 18) & 0x3ff;
                 double temperature = (getUnsignedShort(buf, 20) * 150.0 - 20500) / 1000;
                 short rateCode = (short) (buf.get(24) & 0xff);
                 short numAxesBPS = (short) (buf.get(25) & 0xff);
@@ -318,7 +318,7 @@ public class AxivityReader extends DeviceReader {
                     z = zRaw / 256.0;
                     t = zonedWithDSTCorrection(blockTime).toInstant().toEpochMilli();
 
-                    epochWriter.newValues(t, x, y, z, temperature, errCounter);
+                    epochWriter.newValues(t, x, y, z, temperature, light, errCounter);
 
                 }
             } catch (Exception excep) {
