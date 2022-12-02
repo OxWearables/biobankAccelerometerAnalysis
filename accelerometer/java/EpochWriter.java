@@ -118,7 +118,7 @@ public class EpochWriter {
 
 		String epochHeader = "time";
 		epochHeader += "," + AccStats.getStatsHeader(getFeatures);
-    	epochHeader += ",temp,light,samples";
+    	epochHeader += ",temp,ax3_light,samples";
 		epochHeader += ",dataErrors,clipsBeforeCalibr,clipsAfterCalibr,rawSamples";
 
 		writeLine(epochFileWriter, epochHeader);

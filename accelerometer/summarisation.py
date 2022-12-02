@@ -352,7 +352,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
 
     # Hours of activity for each recorded day
     epochInHours = pd.Timedelta(freq).total_seconds() / 3600
-    cols = ['wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
+    cols = ['wearTime', 'cutPointMVPA', 'cutPointVPA', 'ax3_light'] + labels
     dailyStats = (
         data[cols].astype('float')
         .groupby(data.index.date)
@@ -367,7 +367,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
     tStart, tEnd = data.index[0], data.index[-1]
-    cols = ['acc', 'wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
+    cols = ['acc', 'wearTime', 'cutPointMVPA', 'cutPointVPA', 'ax3_light'] + labels
     if 'MET' in data.columns:
         cols.append('MET')
     data = imputeMissing(data[cols].astype('float'))
