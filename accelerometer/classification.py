@@ -40,6 +40,9 @@ def activityClassification(epoch, activityModel="walmsley"):
     :rtype: list(str)
     """
 
+    use_cutpoints = 'chan' in activityModel
+    smooth_sleep = 'chan' in activityModel
+
     activityModel = resolveModelPath(activityModel)
 
     featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols'))
@@ -51,7 +54,28 @@ def activityClassification(epoch, activityModel="walmsley"):
 
     model = joblib.load(getFileFromTar(activityModel, 'model'))
     hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams'))
+    labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
+
     Y = viterbi(model.predict(X), hmmParams)
+
+    if smooth_sleep:
+        sleep = pd.Series(Y == 'sleep')
+        sleep_streak = (
+            sleep.ne(sleep.shift())
+            .cumsum()
+            .pipe(lambda x: x.groupby(x).transform('count') * sleep)
+        )
+        # TODO: hardcoded 120 = 1hr
+        Y[(Y == 'sleep') & (sleep_streak < 120)] = 'sedentary'
+
+    if use_cutpoints:
+        enmo = epoch['enmoTrunc'].to_numpy()
+        enmo = enmo[mask]
+        Y[(Y == 'other') & (enmo < .1)] = 'light'
+        Y[(Y == 'other') & (enmo >= .1)] = 'moderate-vigorous'
+        labels.remove('other')
+        labels.append('light')
+        labels.append('moderate-vigorous')
 
     # Append predicted activities to epoch dataframe
     epoch["label"] = np.nan
@@ -61,8 +85,6 @@ def activityClassification(epoch, activityModel="walmsley"):
     METs = joblib.load(getFileFromTar(activityModel, 'METs'))
     if METs is not None:
         epoch["MET"] = epoch["label"].replace(METs)
-
-    labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
 
     # One-hot encoding
     for lab in labels:

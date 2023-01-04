@@ -19,6 +19,10 @@ MODELS = {
         "pth": MODEL_DIR / MODEL_VER / "walmsley/model.tar",
         "url": f"{MODEL_URL}/{MODEL_VER}/walmsley/model.tar",
     },
+    'chan': {
+        "pth": MODEL_DIR / "01Jan2023" / "chan/model.tar",
+        "url": "https://tinyurl.com/yuzn99zr",
+    },
 
     'willetts-10Feb2022': {
         "pth": MODEL_DIR / "10Feb2022" / "willetts/model.tar",
@@ -32,5 +36,9 @@ MODELS = {
         "pth": MODEL_DIR / "10Feb2022" / "walmsley/model.tar",
         "url": f"{MODEL_URL}/10Feb2022/walmsley/model.tar",
     },
+    'chan-01Jan2023': {
+        "pth": MODEL_DIR / "01Jan2023" / "chan/model.tar",
+        "url": "https://tinyurl.com/yuzn99zr",
+    }
 
 }
