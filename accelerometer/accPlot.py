@@ -24,7 +24,7 @@ LABELS_AND_COLORS = {
     'vehicle': 'saddlebrown',
     'light': 'darkorange',
     'mixed': 'seagreen',
-    'walking': 'green',
+    'walking': 'limegreen',
     'moderate-vigorous': 'green',
     'bicycling': 'springgreen',
     'tasks-light': 'darkorange',
