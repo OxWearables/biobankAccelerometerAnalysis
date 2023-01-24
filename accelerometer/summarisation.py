@@ -144,13 +144,18 @@ def getActivitySummary(  # noqa: C901
 
 def checkQuality(data, summary):
     summary['totalReads'] = data['rawSamples'].sum().item()
+
     # Check DST
-    if data.index[0].dst() < data.index[-1].dst():
+    if data.index[0].dst() is None or data.index[-1].dst() is None:
+        # no tz info
+        summary['quality-daylightSavingsCrossover'] = 0
+    elif data.index[0].dst() < data.index[-1].dst():
         summary['quality-daylightSavingsCrossover'] = 1
     elif data.index[0].dst() > data.index[-1].dst():
         summary['quality-daylightSavingsCrossover'] = -1
     else:
         summary['quality-daylightSavingsCrossover'] = 0
+
     # Check value clips
     summary['clipsBeforeCalibration'] = data['clipsBeforeCalibr'].sum().item()
     summary['clipsAfterCalibration'] = data['clipsAfterCalibr'].sum().item()

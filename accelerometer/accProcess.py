@@ -9,9 +9,12 @@ import accelerometer.device
 import json
 import os
 import accelerometer.summarisation
+import numpy as np
 import pandas as pd
 import atexit
 import warnings
+
+import pyedflib as edf
 
 
 def main():  # noqa: C901
@@ -302,23 +305,75 @@ def main():  # noqa: C901
     # Now process the .CWA file
     if args.processInputFile:
         summary['file-name'] = args.inputFile
-        accelerometer.device.processInputFileToEpoch(
-            args.inputFile, args.timeZone,
-            args.timeShift, args.epochFile, args.stationaryFile, summary,
-            skipCalibration=args.skipCalibration,
-            stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
-            xyzSlope=args.calSlope, xyzSlopeT=args.calTemp,
-            rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
-            useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
-            epochPeriod=args.epochPeriod,
-            extractFeatures=args.extractFeatures,
-            rawOutput=args.rawOutput, rawFile=args.rawFile,
-            npyOutput=args.npyOutput, npyFile=args.npyFile,
-            startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
-            csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
-            csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-            csvTimeXYZTempColsIndex=list(map(int, args.csvTimeXYZTempColsIndex.split(',')))
-        )
+
+        if args.inputFile.endswith('.edf'):
+
+            args.activityClassification = False  # not supported
+
+            with edf.EdfReader(args.inputFile) as f:
+                n = f.getNSamples()[1]
+                sampleRate = f.getSampleFrequency(1)
+                xyz = np.empty((3, n))
+                xyz[0, :] = f.readSignal(1)
+                xyz[1, :] = f.readSignal(2)
+                xyz[2, :] = f.readSignal(3)
+                xyz /= 1000.0  # mg to g
+                xyz = xyz.T.copy()  # channels last
+                tStart = f.getStartdatetime()
+                tEnd = pd.Timestamp(tStart) + pd.Timedelta((n - 1) / sampleRate, unit='S')
+                t = pd.date_range(tStart, tEnd, periods=n)
+                t.name = 'time'
+
+                xyz = pd.DataFrame(xyz, columns=['x', 'y', 'z'], index=t)
+
+                # std
+                xyzStd = (
+                    xyz
+                    .resample(f'{args.epochPeriod}s', origin='start')
+                    .std()
+                    .rename(columns={'x': 'xStd', 'y': 'yStd', 'z': 'zStd'})
+                )
+
+                # enmoTrunc
+                v = pd.Series(np.maximum(np.linalg.norm(xyz, axis=1) - 1, 0), index=t, name='enmoTrunc')
+                v = v.resample(f'{args.epochPeriod}s', origin='start').mean()
+
+                # ticks per epoch
+                rawSamples = (
+                    xyz['x']
+                    .resample(f'{args.epochPeriod}s', origin='start')
+                    .count()
+                    .rename('rawSamples')
+                )
+
+                epochs = pd.concat([v, xyzStd, rawSamples], axis=1)
+
+                # dummy values
+                epochs['clipsBeforeCalibr'] = 0
+                epochs['clipsAfterCalibr'] = 0
+
+                epochs.to_csv(args.epochFile)
+
+        else:
+
+            accelerometer.device.processInputFileToEpoch(
+                args.inputFile, args.timeZone,
+                args.timeShift, args.epochFile, args.stationaryFile, summary,
+                skipCalibration=args.skipCalibration,
+                stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
+                xyzSlope=args.calSlope, xyzSlopeT=args.calTemp,
+                rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
+                useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
+                epochPeriod=args.epochPeriod,
+                extractFeatures=args.extractFeatures,
+                rawOutput=args.rawOutput, rawFile=args.rawFile,
+                npyOutput=args.npyOutput, npyFile=args.npyFile,
+                startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
+                csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
+                csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
+                csvTimeXYZTempColsIndex=list(map(int, args.csvTimeXYZTempColsIndex.split(',')))
+            )
+
     else:
         summary['file-name'] = args.epochFile
 

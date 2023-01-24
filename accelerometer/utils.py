@@ -380,8 +380,11 @@ def date_strftime(t):
     Convert to time format of the form e.g.
     2020-06-14 19:01:15.123+0100 [Europe/London]
     '''
+    fmt = '%Y-%m-%d %H:%M:%S.%f%z'
     tz = t.tz
-    return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
+    if tz is not None:
+        fmt = f'{fmt} [{tz}]'
+    return t.strftime(fmt)
 
 
 def writeTimeSeries(e, labels, tsFile):

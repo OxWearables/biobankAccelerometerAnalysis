@@ -41,6 +41,7 @@ setuptools.setup(
         'scikit-learn==1.0.1',
         'joblib==1.1.0',
         'tqdm>=4.59.0',
+        'pyedflib==0.1.30',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
