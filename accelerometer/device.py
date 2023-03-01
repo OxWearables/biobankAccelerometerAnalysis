@@ -400,8 +400,8 @@ def storeCalibrationInformation(
 
     # store output to summary dictionary
     storeCalibrationParams(summary, bestIntercept, bestSlope, bestSlopeT)
-    summary['calibration-errsBefore(mg)'] = utils.formatNum(initErr * 1000, 2)
-    summary['calibration-errsAfter(mg)'] = utils.formatNum(bestErr * 1000, 2)
+    summary['calibration-errsBefore(mg)'] = initErr * 1000
+    summary['calibration-errsAfter(mg)'] = bestErr * 1000
     summary['calibration-numStaticPoints'] = nStatic
     summary['quality-calibratedOnOwnData'] = calibratedOnOwnData
     summary['quality-goodCalibration'] = goodCalibration
@@ -420,15 +420,15 @@ def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
     """
 
     # store output to summary dictionary
-    summary['calibration-xOffset(g)'] = utils.formatNum(xyzOff[0], 4)
-    summary['calibration-yOffset(g)'] = utils.formatNum(xyzOff[1], 4)
-    summary['calibration-zOffset(g)'] = utils.formatNum(xyzOff[2], 4)
-    summary['calibration-xSlope'] = utils.formatNum(xyzSlope[0], 4)
-    summary['calibration-ySlope'] = utils.formatNum(xyzSlope[1], 4)
-    summary['calibration-zSlope'] = utils.formatNum(xyzSlope[2], 4)
-    summary['calibration-xSlopeTemp'] = utils.formatNum(xyzSlopeT[0], 4)
-    summary['calibration-ySlopeTemp'] = utils.formatNum(xyzSlopeT[1], 4)
-    summary['calibration-zSlopeTemp'] = utils.formatNum(xyzSlopeT[2], 4)
+    summary['calibration-xOffset(g)'] = xyzOff[0]
+    summary['calibration-yOffset(g)'] = xyzOff[1]
+    summary['calibration-zOffset(g)'] = xyzOff[2]
+    summary['calibration-xSlope'] = xyzSlope[0]
+    summary['calibration-ySlope'] = xyzSlope[1]
+    summary['calibration-zSlope'] = xyzSlope[2]
+    summary['calibration-xSlopeTemp'] = xyzSlopeT[0]
+    summary['calibration-ySlopeTemp'] = xyzSlopeT[1]
+    summary['calibration-zSlopeTemp'] = xyzSlopeT[2]
 
 
 def getDeviceId(inputFile):

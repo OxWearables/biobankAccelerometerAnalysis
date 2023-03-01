@@ -170,7 +170,7 @@ def resolveInterrupts(data, epochPeriod, summary):
     gaps = data.index.to_series().diff()
     gaps = gaps[gaps > epochPeriod]
     summary['errs-interrupts-num'] = len(gaps)
-    summary['errs-interrupt-mins'] = utils.formatNum(gaps.sum().total_seconds() / 60, 1)
+    summary['errs-interrupt-mins'] = gaps.sum().total_seconds() / 60
 
     data = data.asfreq(epochPeriod, normalize=False, fill_value=None)
     data['missing'] = data.isna().any(1)
@@ -220,8 +220,8 @@ def resolveNonWear(data, stdTol, patience, summary):
     isGoodWearTime = wearTime >= 3  # check there's at least 3 days of wear time
 
     summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearLen))
-    summary['wearTime-overall(days)'] = utils.formatNum(wearTime, 2)
-    summary['nonWearTime-overall(days)'] = utils.formatNum(nonWearTime, 2)
+    summary['wearTime-overall(days)'] = wearTime
+    summary['nonWearTime-overall(days)'] = nonWearTime
     summary['quality-goodWearTime'] = int(isGoodCoverage and isGoodWearTime)
 
     return data
@@ -329,7 +329,7 @@ def calculateECDF(x, summary):
 
     # Write to summary
     for level, val in ecdf.iteritems():
-        summary[f'{x.name}-ecdf-{level}mg'] = utils.formatNum(val, 5)
+        summary[f'{x.name}-ecdf-{level}mg'] = val
 
 
 def writeMovementSummaries(data, labels, summary):  # noqa: C901
@@ -362,7 +362,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
 
     for i, row in dailyStats.iterrows():
         for col in cols:
-            summary[f'day{i}-recorded-{col}(hrs)'] = utils.formatNum(row.loc[col], 2)
+            summary[f'day{i}-recorded-{col}(hrs)'] = row.loc[col]
 
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
@@ -375,8 +375,8 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # Overall stats (no padding, i.e. only within recording period)
     overallStats = data[tStart:tEnd].apply(['mean', 'std'])
     for col in overallStats:
-        summary[f'{col}-overall-avg'] = utils.formatNum(overallStats[col].loc['mean'], 5)
-        summary[f'{col}-overall-sd'] = utils.formatNum(overallStats[col].loc['std'], 5)
+        summary[f'{col}-overall-avg'] = overallStats[col].loc['mean']
+        summary[f'{col}-overall-sd'] = overallStats[col].loc['std']
 
     dayOfWeekStats = (
         data
@@ -394,23 +394,23 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
 
     # Week stats
     for col, value in dayOfWeekStats.mean().items():
-        summary[f'{col}-week-avg'] = utils.formatNum(value, 2)
+        summary[f'{col}-week-avg'] = value
 
     # Stats by day of week (Mon, Tue, ...)
     for col, stats in dayOfWeekStats.groupby(level=0).mean().to_dict().items():
         for dayOfWeek, value in stats.items():
-            summary[f'{col}-{dayOfWeek}-avg'] = utils.formatNum(value, 2)
+            summary[f'{col}-{dayOfWeek}-avg'] = value
 
     # Stats by hour of day
     for col, stats in dayOfWeekStats.groupby(level=1).mean().to_dict().items():
         for hour, value in stats.items():
-            summary[f'{col}-hourOfDay-{hour}-avg'] = utils.formatNum(value, 2)
+            summary[f'{col}-hourOfDay-{hour}-avg'] = value
 
     # (not included but could be) Stats by hour of day AND day of week
     # for col, stats in dayOfWeekStats.to_dict().items():
     #     for key, value in stats.items():
     #         dayOfWeek, hour = key
-    #         summary[f'{col}-hourOf{dayOfWeek}-{hour}-avg'] = utils.formatNum(value, 2)
+    #         summary[f'{col}-hourOf{dayOfWeek}-{hour}-avg'] = value
 
     weekdayOrWeekendStats = (
         dayOfWeekStats
@@ -432,12 +432,12 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # Weekday/weekend stats
     for col, stats in weekdayOrWeekendStats.groupby(level=0).mean().to_dict().items():
         for weekdayOrWeekend, value in stats.items():
-            summary[f'{col}-{weekdayOrWeekend.lower()}-avg'] = utils.formatNum(value, 2)
+            summary[f'{col}-{weekdayOrWeekend.lower()}-avg'] = value
 
     # Stats by hour of day AND by weekday/weekend
     for col, stats in weekdayOrWeekendStats.to_dict().items():
         for key, value in stats.items():
             weekdayOrWeekend, hour = key
-            summary[f'{col}-hourOf{weekdayOrWeekend}-{hour}-avg'] = utils.formatNum(value, 2)
+            summary[f'{col}-hourOf{weekdayOrWeekend}-{hour}-avg'] = value
 
     return

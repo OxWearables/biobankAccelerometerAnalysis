@@ -13,27 +13,6 @@ DAYS = ['mon', 'tue', 'wed', 'thur', 'fri', 'sat', 'sun']
 TIME_SERIES_COL = 'time'
 
 
-def formatNum(num, decimalPlaces):
-    """return str of number formatted to number of decimalPlaces
-
-    When writing out 10,000's of files, it is useful to format the output to n
-    decimal places as a space saving measure.
-
-    :param float num: Float number to be formatted.
-    :param int decimalPlaces: Number of decimal places for output format
-    :return: Number formatted to number of decimalPlaces
-    :rtype: str
-
-    :Example:
-    >>> import accUtils
-    >>> accUtils.formatNum(2.567, 2)
-    2.57
-    """
-
-    fmt = '%.' + str(decimalPlaces) + 'f'
-    return float(fmt % num)
-
-
 def meanSDstr(mean, std, numDecimalPlaces):
     """return str of mean and stdev numbers formatted to number of decimalPlaces
 
