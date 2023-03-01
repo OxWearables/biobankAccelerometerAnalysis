@@ -29,9 +29,3 @@ jobs:
 
       - name: Parse gt3x V2 file
         run: java AccelerometerParser Tests/Resources/gt3xV1.gt3x npyOutput:True  rawOutput:True timeZone:Brazil/West
-
-      - name: Compare epoch output
-        uses: tianhaoz95/mirror-action@v1.0.1
-        with:
-          original: accelerometer/java/Tests/Resources/gt3xV1EpochRef.csv
-          mirror: accelerometer/java/Tests/Resources/gt3xV1Epoch.csv

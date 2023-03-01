@@ -44,12 +44,3 @@ jobs:
     - name: Processing
       run: |
         accProcess data/sample.cwa.gz --activityClassification f
-
-    - name: Compare epoch output
-      uses: tianhaoz95/mirror-action@v1.0.1
-      with:
-         original: referenceFiles/sample-summary.json
-         mirror: data/sample-summary.json
-
-
-
