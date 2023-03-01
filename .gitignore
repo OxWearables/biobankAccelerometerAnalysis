@@ -127,3 +127,4 @@ doc/source/savefig/
 # Sample files, etc.
 data/
 accelerometer/activityModels/
+accelerometer/models/
