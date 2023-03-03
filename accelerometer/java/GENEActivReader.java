@@ -58,6 +58,7 @@ public class GENEActivReader extends DeviceReader {
                         header = readLine(rawAccReader);
                         if (i == 3) {
                             blockTime = LocalDateTime.parse(header.split("Time:")[1], timeFmt);
+                            blockTime = blockTime.plusMinutes(timeShift);
 
                             if (pageCount == 1) {
                                 setSessionStart(blockTime);
