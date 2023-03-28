@@ -203,7 +203,10 @@ def resolveNonWear(data, stdTol, patience, summary):
                        .where(stationary))
     stationaryLen = (stationaryGroup.groupby(stationaryGroup, dropna=True)
                      .apply(lambda g: g.index[-1] - g.index[0]))
-    nonWearLen = stationaryLen[stationaryLen > pd.Timedelta(patience, 'm')]
+    if len(stationaryLen) > 0:
+        nonWearLen = stationaryLen[stationaryLen > pd.Timedelta(patience, 'm')]
+    else:
+        nonWearLen = pd.Series(dtype='timedelta64[ns]')  # empty series
     nonWear = stationaryGroup.isin(nonWearLen.index)
     missing = nonWear | data['missing']
     data = data.mask(missing)  # set non wear rows to nan
