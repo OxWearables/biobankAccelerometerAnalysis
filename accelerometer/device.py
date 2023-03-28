@@ -265,11 +265,11 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     IMPROV_TOL = 0.0001  # 0.01%
     ERR_TOL = 0.01  # 10mg
     CALIB_CUBE = 0.3
+    CALIB_MIN_SAMPLES = 50
 
     # Check that we have enough uniformly distributed points:
     # need at least one point outside each face of the cube
-    if (np.max(xyz, axis=0) < CALIB_CUBE).any() \
-            or (np.min(xyz, axis=0) > -CALIB_CUBE).any():
+    if len(xyz) < CALIB_MIN_SAMPLES or (np.max(xyz, axis=0) < CALIB_CUBE).any() or (np.min(xyz, axis=0) > -CALIB_CUBE).any():
         goodCalibration = 0
 
     else:  # we do have enough uniformly distributed points
