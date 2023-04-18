@@ -379,8 +379,9 @@ public class ActigraphReader extends DeviceReader {
                     double y = twoSamples[4-twoSampleCounter*3];
                     double z = twoSamples[5-twoSampleCounter*3];
                     double temp = 1.0d; // don't know temp yet
+                    double light = 1.0d; // don't know light yet
                     time = getTrueUnixTime(time, infoTimeShift);
-                    epochWriter.newValues(time, x, y, z, temp, errCounter);
+                    epochWriter.newValues(time, x, y, z, temp, light, errCounter);
 
                     samples += 1;
                 }
@@ -449,10 +450,11 @@ public class ActigraphReader extends DeviceReader {
                 logger.log(Level.FINER, "x y z: " + sample[1] + " " + sample[0] + " " + sample[2]);
 
                 double temp = 1.0d; // don't know temp yet
+                double light = 1.0d; // don't know light yet
                 samples += 1;
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
                 myTime = getTrueUnixTime(myTime, infoTimeShift);
-                epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, errCounter);
+                epochWriter.newValues(myTime, sample[1], sample[0], sample[2], temp, light, errCounter);
             }
         } catch (IOException ex) {
             ex.printStackTrace(System.err);
@@ -517,6 +519,8 @@ public class ActigraphReader extends DeviceReader {
                 }
 
                 double temp = 1.0d; // don't know temp yet
+                double light = 1.0d; // don't know light yet
+
                 samples += 1;
 
                 long myTime = Math.round((1000d*samples)/sampleFreq) + firstSampleTime*1000; // in Miliseconds
@@ -525,7 +529,7 @@ public class ActigraphReader extends DeviceReader {
                 logger.log(Level.FINER, "i: " + i + "\nx y z: " + sample[0] + " " + sample[1] + " " + sample[2] +
                         "\nTime:" + myTime);
                 epochWriter.newValues(myTime,
-                                      sample[0], sample[1], sample[2], temp, errCounter);
+                                      sample[0], sample[1], sample[2], temp, light, errCounter);
             }
         } catch (IOException ex) {
             ex.printStackTrace(System.err);

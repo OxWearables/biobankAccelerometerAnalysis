@@ -31,11 +31,12 @@ public class EpochWriter {
 	private List<Double> xVals = new ArrayList<Double>();
 	private List<Double> yVals = new ArrayList<Double>();
 	private List<Double> zVals = new ArrayList<Double>();
+	private List<Double> lightVals = new ArrayList<Double>();
 	private List<Double> temperatureVals = new ArrayList<Double>();
 	private final int minSamplesForEpoch = 10;
 
 	private long prevTimeVal = -1;
-	private double[] prevXYZT = { -1, -1, -1, -1 }; // x/y/z/temp at prevTimeVal
+	private double[] prevXYZTL = { -1, -1, -1, -1, -1}; // x/y/z/temp/light at prevTimeVal
 	private boolean edgeInterpolation = true;
 
 	// parameters to be initialised
@@ -117,7 +118,7 @@ public class EpochWriter {
 
 		String epochHeader = "time";
 		epochHeader += "," + AccStats.getStatsHeader(getFeatures);
-    	epochHeader += ",temp,samples";
+    	epochHeader += ",temp,ax3_light,samples";
 		epochHeader += ",dataErrors,clipsBeforeCalibr,clipsAfterCalibr,rawSamples";
 
 		writeLine(epochFileWriter, epochHeader);
@@ -136,6 +137,7 @@ public class EpochWriter {
 			double y,
 			double z,
 			double temperature,
+			double light,
 			int[] errCounter) {
 
 		if (startTime!=UNUSED_DATE && time<startTime) {
@@ -176,7 +178,7 @@ public class EpochWriter {
 			if (timeVals.size()>minSamplesForEpoch) {
 				writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
 				// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
-					xVals, yVals, zVals, temperatureVals, errCounter);
+					xVals, yVals, zVals, temperatureVals, lightVals, errCounter);
 			} else {
 				System.err.println("not enough samples for an epoch.. discarding " +
 					timeVals.size()+" samples");
@@ -185,6 +187,7 @@ public class EpochWriter {
 				yVals.clear();
 				zVals.clear();
 				temperatureVals.clear();
+				lightVals.clear();
 				errCounter[0] = 0;
 			}
 			// epoch times must be at regular (epochPeriod) intervals, so move forward
@@ -204,10 +207,11 @@ public class EpochWriter {
 				yVals.add(y);
 				zVals.add(z);
 				temperatureVals.add(temperature);
+				lightVals.add(light);
 			}
 			writeEpochSummary(millisToZonedDateTime(epochStartTime), timeVals,
 			// writeEpochSummary(millisToInstant(epochStartTime), timeVals,
-				xVals, yVals, zVals, temperatureVals, errCounter);
+				xVals, yVals, zVals, temperatureVals, lightVals, errCounter);
 
 			epochStartTime = epochStartTime + epochPeriod * 1000;
 
@@ -215,10 +219,11 @@ public class EpochWriter {
 				// this code adds the first sample of the previous epoch so we
 				//can correctly interpolate to the edges
 				timeVals.add(prevTimeVal - epochStartTime);
-				xVals.add(prevXYZT[0]);
-				yVals.add(prevXYZT[1]);
-				zVals.add(prevXYZT[2]);
-				temperatureVals.add(prevXYZT[3]);
+				xVals.add(prevXYZTL[0]);
+				yVals.add(prevXYZTL[1]);
+				zVals.add(prevXYZTL[2]);
+				temperatureVals.add(prevXYZTL[3]);
+				lightVals.add(prevXYZTL[4]);
 			}
 		}
 		if (endTime!=UNUSED_DATE && time>endTime) {
@@ -240,7 +245,7 @@ public class EpochWriter {
 		zVals.add(z);
 		temperatureVals.add(temperature);
 		prevTimeVal = time;
-		prevXYZT = new double[]{x, y, z, temperature};
+		prevXYZTL = new double[]{x, y, z, temperature, light};
 		return true;
 	}
 
@@ -262,6 +267,7 @@ public class EpochWriter {
 			List<Double> yVals,
 			List<Double> zVals,
 			List<Double> temperatureVals,
+			List<Double> lightVals,
 			int[] errCounter) {
 
 		int[] clipsCounter = new int[] { 0, 0 }; // before, after (calibration)
@@ -269,13 +275,14 @@ public class EpochWriter {
 		double y;
 		double z;
         double temp;
+
 		for (int i = 0; i < xVals.size(); i++) {
 			Boolean isClipped = false;
 			x = xVals.get(i);
 			y = yVals.get(i);
 			z = zVals.get(i);
-			temp = temperatureVals.get(i);
-																// temp
+			temp = temperatureVals.get(i); // temp
+
 			// check if any pre-calibration clipping present
 			//use >= range as it's clipped here
 			if (Math.abs(x) >= range || Math.abs(y) >= range || Math.abs(z) >= range) {
@@ -370,6 +377,7 @@ public class EpochWriter {
 
 		// write housekeeping stats
 		epochSummary += "," + DF2.format(AccStats.mean(temperatureVals));
+		epochSummary += ',' + DF2.format(AccStats.mean(lightVals));
 		epochSummary += "," + xResampled.length + "," + errCounter[0];
 		epochSummary += "," + clipsCounter[0] + "," + clipsCounter[1];
 		epochSummary += "," + timeVals.size();
@@ -387,6 +395,7 @@ public class EpochWriter {
 		yVals.clear();
 		zVals.clear();
 		temperatureVals.clear();
+		lightVals.clear();
 		errCounter[0] = 0;
     }
 
