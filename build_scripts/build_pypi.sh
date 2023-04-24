@@ -6,7 +6,7 @@
 # In conda, you can get a JDK version that supports --release flag:
 # conda install openjdk
 javac --version &&  # java version
-javac -cp accelerometer/java/JTransforms-3.1-with-dependencies.jar accelerometer/java/*.java --release 8 &&  # compile java files (using release 8)
+javac -cp src/accelerometer/java/JTransforms-3.1-with-dependencies.jar src/accelerometer/java/*.java --release 8 &&  # compile java files (using release 8)
 python setup.py sdist bdist_wheel &&  # setuptools
 twine check dist/* &&
 printf "\nTo upload to Test PyPI:\n> twine upload --repository-url https://test.pypi.org/legacy/ dist/*\n" &&
