@@ -1,13 +1,20 @@
+import sys
+import os.path
+# https://github.com/python-versioneer/python-versioneer/issues/193
+sys.path.insert(0, os.path.dirname(__file__))
+
 import setuptools
 import codecs
-import os.path
+
+import versioneer
+
 
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:
         return fp.read()
 
-def get_string(string, rel_path="accelerometer/__init__.py"):
+def get_string(string, rel_path="src/accelerometer/__init__.py"):
     for line in read(rel_path).splitlines():
         if line.startswith(string):
             delim = '"' if '"' in line else "'"
@@ -21,14 +28,27 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="accelerometer",
     python_requires=">=3.7",
-    version=get_string("__version__"),
-    author=get_string("__author__"),
-    author_email=get_string("__email__"),
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description="A package to extract meaningful health information from large accelerometer datasets e.g. how much time individuals spend in sleep, sedentary behaviour, walking and moderate intensity physical activity",
+    keywords="wearables, accelerometer, health data science, human activity recognition",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/activityMonitoring/biobankAccelerometerAnalysis",
-    packages=setuptools.find_packages(),
+    download_url="https://github.com/activityMonitoring/biobankAccelerometerAnalysis",
+    author=get_string("__author__"),
+    maintainer=get_string("__maintainer__"),
+    maintainer_email=get_string("__maintainer_email__"),
+    license=get_string("__license__"),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Topic :: Scientific/Engineering :: Information Analysis",
+        "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    ],
+    packages=setuptools.find_packages(where="src", exclude=("test", "tests")),
+    package_dir={"": "src"},
     include_package_data=True,
     install_requires=[
         'numpy',
@@ -58,11 +78,6 @@ setuptools.setup(
             "docutils<0.18",
         ],
     },
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Unix",
-    ],
     entry_points={
         "console_scripts": [
             "accProcess=accelerometer.accProcess:main",
