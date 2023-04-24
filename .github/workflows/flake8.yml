@@ -2,7 +2,11 @@
 
 name: flake8
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - '**'
+    pull_request:
 
 jobs:
   flake8:
