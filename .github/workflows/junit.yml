@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: accelerometer/java/
+        working-directory: src/accelerometer/java/
 
     steps:
       - uses: actions/checkout@v2
@@ -32,5 +32,3 @@ jobs:
 
       - name: Run tests
         run: java -jar junit.jar -cp . --scan-class-path
-
-

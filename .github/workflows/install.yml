@@ -25,7 +25,7 @@ jobs:
           java-version: 1.8
 
       - name: Compile java files
-        run: javac -cp accelerometer/java/JTransforms-3.1-with-dependencies.jar accelerometer/java/*.java
+        run: javac -cp src/accelerometer/java/JTransforms-3.1-with-dependencies.jar src/accelerometer/java/*.java
 
       - name: Setup python
         uses: actions/setup-python@v2
