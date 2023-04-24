@@ -30,7 +30,7 @@ jobs:
     - name: Compile java files
       run: |
         java -version
-        javac -cp accelerometer/java/JTransforms-3.1-with-dependencies.jar accelerometer/java/*.java
+        javac -cp src/accelerometer/java/JTransforms-3.1-with-dependencies.jar src/accelerometer/java/*.java
 
     - name: Pip install
       run: |
