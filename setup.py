@@ -51,16 +51,15 @@ setuptools.setup(
     package_dir={"": "src"},
     include_package_data=True,
     install_requires=[
-        'numpy',
-        'scipy',
-        'matplotlib',
-        'pandas>=1.2.5',
-        'tqdm>=4.59.0',
-        'statsmodels>=0.12.2',
+        'numpy==1.21.*',
+        'scipy==1.7.*',
+        'matplotlib==3.5.*',
+        'pandas==1.3.*',
+        'tqdm==4.65.*',
+        'statsmodels==0.13.*',
+        'joblib==1.1.*',
         'imbalanced-learn==0.8.1',
         'scikit-learn==1.0.1',
-        'joblib==1.1.0',
-        'tqdm>=4.59.0',
     ],
     extras_require={
         "dev": [
