@@ -27,7 +27,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="accelerometer",
-    python_requires=">=3.7",
+    python_requires=">=3.7, <3.11",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     description="A package to extract meaningful health information from large accelerometer datasets e.g. how much time individuals spend in sleep, sedentary behaviour, walking and moderate intensity physical activity",
