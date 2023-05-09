@@ -12,35 +12,39 @@ on:
 jobs:
   cwa:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-    - name: Setup python
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Setup java
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
+      - name: Setup java
+        uses: actions/setup-java@v1
+        with:
+            java-version: 1.8
 
-    - name: Compile java files
-      run: |
-        java -version
-        javac -cp src/accelerometer/java/JTransforms-3.1-with-dependencies.jar src/accelerometer/java/*.java
+      - name: Compile java files
+        run: |
+            java -version
+            javac -cp src/accelerometer/java/JTransforms-3.1-with-dependencies.jar src/accelerometer/java/*.java
 
-    - name: Pip install
-      run: |
-        pip install --upgrade pip
-        pip install .
+      - name: Pip install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
 
-    - name: Download necessary files
-      run: |
-        wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz --quiet
+      - name: Download necessary files
+        run: |
+            wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz --quiet
 
-    - name: Processing
-      run: |
-        accProcess data/sample.cwa.gz --activityClassification f
+      - name: Processing
+        run: |
+            accProcess data/sample.cwa.gz --activityClassification f
