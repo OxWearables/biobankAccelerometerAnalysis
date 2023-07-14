@@ -9,36 +9,33 @@
 
 A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
 
-## Installation
+## Install
 
-```bash
-pip install accelerometer
-```
+We recommend using **Anaconda**:
 
-You also need Java 8 (1.8.0) or greater. Check with the following:
+1. Download & install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (light-weight version of Anaconda).
+1. (Windows) Once installed, launch the **Anaconda Prompt**.
+1. Create a virtual environment:
+    ```console
+    $ conda create -n accelerometer python=3.9 openjdk pip
+    ```
+    This creates a virtual environment called `accelerometer` with Python version 3.9, OpenJDK, and Pip.
+1. Activate the environment:
+    ```console
+    $ conda activate accelerometer
+    ```
+    You should now see `(accelerometer)` written in front of your prompt.
+1. Install `accelerometer`:
+    ```console
+    $ pip install accelerometer
+    ```
 
-```bash
-java -version
-```
-
-You can try the following to check that everything works properly:
-```bash
-# Create an isolated environment
-$ mkdir test_baa/ ; cd test_baa/
-$ python -m venv baa
-$ source baa/bin/activate
-
-# Install and test
-$ pip install accelerometer
-$ wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz  # download a sample file
-$ accProcess data/sample.cwa.gz
-$ accPlot data/sample-timeSeries.csv.gz
-```
+You are all set! The next time that you want to use `accelerometer`, open the Anaconda Prompt and activate the environment (step 4). If you see `(accelerometer)` in front of your prompt, you are ready to go!
 
 ## Usage
 To extract summary movement statistics from an Axivity file (.cwa):
 
-```bash
+```console
 $ accProcess data/sample.cwa.gz
 
  <output written to data/sample-outputSummary.json>
@@ -62,13 +59,18 @@ See [Data Dictionary](https://biobankaccanalysis.readthedocs.io/en/latest/datadi
 
 Actigraph and GENEActiv files are also supported, as well as custom CSV files. See [Usage](https://biobankaccanalysis.readthedocs.io/en/latest/usage.html#basic-usage) for more details.
 
-To visualise the activity profile:
-```bash
+To plot the activity profile:
+```console
 $ accPlot data/sample-timeSeries.csv.gz
  <output plot written to data/sample-timeSeries-plot.png>
 ```
 ![Time series plot](docs/source/samplePlot.png)
 
+### Troubleshooting 
+Some systems may face issues with Java when running the script. If this is your case, try fixing OpenJDK to version 8:
+```console
+$ conda install -n accelerometer openjdk=8
+```
 
 ## Under the hood
 Interpreted levels of physical activity can vary, as many approaches can be
