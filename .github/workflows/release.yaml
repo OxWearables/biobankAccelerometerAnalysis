@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build-n-publish:
+    if: github.event.base_ref == 'refs/heads/main' || github.event.base_ref == 'refs/heads/master'
     name: Publish to PyPI
     runs-on: ubuntu-latest
 
