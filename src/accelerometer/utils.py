@@ -162,6 +162,7 @@ def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
     <summary CSV of all participants/files written to "data/all-summary.csv">
     """
 
+    print(f"Scanning {resultsDir} for summary files...")
     # Load all *-summary.json files under resultsDir/
     sumfiles = []
     jdicts = []
@@ -176,8 +177,6 @@ def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
             jdicts.append(json.load(f, object_pairs_hook=OrderedDict))
 
     summary = pd.DataFrame.from_dict(jdicts)  # merge to a dataframe
-    refColumnOrder = next((item for item in jdicts if item['quality-goodWearTime'] == 1), None)
-    summary = summary[list(refColumnOrder.keys())]  # maintain intended column ordering
     summary['eid'] = summary['file-name'].str.split('/').str[-1].str.split('.').str[0]  # infer ID from filename
     summary.to_csv(outputCsvFile, index=False)
     print('Summary of', str(len(summary)), 'participants written to:', outputCsvFile)
