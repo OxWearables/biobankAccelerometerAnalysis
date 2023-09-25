@@ -46,17 +46,15 @@ def activityClassification(epoch, activityModel="walmsley"):
     activityModel = resolveModelPath(activityModel)
 
     featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols'))
-
-    X = epoch[featureCols].to_numpy()
-    mask = np.isfinite(X).any(axis=1)
-    X = X[mask]
-    print(f"{len(epoch) - np.sum(mask)} rows with NaN or Inf values, out of {len(epoch)}")
-
     model = joblib.load(getFileFromTar(activityModel, 'model'))
     hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams'))
     labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
 
-    Y = viterbi(model.predict(X), hmmParams)
+    X = epoch[featureCols].to_numpy()
+    ok = np.isfinite(X).all(axis=1)
+    print(f"{len(epoch) - np.sum(ok)} rows with NaN or Inf values, out of {len(epoch)}")
+
+    Y = viterbi(model.predict(X[ok]), hmmParams)
 
     if smooth_sleep:
         sleep = pd.Series(Y == 'sleep')
@@ -79,7 +77,7 @@ def activityClassification(epoch, activityModel="walmsley"):
 
     # Append predicted activities to epoch dataframe
     epoch["label"] = np.nan
-    epoch.loc[mask, "label"] = Y
+    epoch.loc[ok, "label"] = Y
 
     # MET prediction
     METs = joblib.load(getFileFromTar(activityModel, 'METs'))
