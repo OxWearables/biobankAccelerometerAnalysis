@@ -1,4 +1,4 @@
-![Accelerometer data processing overview](docs/source/accelerometerLogo.png)
+![Accelerometer data processing overview](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/docs/source/accelerometerLogo.png)
 
 [![Github all releases](https://img.shields.io/github/release/activityMonitoring/biobankAccelerometerAnalysis.svg)](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/releases/)
 ![install](https://github.com/activityMonitoring/biobankAccelerometerAnalysis/workflows/install/badge.svg)
@@ -11,7 +11,9 @@ A tool to extract meaningful health information from large accelerometer dataset
 
 ## Install
 
-We recommend using **Anaconda**:
+*Minimum requirements*: Python>=3.7, Java 8 (1.8)
+
+The following instructions make use of Anaconda to meet the minimum requirements:
 
 1. Download & install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) (light-weight version of Anaconda).
 1. (Windows) Once installed, launch the **Anaconda Prompt**.
@@ -64,7 +66,7 @@ To plot the activity profile:
 $ accPlot data/sample-timeSeries.csv.gz
  <output plot written to data/sample-timeSeries-plot.png>
 ```
-![Time series plot](docs/source/samplePlot.png)
+![Time series plot](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/docs/source/samplePlot.png)
 
 ### Troubleshooting 
 Some systems may face issues with Java when running the script. If this is your case, try fixing OpenJDK to version 8:
@@ -78,17 +80,17 @@ taken to extract summary physical activity information from raw accelerometer
 data. To minimise error and bias, our tool uses published methods to calibrate,
 resample, and summarise the accelerometer data.
 
-![Accelerometer data processing overview](docs/source/accMethodsOverview.png)
-![Activity classification](docs/source/accClassification.png)
+![Accelerometer data processing overview](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/docs/source/accMethodsOverview.png)
+![Activity classification](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/docs/source/accClassification.png)
 
 See [Methods](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) for more details.
 
 
 ## Citing our work
-When using this tool, please consider the works listed in [CITATION.md](CITATION.md).
+When using this tool, please consider the works listed in [CITATION.md](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/CITATION.md).
 
 ## Licence
-See [LICENSE.md](LICENSE.md).
+See [LICENSE.md](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/LICENSE.md).
 
 
 ## Acknowledgements
