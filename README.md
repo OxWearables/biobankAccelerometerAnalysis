@@ -87,10 +87,11 @@ See [Methods](https://biobankaccanalysis.readthedocs.io/en/latest/methods.html) 
 
 
 ## Citing our work
-When using this tool, please consider the works listed in [CITATION.md](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/CITATION.md).
+When using this tool, please consider the works listed in [CITATION.md](https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/CITATION.md).
+    
 
 ## Licence
-See [LICENSE.md](https://raw.githubusercontent.com/OxWearables/biobankAccelerometerAnalysis/master/LICENSE.md).
+See [LICENSE.md](https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/LICENSE.md).
 
 
 ## Acknowledgements
