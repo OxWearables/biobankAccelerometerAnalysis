@@ -26,6 +26,8 @@ LABELS_AND_COLORS = {
     'mixed': 'seagreen',
     'walking': 'limegreen',
     'moderate-vigorous': 'green',
+    'moderate': 'green',
+    'vigorous': 'springgreen',
     'bicycling': 'springgreen',
     'tasks-light': 'darkorange',
     'SB': 'red',  # sedentary behaviour
