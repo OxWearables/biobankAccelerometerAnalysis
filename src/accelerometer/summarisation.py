@@ -15,7 +15,7 @@ def getActivitySummary(  # noqa: C901
     activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
-    mgCutPointMVPA=100, mgCutPointVPA=425,
+    mgCpLPA=45, mgCpMPA=100, mgCpVPA=400,
     activityModel="walmsley",
     intensityDistribution=False, imputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False
@@ -109,10 +109,6 @@ def getActivitySummary(  # noqa: C901
     # enmoTrunc = max(enmo, 0)
     data['acc'] = data['enmoTrunc'] * 1000  # convert enmoTrunc to milli-G units
 
-    # Cut-point based MVPA and VPA
-    data['cutPointMVPA'] = data['acc'] >= mgCutPointMVPA
-    data['cutPointVPA'] = data['acc'] >= mgCutPointVPA
-
     # Resolve interrupts
     data = resolveInterrupts(data, epochPeriod, summary)
     # Resolve non-wear
@@ -121,7 +117,7 @@ def getActivitySummary(  # noqa: C901
     # Predict activity from features, and add label column
     labels = []
     if activityClassification:
-        data, labels = classification.activityClassification(data, activityModel)
+        data, labels = classification.activityClassification(data, activityModel, mgCpLPA, mgCpMPA, mgCpVPA)
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:
@@ -355,7 +351,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
 
     # Hours of activity for each recorded day
     epochInHours = pd.Timedelta(freq).total_seconds() / 3600
-    cols = ['wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
+    cols = ['wearTime'] + labels
     dailyStats = (
         data[cols].astype('float')
         .groupby(data.index.date)
@@ -370,7 +366,7 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
     tStart, tEnd = data.index[0], data.index[-1]
-    cols = ['acc', 'wearTime', 'cutPointMVPA', 'cutPointVPA'] + labels
+    cols = ['acc', 'wearTime'] + labels
     if 'MET' in data.columns:
         cols.append('MET')
     data = imputeMissing(data[cols].astype('float'))
