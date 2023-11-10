@@ -5,36 +5,36 @@
 
 .. image:: accelerometerLogo.png
 
-A tool to extract meaningful health information from large accelerometer datasets. The software generates time-series and summary metrics useful for answering key questions such as how much time is spent in sleep, sedentary behaviour, or doing physical activity.
+A tool to extract meaningful health information from large accelerometer
+datasets. The software generates time-series and summary metrics useful for
+answering key questions such as how much time is spent in sleep, sedentary
+behaviour, or doing physical activity.
 
 ************
 Installation
 ************
 
-.. code-block:: console
+*Minimum requirements*: Python>=3.7, Java 8 (1.8)
 
-    $ pip install accelerometer
+The following instructions make use of Anaconda to meet the minimum requirements:
 
-You will also need Java 8 (1.8.0) or greater. Check with the following:
+#. Download & install `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`__ (light-weight version of Anaconda).
+#. (Windows) Once installed, launch the **Anaconda Prompt**.
+#. Create a virtual environment::
 
-.. code-block:: console
+     $ conda create -n accelerometer python=3.9 openjdk pip
 
-    $ java -version
+   This creates a virtual environment called :code:`accelerometer` with Python version 3.9, OpenJDK, and Pip.
+#. Activate the environment::
 
-You can try the following to check that everything works properly:
+     $ conda activate accelerometer
 
-.. code-block:: console
+   You should now see ``(accelerometer)`` written in front of your prompt.
+#. Install :code:`accelerometer`::
 
-    # Create an isolated environment
-    $ mkdir test_baa/ ; cd test_baa/
-    $ python -m venv baa
-    $ source baa/bin/activate
+     $ pip install accelerometer
 
-    # Install and test
-    $ pip install accelerometer
-    $ wget -P data/ http://gas.ndph.ox.ac.uk/aidend/accModels/sample.cwa.gz  # download a sample file
-    $ accProcess data/sample.cwa.gz
-    $ accPlot data/sample-timeSeries.csv.gz
+You are all set! The next time that you want to use :code:`accelerometer`, open the Anaconda Prompt and activate the environment (step 4). If you see ``(accelerometer)`` in front of your prompt, you are ready to go!
 
 ***************
 Getting started
