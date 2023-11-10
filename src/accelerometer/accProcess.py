@@ -149,12 +149,16 @@ def main():  # noqa: C901
                         help="""calibration sphere threshold (default
                              : %(default)s mg))""")
     # activity parameters
-    parser.add_argument('--mgCutPointMVPA',
+    parser.add_argument('--mgCpLPA',
+                        metavar="mg", default=45, type=int,
+                        help="""LPA threshold for cut point based activity
+                            definition (default : %(default)s)""")
+    parser.add_argument('--mgCpMPA',
                         metavar="mg", default=100, type=int,
-                        help="""MVPA threshold for cut point based activity
-                             definition (default : %(default)s)""")
-    parser.add_argument('--mgCutPointVPA',
-                        metavar="mg", default=425, type=int,
+                        help="""MPA threshold for cut point based activity
+                            definition (default : %(default)s)""")
+    parser.add_argument('--mgCpVPA',
+                        metavar="mg", default=400, type=int,
                         help="""VPA threshold for cut point based activity
                             definition (default : %(default)s)""")
     parser.add_argument('--intensityDistribution',
@@ -328,8 +332,9 @@ def main():  # noqa: C901
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
-        stationaryStd=args.stationaryStd, mgCutPointMVPA=args.mgCutPointMVPA,
-        mgCutPointVPA=args.mgCutPointVPA, activityModel=args.activityModel,
+        stationaryStd=args.stationaryStd,
+        mgCpLPA=args.mgCpLPA, mgCpMPA=args.mgCpMPA, mgCpVPA=args.mgCpVPA,
+        activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
         psd=args.psd, fourierFrequency=args.fourierFrequency,
         fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5)

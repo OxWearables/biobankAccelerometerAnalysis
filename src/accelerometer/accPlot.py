@@ -31,7 +31,7 @@ LABELS_AND_COLORS = {
     'bicycling': 'springgreen',
     'tasks-light': 'darkorange',
     'SB': 'red',  # sedentary behaviour
-    'LIPA': 'darkorange',  # light physical activity
+    'LPA': 'darkorange',  # light physical activity
     'MVPA': 'green',  # moderate-vigorous physical activity
     'MPA': 'green',  # moderate physical activity
     'VPA': 'springgreen',  # vigorous physical activity

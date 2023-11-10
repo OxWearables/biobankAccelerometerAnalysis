@@ -20,7 +20,13 @@ import warnings
 import json
 
 
-def activityClassification(epoch, activityModel="walmsley"):
+def activityClassification(
+    epoch,
+    activityModel: str = "walmsley", 
+    mgCpLPA: int = 45,
+    mgCpMPA: int = 100,
+    mgCpVPA: int = 400
+):
     """Perform classification of activity states from epoch feature data
 
     Based on a balanced random forest with a Hidden Markov Model containing
@@ -40,70 +46,66 @@ def activityClassification(epoch, activityModel="walmsley"):
     :rtype: list(str)
     """
 
-    use_cutpoints = 'chan' in activityModel
-    smooth_sleep = 'chan' in activityModel
+    modelPath = resolveModelPath(activityModel)
 
-    activityModel = resolveModelPath(activityModel)
-
-    featureCols = joblib.load(getFileFromTar(activityModel, 'featureCols'))
-    model = joblib.load(getFileFromTar(activityModel, 'model'))
-    hmmParams = joblib.load(getFileFromTar(activityModel, 'hmmParams'))
-    labels = joblib.load(getFileFromTar(activityModel, 'labels')).tolist()
+    featureCols = joblib.load(getFileFromTar(modelPath, 'featureCols'))
+    model = joblib.load(getFileFromTar(modelPath, 'model'))
+    hmmParams = joblib.load(getFileFromTar(modelPath, 'hmmParams'))
+    labels = joblib.load(getFileFromTar(modelPath, 'labels')).tolist()
 
     X = epoch[featureCols].to_numpy()
     ok = np.isfinite(X).all(axis=1)
     print(f"{len(epoch) - np.sum(ok)} rows with NaN or Inf values, out of {len(epoch)}")
 
-    Y = viterbi(model.predict(X[ok]), hmmParams)
+    Y = pd.Series(index=epoch.index)
+    Y.loc[ok] = viterbi(model.predict(X[ok]), hmmParams)
 
-    if smooth_sleep:
-        sleep = pd.Series(Y == 'sleep')
-        sleep_streak = (
-            sleep.ne(sleep.shift())
-            .cumsum()
-            .pipe(lambda x: x.groupby(x).transform('count') * sleep)
-        )
-        # TODO: hardcoded 120 = 1hr
-        Y[(Y == 'sleep') & (sleep_streak < 120)] = 'sedentary'
-
-    if use_cutpoints:
+    # TODO: Chan's logic hardcoded here
+    if activityModel == 'chan':
         enmo = epoch['enmoTrunc'].to_numpy()
-        enmo = enmo[mask]
-        Y[(Y == 'other') & (enmo < .1)] = 'light'
-        Y[(Y == 'other') & (enmo >= .1)] = 'moderate-vigorous'
+        other = (Y == 'other')
+        Y.loc[other & (enmo < 100/1000)] = 'light'
+        Y.loc[other & (enmo >= 100/1000)] = 'moderate'
+        Y.loc[other & (enmo > 400/1000)] = 'vigorous'
         labels.remove('other')
         labels.append('light')
-        labels.append('moderate-vigorous')
+        labels.append('moderate')
+        labels.append('vigorous')
+        del enmo
+        del other
 
-    # Append predicted activities to epoch dataframe
-    epoch["label"] = np.nan
-    epoch.loc[ok, "label"] = Y
-
-    # MET prediction
-    METs = joblib.load(getFileFromTar(activityModel, 'METs'))
-    if METs is not None:
-        epoch["MET"] = epoch["label"].replace(METs)
+    Y = removeSpuriousSleep(Y, activityModel=activityModel)
 
     # One-hot encoding
-    for lab in labels:
-        epoch[lab] = 0
-        epoch.loc[epoch['label'] == lab, lab] = 1
-    # Null values aren't one-hot encoded, so set such instances to NaN
-    for lab in labels:
-        epoch.loc[epoch[labels].sum(axis=1) == 0, lab] = np.nan
+    epoch.loc[ok, labels] = (Y[ok].to_numpy()[:, None] == labels).astype('float')
+
+    # MET prediction
+    METs = joblib.load(getFileFromTar(modelPath, 'METs'))
+    if METs is not None:
+        epoch.loc[:, "MET"] = Y.replace(METs)
+
+    # Cut-point based classification on non-sleep epochs
+    YCpOneHot = cutPointModel(
+        epoch['enmoTrunc'],
+        cuts={'LPA': mgCpLPA/1000, 'MPA': mgCpMPA/1000, 'VPA': mgCpVPA/1000},
+        whr=~(Y == 'sleep')  # Note: ~(Y == 'sleep') != (Y != 'sleep') because of NaNs
+    )
+    epoch = epoch.join(YCpOneHot)
+    labelsCp = list(YCpOneHot.columns)
+    labels.extend(labelsCp)
 
     return epoch, labels
 
 
 def trainClassificationModel(
-        trainingFile,
-        labelCol="label", participantCol="participant",
-        annotationCol="annotation", metCol="MET",
-        featuresTxt="activityModels/features.txt",
-        nTrees=1000, maxDepth=None, minSamplesLeaf=1,
-        cv=None, testParticipants=None,
-        outDir='model/',
-        nJobs=1,
+    trainingFile,
+    labelCol="label", participantCol="participant",
+    annotationCol="annotation", metCol="MET",
+    featuresTxt="activityModels/features.txt",
+    nTrees=1000, maxDepth=None, minSamplesLeaf=1,
+    cv=None, testParticipants=None,
+    outDir='model/',
+    nJobs=1,
 ):
     """Train model to classify activity states from epoch feature data
 
@@ -332,6 +334,69 @@ def viterbi(Y_obs, hmm_params):
     viterbi_path = labels[viterbi_path]  # to labels
 
     return viterbi_path
+
+
+def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol='1H'):
+    """ Remove spurious sleep epochs from activity classification
+
+    :param Series Y: Model output
+    :param str activityModel: Model identifier
+    :param str sleepTol: Minimum sleep duration, e.g. '1H'
+
+    :return: Dataframe of revised model output
+    :rtype: pandas.DataFrame
+    """
+
+    newValue = {
+        'willetts': 'sit-stand',
+        'doherty': 'sedentary',
+        'walmsley': 'sedentary',
+        'chan': 'sedentary',
+    }[activityModel]
+
+    sleep = Y == 'sleep'
+    sleepStreak = (
+        sleep.ne(sleep.shift())
+        .cumsum()
+        .pipe(lambda x: x.groupby(x).transform('count') * sleep)
+    )
+    sleepTol = pd.Timedelta(sleepTol) / Y.index.freq
+    whr = sleep & (sleepStreak < sleepTol)
+    Y = Y.copy()  # no modify original
+    Y.loc[whr] = newValue
+
+    return Y
+
+
+def cutPointModel(enmo, cuts=None, whr=None):
+    """Perform classification of activities based on cutpoints.
+
+    :param Series enmo: Timeseries of ENMO.
+    :param dict cuts: Dictionary of cutpoints for each activity.
+
+    :return: Activity labels.
+    :rtype: pandas.Series
+    """
+
+    if cuts is None:
+        # default cutpoints
+        cuts = {'LPA': 45/1000, 'MPA': 100/1000, 'VPA': 400/1000}
+
+    if whr is None:
+        whr = pd.Series(True, index=enmo.index)
+
+    Y = pd.DataFrame(index=enmo.index, columns=['CpSB', 'CpLPA', 'CpMPA', 'CpVPA', 'CpMVPA'])
+
+    Y.loc[:, 'CpSB'] = (enmo <= cuts['LPA']) & whr
+    Y.loc[:, 'CpLPA'] = (enmo > cuts['LPA']) & (enmo <= cuts['MPA']) & whr
+    Y.loc[:, 'CpMPA'] = (enmo > cuts['MPA']) & (enmo <= cuts['VPA']) & whr
+    Y.loc[:, 'CpVPA'] = (enmo > cuts['VPA']) & whr
+    Y.loc[:, 'CpMVPA'] = (enmo > cuts['MPA']) & whr
+
+    Y.loc[enmo.isna()] = np.nan
+    Y = Y.astype('float')
+
+    return Y
 
 
 def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
