@@ -75,8 +75,10 @@ def main():  # noqa: C901
 
     # read time series file to pandas DataFrame
     data = pd.read_csv(
-        args.timeSeriesFile, index_col='time',
-        parse_dates=['time'], date_parser=utils.date_parser
+        args.timeSeriesFile,
+        index_col='time',
+        parse_dates=['time'],
+        date_parser=utils.date_parser
     )
 
     # set backend if run from main
@@ -92,10 +94,10 @@ def main():  # noqa: C901
 
 
 def plotTimeSeries(  # noqa: C901
-        data,
-        title=None,
-        showFirstNDays=None
-    ):
+    data,
+    title=None,
+    showFirstNDays=None
+):
     """Plot overall activity and classified activity types
 
     :param pd.DataFrame data: Input DataFrame with time series data
@@ -119,9 +121,9 @@ def plotTimeSeries(  # noqa: C901
     >>> fig.show()
     """
 
-    # double check time index
-    if 'time' in data.columns:
-        data = data.set_index('time')
+    # check index is datetime
+    if not isinstance(data.index, pd.DatetimeIndex):
+        raise ValueError("Index must be a DatetimeIndex")
 
     # use tz-naive local time
     if data.index.tz is not None:
