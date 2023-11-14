@@ -101,7 +101,7 @@ def plotTimeSeries(  # noqa: C901
     :param pd.DataFrame data: Input DataFrame with time series data
         Index: DatetimeIndex
         Columns (4 class example):
-            Name: acc, dtype=float
+            Name: acc, dtype=float (optional)
             Name: light, dtype=Any numeric, value=0 or 1
             Name: moderate-vigorous, dtype=Any numeric, value=0 or 1
             Name: sedentary, dtype=Any numeric, value=0 or 1
@@ -143,8 +143,9 @@ def plotTimeSeries(  # noqa: C901
 
     # setup plotting range
     MAXRANGE = 2 * 1000  # 2g (above this is very rare)
-    data['acc'] = data['acc'].rolling('1T').mean()  # minute average
-    data['acc'] = data['acc'].clip(0, MAXRANGE)
+    if 'acc' in data:
+        data['acc'] = data['acc'].rolling('1T').mean()  # minute average
+        data['acc'] = data['acc'].clip(0, MAXRANGE)
     data[labels] = data[labels].astype('f4') * MAXRANGE
 
     # number of rows to display in figure (all days + legend)
@@ -164,7 +165,8 @@ def plotTimeSeries(  # noqa: C901
 
         ax = fig.add_subplot(nrows, 1, i + 1)
 
-        ax.plot(group.index, group['acc'].to_numpy(), c='k')
+        if 'acc' in group:
+            ax.plot(group.index, group['acc'].to_numpy(), c='k')
 
         if len(labels) > 0:
             ax.stackplot(group.index,
