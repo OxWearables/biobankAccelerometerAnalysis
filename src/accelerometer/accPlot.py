@@ -123,6 +123,17 @@ def plotTimeSeries(  # noqa: C901
     if 'time' in data.columns:
         data = data.set_index('time')
 
+    # use tz-naive local time
+    if data.index.tz is not None:
+        data.index = (
+            # convoluted way to mask the ambiguous DST pushback hour, if any
+            data.index
+            .tz_localize(None)
+            .tz_localize(data.index.tz, ambiguous='NaT', nonexistent='NaT')
+            .tz_localize(None)
+        )
+        data = data[data.index.notnull()]
+
     # fix gaps or irregular sampling
     if pd.infer_freq(data) is None:
         freq = pd.infer_freq(data.head()) or '30s'  # try to infer from first few rows, else default to 30s
@@ -149,7 +160,6 @@ def plotTimeSeries(  # noqa: C901
     data[labels] = data[labels].astype('f4') * MAXRANGE
 
     # number of rows to display in figure (all days + legend)
-    data.index = data.index.tz_localize(None, ambiguous='NaT', nonexistent='NaT')  # tz-unaware local time
     groupedDays = data.groupby(data.index.date)
     nrows = len(groupedDays) + 1
 
