@@ -27,23 +27,20 @@ def activityClassification(
     mgCpMPA: int = 100,
     mgCpVPA: int = 400
 ):
-    """Perform classification of activity states from epoch feature data
+    """
+    Perform classification of activity states from epoch feature data. Based on
+    a balanced random forest with a Hidden Markov Model containing transitions
+    between predicted activity states and emissions trained using a free-living
+    groundtruth to identify pre-defined classes of behaviour from accelerometer
+    data.
 
-    Based on a balanced random forest with a Hidden Markov Model containing
-    transitions between predicted activity states and emissions trained using a
-    free-living groundtruth to identify pre-defined classes of behaviour from
-    accelerometer data.
-
-    :param str epoch: Dataframe of processed epoch data
-    :param str activityModel: Input tar model file which contains random forest
+    :param pandas.DataFrame epoch: Dataframe of processed epoch data
+    :param str activityModel: Path to input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METs for each activity state
 
-    :return: Pandas dataframe of activity epoch data with one-hot encoded labels
-    :rtype: pandas.DataFrame
-
-    :return: Activity state labels
-    :rtype: list(str)
+    :return: Tuple containing a pandas dataframe of activity epoch data with one-hot encoded labels, and a list of activity state labels
+    :rtype: tuple(pandas.DataFrame, list(str))
     """
 
     modelPath = resolveModelPath(activityModel)
@@ -107,31 +104,27 @@ def trainClassificationModel(
     outDir='model/',
     nJobs=1,
 ):
-    """Train model to classify activity states from epoch feature data
-
-    Based on a balanced random forest with a Hidden Markov Model containing
-    transitions between predicted activity states and emissions trained using
-    the input training file to identify pre-defined classes of behaviour from
+    """
+    Train model to classify activity states from epoch feature data. Based on a
+    balanced random forest with a Hidden Markov Model containing transitions
+    between predicted activity states and emissions trained using the input
+    training file to identify pre-defined classes of behaviour from
     accelerometer data.
 
     :param str trainingFile: Input csv file of training data, pre-sorted by time
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
-    :param str annotationCol: Input text annotation e.g. 'walking with dog'
-        vs. 'walking'
+    :param str annotationCol: Input text annotation e.g. 'walking with dog' vs. 'walking'
     :param str metCol: Input MET column
     :param str featuresTxt: Input txt file listing feature column names
     :param int cv: Number of CV folds. If None, CV is skipped.
-    :param str testParticipants: Input comma separated list of participant IDs
-        to test on.
+    :param str testParticipants: Input comma separated list of participant IDs to test on.
     :param int nTrees: Random forest n_estimators param.
     :param int maxDepth: Random forest max_depth param.
     :param int minSamplesLeaf: Random forest min_samples_leaf param.
+    :param str outDir: Output directory. Output files (trained model, predictions, etc.) will be written to this directory.
     :param int nJobs: Number of jobs to run in parallel.
-    :param str outDir: Output directory
 
-    :return: Output files (trained model, predictions, etc.) written to <outDir>
-    :rtype: void
     """
 
     report = {
@@ -259,12 +252,16 @@ def trainClassificationModel(
 
 
 def trainHMM(Y_prob, Y_true, labels=None, uniform_prior=True):
-    """ https://en.wikipedia.org/wiki/Hidden_Markov_model
+    """
+    Implements a Hidden Markov Model as described in https://en.wikipedia.org/wiki/Hidden_Markov_model.
 
-    :return: Dictionary containing prior, emission and transition
-        matrices, and corresponding labels.
+    :param numpy.array Y_prob: Array of predicted probabilities for each class.
+    :param numpy.array Y_true: Array of true labels.
+    :param list(str) labels: List of class labels.
+    :param uniform_prior: If True, all labels have equal probability. If False, label probability equals empirical rate.
+
+    :return: Dictionary containing prior, emission and transition matrices, and corresponding labels.
     :rtype: dict
-
     """
 
     if labels is None:
@@ -291,14 +288,14 @@ def trainHMM(Y_prob, Y_true, labels=None, uniform_prior=True):
 
 
 def viterbi(Y_obs, hmm_params):
-    """ Perform HMM smoothing over observations via Viteri algorithm
-
+    """
+    Performs Hidden Markov Model (HMM) smoothing over observations using the
+    Viterbi algorithm. For more information on the Viterbi algorithm, see:
     https://en.wikipedia.org/wiki/Viterbi_algorithm
 
-    :param dict hmm_params: Dictionary containing prior, emission and transition
-        matrices, and corresponding labels
+    :param dict hmm_params: Dictionary containing prior, emission and transition matrices, and corresponding labels.
 
-    :return: Smoothed sequence of activities
+    :return: Smoothed sequence of activities.
     :rtype: numpy.array
     """
 
@@ -337,9 +334,10 @@ def viterbi(Y_obs, hmm_params):
 
 
 def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol='1H'):
-    """ Remove spurious sleep epochs from activity classification
+    """
+    Remove spurious sleep epochs from activity classification.
 
-    :param Series Y: Model output
+    :param pandas.Series Y: Model output
     :param str activityModel: Model identifier
     :param str sleepTol: Minimum sleep duration, e.g. '1H'
 
@@ -369,9 +367,10 @@ def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol='1H'):
 
 
 def cutPointModel(enmo, cuts=None, whr=None):
-    """Perform classification of activities based on cutpoints.
+    """
+    Perform classification of activities based on cutpoints.
 
-    :param Series enmo: Timeseries of ENMO.
+    :param pandas.Series enmo: Timeseries of ENMO.
     :param dict cuts: Dictionary of cutpoints for each activity.
 
     :return: Activity labels.
@@ -400,17 +399,15 @@ def cutPointModel(enmo, cuts=None, whr=None):
 
 
 def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
-    """Provide HTML summary of how well activity classification model works
-    at the per-participant level
+    """
+    Provide HTML summary of how well activity classification model works at the per-participant level.
 
-    :param dataframe dfParam: Input pandas dataframe
+    :param pandas.DataFrame dfParam: Input pandas dataframe
     :param str yTrueCol: Input for y_true column label
-    :param str yPregCol: Input for y_pred column label
+    :param str yPredCol: Input for y_pred column label
     :param str pidCol: Input for participant ID column label
     :param str outHTML: Output file to print HTML summary to
 
-    :return: HTML file reporting kappa, accuracy, and confusion matrix
-    :rtype: void
     """
     # get kappa & accuracy on a per-participant basis
     pIDs = dfParam[pidCol].unique()
@@ -460,15 +457,12 @@ def perParticipantSummaryHTML(dfParam, yTrueCol, yPredCol, pidCol, outHTML):
 
 
 def saveToTar(tarOut, **kwargs):
-    """Save objects to tar file. Objects must be passed as keyworded arguments,
-    then the key is used for the object name in the tar file.
-
-    :param **kwargs: Objects to be saved passed as keyworded arguments.
-
-    :return: tar file written to <tarOut>
-    :rtype: void
     """
+    Save objects to tar file. Objects must be passed as keyworded arguments, then the key is used for the object name in the tar file.
 
+    :param kwargs: Objects to be saved passed as keyworded arguments.
+
+    """
     try:
 
         tmpdir = tempfile.mkdtemp()
@@ -491,18 +485,16 @@ def saveToTar(tarOut, **kwargs):
 
 
 def getFileFromTar(tarArchive, targetFile):
-    """Read file from tar
-
-    This is currently more tricky than it should be see
-    https://github.com/numpy/numpy/issues/7989
+    """
+    Read file from tar. This is currently more tricky than it should be. See https://github.com/numpy/numpy/issues/7989
 
     :param str tarArchive: Input tarfile object
     :param str targetFile: Target individual file within .tar
 
     :return: file object byte stream
-    :rtype: object
-    """
+    :rtype: io.BytesIO
 
+    """
     with tarfile.open(tarArchive, 'r') as t:
         b = BytesIO()
         try:
@@ -520,32 +512,28 @@ def addReferenceLabelsToNewFeatures(
         outputFile,
         featuresTxt="activityModels/features.txt",
         labelCol="label", participantCol="participant",
-        annotationCol="annotation", metCol="MET"):
-    """Append reference annotations to newly extracted feature data
-
-    This method helps add existing curated labels (from referenceLabelsFile)
-    to a file with newly extracted features (both pre-sorted by participant
-    and time).
+        annotationCol="annotation", metCol="MET"
+):
+    """
+    Append reference annotations to newly extracted feature data. This method
+    helps add existing curated labels (from referenceLabelsFile) to a file with
+    newly extracted features (both pre-sorted by participant and time).
 
     :param str featuresFile: Input csv file of new features data, pre-sorted by time
-    :param str referenceLabelsFile: Input csv file of reference labelled data,
-        pre-sorted by time
-    :param str outputFile: Output csv file of new features data with refernce labels
+    :param str referenceLabelsFile: Input csv file of reference labelled data, pre-sorted by time
+    :param str outputFile: Output csv file of new features data with reference labels
     :param str featuresTxt: Input txt file listing feature column names
     :param str labelCol: Input label column
     :param str participantCol: Input participant column
-    :param str annotationCol: Input text annotation e.g. 'walking with dog'
-        vs. 'walking'
+    :param str annotationCol: Input text annotation e.g. 'walking with dog' vs. 'walking'
     :param str metCol: Input MET column
 
-    :return: New csv file written to <outputFile>
-    :rtype: void
+    :return: None. Writes a new csv file to <outputFile>.
 
-    :Example:
-    >>> from accelerometer import accClassification
-    >>> accClassification.addReferenceLabelsToNewFeatures("newFeats.csv",
-            "refLabels.csv", "newFeatsPlusLabels.csv")
-    <file written to newFeatsPlusLabels.csv>
+    .. code-block:: python
+
+        from accelerometer import accClassification
+        accClassification.addReferenceLabelsToNewFeatures("newFeats.csv", "refLabels.csv", "newFeatsPlusLabels.csv")
     """
 
     # load new features file

@@ -97,9 +97,9 @@ Licence
 See `LICENSE.md <https://github.com/OxWearables/biobankAccelerometerAnalysis/blob/master/LICENSE.md>`_.
 
 
-************
+****************
 Acknowledgements
-************
+****************
 We would like to thank all our code contributors and manuscript co-authors.
 `Contributors Graph <https://github.com/OxWearables/biobankAccelerometerAnalysis/graphs/contributors>`_.
 

@@ -20,9 +20,9 @@ def getActivitySummary(  # noqa: C901
     intensityDistribution=False, imputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False
 ):
-    """Calculate overall activity summary from <epochFile> data
-
-    Get overall activity summary from input <epochFile>. This is achieved by
+    """
+    Calculate overall activity summary from <epochFile> data. Get overall
+    activity summary from input <epochFile>. This is achieved by:
     1) get interrupt and data error summary vals
     2) check if data occurs at a daylight savings crossover
     3) calculate wear-time statistics, and write nonWear episodes to file
@@ -35,8 +35,7 @@ def getActivitySummary(  # noqa: C901
     :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
     :param bool activityClassification: Perform machine learning of activity states
-    :param str timeZone: timezone in country/city format to be used for daylight
-        savings crossover check
+    :param str timeZone: timezone in country/city format to be used for daylight savings crossover check
     :param datetime startTime: Remove data before this time in analysis
     :param datetime endTime: Remove data after this time in analysis
     :param int epochPeriod: Size of epoch time window (in seconds)
@@ -51,24 +50,18 @@ def getActivitySummary(  # noqa: C901
     :param bool imputation: Impute missing data using data from other days around the same time
     :param bool verbose: Print verbose output
 
-    :return: Pandas dataframe of activity epoch data
-    :rtype: pandas.DataFrame
+    :return: A tuple containing a pandas dataframe of activity epoch data,
+        activity prediction labels (empty if <activityClassification>==False), and
+        movement summary values written to dict <summary>. Also writes .csv.gz non
+        wear episodes file to <nonWearFile>.
+    :rtype: tuple
 
-    :return: Activity prediction labels (empty if <activityClassification>==False)
-    :rtype: list(str)
+    .. code-block:: python
 
-    :return: Write .csv.gz non wear episodes file to <nonWearFile>
-    :rtype: void
-
-    :return: Movement summary values written to dict <summary>
-    :rtype: void
-
-    :Example:
-    >>> import summariseEpoch
-    >>> summary = {}
-    >>> epochData, labels = summariseEpoch.getActivitySummary( "epoch.csv.gz",
-            "nonWear.csv.gz", summary)
-    <nonWear file written to "nonWear.csv.gz" and dict "summary" update with outcomes>
+        import summariseEpoch
+        summary = {}
+        epochData, labels = summariseEpoch.getActivitySummary( "epoch.csv.gz",
+                "nonWear.csv.gz", summary)
     """
 
     utils.toScreen("=== Summarizing ===")
