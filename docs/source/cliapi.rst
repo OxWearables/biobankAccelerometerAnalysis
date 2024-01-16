@@ -30,9 +30,6 @@ API reference
 
 .. autofunction:: accelerometer.classification.trainClassificationModel
 
-.. autofunction:: accelerometer.classification.perParticipantSummaryHTML
-
-
 .. Submodules
 .. ----------
 
