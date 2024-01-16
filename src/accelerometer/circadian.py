@@ -7,15 +7,15 @@ from datetime import timedelta
 
 
 def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
-    """Calculate the power spectral density from fourier analysis of a 1 day frequency
+    """
+    Calculate the power spectral density from fourier analysis of a 1 day frequency.
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param int epochPeriod: Size of epoch time window (in seconds)
-    :param bool fourierWithAcc:True calculates fourier done with acceleration data instead of sleep data
+    :param bool fourierWithAcc: True calculates fourier done with acceleration data instead of sleep data
     :param list(str) labels: Activity state labels
-    :param dict summary: Output dictionary containing all summary metrics
+    :param dict summary: Output dictionary containing all summary metrics. This dictionary will be modified in-place: a new key 'PSD-<W/Hz>' will be added with the calculated frequency as its value.
 
-    :return: Write dict <summary> keys 'PSD-<W/Hz>'
     """
     if fourierWithAcc:
         y = e['accImputed'].values
@@ -35,15 +35,15 @@ def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
 
 
 def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
-    """Calculate the most prevalent frequency in a fourier analysis
+    """
+    Calculate the most prevalent frequency in a fourier analysis.
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param int epochPeriod: Size of epoch time window (in seconds)
-    :paran bool fourierWithAcc: True calculates fourier done with acceleration data instead of sleep data
+    :param bool fourierWithAcc: True calculates fourier done with acceleration data instead of sleep data
     :param list(str) labels: Activity state labels
-    :param dict summary: Output dictionary containing all summary metrics
+    :param dict summary: Output dictionary containing all summary metrics. This dictionary will be modified in-place: a new key 'fourier frequency-<1/days>' will be added with the calculated frequency as its value.
 
-    :return: Write dict <summary> keys 'fourier frequency-<1/days>'
     """
     if fourierWithAcc:
         y = e['accImputed'].values
@@ -71,14 +71,14 @@ def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
 
 
 def calculateM10L5(e, epochPeriod, summary):
-    """Calculates the M10 L5 relative amplitude from the average acceleration from
-    the ten most active hours and 5 least most active hours
+    """
+    Calculates the M10 L5 relative amplitude from the average acceleration from
+    the ten most active hours and 5 least most active hours.
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param int epochPeriod: Size of epoch time window (in seconds)
-    :param dict summary: Output dictionary containing all summary metrics
+    :param dict summary: Output dictionary containing all summary metrics. This dictionary will be modified in-place: a new key 'M10 L5-<rel amp>' will be added with the calculated frequency as its value.
 
-    :return: Write dict <summary> keys 'M10 L5-<rel amp>'
     """
     TEN_HOURS = int(10 * 60 * 60 / epochPeriod)
     FIVE_HOURS = int(5 * 60 * 60 / epochPeriod)

@@ -98,27 +98,31 @@ def plotTimeSeries(  # noqa: C901
     title=None,
     showFirstNDays=None
 ):
-    """Plot overall activity and classified activity types
+    """
+    Plot acceleration traces and classified activities.
 
-    :param pd.DataFrame data: Input DataFrame with time series data
-        Index: DatetimeIndex
-        Columns (4 class example):
-            Name: acc, dtype=float (optional)
-            Name: light, dtype=Any numeric, value=0 or 1
-            Name: moderate-vigorous, dtype=Any numeric, value=0 or 1
-            Name: sedentary, dtype=Any numeric, value=0 or 1
-            Name: sleep, dtype=Any numeric, value=0 or 1
-    :param str title: Optional plot title
-    :param int showFirstNDays: Only show first n days of time series (if specified)
-
+    :param data: Input time-series of acceleration and activity classes. Index: DatetimeIndex. Columns (4-class example):
+                 - Name: acc, dtype=float (optional)
+                 - Name: light, dtype=Any numeric, value=0 or 1
+                 - Name: moderate-vigorous, dtype=Any numeric, value=0 or 1
+                 - Name: sedentary, dtype=Any numeric, value=0 or 1
+                 - Name: sleep, dtype=Any numeric, value=0 or 1
+    :type data: pd.DataFrame
+    :param title: Optional plot title
+    :type title: str, optional
+    :param showFirstNDays: Only show first n days of time series (if specified)
+    :type showFirstNDays: int, optional
     :return: pyplot Figure
     :rtype: plt.Figure
 
     :Example:
-    >>> from accelerometer.accPlot import plotTimeSeries
-    >>> df = pd.DataFrame(...)
-    >>> fig = plotTimeSeries(df)
-    >>> fig.show()
+
+    .. code-block:: python
+
+        from accelerometer.accPlot import plotTimeSeries
+        df = pd.DataFrame(...)
+        fig = plotTimeSeries(df)
+        fig.show()
     """
 
     # check index is datetime

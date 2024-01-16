@@ -14,7 +14,8 @@ TIME_SERIES_COL = 'time'
 
 
 def meanSDstr(mean, std, numDecimalPlaces):
-    """return str of mean and stdev numbers formatted to number of decimalPlaces
+    """
+    Return str of mean and stdev numbers formatted to number of decimalPlaces
 
     :param float mean: Mean number to be formatted.
     :param float std: Standard deviation number to be formatted.
@@ -22,10 +23,10 @@ def meanSDstr(mean, std, numDecimalPlaces):
     :return: String formatted to number of decimalPlaces
     :rtype: str
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.meanSDstr(2.567, 0.089, 2)
-    2.57 (0.09)
+    .. code-block:: python
+
+        import accUtils
+        accUtils.meanSDstr(2.567, 0.089, 2)
     """
     outStr = str(formatNum(mean, numDecimalPlaces))
     outStr += ' ('
@@ -35,7 +36,8 @@ def meanSDstr(mean, std, numDecimalPlaces):
 
 
 def meanCIstr(mean, std, n, numDecimalPlaces):
-    """return str of mean and 95% confidence interval numbers formatted
+    """
+    Return str of mean and 95% confidence interval numbers formatted
 
     :param float mean: Mean number to be formatted.
     :param float std: Standard deviation number to be formatted.
@@ -44,10 +46,10 @@ def meanCIstr(mean, std, n, numDecimalPlaces):
     :return: String formatted to number of decimalPlaces
     :rtype: str
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.meanSDstr(2.567, 0.089, 2)
-    2.57 (0.09)
+    .. code-block:: python
+
+        import accUtils
+        accUtils.meanSDstr(2.567, 0.089, 2, 2)
     """
     stdErr = std / math.sqrt(n)
     lowerCI = mean - 1.96 * stdErr
@@ -62,16 +64,16 @@ def meanCIstr(mean, std, n, numDecimalPlaces):
 
 
 def toScreen(msg):
-    """Print msg str prepended with current time
+    """
+    Print msg str prepended with current time
 
     :param str mgs: Message to be printed to screen
-    :return: Print msg str prepended with current time
-    :rtype: void
+    :return: None. Prints msg str prepended with current time.
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.toScreen("hello")
-    2018-11-28 10:53:18    hello
+    .. code-block:: python
+
+        import accUtils
+        accUtils.toScreen("hello")
     """
 
     timeFormat = '%Y-%m-%d %H:%M:%S'
@@ -79,7 +81,8 @@ def toScreen(msg):
 
 
 def writeCmds(accDir, outDir, cmdsFile='list-of-commands.txt', accExt="cwa", cmdOptions="", filesCSV=None):
-    """Generate a text file listing processing commands for files found under accDir/
+    """
+    Generate a text file listing processing commands for files found under accDir/
 
     :param str accDir: Directory with accelerometer files to process
     :param str outDir: Output directory to be created containing the processing results
@@ -88,13 +91,12 @@ def writeCmds(accDir, outDir, cmdsFile='list-of-commands.txt', accExt="cwa", cmd
     :param str cmdOptions: String of processing options e.g. "--epochPeriod 10"
         Type 'python3 accProccess.py -h' for full list of options
 
-    :return: New file written to <cmdsFile>
-    :rtype: void
+    :return: None. New file written to <cmdsFile>.
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.writeProcessingCommands("myAccDir/", "myResults/", "myProcessCmds.txt")
-    <cmd options written to "myProcessCmds.txt">
+    .. code-block:: python
+
+        import accUtils
+        accUtils.writeProcessingCommands("myAccDir/", "myResults/", "myProcessCmds.txt")
     """
 
     # Use filesCSV if provided, else retrieve all accel files under accDir/
@@ -145,21 +147,20 @@ def writeCmds(accDir, outDir, cmdsFile='list-of-commands.txt', accExt="cwa", cmd
 
 
 def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
-    """Read all *-summary.json files under <resultsDir> and merge into one CSV file
-
+    """
+    Read all -summary.json files under <resultsDir> and merge into one CSV file.
     Each json file represents summary data for one participant.
     Therefore output CSV file contains summary for all participants.
 
-    :param str resultsDir: Directory containing JSON files
-    :param str outputCsvFile: Output CSV filename
+    :param str resultsDir: Directory containing JSON files.
+    :param str outputCsvFile: Output CSV filename.
 
-    :return: New file written to <outputCsvFile>
-    :rtype: void
+    :return: None. A new file is written to <outputCsvFile>.
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.collateSummary("data/", "data/all-summary.csv")
-    <summary CSV of all participants/files written to "data/all-summary.csv">
+    .. code-block:: python
+
+        import accUtils
+        accUtils.collateSummary("data/", "data/all-summary.csv")
     """
 
     print(f"Scanning {resultsDir} for summary files...")
@@ -183,25 +184,23 @@ def collateSummary(resultsDir, outputCsvFile="all-summary.csv"):
 
 
 def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
-    """identify files that have not been processed
-
+    """
+    Identify files that have not been processed.
     Look through all processed accelerometer files, and find participants who do
     not have records in the summary csv file. This indicates there was a problem
     in processing their data. Therefore, output will be a new .csv file to
-    support reprocessing of these files
+    support reprocessing of these files.
 
-    :param str filesCsv: CSV listing acc files in study directory
-    :param str summaryCsv: Summary CSV of processed dataset
-    :param str outputFilesCsv: Output csv listing files to be reprocessed
+    :param str filesCsv: CSV listing acc files in study directory.
+    :param str summaryCsv: Summary CSV of processed dataset.
+    :param str outputFilesCsv: Output csv listing files to be reprocessed.
 
-    :return: New file written to <outputCsvFile>
-    :rtype: void
+    :return: None. A new file is written to <outputFilesCsv>.
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.identifyUnprocessedFiles("study/files.csv", study/summary-all-files.csv",
-        "study/files-reprocess.csv")
-    <Output csv listing files to be reprocessed written to "study/files-reprocess.csv">
+    .. code-block:: python
+
+        import accUtils
+        accUtils.identifyUnprocessedFiles("study/files.csv", "study/summary-all-files.csv", "study/files-reprocess.csv")
     """
 
     fileList = pd.read_csv(filesCsv)
@@ -216,8 +215,8 @@ def identifyUnprocessedFiles(filesCsv, summaryCsv, outputFilesCsv):
 
 
 def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
-    """read summary .csv file and update coefs for those with poor calibration
-
+    """
+    Read summary .csv file and update coefs for those with poor calibration
     Look through all processed accelerometer files, and find participants that
     did not have good calibration data. Then assigns the calibration coefs from
     previous good use of a given device. Output will be a new .csv file to
@@ -227,13 +226,14 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
     :param str outputCsvFile: Output CSV of files to be reprocessed with new
         calibration info
 
-    :return: New file written to <outputCsvFile>
-    :rtype: void
+    :return: None. New file written to <outputCsvFile>
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.updateCalibrationCoefs("data/summary-all-files.csv", "study/files-recalibration.csv")
-    <CSV of files to be reprocessed written to "study/files-recalibration.csv">
+    .. code-block:: python
+
+        import accUtils
+        accUtils.updateCalibrationCoefs("data/summary-all-files.csv", "study/files-recalibration.csv")
+
+    CSV of files to be reprocessed written to "study/files-recalibration.csv"
     """
 
     d = pd.read_csv(inputCsvFile)
@@ -296,22 +296,20 @@ def updateCalibrationCoefs(inputCsvFile, outputCsvFile):
 
 
 def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
-    """read summary .csv file and write files.csv with calibration coefs
-
+    """
+    Read summary .csv file and write files.csv with calibration coefs.
     Look through all processed accelerometer files, and write a new .csv file to
     support reprocessing of files with pre-specified calibration coefs.
 
     :param str inputCsvFile: Summary CSV of processed dataset
     :param str outputCsvFile: Output CSV of files to process with calibration info
 
-    :return: New file written to <outputCsvFile>
-    :rtype: void
+    :return: None. New file written to <outputCsvFile>
 
-    :Example:
-    >>> import accUtils
-    >>> accUtils.writeFilesWithCalibrationCoefs("data/summary-all-files.csv",
-    >>>     "study/files-calibrated.csv")
-    <CSV of files to be reprocessed written to "study/files-calibrated.csv">
+   .. code-block:: python
+
+        import accUtils
+        accUtils.writeFilesWithCalibrationCoefs("data/summary-all-files.csv", "study/files-calibrated.csv")
     """
 
     d = pd.read_csv(inputCsvFile)
@@ -342,10 +340,10 @@ def writeFilesWithCalibrationCoefs(inputCsvFile, outputCsvFile):
 
 
 def date_parser(t):
-    '''
+    """
     Parse date a date string of the form e.g.
     2020-06-14 19:01:15.123+0100 [Europe/London]
-    '''
+    """
     tz = re.search(r'(?<=\[).+?(?=\])', t)
     if tz is not None:
         tz = tz.group()
@@ -354,23 +352,23 @@ def date_parser(t):
 
 
 def date_strftime(t):
-    '''
+    """
     Convert to time format of the form e.g.
     2020-06-14 19:01:15.123+0100 [Europe/London]
-    '''
+    """
     tz = t.tz
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
 
 
 def writeTimeSeries(e, labels, tsFile):
-    """ Write activity timeseries file
+    """
+    Write activity timeseries file
+
     :param pandas.DataFrame e: Pandas dataframe of epoch data. Must contain
         activity classification columns with missing rows imputed.
     :param list(str) labels: Activity state labels
     :param dict tsFile: output CSV filename
 
-    :return: None
-    :rtype: void
     """
 
     cols = ['acc'] + labels

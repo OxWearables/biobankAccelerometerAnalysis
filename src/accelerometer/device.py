@@ -29,13 +29,11 @@ def processInputFileToEpoch(  # noqa: C901
     csvTimeFormat="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
     csvStartRow=1, csvTimeXYZTempColsIndex=None
 ):
-    """Process raw accelerometer file, writing summary epoch stats to file
-
-    This is usually achieved by
-        1) identify 10sec stationary epochs
-        2) record calibrated axes scale/offset/temp vals + static point stats
-        3) use calibration coefficients and then write filtered avgVm epochs
-        to <epochFile> from <inputFile>
+    """
+    Process raw accelerometer file, writing summary epoch stats to file. This is usually achieved by:
+    1) identify 10sec stationary epochs
+    2) record calibrated axes scale/offset/temp vals + static point stats
+    3) use calibration coefficients and then write filtered avgVm epochs to <epochFile> from <inputFile>
 
     :param str inputFile: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
     :param str epochFile: Output csv.gz file of processed epoch data
@@ -43,9 +41,9 @@ def processInputFileToEpoch(  # noqa: C901
     :param dict summary: Output dictionary containing all summary metrics
     :param bool skipCalibration: Perform software calibration (process data twice)
     :param int stationaryStd: Gravity threshold (in mg units) for stationary vs not
-    :param list(float) xyzIntercept: Calbiration offset [x, y, z]
-    :param list(float) xyzSlope: Calbiration slope [x, y, z]
-    :param list(float) xyzTemp: Calbiration temperature coefficient [x, y, z]
+    :param list(float) xyzIntercept: Calibration offset [x, y, z]
+    :param list(float) xyzSlope: Calibration slope [x, y, z]
+    :param list(float) xyzTemp: Calibration temperature coefficient [x, y, z]
     :param str rawDataParser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
     :param str javaHeapSpace: Amount of heap space allocated to java subprocesses.
@@ -69,17 +67,16 @@ def processInputFileToEpoch(  # noqa: C901
     :param int csvStartRow: start row for accelerometer data in csv file
     :param str csvTimeXYZTempColsIndex: index of column positions for XYZT columns, e.g. "1,2,3,0"
 
-    :return: Raw processing summary values written to dict <summary>
-    :rtype: void
+    :return: None. Writes raw processing summary values to dict <summary>.
 
-    :Example:
-    >>> import device
-    >>> summary = {}
-    >>> device.processInputFileToEpoch('inputFile.cwa', 'epochFile.csv.gz',
-            'stationary.csv.gz', summary)
-    <epoch file written to "epochFile.csv.gz", and calibration points to
-        'stationary.csv.gz'>
+    .. code-block:: python
+
+        import device
+        summary = {}
+        device.processInputFileToEpoch('inputFile.cwa', 'epochFile.csv.gz',
+                'stationary.csv.gz', summary)
     """
+
     summary['file-size'] = os.path.getsize(inputFile)
     summary['file-deviceID'] = getDeviceId(inputFile)
     useJava = True
@@ -215,16 +212,15 @@ def processInputFileToEpoch(  # noqa: C901
 
 
 def getCalibrationCoefs(staticBoutsFile, summary):
-    """Identify calibration coefficients from java processed file
-
-    Get axes offset/gain/temp calibration coefficients through linear regression
-    of stationary episodes
+    """
+    Identify calibration coefficients from java processed file. Get axes
+    offset/gain/temp calibration coefficients through linear regression of
+    stationary episodes.
 
     :param str stationaryFile: Output/temporary file for calibration
     :param dict summary: Output dictionary containing all summary metrics
 
-    :return: Calibration summary values written to dict <summary>
-    :rtype: void
+    :return: None. Calibration summary values written to dict <summary>
     """
 
     if isinstance(staticBoutsFile, pd.DataFrame):
@@ -340,15 +336,14 @@ def getCalibrationCoefs(staticBoutsFile, summary):
 
 
 def getOmconvertInfo(omconvertInfoFile, summary):
-    """Identify calibration coefficients for omconvert processed file
-
-    Get axes offset/gain/temp calibration coeffs from omconvert info file
+    """
+    Identify calibration coefficients for omconvert processed file. Get axes
+    offset/gain/temp calibration coeffs from omconvert info file.
 
     :param str omconvertInfoFile: Output information file from omconvert
     :param dict summary: Output dictionary containing all summary metrics
 
-    :return: Calibration summary values written to dict <summary>
-    :rtype: void
+    :return: None. Calibration summary values written to dict <summary>
     """
 
     file = open(omconvertInfoFile, 'r')
@@ -382,7 +377,8 @@ def storeCalibrationInformation(
         summary, bestIntercept, bestSlope, bestSlopeT,
         initErr, bestErr, nStatic, calibratedOnOwnData, goodCalibration
 ):
-    """Store calibration information to output summary dictionary
+    """
+    Store calibration information to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
     :param list(float) bestIntercept: Best x/y/z intercept values
@@ -394,8 +390,7 @@ def storeCalibrationInformation(
     :param calibratedOnOwnData: Whether params were self-derived
     :param goodCalibration: Whether calibration succeded
 
-    :return: Calibration summary values written to dict <summary>
-    :rtype: void
+    :return: None. Calibration summary values written to dict <summary>
     """
 
     # store output to summary dictionary
@@ -408,15 +403,15 @@ def storeCalibrationInformation(
 
 
 def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
-    """Store calibration parameters to output summary dictionary
+    """
+    Store calibration parameters to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
     :param list(float) xyzOff: intercept [x, y, z]
     :param list(float) xyzSlope: slope [x, y, z]
     :param list(float) xyzSlopeT: temperature slope [x, y, z]
 
-    :return: Calibration summary values written to dict <summary>
-    :rtype: void
+    :return: None. Calibration summary values written to dict <summary>
     """
 
     # store output to summary dictionary
@@ -432,9 +427,8 @@ def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
 
 
 def getDeviceId(inputFile):
-    """Get serial number of device
-
-    First decides which DeviceId parsing method to use for <inputFile>.
+    """
+    Get serial number of device. First decides which DeviceId parsing method to use for <inputFile>.
 
     :param str inputFile: Input raw accelerometer file
 
@@ -455,9 +449,9 @@ def getDeviceId(inputFile):
 
 
 def getAxivityDeviceId(cwaFile):
-    """Get serial number of Axivity device
-
-    Parses the unique serial code from the header of an Axivity accelerometer file
+    """
+    Get serial number of Axivity device. Parses the unique serial code from the
+    header of an Axivity accelerometer file.
 
     :param str cwaFile: Input raw .cwa accelerometer file
 
@@ -484,9 +478,9 @@ def getAxivityDeviceId(cwaFile):
 
 
 def getGeneaDeviceId(binFile):
-    """Get serial number of GENEActiv device
-
-    Parses the unique serial code from the header of a GENEActiv accelerometer file
+    """
+    Get serial number of GENEActiv device. Parses the unique serial code from
+    the header of a GENEActiv accelerometer file
 
     :param str binFile: Input raw .bin accelerometer file
 
@@ -502,9 +496,9 @@ def getGeneaDeviceId(binFile):
 
 
 def getGT3XDeviceId(gt3xFile):
-    """Get serial number of Actigraph device
-
-    Parses the unique serial code from the header of a GT3X accelerometer file
+    """
+    Get serial number of Actigraph device. Parses the unique serial code from
+    the header of a GT3X accelerometer file
 
     :param str gt3xFile: Input raw .gt3x accelerometer file
 
