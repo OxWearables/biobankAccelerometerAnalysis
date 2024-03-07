@@ -53,12 +53,6 @@ def main():  # noqa: C901
                         type=str2date, help="""removes data after this
                             time (local) in the final analysis
                             (default : %(default)s)""")
-    parser.add_argument('--timeSeriesDateColumn',
-                        metavar='True/False', default=False, type=str2bool,
-                        help="""adds a date/time column to the timeSeries
-                            file, so acceleration and imputation values can be
-                            compared easily. This increases output filesize
-                            (default : %(default)s)""")
     parser.add_argument('--processInputFile',
                         metavar='True/False', default=True, type=str2bool,
                         help="""False will skip processing of the .cwa file
