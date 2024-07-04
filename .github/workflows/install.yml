@@ -15,6 +15,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
+        # https://github.com/actions/runner-images/issues/9770#issuecomment-2085623315
+        exclude:  # Python < v3.8 does not support Apple Silicon ARM64.
+          - python-version: "3.7"
+            os: macos-latest
+        include:  # So run those legacy versions on Intel CPUs.
+          - python-version: "3.7"
+            os: macos-13
 
     steps:
       - uses: actions/checkout@v4
