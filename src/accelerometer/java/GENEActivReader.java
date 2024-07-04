@@ -147,17 +147,17 @@ public class GENEActivReader extends DeviceReader {
         }
         // read axes calibration lines for gain and offset values
         // data like -> x gain:25548 \n x offset:574 ... Volts:300 \n Lux:800
-        gainVals[0] = Double.parseDouble(readLine(reader).split(":")[1]); // xGain
-        offsetVals[0] = Integer.parseInt(readLine(reader).split(":")[1]); // xOffset
-        gainVals[1] = Double.parseDouble(readLine(reader).split(":")[1]); // y
-        offsetVals[1] = Integer.parseInt(readLine(reader).split(":")[1]); // y
-        gainVals[2] = Double.parseDouble(readLine(reader).split(":")[1]); // z
-        offsetVals[2] = Integer.parseInt(readLine(reader).split(":")[1]); // z
-        int volts = Integer.parseInt(readLine(reader).split(":")[1]); // volts
-        int lux = Integer.parseInt(readLine(reader).split(":")[1]); // lux
+        gainVals[0] = Double.parseDouble(readLine(reader).split(":")[1].trim()); // xGain
+        offsetVals[0] = Integer.parseInt(readLine(reader).split(":")[1].trim()); // xOffset
+        gainVals[1] = Double.parseDouble(readLine(reader).split(":")[1].trim()); // y
+        offsetVals[1] = Integer.parseInt(readLine(reader).split(":")[1].trim()); // y
+        gainVals[2] = Double.parseDouble(readLine(reader).split(":")[1].trim()); // z
+        offsetVals[2] = Integer.parseInt(readLine(reader).split(":")[1].trim()); // z
+        int volts = Integer.parseInt(readLine(reader).split(":")[1].trim()); // volts
+        int lux = Integer.parseInt(readLine(reader).split(":")[1].trim()); // lux
         readLine(reader); // 9 blank
         readLine(reader); // 10 memory status header
-        int memorySizePages = Integer.parseInt(readLine(reader).split(":")[1]); // 11
+        int memorySizePages = Integer.parseInt(readLine(reader).split(":")[1].trim()); // 11
 
         // ignore remaining header lines in bin file
         for (int i = 0; i < fileHeaderSize - linesToAxesCalibration - 11; i++) {
