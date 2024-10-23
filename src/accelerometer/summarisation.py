@@ -1,6 +1,5 @@
 """Module to generate overall activity summary from epoch data."""
 import sys
-import pytz
 import numpy as np
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
@@ -73,13 +72,10 @@ def getActivitySummary(  # noqa: C901
 
     # Remove data before/after user specified start/end times
     rows = data.shape[0]
-    tz = pytz.timezone(timeZone)
     if startTime:
-        localStartTime = tz.localize(startTime)
-        data = data[data.index >= localStartTime]
+        data = data.loc[pd.Timestamp(startTime, tz=timeZone):]
     if endTime:
-        localEndTime = tz.localize(endTime)
-        data = data[data.index <= localEndTime]
+        data = data.loc[:pd.Timestamp(endTime, tz=timeZone)]
     # Quit if no data left
     if data.shape[0] == 0:
         print("No rows remaining after start/end time removal")

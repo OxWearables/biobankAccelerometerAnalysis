@@ -4,6 +4,7 @@ from accelerometer import utils
 import gzip
 import numpy as np
 import os
+import dateutil
 import pandas as pd
 import statsmodels.api as sm
 import struct
@@ -104,7 +105,7 @@ def processInputFileToEpoch(  # noqa: C901
             if javaHeapSpace:
                 commandArgs.insert(1, javaHeapSpace)
             if csvStartTime:
-                commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
+                commandArgs.append("csvStartTime:" + to_iso_datetime(csvStartTime))
             if csvSampleRate:
                 commandArgs.append("csvSampleRate:" + str(csvSampleRate))
             if csvTimeFormat:
@@ -163,9 +164,9 @@ def processInputFileToEpoch(  # noqa: C901
         if javaHeapSpace:
             commandArgs.insert(1, javaHeapSpace)
         if startTime:
-            commandArgs.append("startTime:" + startTime.strftime("%Y-%m-%dT%H:%M"))
+            commandArgs.append("startTime:" + to_iso_datetime(startTime))
         if endTime:
-            commandArgs.append("endTime:" + endTime.strftime("%Y-%m-%dT%H:%M"))
+            commandArgs.append("endTime:" + to_iso_datetime(endTime))
         if csvStartTime:
             commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
         if csvSampleRate:
@@ -531,3 +532,9 @@ def getGT3XDeviceId(gt3xFile):
      this usually occurs when the file is not an Actigraph .gt3x accelerometer
      file. Exiting...""")
     sys.exit(-8)
+
+
+def to_iso_datetime(dt):
+    """ Given input string representing a datetime, return its ISO formatted
+    datetime string. """
+    return dateutil.parser.parse(dt).isoformat()
