@@ -55,7 +55,8 @@ def activityClassification(
     print(f"{len(epoch) - np.sum(ok)} rows with NaN or Inf values, out of {len(epoch)}")
 
     Y = pd.Series(index=epoch.index)
-    Y.loc[ok] = viterbi(model.predict(X[ok]), hmmParams)
+    if ok.any():
+        Y.loc[ok] = viterbi(model.predict(X[ok]), hmmParams)
 
     # TODO: Chan's logic hardcoded here
     if activityModel == 'chan':
