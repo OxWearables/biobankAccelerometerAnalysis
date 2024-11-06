@@ -138,6 +138,10 @@ def main():  # noqa: C901
                         metavar='mg', default=13, type=int,
                         help="""stationary mg threshold (default
                              : %(default)s mg))""")
+    parser.add_argument('--minNonWearDuration',
+                        metavar='mins', default=60, type=int,
+                        help="""minimum non-wear duration in minutes
+                            (default : %(default)s mins))""")
     parser.add_argument('--calibrationSphereCriteria',
                         metavar='mg', default=0.3, type=float,
                         help="""calibration sphere threshold (default
@@ -326,7 +330,7 @@ def main():  # noqa: C901
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
-        stationaryStd=args.stationaryStd,
+        stationaryStd=args.stationaryStd, minNonWearDuration=args.minNonWearDuration,
         mgCpLPA=args.mgCpLPA, mgCpMPA=args.mgCpMPA, mgCpVPA=args.mgCpVPA,
         activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
