@@ -11,7 +11,7 @@ A tool to extract meaningful health information from large accelerometer dataset
 
 ## Install
 
-*Minimum requirements*: Python>=3.7, Java 8 (1.8)
+*Minimum requirements*: Python 3.7 to 3.10, Java 8 (1.8)
 
 The following instructions make use of Anaconda to meet the minimum requirements:
 
