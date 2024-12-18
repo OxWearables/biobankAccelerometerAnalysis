@@ -15,6 +15,12 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.7", "3.8", "3.9", "3.10"]
 
+        exclude:  # python <= 3.7 no longer supported in latest operating systems
+          - python-version: "3.7"
+        include:  # use older ubuntu for python 3.7
+          - python-version: "3.7"
+            os: ubuntu-20.04
+
     steps:
       - uses: actions/checkout@v4
 
