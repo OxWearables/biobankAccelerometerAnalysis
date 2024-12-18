@@ -1,0 +1,18 @@
+cff-version: 1.0.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Doherty"
+  given-names: "Aiden"
+  orcid: "https://orcid.org/0000-0001-9600-5575"
+- family-names: "Chan"
+  given-names: "Shing"
+  orcid: "https://orcid.org/0000-0003-1840-0451"
+- family-names: "Yuan"
+  given-names: "Hang"
+  orcid: https://orcid.org/0000-0001-5944-1925
+- family-names: "Walmsley"
+  given-names: "Rosemary"
+title: "accelerometer: A Python Toolkit for Extracting Physical Activity and Behavior Metrics from Wearable Sensor Data"
+doi: 10.5281/zenodo.14515076
+date-released: 2020-06-03
+url: https://github.com/OxWearables/biobankAccelerometerAnalysis
