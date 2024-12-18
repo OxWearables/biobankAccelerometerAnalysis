@@ -18,10 +18,11 @@ jobs:
 
         exclude:  # python <= 3.7 no longer supported in latest operating systems
           - python-version: "3.7"
-        include:  # use older macos for python 3.7
+        include:
+          # use older macos for python 3.7
           - python-version: "3.7"
             os: macos-13
-        include:  # use older ubuntu for python 3.7
+          # use older ubuntu for python 3.7
           - python-version: "3.7"
             os: ubuntu-20.04
 
