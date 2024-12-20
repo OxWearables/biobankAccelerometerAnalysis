@@ -10,7 +10,7 @@ from accelerometer import circadian
 
 
 def getActivitySummary(  # noqa: C901
-    epochFile, nonWearFile, summary,
+    epochFile, summary,
     activityClassification=True, timeZone='Europe/London',
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
@@ -31,7 +31,6 @@ def getActivitySummary(  # noqa: C901
     7) derive main movement summaries (overall, weekday/weekend, and hour)
 
     :param str epochFile: Input csv.gz file of processed epoch data
-    :param str nonWearFile: Output filename for non wear .csv.gz episodes
     :param dict summary: Output dictionary containing all summary metrics
     :param bool activityClassification: Perform machine learning of activity states
     :param str timeZone: timezone in country/city format to be used for daylight savings crossover check
@@ -51,16 +50,14 @@ def getActivitySummary(  # noqa: C901
 
     :return: A tuple containing a pandas dataframe of activity epoch data,
         activity prediction labels (empty if <activityClassification>==False), and
-        movement summary values written to dict <summary>. Also writes .csv.gz non
-        wear episodes file to <nonWearFile>.
+        movement summary values written to dict <summary>.
     :rtype: tuple
 
     .. code-block:: python
 
         import summariseEpoch
         summary = {}
-        epochData, labels = summariseEpoch.getActivitySummary( "epoch.csv.gz",
-                "nonWear.csv.gz", summary)
+        epochData, labels = summariseEpoch.getActivitySummary("epoch.csv.gz", summary)
     """
 
     utils.toScreen("=== Summarizing ===")

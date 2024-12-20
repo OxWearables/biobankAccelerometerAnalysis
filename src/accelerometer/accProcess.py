@@ -262,7 +262,6 @@ def main():  # noqa: C901
 
     # Set default output filenames
     args.summaryFile = os.path.join(args.outputFolder, inputFileName + "-summary.json")
-    args.nonWearFile = os.path.join(args.outputFolder, inputFileName + "-nonWearBouts.csv.gz")
     args.epochFile = os.path.join(args.outputFolder, inputFileName + "-epoch.csv.gz")
     args.stationaryFile = os.path.join(args.outputFolder, inputFileName + "-stationaryPoints.csv.gz")
     args.tsFile = os.path.join(args.outputFolder, inputFileName + "-timeSeries.csv.gz")
@@ -276,8 +275,6 @@ def main():  # noqa: C901
             try:
                 if os.path.exists(args.stationaryFile):
                     os.remove(args.stationaryFile)
-                if os.path.exists(args.nonWearFile):
-                    os.remove(args.nonWearFile)
                 if os.path.exists(args.epochFile):
                     os.remove(args.epochFile)
             except OSError:
@@ -326,7 +323,7 @@ def main():  # noqa: C901
 
     # Summarise epoch
     epochData, labels = accelerometer.summarisation.getActivitySummary(
-        args.epochFile, args.nonWearFile, summary,
+        args.epochFile, summary,
         activityClassification=args.activityClassification,
         timeZone=args.timeZone, startTime=args.startTime,
         endTime=args.endTime, epochPeriod=args.epochPeriod,
