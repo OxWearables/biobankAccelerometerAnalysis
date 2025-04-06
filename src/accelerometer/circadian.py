@@ -18,7 +18,7 @@ def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
 
     """
     if fourierWithAcc:
-        y = e['accImputed'].values
+        y = e['acc'].values
     else:
         cols = [label + 'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
         y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
@@ -46,7 +46,7 @@ def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
 
     """
     if fourierWithAcc:
-        y = e['accImputed'].values
+        y = e['acc'].values
     else:
         cols = [label + 'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
         y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
@@ -91,7 +91,7 @@ def calculateM10L5(e, epochPeriod, summary):
     dct = {}
     for i in range(num_days):
         # create new lists with the acceleration data from each 24 hour period
-        dct['day_%s' % i] = [e.loc[:, 'accImputed'][n] for n in range(len(days_split)) if days_split[n] == i]
+        dct['day_%s' % i] = [e.loc[:, 'acc'][n] for n in range(len(days_split)) if days_split[n] == i]
     dct_10 = {}
     dct_5 = {}
     for i in dct:
