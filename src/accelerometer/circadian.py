@@ -20,8 +20,7 @@ def calculatePSD(e, epochPeriod, fourierWithAcc, labels, summary):
     if fourierWithAcc:
         y = e['acc'].values
     else:
-        cols = [label + 'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
-        y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
+        y = e[labels].idxmax(axis=1) == 'sleep'  # is sleep highest?
         y = y.values.astype('int')  # e.g. [0,0,0,1,1,0,0,1,...]
         y = 2 * y - 1  # center the signal, [0,1] -> [-1,1]
 
@@ -48,8 +47,7 @@ def calculateFourierFreq(e, epochPeriod, fourierWithAcc, labels, summary):
     if fourierWithAcc:
         y = e['acc'].values
     else:
-        cols = [label + 'Imputed' for label in labels]  # 'sleepImputed', 'sedentaryImputed', etc...
-        y = e[cols].idxmax(axis=1) == 'sleepImputed'  # is sleepImputed highest?
+        y = e[labels].idxmax(axis=1) == 'sleep'  # is sleep highest?
         y = y.values.astype('int')  # e.g. [0,0,0,1,1,0,0,1,...]
         y = 2 * y - 1  # center the signal, [0,1] -> [-1,1]
 
