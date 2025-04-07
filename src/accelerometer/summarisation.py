@@ -111,11 +111,11 @@ def getActivitySummary(  # noqa: C901
 
     # Calculate circadian metrics
     if psd:
-        circadian.calculatePSD(imputeMissing(data[['acc']]), epochPeriod, fourierWithAcc, labels, summary)
+        circadian.calculatePSD(imputeMissing(data[['acc'] + labels]), epochPeriod, fourierWithAcc, labels, summary)
     if fourierFrequency:
-        circadian.calculateFourierFreq(imputeMissing(data[['acc']]), epochPeriod, fourierWithAcc, labels, summary)
+        circadian.calculateFourierFreq(imputeMissing(data[['acc'] + labels]), epochPeriod, fourierWithAcc, labels, summary)
     if m10l5:
-        circadian.calculateM10L5(imputeMissing(data[['acc']]), epochPeriod, summary)
+        circadian.calculateM10L5(imputeMissing(data[['acc'] + labels]), epochPeriod, summary)
 
     # Main movement summaries
     writeMovementSummaries(data, labels, summary)
