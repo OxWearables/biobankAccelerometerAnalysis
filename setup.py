@@ -59,7 +59,7 @@ setuptools.setup(
         'statsmodels==0.13.*',
         'joblib==1.1.*',
         'imbalanced-learn==0.8.1',
-        'scikit-learn==1.0.2',
+        'scikit-learn==1.5.0',
     ],
     extras_require={
         "dev": [
