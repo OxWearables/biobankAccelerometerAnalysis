@@ -175,6 +175,15 @@ def main():  # noqa: C901
     parser.add_argument('--activityModel', type=str,
                         default="walmsley",
                         help="""trained activity model .tar file""")
+    parser.add_argument('--removeSpuriousSleep',
+                        metavar='True/False', default=True, type=str2bool,
+                        help="""Remove spurious sleep periods from the
+                            activity classification? (default : %(default)s)""")
+    parser.add_argument('--removeSpuriousSleepTol',
+                        metavar='mins', default=60, type=int,
+                        help="""Sleep tolerance in minutes. If `--removeSpuriousSleep`
+                            and a sleep streak is shorter than this, it will be replaced
+                            with sedentary activity (default : %(default)s)""")
 
     # circadian rhythm options
     parser.add_argument('--psd',
@@ -329,6 +338,7 @@ def main():  # noqa: C901
         endTime=args.endTime, epochPeriod=args.epochPeriod,
         stationaryStd=args.stationaryStd, minNonWearDuration=args.minNonWearDuration,
         mgCpLPA=args.mgCpLPA, mgCpMPA=args.mgCpMPA, mgCpVPA=args.mgCpVPA,
+        removeSpuriousSleep=args.removeSpuriousSleep, removeSpuriousSleepTol=args.removeSpuriousSleepTol,
         activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
         psd=args.psd, fourierFrequency=args.fourierFrequency,
