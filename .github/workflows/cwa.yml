@@ -19,7 +19,7 @@ jobs:
           - python-version: "3.7"
         include:  # use older ubuntu for python 3.7
           - python-version: "3.7"
-            os: ubuntu-20.04
+            os: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
