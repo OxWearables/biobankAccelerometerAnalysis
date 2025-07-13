@@ -15,6 +15,7 @@ def getActivitySummary(  # noqa: C901
     startTime=None, endTime=None,
     epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
     mgCpLPA=45, mgCpMPA=100, mgCpVPA=400,
+    removeSpuriousSleep=True, removeSpuriousSleepTol=60,
     activityModel="walmsley",
     intensityDistribution=False, imputation=True,
     psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False
@@ -41,6 +42,8 @@ def getActivitySummary(  # noqa: C901
     :param int minNonWearDuration: Minimum duration of nonwear events (minutes)
     :param int mgCutPointMVPA: Milli-gravity threshold for moderate intensity activity
     :param int mgCutPointVPA: Milli-gravity threshold for vigorous intensity activity
+    :param bool removeSpuriousSleep: Remove spurious sleep epochs
+    :param int removeSpuriousSleepTol: Tolerance (in minutes) for spurious sleep removal
     :param str activityModel: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
@@ -103,7 +106,12 @@ def getActivitySummary(  # noqa: C901
     # Predict activity from features, and add label column
     labels = []
     if activityClassification:
-        data, labels = classification.activityClassification(data, activityModel, mgCpLPA, mgCpMPA, mgCpVPA)
+        data, labels = classification.activityClassification(
+            data,
+            activityModel,
+            mgCpLPA, mgCpMPA, mgCpVPA,
+            removeSpuriousSleep, removeSpuriousSleepTol
+        )
 
     # Calculate empirical cumulative distribution function of vector magnitudes
     if intensityDistribution:

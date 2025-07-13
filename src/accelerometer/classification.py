@@ -25,7 +25,9 @@ def activityClassification(
     activityModel: str = "walmsley", 
     mgCpLPA: int = 45,
     mgCpMPA: int = 100,
-    mgCpVPA: int = 400
+    mgCpVPA: int = 400,
+    spuriousSleepRemoval: bool = True,
+    spuriousSleepTol: int = 60,  # in minutes
 ):
     """
     Perform classification of activity states from epoch feature data. Based on
@@ -72,7 +74,8 @@ def activityClassification(
         del enmo
         del other
 
-    Y = removeSpuriousSleep(Y, activityModel=activityModel)
+    if spuriousSleepRemoval:
+        Y = removeSpuriousSleep(Y, activityModel=activityModel, sleepTol=spuriousSleepTol)
 
     # One-hot encoding
     epoch.loc[ok, labels] = (Y[ok].to_numpy()[:, None] == labels).astype('float')
@@ -334,13 +337,14 @@ def viterbi(Y_obs, hmm_params):
     return viterbi_path
 
 
-def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol='1H'):
+def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol=60):
     """
     Remove spurious sleep epochs from activity classification.
 
     :param pandas.Series Y: Model output
     :param str activityModel: Model identifier
-    :param str sleepTol: Minimum sleep duration, e.g. '1H'
+    :param str sleepTol: Sleep tolerance in minutes. If a sleep streak is shorter 
+        than this, it will be replaced with sedentary activity.
 
     :return: Dataframe of revised model output
     :rtype: pandas.DataFrame
@@ -359,7 +363,7 @@ def removeSpuriousSleep(Y, activityModel='walmsley', sleepTol='1H'):
         .cumsum()
         .pipe(lambda x: x.groupby(x).transform('count') * sleep)
     )
-    sleepTol = pd.Timedelta(sleepTol) / Y.index.freq
+    sleepTol = pd.Timedelta(f"{sleepTol}min") / Y.index.freq
     whr = sleep & (sleepStreak < sleepTol)
     Y = Y.copy()  # no modify original
     Y.loc[whr] = newValue
