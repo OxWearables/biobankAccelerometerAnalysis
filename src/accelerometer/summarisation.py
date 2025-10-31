@@ -18,7 +18,8 @@ def getActivitySummary(  # noqa: C901
     removeSpuriousSleep=True, removeSpuriousSleepTol=60,
     activityModel="walmsley",
     intensityDistribution=False, imputation=True,
-    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False
+    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
+    minWearPerDay=None
 ):
     """
     Calculate overall activity summary from <epochFile> data. Get overall
@@ -50,6 +51,9 @@ def getActivitySummary(  # noqa: C901
     :param bool intensityDistribution: Add intensity outputs to dict <summary>
     :param bool imputation: Impute missing data using data from other days around the same time
     :param bool verbose: Print verbose output
+    :param float minWearPerDay: Minimum wear time (in hours) required for a day to be
+        included in summary statistics. Days with less wear time will be excluded.
+        If None, all days are included.
 
     :return: A tuple containing a pandas dataframe of activity epoch data,
         activity prediction labels (empty if <activityClassification>==False), and
@@ -126,7 +130,7 @@ def getActivitySummary(  # noqa: C901
         circadian.calculateM10L5(imputeMissing(data[['acc'] + labels]), epochPeriod, summary)
 
     # Main movement summaries
-    writeMovementSummaries(data, labels, summary)
+    writeMovementSummaries(data, labels, summary, minWearPerDay)
 
     # Return physical activity summary
     return data, labels
@@ -325,13 +329,15 @@ def calculateECDF(x, summary):
         summary[f'{x.name}-ecdf-{level}mg'] = val
 
 
-def writeMovementSummaries(data, labels, summary):  # noqa: C901
+def writeMovementSummaries(data, labels, summary, minWearPerDay=None):  # noqa: C901
     """Write overall summary stats for each activity type to summary dict
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
-    :param bool imputation: Impute missing data using data from other days around the same time
+    :param float minWearPerDay: Minimum wear time (in hours) required for a day to be
+        included in summary statistics. Days with less wear time will be excluded.
+        If None, all days are included.
 
     :return: Write dict <summary> keys for each activity type 'overall-<avg/sd>',
         'week<day/end>-avg', '<day..>-avg', 'hourOfDay-<hr..>-avg',
@@ -353,9 +359,40 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
         * epochInHours
     ).reset_index(drop=True)
 
+    # Filter days based on minimum wear time threshold
+    validDays = pd.Series([True] * len(dailyStats))
+    if minWearPerDay is not None:
+        validDays = dailyStats['wearTime'] >= minWearPerDay
+        numExcludedDays = (~validDays).sum()
+        numIncludedDays = validDays.sum()
+
+        summary['wearTime-numDaysExcluded'] = int(numExcludedDays)
+        summary['wearTime-numDaysIncluded'] = int(numIncludedDays)
+        summary['wearTime-minWearPerDayThreshold(hrs)'] = minWearPerDay
+
+        if numExcludedDays > 0:
+            utils.toScreen(f"Excluding {numExcludedDays} day(s) with wear time < {minWearPerDay}h")
+            utils.toScreen(f"Including {numIncludedDays} day(s) with wear time >= {minWearPerDay}h")
+
+    # Write per-day statistics (including excluded days for transparency)
     for i, row in dailyStats.iterrows():
+        included = validDays.iloc[i]
         for col in cols:
             summary[f'day{i}-recorded-{col}(hrs)'] = row.loc[col]
+        summary[f'day{i}-includedInSummary'] = int(included)
+
+    # Mark epochs from excluded days in the data
+    data['excludeDay'] = False
+    if minWearPerDay is not None and numExcludedDays > 0:
+        excludedDayIndices = dailyStats.index[~validDays].tolist()
+        for dayIdx in excludedDayIndices:
+            dayDate = dailyStats.index[dailyStats.index == dayIdx][0]
+            # Get the actual date from data corresponding to this day index
+            allDates = data.index.date
+            uniqueDates = pd.Series(allDates).unique()
+            if dayIdx < len(uniqueDates):
+                targetDate = uniqueDates[dayIdx]
+                data.loc[data.index.date == targetDate, 'excludeDay'] = True
 
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
@@ -363,17 +400,26 @@ def writeMovementSummaries(data, labels, summary):  # noqa: C901
     cols = ['acc', 'wearTime'] + labels
     if 'MET' in data.columns:
         cols.append('MET')
-    data = imputeMissing(data[cols].astype('float'))
+
+    # Filter out excluded days before imputation and summary calculation
+    dataForSummary = data.copy()
+    if minWearPerDay is not None and numExcludedDays > 0:
+        # Set excluded days to missing for imputation purposes
+        dataForSummary.loc[dataForSummary['excludeDay'], cols] = np.nan
+        dataForSummary.loc[dataForSummary['excludeDay'], 'missing'] = True
+
+    dataForSummary = imputeMissing(dataForSummary[cols].astype('float'))
 
     # Overall stats (no padding, i.e. only within recording period)
-    overallStats = data[tStart:tEnd].apply(['mean', 'std'])
+    # Only calculate on included days
+    overallStats = dataForSummary[tStart:tEnd].apply(['mean', 'std'])
     for col in overallStats:
         summary[f'{col}-overall-avg'] = overallStats[col].loc['mean']
         summary[f'{col}-overall-sd'] = overallStats[col].loc['std']
 
     dayOfWeekStats = (
-        data
-        .groupby([data.index.weekday, data.index.hour])
+        dataForSummary
+        .groupby([dataForSummary.index.weekday, dataForSummary.index.hour])
         .mean()
     )
     dayOfWeekStats.index = dayOfWeekStats.index.set_levels(

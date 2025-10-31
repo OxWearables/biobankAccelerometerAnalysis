@@ -11,6 +11,7 @@ import os
 import accelerometer.summarisation
 import pandas as pd
 import atexit
+import sys
 import warnings
 
 
@@ -142,6 +143,13 @@ def main():  # noqa: C901
                         metavar='mins', default=60, type=int,
                         help="""minimum non-wear duration in minutes
                             (default : %(default)s mins))""")
+    parser.add_argument('--minWearPerDay',
+                        metavar="e.g. '20h', '1200m'", default=None, type=str,
+                        help="""minimum wear time per day for a day to be included
+                            in summary statistics. Days with less wear time will be
+                            excluded. Supports formats: '20h' (hours), '1200m' (minutes),
+                            '0.5d' (days), or '20' (hours by default).
+                            (default : %(default)s (all days included))""")
     parser.add_argument('--calibrationSphereCriteria',
                         metavar='mg', default=0.3, type=float,
                         help="""calibration sphere threshold (default
@@ -232,6 +240,14 @@ def main():  # noqa: C901
     args = parser.parse_args()
 
     processingStartTime = datetime.datetime.now()
+
+    # Parse minWearPerDay time string to hours
+    if args.minWearPerDay is not None:
+        try:
+            args.minWearPerDay = accelerometer.utils.parseTimeString(args.minWearPerDay)
+        except ValueError as e:
+            print(f"Error parsing --minWearPerDay: {e}")
+            sys.exit(-1)
 
     if args.calOffset != [0, 0, 0] or args.calSlope != [1, 1, 1] or args.calTemp != [0, 0, 0]:
         args.skipCalibration = True
@@ -342,7 +358,8 @@ def main():  # noqa: C901
         activityModel=args.activityModel,
         intensityDistribution=args.intensityDistribution,
         psd=args.psd, fourierFrequency=args.fourierFrequency,
-        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5)
+        fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
+        minWearPerDay=args.minWearPerDay)
 
     # Generate time series file
     accelerometer.utils.writeTimeSeries(epochData, labels, args.tsFile)
