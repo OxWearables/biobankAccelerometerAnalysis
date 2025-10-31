@@ -360,6 +360,52 @@ def date_strftime(t):
     return t.strftime(f'%Y-%m-%d %H:%M:%S.%f%z [{tz}]')
 
 
+def parseTimeString(timeStr):
+    """
+    Parse a time string and return the value in hours.
+
+    Supports formats like:
+    - '20h' or '20H' -> 20 hours
+    - '1200m' or '1200M' -> 20 hours (1200 minutes)
+    - '0.5d' or '0.5D' -> 12 hours (0.5 days)
+    - '20' -> 20 hours (default unit is hours)
+
+    :param str timeStr: Time string to parse
+    :return: Time value in hours
+    :rtype: float
+
+    .. code-block:: python
+
+        import accUtils
+        hours = accUtils.parseTimeString('20h')  # returns 20.0
+        hours = accUtils.parseTimeString('1200m')  # returns 20.0
+    """
+    if timeStr is None:
+        return None
+
+    timeStr = str(timeStr).strip()
+
+    # Extract number and unit
+    match = re.match(r'^([0-9.]+)([hdmHDM]?)$', timeStr)
+    if not match:
+        raise ValueError(f"Invalid time format: '{timeStr}'. "
+                         "Expected format: number followed by optional unit (h/m/d), "
+                         "e.g., '20h', '1200m', '0.5d', or '20'")
+
+    value = float(match.group(1))
+    unit = match.group(2).lower() if match.group(2) else 'h'  # default to hours
+
+    # Convert to hours
+    if unit == 'h':
+        return value
+    elif unit == 'm':
+        return value / 60.0
+    elif unit == 'd':
+        return value * 24.0
+    else:
+        raise ValueError(f"Unknown time unit: '{unit}'. Use 'h' (hours), 'm' (minutes), or 'd' (days)")
+
+
 def writeTimeSeries(e, labels, tsFile):
     """
     Write activity timeseries file
