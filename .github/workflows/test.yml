@@ -59,12 +59,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.7", "3.9", "3.10"]
+
+        exclude:
+          # Python 3.7 no longer supported on ubuntu-latest
+          - os: ubuntu-latest
+            python-version: "3.7"
 
         include:
           # Python 3.7 requires older Ubuntu
-          - python-version: "3.7"
-            os: ubuntu-22.04
+          - os: ubuntu-22.04
+            python-version: "3.7"
 
     steps:
       - uses: actions/checkout@v4
