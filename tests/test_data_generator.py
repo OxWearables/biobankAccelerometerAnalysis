@@ -35,7 +35,7 @@ class AccelerometerDataGenerator:
         orientation: Tuple[float, float, float] = (0.0, -1.0, 0.0),
         noise_std: float = 0.005,  # 5mg noise
         temperature: float = 20.0,
-        temp_drift: float = 0.1
+        temp_drift: float = 0.0001  # Typical: 0.1°C over 1000 samples
     ) -> pd.DataFrame:
         """
         Generate stationary data (device not moving).
@@ -45,7 +45,9 @@ class AccelerometerDataGenerator:
             orientation: Base orientation (x, y, z) in g units, should have norm ~1.0
             noise_std: Standard deviation of noise in g units
             temperature: Base temperature in Celsius
-            temp_drift: Temperature drift range
+            temp_drift: Standard deviation of temperature steps per sample (°C).
+                       Forms a random walk where total drift scales as sqrt(n_samples).
+                       Example: 0.0001 gives ~0.1°C drift over 1000 samples at 100Hz
 
         Returns:
             DataFrame with columns: x, y, z, temp
@@ -59,8 +61,10 @@ class AccelerometerDataGenerator:
         y = orientation[1] + self.rng.normal(0, noise_std, n_samples)
         z = orientation[2] + self.rng.normal(0, noise_std, n_samples)
 
-        # Temperature with slow drift
-        temp = temperature + np.cumsum(self.rng.normal(0, temp_drift / np.sqrt(n_samples), n_samples))
+        # Temperature with slow drift (random walk)
+        # temp_drift is the standard deviation of temperature steps per sample
+        # Total drift will scale as sqrt(n_samples) for a random walk
+        temp = temperature + np.cumsum(self.rng.normal(0, temp_drift, n_samples))
 
         return pd.DataFrame({'x': x, 'y': y, 'z': z, 'temp': temp})
 
@@ -94,8 +98,9 @@ class AccelerometerDataGenerator:
                 start = self.rng.randint(0, n_samples - 500)
                 duration = self.rng.randint(100, 500)
 
-                # Small orientation shift
+                # Small orientation shift (same shift applied to all samples in range)
                 shift = self.rng.normal(0, 0.05, 3)
+                # Note: Broadcasting (3,) array to (n_rows, 3) DataFrame slice
                 data.loc[start:start + duration, ['x', 'y', 'z']] += shift
 
         return data
@@ -210,8 +215,10 @@ class AccelerometerDataGenerator:
             start = self.rng.randint(0, n_samples - 50)
             duration = self.rng.randint(10, 50)
 
-            # Small quick movements
-            data.loc[start:start + duration, 'x'] += self.rng.normal(0, 0.03, min(duration + 1, len(data) - start))
+            # Small quick movements - calculate actual slice length explicitly
+            slice_idx = slice(start, start + duration + 1)  # loc is inclusive on both ends
+            slice_length = len(data.loc[slice_idx, 'x'])
+            data.loc[slice_idx, 'x'] += self.rng.normal(0, 0.03, slice_length)
 
         return data
 
@@ -306,21 +313,31 @@ class AccelerometerDataGenerator:
         """
         Add calibration error to data (simulating factory calibration drift).
 
+        This function implements the INVERSE of the calibration formula used in
+        device.py (lines 304-305). The formula MUST match exactly or all
+        calibration tests become invalid.
+
+        Calibration formula (forward, in device.py):
+            calibrated = offset + (raw * slope) + (temp * temp_coeff)
+
+        Inverse formula (this function):
+            raw = (calibrated - offset - temp*temp_coeff) / slope
+
         Args:
-            data: Input data
+            data: Input calibrated data
             offset: Offset error per axis (g)
             slope: Slope error per axis (multiplicative)
             temp_coeff: Temperature coefficient per axis (g/°C)
 
         Returns:
-            Data with calibration error applied
+            Uncalibrated data (simulating raw sensor output with calibration drift)
+
+        Note:
+            The formula is verified in test_regression.py::test_calibration_error_application
         """
         data = data.copy()
 
         # Apply inverse calibration (simulate uncalibrated sensor)
-        # Calibrated = offset + (raw * slope) + (temp * temp_coeff)
-        # So: raw = (calibrated - offset - temp*temp_coeff) / slope
-
         for i, axis in enumerate(['x', 'y', 'z']):
             data[axis] = (data[axis] - offset[i] - data['temp'] * temp_coeff[i]) / slope[i]
 

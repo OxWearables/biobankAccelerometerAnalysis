@@ -155,7 +155,8 @@ def mock_calibration_points(data_generator):
             n_samples=200,  # Fewer samples per orientation
             orientation=orientation,
             noise_std=0.008,
-            temperature=20.0 + (i % 5) * 2  # Vary temperature
+            temperature=20.0 + (i % 5) * 2,  # Vary temperature across orientations
+            temp_drift=0.001  # Small drift within each sample to provide temperature variation
         )
         all_data.append(data)
 
