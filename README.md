@@ -32,13 +32,15 @@ The following instructions make use of Anaconda to meet the minimum requirements
 You are all set! The next time that you want to use `accelerometer`, open the Anaconda Prompt and activate the environment (step 4). If you see `(accelerometer)` in front of your prompt, you are ready to go!
 
 ## Usage
+
+### Processing a single file
 To extract summary movement statistics from an Axivity file (.cwa):
 
 ```console
 $ accProcess data/sample.cwa.gz
 
- <output written to data/sample-outputSummary.json>
- <time series output written to data/sample-timeSeries.csv.gz>
+ <output written to outputs/sample/sample-summary.json>
+ <time series output written to outputs/sample/sample-timeSeries.csv.gz>
 ```
 
 Movement statistics will be stored in a JSON file:
@@ -57,6 +59,35 @@ Movement statistics will be stored in a JSON file:
 See [Data Dictionary](https://biobankaccanalysis.readthedocs.io/en/latest/datadict.html) for the list of output variables.
 
 Actigraph and GENEActiv files are also supported, as well as custom CSV files. See [Usage](https://biobankaccanalysis.readthedocs.io/en/latest/usage.html#basic-usage) for more details.
+
+### Batch processing multiple files
+To process multiple files in a folder, you must specify which file extensions to process:
+
+```console
+$ accProcess data/folder_with_cwa_files/ --fileExtensions cwa
+
+ <outputs written to outputs/file1/, outputs/file2/, etc.>
+```
+
+You can specify multiple extensions (comma-separated):
+
+```console
+$ accProcess data/my_data/ --fileExtensions cwa,bin,csv
+```
+
+The tool automatically includes compressed versions (.gz, .zip, .bz2, .xz), so `--fileExtensions cwa` will match both `.cwa` and `.cwa.gz` files.
+
+To search subdirectories recursively:
+
+```console
+$ accProcess data/my_data/ --fileExtensions cwa --recursive True
+```
+
+The batch processor will:
+- Automatically discover matching files
+- Process them serially with full error handling
+- Continue processing even if individual files fail
+- Provide a detailed summary of successful and failed files
 
 To plot the activity profile:
 ```console
