@@ -352,21 +352,35 @@ class TestActivityClassificationHelpers:
 
 @pytest.mark.slow
 @pytest.mark.integration
+@pytest.mark.skip(reason="TODO: implement after model download infrastructure is ready")
 class TestFullClassificationPipeline:
-    """Integration tests for full classification pipeline."""
+    """Integration tests for full classification pipeline.
+
+    These tests are skipped until we have:
+    1. Model download infrastructure in CI
+    2. Test fixtures with proper feature columns
+    3. Java parser integration in test environment
+    """
 
     def test_classification_with_mock_epoch_data(self, epoch_data_with_features):
         """Test classification on realistic epoch data."""
-        # This would require:
-        # 1. Mock model or actual model download
-        # 2. Proper feature columns in epoch data
-        # Skip if model not available
-        pytest.skip("Requires trained model - integration test")
+        # TODO: Implement once model download is available in CI
+        # Should test:
+        # 1. Model loading from tar archive
+        # 2. Feature extraction matches model expectations
+        # 3. Classification produces valid activity labels
+        # 4. HMM smoothing reduces isolated misclassifications
+        pass
 
     def test_end_to_end_activity_prediction(self, realistic_day_data):
         """Test end-to-end activity prediction."""
-        # This would test the full pipeline from raw data to activities
-        pytest.skip("Requires full pipeline - integration test")
+        # TODO: Implement full pipeline test
+        # Should test:
+        # 1. Java parser invocation
+        # 2. Calibration → feature extraction → classification
+        # 3. Output files have expected structure
+        # 4. Summary metrics are in reasonable ranges
+        pass
 
 
 @pytest.mark.unit
