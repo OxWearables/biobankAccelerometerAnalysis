@@ -69,6 +69,13 @@ setuptools.setup(
             "ipdb",
             "twine",
             "tomli",
+            "pytest>=7.0.0",
+            "pytest-cov>=3.0.0",
+            "pytest-xdist>=2.5.0",
+            "pytest-timeout>=2.1.0",
+            "pytest-mock>=3.10.0",
+            "hypothesis>=6.50.0",
+            "freezegun>=1.2.0",
         ],
         "docs": [
             "sphinx>=4.2",
