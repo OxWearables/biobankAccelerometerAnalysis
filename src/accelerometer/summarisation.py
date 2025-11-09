@@ -1,5 +1,4 @@
 """Module to generate overall activity summary from epoch data."""
-import sys
 import numpy as np
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
@@ -7,6 +6,7 @@ from pandas.tseries.frequencies import to_offset
 from accelerometer import utils
 from accelerometer import classification
 from accelerometer import circadian
+from accelerometer.exceptions import DataError
 
 
 def getActivitySummary(  # noqa: C901
@@ -84,7 +84,10 @@ def getActivitySummary(  # noqa: C901
     if data.shape[0] == 0:
         print("No rows remaining after start/end time removal")
         print("Previously there were %d rows, now shape: %s" % (rows, str(data.shape)))
-        sys.exit(-9)
+        raise DataError(
+            f"No data remaining after start/end time filtering. "
+            f"Original rows: {rows}, remaining: {data.shape[0]}"
+        )
 
     # Get start & end times
     startTime = data.index[0]

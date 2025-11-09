@@ -1,6 +1,7 @@
 """Module to process raw accelerometer files into epoch data."""
 
 from accelerometer import utils
+from accelerometer.exceptions import CalibrationError, DeviceError, ProcessingError
 import gzip
 import numpy as np
 import os
@@ -9,7 +10,6 @@ import pandas as pd
 import statsmodels.api as sm
 import struct
 from subprocess import call
-import sys
 import pathlib
 
 ROOT_DIR = pathlib.Path(__file__).parent
@@ -120,7 +120,10 @@ def processInputFileToEpoch(  # noqa: C901
             if exitCode != 0:
                 print(commandArgs)
                 print("Error: java calibration failed, exit ", exitCode)
-                sys.exit(-6)
+                raise CalibrationError(
+                    f"Java calibration process failed with exit code {exitCode}. "
+                    f"Command: {' '.join(commandArgs)}"
+                )
             # record calibrated axes scale/offset/temp vals + static point stats
             getCalibrationCoefs(stationaryFile, summary)
             xyzIntercept = [summary['calibration-xOffset(g)'],
@@ -182,7 +185,10 @@ def processInputFileToEpoch(  # noqa: C901
         if exitCode != 0:
             print(commandArgs)
             print("Error: Java epoch generation failed, exit ", exitCode)
-            sys.exit(-7)
+            raise ProcessingError(
+                f"Java epoch generation process failed with exit code {exitCode}. "
+                f"Command: {' '.join(commandArgs)}"
+            )
 
     else:
         if not skipCalibration:
@@ -469,11 +475,15 @@ def getAxivityDeviceId(cwaFile):
         performClear = struct.unpack('B', f.read(1))[0]
         deviceId = struct.unpack('H', f.read(2))[0]
     else:
+        f.close()
         print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
         print("""A deviceId value could not be found in input file header,
          this usually occurs when the file is not an Axivity .cwa accelerometer
-         file. Exiting...""")
-        sys.exit(-8)
+         file.""")
+        raise DeviceError(
+            f"Device ID not found in file header for '{cwaFile}'. "
+            "This usually occurs when the file is not an Axivity .cwa accelerometer file."
+        )
     f.close()
     return deviceId
 
@@ -530,8 +540,11 @@ def getGT3XDeviceId(gt3xFile):
     print("ERROR: in getDeviceId(\"" + gt3xFile + "\")")
     print("""A deviceId value could not be found in input file header,
      this usually occurs when the file is not an Actigraph .gt3x accelerometer
-     file. Exiting...""")
-    sys.exit(-8)
+     file.""")
+    raise DeviceError(
+        f"Device ID not found in file header for '{gt3xFile}'. "
+        "This usually occurs when the file is not an Actigraph .gt3x accelerometer file."
+    )
 
 
 def to_iso_datetime(dt):

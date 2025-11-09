@@ -14,6 +14,7 @@ import sys
 import warnings
 from pathlib import Path
 import traceback
+from accelerometer.exceptions import AccelerometerException
 
 
 def matchesExtension(file_path, extensions, compression_exts=None):
@@ -217,8 +218,19 @@ def processSingleFile(input_file, args):
 
         return (True, None, processing_time)
 
+    except AccelerometerException as e:
+        # Catch all accelerometer-specific exceptions
+        processing_end_time = datetime.datetime.now()
+        processing_time = (processing_end_time - processing_start_time).total_seconds()
+
+        error_msg = str(e)
+        if args.verbose:
+            error_msg = traceback.format_exc()
+
+        return (False, error_msg, processing_time)
+
     except SystemExit as e:
-        # Catch sys.exit() calls from device.py and other modules
+        # Catch any remaining sys.exit() calls (should be rare now)
         processing_end_time = datetime.datetime.now()
         processing_time = (processing_end_time - processing_start_time).total_seconds()
 
