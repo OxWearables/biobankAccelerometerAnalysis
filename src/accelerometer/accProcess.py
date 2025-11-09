@@ -214,7 +214,7 @@ def main():  # noqa: C901
                                     least active acceleration periods for circadian rhythm analysis
                              (default : %(default)s)""")
     # optional outputs
-    parser.add_argument('--outputFolder', '-o', metavar='filename', default=None,
+    parser.add_argument('--outputFolder', '-o', metavar='filename', default='outputs',
                         help="""folder for all of the output files (default : %(default)s)""")
     parser.add_argument('--verbose',
                         metavar='True/False', default=False, type=str2bool,
@@ -274,9 +274,9 @@ def main():  # noqa: C901
     inputFileFolder = os.path.dirname(args.inputFile)
     inputFileName = os.path.basename(args.inputFile).split(".")[0]
 
-    # Set default output folder if not specified
-    if args.outputFolder is None:
-        args.outputFolder = os.path.abspath(inputFileFolder)
+    # Create subdirectory within output folder based on input file name
+    args.outputFolder = os.path.join(args.outputFolder, inputFileName)
+    args.outputFolder = os.path.abspath(args.outputFolder)
 
     os.makedirs(args.outputFolder, exist_ok=True)
 
