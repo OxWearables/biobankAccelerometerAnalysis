@@ -457,9 +457,8 @@ def per_participant_summary_html(df_param, y_true_col, y_pred_col, pid_col, out_
     html_str += '</body></html>'
 
     # write HTML file
-    html_file = open(out_html, 'w')
-    html_file.write(html_str)
-    html_file.close()
+    with open(out_html, 'w') as html_file:
+        html_file.write(html_str)
 
 
 def save_to_tar(tar_out, **kwargs):

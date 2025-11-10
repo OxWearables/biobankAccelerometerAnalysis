@@ -280,38 +280,37 @@ def update_calibration_coefs(input_csv_file, output_csv_file):
     no_other_uses = 0
     next_uses = 0
     previous_uses = 0
-    f = open(output_csv_file, 'w')
-    f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
-    for ix, row in bad_cal.iterrows():
-        # first get current 'bad' file
-        participant, device, start_time = row[['file-name', 'file-deviceID', 'file-startTime']]
-        device = int(device)
-        # get calibration values from most recent previous use of this device
-        # (when it had a 'good' calibration)
-        prev_use = good_cal[cal_cols][(good_cal['file-deviceID'] == device) &
-                                      (good_cal['file-startTime'] < start_time)].tail(1)
-        try:
-            of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = prev_use.iloc[0]
-            previous_uses += 1
-        except Exception:
-            next_use = good_cal[cal_cols][(good_cal['file-deviceID'] == device) &
-                                          (good_cal['file-startTime'] > start_time)].head(1)
-            if len(next_use) < 1:
-                print('no other uses for this device at all: ', str(device),
-                      str(participant))
-                no_other_uses += 1
-                continue
-            next_uses += 1
-            of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = next_use.iloc[0]
+    with open(output_csv_file, 'w') as f:
+        f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
+        for ix, row in bad_cal.iterrows():
+            # first get current 'bad' file
+            participant, device, start_time = row[['file-name', 'file-deviceID', 'file-startTime']]
+            device = int(device)
+            # get calibration values from most recent previous use of this device
+            # (when it had a 'good' calibration)
+            prev_use = good_cal[cal_cols][(good_cal['file-deviceID'] == device) &
+                                          (good_cal['file-startTime'] < start_time)].tail(1)
+            try:
+                of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = prev_use.iloc[0]
+                previous_uses += 1
+            except Exception:
+                next_use = good_cal[cal_cols][(good_cal['file-deviceID'] == device) &
+                                              (good_cal['file-startTime'] > start_time)].head(1)
+                if len(next_use) < 1:
+                    print('no other uses for this device at all: ', str(device),
+                          str(participant))
+                    no_other_uses += 1
+                    continue
+                next_uses += 1
+                of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = next_use.iloc[0]
 
-        # now construct output
-        out = participant + ','
-        out += str(of_x) + ' ' + str(of_y) + ' ' + str(of_z) + ','
-        out += str(slp_x) + ' ' + str(slp_y) + ' ' + str(slp_z) + ','
-        out += str(tmp_x) + ' ' + str(tmp_y) + ' ' + str(tmp_z) + ','
-        out += str(cal_temp_avg)
-        f.write(out + '\n')
-    f.close()
+            # now construct output
+            out = participant + ','
+            out += str(of_x) + ' ' + str(of_y) + ' ' + str(of_z) + ','
+            out += str(slp_x) + ' ' + str(slp_y) + ' ' + str(slp_z) + ','
+            out += str(tmp_x) + ' ' + str(tmp_y) + ' ' + str(tmp_z) + ','
+            out += str(cal_temp_avg)
+            f.write(out + '\n')
     print('previousUses', previous_uses)
     print('nextUses', next_uses)
     print('noOtherUses', no_other_uses)
@@ -345,20 +344,19 @@ def write_files_with_calibration_coefs(input_csv_file, output_csv_file):
                 'calibration-meanDeviceTemp(C)']
 
     # print output CSV file with suggested calibration parameters
-    f = open(output_csv_file, 'w')
-    f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
-    for ix, row in d.iterrows():
-        # first get current file information
-        participant = str(row['file-name'])
-        of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = row[cal_cols]
-        # now construct output
-        out = participant + ','
-        out += str(of_x) + ' ' + str(of_y) + ' ' + str(of_z) + ','
-        out += str(slp_x) + ' ' + str(slp_y) + ' ' + str(slp_z) + ','
-        out += str(tmp_x) + ' ' + str(tmp_y) + ' ' + str(tmp_z) + ','
-        out += str(cal_temp_avg)
-        f.write(out + '\n')
-    f.close()
+    with open(output_csv_file, 'w') as f:
+        f.write('fileName,calOffset,calSlope,calTemp,meanTemp\n')
+        for ix, row in d.iterrows():
+            # first get current file information
+            participant = str(row['file-name'])
+            of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = row[cal_cols]
+            # now construct output
+            out = participant + ','
+            out += str(of_x) + ' ' + str(of_y) + ' ' + str(of_z) + ','
+            out += str(slp_x) + ' ' + str(slp_y) + ' ' + str(slp_z) + ','
+            out += str(tmp_x) + ' ' + str(tmp_y) + ' ' + str(tmp_z) + ','
+            out += str(cal_temp_avg)
+            f.write(out + '\n')
 
     print('Files with calibration coefficients for ', str(len(d)),
           'participants written to:', output_csv_file)

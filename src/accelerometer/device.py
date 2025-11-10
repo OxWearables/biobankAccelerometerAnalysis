@@ -354,28 +354,27 @@ def get_omconvert_info(omconvert_info_file, summary):
     :return: None. Calibration summary values written to dict <summary>
     """
 
-    info_file = open(omconvert_info_file, 'r')
-    for line in info_file:
-        elements = line.split(':')
-        name, value = elements[0], elements[1]
-        if name == 'Calibration':
-            vals = value.split(',')
-            best_intercept = float(vals[3]), float(vals[4]), float(vals[5])
-            best_slope = float(vals[0]), float(vals[1]), float(vals[2])
-            best_slope_t = float(vals[6]), float(vals[7]), float(vals[8])
-        elif name == 'Calibration-Stationary-Error-Pre':
-            init_error = float(value)
-        elif name == 'Calibration-Stationary-Error-Post':
-            best_error = float(value)
-        elif name == 'Calibration-Stationary-Min':
-            vals = value.split(',')
-            x_min, y_min, z_min = float(vals[0]), float(vals[1]), float(vals[2])
-        elif name == 'Calibration-Stationary-Max':
-            vals = value.split(',')
-            x_max, y_max, z_max = float(vals[0]), float(vals[1]), float(vals[2])
-        elif name == 'Calibration-Stationary-Count':
-            n_static = int(value)
-    info_file.close()
+    with open(omconvert_info_file, 'r') as info_file:
+        for line in info_file:
+            elements = line.split(':')
+            name, value = elements[0], elements[1]
+            if name == 'Calibration':
+                vals = value.split(',')
+                best_intercept = float(vals[3]), float(vals[4]), float(vals[5])
+                best_slope = float(vals[0]), float(vals[1]), float(vals[2])
+                best_slope_t = float(vals[6]), float(vals[7]), float(vals[8])
+            elif name == 'Calibration-Stationary-Error-Pre':
+                init_error = float(value)
+            elif name == 'Calibration-Stationary-Error-Post':
+                best_error = float(value)
+            elif name == 'Calibration-Stationary-Min':
+                vals = value.split(',')
+                x_min, y_min, z_min = float(vals[0]), float(vals[1]), float(vals[2])
+            elif name == 'Calibration-Stationary-Max':
+                vals = value.split(',')
+                x_max, y_max, z_max = float(vals[0]), float(vals[1]), float(vals[2])
+            elif name == 'Calibration-Stationary-Count':
+                n_static = int(value)
     # store output to summary dictionary
     store_calibration_information(summary, best_intercept, best_slope, best_slope_t,
                                   init_error, best_error, n_static, None, None)
@@ -467,25 +466,25 @@ def get_axivity_device_id(cwa_file: str) -> str:
     :rtype: str
     """
     if cwa_file.lower().endswith('.cwa'):
-        device_file = open(cwa_file, 'rb')
+        open_func = open
     elif cwa_file.lower().endswith('.cwa.gz'):
-        device_file = gzip.open(cwa_file, 'rb')
-    header = device_file.read(2)
-    if header == b'MD':
-        block_size = struct.unpack('H', device_file.read(2))[0]
-        perform_clear = struct.unpack('B', device_file.read(1))[0]
-        device_id = struct.unpack('H', device_file.read(2))[0]
-    else:
-        device_file.close()
-        print(f"ERROR: in get_device_id(\"{cwa_file}\")")
-        print("""A deviceId value could not be found in input file header,
-         this usually occurs when the file is not an Axivity .cwa accelerometer
-         file.""")
-        raise DeviceError(
-            f"Device ID not found in file header for '{cwa_file}'. "
-            "This usually occurs when the file is not an Axivity .cwa accelerometer file."
-        )
-    device_file.close()
+        open_func = gzip.open
+
+    with open_func(cwa_file, 'rb') as device_file:
+        header = device_file.read(2)
+        if header == b'MD':
+            block_size = struct.unpack('H', device_file.read(2))[0]
+            perform_clear = struct.unpack('B', device_file.read(1))[0]
+            device_id = struct.unpack('H', device_file.read(2))[0]
+        else:
+            print(f"ERROR: in get_device_id(\"{cwa_file}\")")
+            print("""A deviceId value could not be found in input file header,
+             this usually occurs when the file is not an Axivity .cwa accelerometer
+             file.""")
+            raise DeviceError(
+                f"Device ID not found in file header for '{cwa_file}'. "
+                "This usually occurs when the file is not an Axivity .cwa accelerometer file."
+            )
     return str(device_id)
 
 
@@ -500,10 +499,9 @@ def get_genea_device_id(bin_file: str) -> str:
     :rtype: str
     """
 
-    genea_file = open(bin_file, 'r')  # 'Universal' newline mode
-    next(genea_file)  # Device Identity
-    device_id = next(genea_file).split(':')[1].rstrip()  # Device Unique Serial Code:011710
-    genea_file.close()
+    with open(bin_file, 'r') as genea_file:  # 'Universal' newline mode
+        next(genea_file)  # Device Identity
+        device_id = next(genea_file).split(':')[1].rstrip()  # Device Unique Serial Code:011710
     return device_id
 
 
