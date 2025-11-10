@@ -11,6 +11,7 @@ import statsmodels.api as sm
 import struct
 from subprocess import call
 import pathlib
+from typing import Dict, Optional, Union
 
 ROOT_DIR = pathlib.Path(__file__).parent
 
@@ -218,7 +219,7 @@ def process_input_file_to_epoch(  # noqa: C901
         get_omconvert_info(stationary_file, summary)
 
 
-def get_calibration_coefs(static_bouts_file, summary):
+def get_calibration_coefs(static_bouts_file: Union[str, pd.DataFrame], summary: Dict) -> None:
     """
     Identify calibration coefficients from java processed file. Get axes
     offset/gain/temp calibration coefficients through linear regression of
@@ -433,14 +434,14 @@ def store_calibration_params(summary, xyz_off, xyz_slope, xyz_slope_t):
     summary['calibration-zSlopeTemp'] = xyz_slope_t[2]
 
 
-def get_device_id(input_file):
+def get_device_id(input_file: str) -> Optional[str]:
     """
     Get serial number of device. First decides which DeviceId parsing method to use for <input_file>.
 
     :param str input_file: Input raw accelerometer file
 
     :return: Device ID
-    :rtype: int
+    :rtype: str
     """
 
     if input_file.lower().endswith('.bin'):
@@ -455,7 +456,7 @@ def get_device_id(input_file):
         print("ERROR: Cannot get deviceId for file: " + input_file)
 
 
-def get_axivity_device_id(cwa_file):
+def get_axivity_device_id(cwa_file: str) -> str:
     """
     Get serial number of Axivity device. Parses the unique serial code from the
     header of an Axivity accelerometer file.
@@ -463,7 +464,7 @@ def get_axivity_device_id(cwa_file):
     :param str cwa_file: Input raw .cwa accelerometer file
 
     :return: Device ID
-    :rtype: int
+    :rtype: str
     """
     if cwa_file.lower().endswith('.cwa'):
         device_file = open(cwa_file, 'rb')
@@ -485,10 +486,10 @@ def get_axivity_device_id(cwa_file):
             "This usually occurs when the file is not an Axivity .cwa accelerometer file."
         )
     device_file.close()
-    return device_id
+    return str(device_id)
 
 
-def get_genea_device_id(bin_file):
+def get_genea_device_id(bin_file: str) -> str:
     """
     Get serial number of GENEActiv device. Parses the unique serial code from
     the header of a GENEActiv accelerometer file
@@ -496,7 +497,7 @@ def get_genea_device_id(bin_file):
     :param str bin_file: Input raw .bin accelerometer file
 
     :return: Device ID
-    :rtype: int
+    :rtype: str
     """
 
     genea_file = open(bin_file, 'r')  # 'Universal' newline mode
@@ -506,7 +507,7 @@ def get_genea_device_id(bin_file):
     return device_id
 
 
-def get_gt3x_device_id(gt3x_file):
+def get_gt3x_device_id(gt3x_file: str) -> Optional[str]:
     """
     Get serial number of Actigraph device. Parses the unique serial code from
     the header of a GT3X accelerometer file
@@ -514,7 +515,7 @@ def get_gt3x_device_id(gt3x_file):
     :param str gt3x_file: Input raw .gt3x accelerometer file
 
     :return: Device ID
-    :rtype: int
+    :rtype: str
     """
 
     import zipfile
