@@ -17,6 +17,34 @@ import matplotlib
 # http://pandas-docs.github.io/pandas-docs-travis/whatsnew/v0.21.1.html#restore-matplotlib-datetime-converter-registration
 register_matplotlib_converters()
 
+# ============================================================================
+# PLOTTING CONFIGURATION CONSTANTS
+# ============================================================================
+
+# Acceleration range (mg)
+# Maximum acceleration display range - values above 2g are physiologically rare
+PLOT_MAX_ACCELERATION_MG = 2000  # 2g (2000 mg)
+
+# Figure dimensions
+PLOT_FIGURE_WIDTH = 10  # inches
+PLOT_FIGURE_DPI = 100   # dots per inch for screen display
+PLOT_SAVE_DPI = 200     # dots per inch for saved files (higher quality)
+
+# Time grid intervals
+PLOT_HOUR_GRID_MAJOR = '4H'  # Major gridlines every 4 hours
+PLOT_HOUR_GRID_MINOR = '1H'  # Minor gridlines every 1 hour
+
+# Rolling average window for acceleration trace
+PLOT_ACC_ROLLING_WINDOW = '1T'  # 1 minute average for smoother display
+
+# Colors
+PLOT_GRID_COLOR_MAJOR = 'grey'
+PLOT_GRID_COLOR_MINOR = 'grey'
+PLOT_GRID_ALPHA_MAJOR = 0.5
+PLOT_GRID_ALPHA_MINOR = 0.25
+PLOT_BORDER_COLOR = '#d3d3d3'  # lightgray
+
+# Activity labels and their corresponding colors for visualization
 LABELS_AND_COLORS = {
     'imputed': '#fafc6f',
     'sleep': 'midnightblue',
@@ -90,7 +118,7 @@ def main():  # noqa: C901
 
     # call plot function and save figure
     fig = plot_time_series(data, title=title, show_first_n_days=args.showFirstNDays)
-    fig.savefig(args.plotFile, dpi=200, bbox_inches='tight')
+    fig.savefig(args.plotFile, dpi=PLOT_SAVE_DPI, bbox_inches='tight')
     print('Plot file written to:', args.plotFile)
 
 
@@ -160,18 +188,17 @@ def plot_time_series(  # noqa: C901
         data.loc[mask, "acc"] = np.nan
 
     # setup plotting range
-    MAXRANGE = 2 * 1000  # 2g (above this is very rare)
     if 'acc' in data:
-        data['acc'] = data['acc'].rolling('1T').mean()  # minute average
-        data['acc'] = data['acc'].clip(0, MAXRANGE)
-    data[labels] = data[labels].astype('f4') * MAXRANGE
+        data['acc'] = data['acc'].rolling(PLOT_ACC_ROLLING_WINDOW).mean()  # minute average
+        data['acc'] = data['acc'].clip(0, PLOT_MAX_ACCELERATION_MG)
+    data[labels] = data[labels].astype('f4') * PLOT_MAX_ACCELERATION_MG
 
     # number of rows to display in figure (all days + legend)
     grouped_days = data.groupby(data.index.date)
     nrows = len(grouped_days) + 1
 
     # create overall figure
-    fig = plt.figure(None, figsize=(10, nrows), dpi=100)
+    fig = plt.figure(None, figsize=(PLOT_FIGURE_WIDTH, nrows), dpi=PLOT_FIGURE_DPI)
     if title is not None:
         fig.suptitle(title)
 
@@ -201,20 +228,20 @@ def plot_time_series(  # noqa: C901
                       color='k',
                       labelpad=5)
         # run gridlines for each hour bar
-        ax.get_xaxis().grid(True, which='major', color='grey', alpha=0.5)
-        ax.get_xaxis().grid(True, which='minor', color='grey', alpha=0.25)
+        ax.get_xaxis().grid(True, which='major', color=PLOT_GRID_COLOR_MAJOR, alpha=PLOT_GRID_ALPHA_MAJOR)
+        ax.get_xaxis().grid(True, which='minor', color=PLOT_GRID_COLOR_MINOR, alpha=PLOT_GRID_ALPHA_MINOR)
         # set x and y-axes
         ax.set_xlim(group.index[0], group.index[-1])
         ax.set_xticks(pd.date_range(start=datetime.combine(day, time(0, 0, 0, 0)),
                                     end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
-                                    freq='4H'))
+                                    freq=PLOT_HOUR_GRID_MAJOR))
         ax.set_xticks(pd.date_range(start=datetime.combine(day, time(0, 0, 0, 0)),
                                     end=datetime.combine(day + timedelta(days=1), time(0, 0, 0, 0)),
-                                    freq='1H'), minor=True)
-        ax.set_ylim(0, MAXRANGE)
+                                    freq=PLOT_HOUR_GRID_MINOR), minor=True)
+        ax.set_ylim(0, PLOT_MAX_ACCELERATION_MG)
         ax.get_yaxis().set_ticks([])  # hide y-axis lables
         # make border less harsh between subplots
-        ax.spines['top'].set_color('#d3d3d3')  # lightgray
+        ax.spines['top'].set_color(PLOT_BORDER_COLOR)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
         # set background colour to lightgray
