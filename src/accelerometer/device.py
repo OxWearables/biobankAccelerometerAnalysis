@@ -15,6 +15,36 @@ from typing import Dict, Optional, Union
 
 ROOT_DIR = pathlib.Path(__file__).parent
 
+# ============================================================================
+# CALIBRATION CONSTANTS
+# ============================================================================
+# These constants control the auto-calibration algorithm that eliminates
+# factory calibration dependency. The algorithm uses stationary periods to
+# optimize 9 parameters (offset, slope, temp coefficients) via iterative
+# weighted least squares, targeting a unit gravity sphere (|acceleration| = 1g).
+#
+# These values are scientifically validated - DO NOT modify without proper
+# justification and validation against published results (Doherty et al. 2017).
+# ============================================================================
+
+# Maximum iterations for calibration optimization
+CALIBRATION_MAX_ITERATIONS = 1000
+
+# Improvement tolerance: stop if improvement < 0.01% between iterations
+CALIBRATION_IMPROVEMENT_TOLERANCE = 0.0001
+
+# Error tolerance: calibration fails if mean error > 10mg (scientifically validated)
+# This threshold ensures calibrated data meets accelerometer accuracy standards
+CALIBRATION_ERROR_TOLERANCE = 0.01
+
+# Calibration cube: minimum axis range (±0.3g) required for reliable calibration
+# Ensures sufficient angular diversity in stationary positions
+CALIBRATION_CUBE_THRESHOLD = 0.3
+
+# Minimum number of stationary samples required for calibration
+# Fewer samples may not provide sufficient coverage of orientation space
+CALIBRATION_MIN_SAMPLES = 50
+
 
 def process_input_file_to_epoch(  # noqa: C901
     input_file, time_zone, time_shift,
@@ -272,20 +302,16 @@ def get_calibration_coefs(static_bouts_file: Union[str, pd.DataFrame], summary: 
     best_err = 1e16
     n_static = len(xyz)
 
-    MAXITER = 1000
-    IMPROV_TOL = 0.0001  # 0.01%
-    ERR_TOL = 0.01  # 10mg
-    CALIB_CUBE = 0.3
-    CALIB_MIN_SAMPLES = 50
-
     # Check that we have enough uniformly distributed points:
     # need at least one point outside each face of the cube
-    if len(xyz) < CALIB_MIN_SAMPLES or (np.max(xyz, axis=0) < CALIB_CUBE).any() or (np.min(xyz, axis=0) > -CALIB_CUBE).any():
+    if (len(xyz) < CALIBRATION_MIN_SAMPLES or
+            (np.max(xyz, axis=0) < CALIBRATION_CUBE_THRESHOLD).any() or
+            (np.min(xyz, axis=0) > -CALIBRATION_CUBE_THRESHOLD).any()):
         good_calibration = 0
 
     else:  # we do have enough uniformly distributed points
 
-        for it in range(MAXITER):
+        for it in range(CALIBRATION_MAX_ITERATIONS):
 
             # Weighting. Outliers are zeroed out
             # This is different from the paper
@@ -324,10 +350,10 @@ def get_calibration_coefs(static_bouts_file: Union[str, pd.DataFrame], summary: 
                 best_slope_t = np.copy(slope_t)
                 best_err = err
 
-            if err_improv < IMPROV_TOL:
+            if err_improv < CALIBRATION_IMPROVEMENT_TOLERANCE:
                 break
 
-        good_calibration = int(not ((best_err > ERR_TOL) or (it + 1 == MAXITER)))
+        good_calibration = int(not ((best_err > CALIBRATION_ERROR_TOLERANCE) or (it + 1 == CALIBRATION_MAX_ITERATIONS)))
 
     if good_calibration == 0:  # restore calibr params
         best_intercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
