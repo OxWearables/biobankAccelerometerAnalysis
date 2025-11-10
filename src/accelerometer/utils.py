@@ -1,6 +1,5 @@
 """Module to provide generic utilities for other accelerometer modules."""
 
-from collections import OrderedDict
 import datetime
 import json
 import math
@@ -201,7 +200,7 @@ def collate_summary(results_dir, output_csv_file="all-summary.csv"):
     print(f"Found {len(summary_files)} summary files...")
     for file in tqdm(summary_files):
         with open(file, 'r') as f:
-            json_dicts.append(json.load(f, object_pairs_hook=OrderedDict))
+            json_dicts.append(json.load(f, object_pairs_hook=dict))
 
     summary = pd.DataFrame.from_dict(json_dicts)  # merge to a dataframe
     summary['eid'] = summary['file-name'].str.split('/').str[-1].str.split('.').str[0]  # infer ID from filename

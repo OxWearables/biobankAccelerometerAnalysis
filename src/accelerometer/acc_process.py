@@ -4,7 +4,6 @@ import accelerometer.utils
 from accelerometer.utils import str2bool
 import accelerometer.classification
 import argparse
-import collections
 import datetime
 import accelerometer.device
 import json
@@ -200,7 +199,7 @@ def process_single_file(input_file, args):  # noqa: C901
         summary_vals = ['file-name', 'file-startTime', 'file-endTime',
                         'acc-overall-avg', 'wearTime-overall(days)',
                         'nonWearTime-overall(days)', 'quality-goodWearTime']
-        summary_dict = collections.OrderedDict([(i, summary[i]) for i in summary_vals])
+        summary_dict = {i: summary[i] for i in summary_vals}
         print(json.dumps(summary_dict, indent=4))
 
         # Write summary to file
