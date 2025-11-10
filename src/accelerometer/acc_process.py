@@ -1,6 +1,7 @@
 """Command line tool to extract meaningful health info from accelerometer data."""
 
 import accelerometer.utils
+from accelerometer.utils import str2bool
 import accelerometer.classification
 import argparse
 import collections
@@ -721,14 +722,6 @@ def main():  # noqa: C901
     else:
         print(f"Error: Input path '{args.inputFile}' is neither a file nor a directory")
         sys.exit(-1)
-
-
-def str2bool(v):
-    """
-    Used to parse true/false values from the command line. E.g. "True" -> True
-    """
-
-    return v.lower() in ("yes", "true", "t", "1")
 
 
 

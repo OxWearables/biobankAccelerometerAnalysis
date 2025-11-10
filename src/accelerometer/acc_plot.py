@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta, time
 import argparse
 from accelerometer import utils
+from accelerometer.utils import str2bool
 import matplotlib
 
 # http://pandas-docs.github.io/pandas-docs-travis/whatsnew/v0.21.1.html#restore-matplotlib-datetime-converter-registration
@@ -252,14 +253,6 @@ def plot_time_series(  # noqa: C901
     fig.tight_layout()
 
     return fig
-
-
-def str2bool(v):
-    """
-    Used to parse true/false values from the command line. E.g. "True" -> True
-    """
-
-    return v.lower() in ("yes", "true", "t", "1")
 
 
 if __name__ == '__main__':

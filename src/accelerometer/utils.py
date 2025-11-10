@@ -13,6 +13,27 @@ DAYS = ['mon', 'tue', 'wed', 'thur', 'fri', 'sat', 'sun']
 TIME_SERIES_COL = 'time'
 
 
+def str2bool(v):
+    """Convert string to boolean for command-line argument parsing.
+
+    Used to parse true/false values from the command line.
+
+    :param str v: String value to convert
+    :return: Boolean representation
+    :rtype: bool
+
+    Example
+    -------
+    >>> str2bool("True")
+    True
+    >>> str2bool("false")
+    False
+    >>> str2bool("1")
+    True
+    """
+    return v.lower() in ("yes", "true", "t", "1")
+
+
 def format_num(num, num_decimal_places):
     """Format a number to a specified number of decimal places."""
     return round(num, num_decimal_places)
