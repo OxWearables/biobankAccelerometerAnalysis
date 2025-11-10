@@ -1,6 +1,7 @@
 """Module to support machine learning of activity states from acc data"""
 
 from accelerometer import utils
+from accelerometer.exceptions import ClassificationError
 from accelerometer.models import MODELS
 from io import BytesIO
 import tempfile
@@ -505,7 +506,10 @@ def get_file_from_tar(tar_archive, target_file):
         try:
             byte_buffer.write(t.extractfile(target_file).read())
         except KeyError:
-            return None
+            raise ClassificationError(
+                f"Required model file '{target_file}' not found in archive '{tar_archive}'. "
+                f"The model archive may be corrupted or from an incompatible version."
+            )
         byte_buffer.seek(0)
 
     return byte_buffer
