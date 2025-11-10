@@ -19,8 +19,8 @@ ROOT_DIR = pathlib.Path(__file__).parent
 def process_input_file_to_epoch(  # noqa: C901
     input_file, time_zone, time_shift,
     epoch_file, stationary_file, summary,
-    skip_calibration=False, stationary_std=13, xyz_intercept=[0.0, 0.0, 0.0],
-    xyz_slope=[1.0, 1.0, 1.0], xyz_slope_t=[0.0, 0.0, 0.0],
+    skip_calibration=False, stationary_std=13, xyz_intercept=None,
+    xyz_slope=None, xyz_slope_t=None,
     raw_data_parser="AccelerometerParser", java_heap_space=None,
     use_filter=True, sample_rate=100, resample_method="linear", epoch_period=30,
     extract_features=True,
@@ -43,9 +43,9 @@ def process_input_file_to_epoch(  # noqa: C901
     :param dict summary: Output dictionary containing all summary metrics
     :param bool skip_calibration: Perform software calibration (process data twice)
     :param int stationary_std: Gravity threshold (in mg units) for stationary vs not
-    :param list(float) xyz_intercept: Calibration offset [x, y, z]
-    :param list(float) xyz_slope: Calibration slope [x, y, z]
-    :param list(float) xyz_temp: Calibration temperature coefficient [x, y, z]
+    :param list(float) xyz_intercept: Calibration offset [x, y, z]. Defaults to [0.0, 0.0, 0.0]
+    :param list(float) xyz_slope: Calibration slope [x, y, z]. Defaults to [1.0, 1.0, 1.0]
+    :param list(float) xyz_temp: Calibration temperature coefficient [x, y, z]. Defaults to [0.0, 0.0, 0.0]
     :param str raw_data_parser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
     :param str java_heap_space: Amount of heap space allocated to java subprocesses.
@@ -78,6 +78,13 @@ def process_input_file_to_epoch(  # noqa: C901
         device.process_input_file_to_epoch('inputFile.cwa', 'epochFile.csv.gz',
                 'stationary.csv.gz', summary)
     """
+    # Initialize mutable default arguments to avoid shared state bugs
+    if xyz_intercept is None:
+        xyz_intercept = [0.0, 0.0, 0.0]
+    if xyz_slope is None:
+        xyz_slope = [1.0, 1.0, 1.0]
+    if xyz_slope_t is None:
+        xyz_slope_t = [0.0, 0.0, 0.0]
 
     summary['file-size'] = os.path.getsize(input_file)
     summary['file-deviceID'] = get_device_id(input_file)
