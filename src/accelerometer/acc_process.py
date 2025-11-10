@@ -1,7 +1,7 @@
 """Command line tool to extract meaningful health info from accelerometer data."""
 
 import accelerometer.utils
-from accelerometer.utils import str2bool
+from accelerometer.utils import str2bool, discover_files
 import accelerometer.classification
 import argparse
 import datetime
@@ -12,87 +12,8 @@ import accelerometer.summarisation
 import pandas as pd
 import sys
 import warnings
-from pathlib import Path
 import traceback
 from accelerometer.exceptions import AccelerometerException
-
-
-def matches_extension(file_path, extensions, compression_exts=None):
-    """
-    Check if file matches one of the specified extensions.
-
-    Parameters
-    ----------
-    file_path : str or Path
-        Path to the file
-    extensions : list of str
-        List of extensions to match (without dots, e.g., ['cwa', 'csv'])
-    compression_exts : list of str, optional
-        List of compression extensions (e.g., ['gz', 'zip', 'bz2'])
-        Default: ['gz', 'zip', 'bz2', 'xz']
-
-    Returns
-    -------
-    bool
-        True if file matches one of the extensions (with or without compression)
-    """
-    if compression_exts is None:
-        compression_exts = ['gz', 'zip', 'bz2', 'xz']
-
-    file_path = Path(file_path)
-    filename_lower = file_path.name.lower()
-
-    for ext in extensions:
-        ext_lower = ext.lower().lstrip('.')
-        # Check base extension
-        if filename_lower.endswith(f'.{ext_lower}'):
-            return True
-        # Check with compression extensions
-        for comp_ext in compression_exts:
-            if filename_lower.endswith(f'.{ext_lower}.{comp_ext}'):
-                return True
-
-    return False
-
-
-def discover_files(input_path, extensions, recursive=False):
-    """
-    Discover accelerometer files in a directory.
-
-    Parameters
-    ----------
-    input_path : str or Path
-        Directory path to search
-    extensions : list of str
-        List of file extensions to match (without dots).
-    recursive : bool, optional
-        Whether to search subdirectories recursively
-        Default: False
-
-    Returns
-    -------
-    list of Path
-        Sorted list of absolute file paths matching the criteria
-    """
-    input_path = Path(input_path)
-
-    files = []
-
-    if recursive:
-        # Search recursively
-        for file_path in input_path.rglob('*'):
-            if file_path.is_file() and matches_extension(file_path, extensions):
-                files.append(file_path.resolve())
-    else:
-        # Search only in the specified directory
-        for file_path in input_path.glob('*'):
-            if file_path.is_file() and matches_extension(file_path, extensions):
-                files.append(file_path.resolve())
-
-    # Sort files by name for consistent ordering
-    files.sort(key=lambda p: p.name)
-
-    return files
 
 
 def process_single_file(input_file, args):  # noqa: C901

@@ -6,11 +6,94 @@ import math
 import os
 import pandas as pd
 import re
+from pathlib import Path
 from tqdm.auto import tqdm
-from typing import Union
+from typing import List, Union
 
 DAYS = ['mon', 'tue', 'wed', 'thur', 'fri', 'sat', 'sun']
 TIME_SERIES_COL = 'time'
+
+
+# ============================================================================
+# FILE DISCOVERY UTILITIES
+# ============================================================================
+
+def matches_extension(file_path: Union[str, Path], extensions: List[str], compression_exts: List[str] = None) -> bool:
+    """
+    Check if file matches one of the specified extensions.
+
+    Parameters
+    ----------
+    file_path : str or Path
+        Path to the file
+    extensions : list of str
+        List of extensions to match (without dots, e.g., ['cwa', 'csv'])
+    compression_exts : list of str, optional
+        List of compression extensions (e.g., ['gz', 'zip', 'bz2'])
+        Default: ['gz', 'zip', 'bz2', 'xz']
+
+    Returns
+    -------
+    bool
+        True if file matches one of the extensions (with or without compression)
+    """
+    if compression_exts is None:
+        compression_exts = ['gz', 'zip', 'bz2', 'xz']
+
+    file_path = Path(file_path)
+    filename_lower = file_path.name.lower()
+
+    for ext in extensions:
+        ext_lower = ext.lower().lstrip('.')
+        # Check base extension
+        if filename_lower.endswith(f'.{ext_lower}'):
+            return True
+        # Check with compression extensions
+        for comp_ext in compression_exts:
+            if filename_lower.endswith(f'.{ext_lower}.{comp_ext}'):
+                return True
+
+    return False
+
+
+def discover_files(input_path: Union[str, Path], extensions: List[str], recursive: bool = False) -> List[Path]:
+    """
+    Discover accelerometer files in a directory.
+
+    Parameters
+    ----------
+    input_path : str or Path
+        Directory path to search
+    extensions : list of str
+        List of file extensions to match (without dots).
+    recursive : bool, optional
+        Whether to search subdirectories recursively
+        Default: False
+
+    Returns
+    -------
+    list of Path
+        Sorted list of absolute file paths matching the criteria
+    """
+    input_path = Path(input_path)
+
+    files = []
+
+    if recursive:
+        # Search recursively
+        for file_path in input_path.rglob('*'):
+            if file_path.is_file() and matches_extension(file_path, extensions):
+                files.append(file_path.resolve())
+    else:
+        # Search only in the specified directory
+        for file_path in input_path.glob('*'):
+            if file_path.is_file() and matches_extension(file_path, extensions):
+                files.append(file_path.resolve())
+
+    # Sort files by name for consistent ordering
+    files.sort(key=lambda p: p.name)
+
+    return files
 
 
 def str2bool(v: str) -> bool:
@@ -133,17 +216,8 @@ def write_cmds(acc_dir, out_dir, cmds_file='list-of-commands.txt', acc_ext="cwa"
 
     else:
         files_csv = None
-        # List all accelerometer files under acc_dir/
-        file_paths = []
-        acc_ext = acc_ext.lower()
-        for root, dirs, files in os.walk(acc_dir):
-            for file in files:
-                if file.lower().endswith((acc_ext,
-                                          acc_ext + ".gz",
-                                          acc_ext + ".zip",
-                                          acc_ext + ".bz2",
-                                          acc_ext + ".xz")):
-                    file_paths.append(os.path.join(root, file))
+        # List all accelerometer files under acc_dir/ using discover_files
+        file_paths = [str(p) for p in discover_files(acc_dir, [acc_ext], recursive=True)]
 
     with open(cmds_file, 'w') as f:
         for file_path in file_paths:
