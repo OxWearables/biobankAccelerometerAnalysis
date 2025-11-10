@@ -95,27 +95,27 @@ def process_input_file_to_epoch(  # noqa: C901
             utils.to_screen("=== Calibrating ===")
             command_args = ["java", "-classpath", java_class_path,
                             "-XX:ParallelGCThreads=1", raw_data_parser, input_file,
-                            "timeZone:" + time_zone,
-                            "timeShift:" + str(time_shift),
-                            "outputFile:" + stationary_file,
-                            "verbose:" + str(verbose),
-                            "filter:" + str(use_filter),
+                            f"timeZone:{time_zone}",
+                            f"timeShift:{time_shift}",
+                            f"outputFile:{stationary_file}",
+                            f"verbose:{verbose}",
+                            f"filter:{use_filter}",
                             "getStationaryBouts:true", "epochPeriod:10",
-                            "stationaryStd:" + str(static_std_g),
-                            "sampleRate:" + str(sample_rate)]
+                            f"stationaryStd:{static_std_g}",
+                            f"sampleRate:{sample_rate}"]
             if java_heap_space:
                 command_args.insert(1, java_heap_space)
             if csv_start_time:
-                command_args.append("csvStartTime:" + to_iso_datetime(csv_start_time))
+                command_args.append(f"csvStartTime:{to_iso_datetime(csv_start_time)}")
             if csv_sample_rate:
-                command_args.append("csvSampleRate:" + str(csv_sample_rate))
+                command_args.append(f"csvSampleRate:{csv_sample_rate}")
             if csv_time_format:
-                command_args.append("csvTimeFormat:" + str(csv_time_format))
+                command_args.append(f"csvTimeFormat:{csv_time_format}")
             if csv_start_row is not None:
-                command_args.append("csvStartRow:" + str(csv_start_row))
+                command_args.append(f"csvStartRow:{csv_start_row}")
             if csv_time_xyz_temp_cols_index:
                 java_str_csv_txyz = ','.join([str(i) for i in csv_time_xyz_temp_cols_index])
-                command_args.append("csvTimeXYZTempColsIndex:" + java_str_csv_txyz)
+                command_args.append(f"csvTimeXYZTempColsIndex:{java_str_csv_txyz}")
             # call process to identify stationary epochs
             exit_code = call(command_args)
             if exit_code != 0:
@@ -144,44 +144,44 @@ def process_input_file_to_epoch(  # noqa: C901
         utils.to_screen('=== Extracting features ===')
         command_args = ["java", "-classpath", java_class_path,
                         "-XX:ParallelGCThreads=1", raw_data_parser, input_file,
-                        "timeZone:" + time_zone,
-                        "timeShift:" + str(time_shift),
-                        "outputFile:" + epoch_file, "verbose:" + str(verbose),
-                        "filter:" + str(use_filter),
-                        "sampleRate:" + str(sample_rate),
-                        "resampleMethod:" + str(resample_method),
-                        "xIntercept:" + str(xyz_intercept[0]),
-                        "yIntercept:" + str(xyz_intercept[1]),
-                        "zIntercept:" + str(xyz_intercept[2]),
-                        "xSlope:" + str(xyz_slope[0]),
-                        "ySlope:" + str(xyz_slope[1]),
-                        "zSlope:" + str(xyz_slope[2]),
-                        "xSlopeT:" + str(xyz_slope_t[0]),
-                        "ySlopeT:" + str(xyz_slope_t[1]),
-                        "zSlopeT:" + str(xyz_slope_t[2]),
-                        "epochPeriod:" + str(epoch_period),
-                        "rawOutput:" + str(raw_output),
-                        "rawFile:" + str(raw_file),
-                        "npyOutput:" + str(npy_output),
-                        "npyFile:" + str(npy_file),
-                        "getFeatures:" + str(extract_features)]
+                        f"timeZone:{time_zone}",
+                        f"timeShift:{time_shift}",
+                        f"outputFile:{epoch_file}", f"verbose:{verbose}",
+                        f"filter:{use_filter}",
+                        f"sampleRate:{sample_rate}",
+                        f"resampleMethod:{resample_method}",
+                        f"xIntercept:{xyz_intercept[0]}",
+                        f"yIntercept:{xyz_intercept[1]}",
+                        f"zIntercept:{xyz_intercept[2]}",
+                        f"xSlope:{xyz_slope[0]}",
+                        f"ySlope:{xyz_slope[1]}",
+                        f"zSlope:{xyz_slope[2]}",
+                        f"xSlopeT:{xyz_slope_t[0]}",
+                        f"ySlopeT:{xyz_slope_t[1]}",
+                        f"zSlopeT:{xyz_slope_t[2]}",
+                        f"epochPeriod:{epoch_period}",
+                        f"rawOutput:{raw_output}",
+                        f"rawFile:{raw_file}",
+                        f"npyOutput:{npy_output}",
+                        f"npyFile:{npy_file}",
+                        f"getFeatures:{extract_features}"]
         if java_heap_space:
             command_args.insert(1, java_heap_space)
         if start_time:
-            command_args.append("startTime:" + to_iso_datetime(start_time))
+            command_args.append(f"startTime:{to_iso_datetime(start_time)}")
         if end_time:
-            command_args.append("endTime:" + to_iso_datetime(end_time))
+            command_args.append(f"endTime:{to_iso_datetime(end_time)}")
         if csv_start_time:
-            command_args.append("csvStartTime:" + csv_start_time.strftime("%Y-%m-%dT%H:%M"))
+            command_args.append(f"csvStartTime:{csv_start_time.strftime('%Y-%m-%dT%H:%M')}")
         if csv_sample_rate:
-            command_args.append("csvSampleRate:" + str(csv_sample_rate))
+            command_args.append(f"csvSampleRate:{csv_sample_rate}")
         if csv_time_format:
-            command_args.append("csvTimeFormat:" + str(csv_time_format))
+            command_args.append(f"csvTimeFormat:{csv_time_format}")
         if csv_start_row:
-            command_args.append("csvStartRow:" + str(csv_start_row))
+            command_args.append(f"csvStartRow:{csv_start_row}")
         if csv_time_xyz_temp_cols_index:
             java_str_csv_txyz = ','.join([str(i) for i in csv_time_xyz_temp_cols_index])
-            command_args.append("csvTimeXYZTempColsIndex:" + java_str_csv_txyz)
+            command_args.append(f"csvTimeXYZTempColsIndex:{java_str_csv_txyz}")
         exit_code = call(command_args)
         if exit_code != 0:
             print(command_args)
@@ -453,7 +453,7 @@ def get_device_id(input_file: str) -> Optional[str]:
     elif input_file.lower().endswith('.csv') or input_file.lower().endswith('.csv.gz'):
         return "unknown (.csv)"
     else:
-        print("ERROR: Cannot get deviceId for file: " + input_file)
+        print(f"ERROR: Cannot get deviceId for file: {input_file}")
 
 
 def get_axivity_device_id(cwa_file: str) -> str:
@@ -477,7 +477,7 @@ def get_axivity_device_id(cwa_file: str) -> str:
         device_id = struct.unpack('H', device_file.read(2))[0]
     else:
         device_file.close()
-        print("ERROR: in get_device_id(\"" + cwa_file + "\")")
+        print(f"ERROR: in get_device_id(\"{cwa_file}\")")
         print("""A deviceId value could not be found in input file header,
          this usually occurs when the file is not an Axivity .cwa accelerometer
          file.""")
@@ -533,12 +533,12 @@ def get_gt3x_device_id(gt3x_file: str) -> Optional[str]:
                     if line.startswith(b"Serial Number:"):
                         newline = line.decode("utf-8")
                         newline = newline.split("Serial Number: ")[1]
-                        print("Serial Number: " + newline)
+                        print(f"Serial Number: {newline}")
                         return newline
             else:
                 print("Could not find info.txt file")
 
-    print("ERROR: in get_device_id(\"" + gt3x_file + "\")")
+    print(f"ERROR: in get_device_id(\"{gt3x_file}\")")
     print("""A deviceId value could not be found in input file header,
      this usually occurs when the file is not an Actigraph .gt3x accelerometer
      file.""")

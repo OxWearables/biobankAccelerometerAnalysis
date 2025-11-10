@@ -205,7 +205,7 @@ def process_single_file(input_file, args):  # noqa: C901
         # Write summary to file
         with open(summary_file, 'w') as f:
             json.dump(summary, f, indent=4)
-        print('Full summary written to: ' + summary_file)
+        print(f'Full summary written to: {summary_file}')
 
         ##########################
         # Closing
@@ -213,7 +213,7 @@ def process_single_file(input_file, args):  # noqa: C901
         processing_end_time = datetime.datetime.now()
         processing_time = (processing_end_time - processing_start_time).total_seconds()
         accelerometer.utils.to_screen(
-            "In total, processing took " + str(processing_time) + " seconds"
+            f"In total, processing took {processing_time} seconds"
         )
 
         return (True, None, processing_time)
