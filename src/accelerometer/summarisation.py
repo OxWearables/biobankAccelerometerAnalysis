@@ -63,9 +63,9 @@ def get_activity_summary(  # noqa: C901
 
     .. code-block:: python
 
-        import summariseEpoch
+        from accelerometer import summarisation
         summary = {}
-        epochData, labels = summariseEpoch.get_activity_summary("epoch.csv.gz", summary)
+        epochData, labels = summarisation.get_activity_summary("epoch.csv.gz", summary)
     """
 
     utils.to_screen("=== Summarizing ===")

@@ -540,8 +540,8 @@ def add_reference_labels_to_new_features(
 
     .. code-block:: python
 
-        from accelerometer import accClassification
-        accClassification.add_reference_labels_to_new_features("newFeats.csv", "refLabels.csv", "newFeatsPlusLabels.csv")
+        from accelerometer import classification
+        classification.add_reference_labels_to_new_features("newFeats.csv", "refLabels.csv", "newFeatsPlusLabels.csv")
     """
 
     # load new features file
