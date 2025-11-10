@@ -161,7 +161,7 @@ def write_cmds(acc_dir, out_dir, cmds_file='list-of-commands.txt', acc_ext="cwa"
 
             if files_csv is not None:
                 # Grab additional options provided in files_csv (e.g. calibration params)
-                cmd_options_csv = ' '.join(['--{} {}'.format(col, files_csv.loc[file_path, col])
+                cmd_options_csv = ' '.join([f'--{col} {files_csv.loc[file_path, col]}'
                                             for col in files_csv.columns])
                 cmd += " " + cmd_options_csv
 

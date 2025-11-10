@@ -486,7 +486,7 @@ def save_to_tar(tar_out, **kwargs):
         try:
             shutil.rmtree(tmpdir)
         except OSError as e:
-            print("Error: %s - %s." % (e.filename, e.strerror))
+            print(f"Error: {e.filename} - {e.strerror}.")
 
 
 def get_file_from_tar(tar_archive, target_file):

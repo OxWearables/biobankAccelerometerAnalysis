@@ -84,7 +84,7 @@ def get_activity_summary(  # noqa: C901
     # Quit if no data left
     if epoch_data.shape[0] == 0:
         print("No rows remaining after start/end time removal")
-        print("Previously there were %d rows, now shape: %s" % (rows, str(epoch_data.shape)))
+        print(f"Previously there were {rows} rows, now shape: {epoch_data.shape}")
         raise DataError(
             f"No data remaining after start/end time filtering. "
             f"Original rows: {rows}, remaining: {epoch_data.shape[0]}"
