@@ -217,11 +217,11 @@ assess the model:
 .. code-block:: python
 
     import accelerometer
-    from accelerometer.classification import trainClassificationModel
-    trainClassificationModel( \
+    from accelerometer.classification import train_classification_model
+    train_classification_model( \
         "labelled-acc-epochs.csv", \
-        featuresTxt="features.txt", \
-        testParticipants="4,5", \
+        features_txt="features.txt", \
+        test_participants="4,5", \
         outputPredict="test-predictions.csv", \
         rfTrees=1000, rfThreads=1)
     # <Test predictions written to:  test-predictions.csv>
@@ -242,7 +242,7 @@ can then be calculated from the test predictions csv file:
     yTrueCol = 'label'
     yPredCol = 'predicted'
     participantCol = 'participant'
-    classification.perParticipantSummaryHTML(data, yTrueCol, yPredCol,
+    classification.per_participant_summary_html(data, yTrueCol, yPredCol,
         participantCol, htmlFile)
 
 After evaluating the performance of our model on unseen data, we then re-train
@@ -252,12 +252,12 @@ the amount of training data for the final model. This results in an output .tar 
 
 .. code-block:: python
 
-    from accelerometer.classification import trainClassificationModel
-    trainClassificationModel( \
+    from accelerometer.classification import train_classification_model
+    train_classification_model( \
         "labelled-acc-epochs.csv", \
-        featuresTxt="features.txt", \
+        features_txt="features.txt", \
         rfTrees=1000, rfThreads=1, \
-        testParticipants=None, \
+        test_participants=None, \
         outputModel="custom-model.tar")
     # <Model saved to custom-model.tar>
 
@@ -280,7 +280,7 @@ to test the performance of a model trained on unseen data for each participant:
 .. code-block:: python
 
     import pandas as pd
-    from acceleration.classification import trainClassificationModel
+    from acceleration.classification import train_classification_model
 
     trainingFile = "labelled-acc-epochs.csv"
     d = pd.read_csv(trainingFile, usecols=['participant'])
@@ -289,11 +289,11 @@ to test the performance of a model trained on unseen data for each participant:
     w = open('training-cmds.txt','w')
     for p in pts:
         cmd = "import accelerometer;"
-        cmd += "trainClassificationModel("
+        cmd += "train_classification_model("
         cmd += "'" + trainingFile + "', "
-        cmd += "featuresTxt='features.txt',"
-        cmd += "testParticipants='" + str(p) + "',"
-        cmd += "labelCol='label',"
+        cmd += "features_txt='features.txt',"
+        cmd += "test_participants='" + str(p) + "',"
+        cmd += "label_col='label',"
         cmd += "outputPredict='testPredict-" + str(p) + ".csv',"
         cmd += "rfTrees=100, rfThreads=1)"
         w.write('python3 -c $"' + cmd + '"\n')

@@ -9,21 +9,21 @@ from accelerometer import circadian
 from accelerometer.exceptions import DataError
 
 
-def getActivitySummary(  # noqa: C901
-    epochFile, summary,
-    activityClassification=True, timeZone='Europe/London',
-    startTime=None, endTime=None,
-    epochPeriod=30, stationaryStd=13, minNonWearDuration=60,
-    mgCpLPA=45, mgCpMPA=100, mgCpVPA=400,
-    removeSpuriousSleep=True, removeSpuriousSleepTol=60,
-    activityModel="walmsley",
-    intensityDistribution=False, imputation=True,
-    psd=False, fourierFrequency=False, fourierWithAcc=False, m10l5=False,
-    minWearPerDay=None
+def get_activity_summary(  # noqa: C901
+    epoch_file, summary,
+    activity_classification=True, time_zone='Europe/London',
+    start_time=None, end_time=None,
+    epoch_period=30, stationary_std=13, min_non_wear_duration=60,
+    mg_cp_lpa=45, mg_cp_mpa=100, mg_cp_vpa=400,
+    remove_spurious_sleep=True, remove_spurious_sleep_tol=60,
+    activity_model="walmsley",
+    intensity_distribution=False, imputation=True,
+    psd=False, fourier_frequency=False, fourier_with_acc=False, m10l5=False,
+    min_wear_per_day=None
 ):
     """
-    Calculate overall activity summary from <epochFile> data. Get overall
-    activity summary from input <epochFile>. This is achieved by:
+    Calculate overall activity summary from <epoch_file> data. Get overall
+    activity summary from input <epoch_file>. This is achieved by:
     1) get interrupt and data error summary vals
     2) check if data occurs at a daylight savings crossover
     3) calculate wear-time statistics, and write nonWear episodes to file
@@ -32,31 +32,32 @@ def getActivitySummary(  # noqa: C901
     6) calculate empirical cumulative distribution function of vector magnitudes
     7) derive main movement summaries (overall, weekday/weekend, and hour)
 
-    :param str epochFile: Input csv.gz file of processed epoch data
+    :param str epoch_file: Input csv.gz file of processed epoch data
     :param dict summary: Output dictionary containing all summary metrics
-    :param bool activityClassification: Perform machine learning of activity states
-    :param str timeZone: timezone in country/city format to be used for daylight savings crossover check
-    :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis
-    :param int epochPeriod: Size of epoch time window (in seconds)
-    :param int stationaryStd: Threshold (in mg units) for stationary vs not
-    :param int minNonWearDuration: Minimum duration of nonwear events (minutes)
-    :param int mgCutPointMVPA: Milli-gravity threshold for moderate intensity activity
-    :param int mgCutPointVPA: Milli-gravity threshold for vigorous intensity activity
-    :param bool removeSpuriousSleep: Remove spurious sleep epochs
-    :param int removeSpuriousSleepTol: Tolerance (in minutes) for spurious sleep removal
-    :param str activityModel: Input tar model file which contains random forest
+    :param bool activity_classification: Perform machine learning of activity states
+    :param str time_zone: timezone in country/city format to be used for daylight savings crossover check
+    :param datetime start_time: Remove data before this time in analysis
+    :param datetime end_time: Remove data after this time in analysis
+    :param int epoch_period: Size of epoch time window (in seconds)
+    :param int stationary_std: Threshold (in mg units) for stationary vs not
+    :param int min_non_wear_duration: Minimum duration of nonwear events (minutes)
+    :param int mg_cp_lpa: Milli-gravity threshold for light intensity activity
+    :param int mg_cp_mpa: Milli-gravity threshold for moderate intensity activity
+    :param int mg_cp_vpa: Milli-gravity threshold for vigorous intensity activity
+    :param bool remove_spurious_sleep: Remove spurious sleep epochs
+    :param int remove_spurious_sleep_tol: Tolerance (in minutes) for spurious sleep removal
+    :param str activity_model: Input tar model file which contains random forest
         pickle model, HMM priors/transitions/emissions npy files, and npy file
         of METS for each activity state
-    :param bool intensityDistribution: Add intensity outputs to dict <summary>
+    :param bool intensity_distribution: Add intensity outputs to dict <summary>
     :param bool imputation: Impute missing data using data from other days around the same time
     :param bool verbose: Print verbose output
-    :param float minWearPerDay: Minimum wear time (in hours) required for a day to be
+    :param float min_wear_per_day: Minimum wear time (in hours) required for a day to be
         included in summary statistics. Days with less wear time will be excluded.
         If None, all days are included.
 
     :return: A tuple containing a pandas dataframe of activity epoch data,
-        activity prediction labels (empty if <activityClassification>==False), and
+        activity prediction labels (empty if <activity_classification>==False), and
         movement summary values written to dict <summary>.
     :rtype: tuple
 
@@ -64,82 +65,82 @@ def getActivitySummary(  # noqa: C901
 
         import summariseEpoch
         summary = {}
-        epochData, labels = summariseEpoch.getActivitySummary("epoch.csv.gz", summary)
+        epochData, labels = summariseEpoch.get_activity_summary("epoch.csv.gz", summary)
     """
 
-    utils.toScreen("=== Summarizing ===")
+    utils.to_screen("=== Summarizing ===")
 
-    if isinstance(epochFile, pd.DataFrame):
-        data = epochFile
+    if isinstance(epoch_file, pd.DataFrame):
+        epoch_data = epoch_file
     else:
-        data = pd.read_csv(epochFile, index_col=['time'], parse_dates=['time'], date_parser=utils.date_parser)
+        epoch_data = pd.read_csv(epoch_file, index_col=['time'], parse_dates=['time'], date_parser=utils.date_parser)
 
     # Remove data before/after user specified start/end times
-    rows = data.shape[0]
-    if startTime:
-        data = data.loc[pd.Timestamp(startTime, tz=timeZone):]
-    if endTime:
-        data = data.loc[:pd.Timestamp(endTime, tz=timeZone)]
+    rows = epoch_data.shape[0]
+    if start_time:
+        epoch_data = epoch_data.loc[pd.Timestamp(start_time, tz=time_zone):]
+    if end_time:
+        epoch_data = epoch_data.loc[:pd.Timestamp(end_time, tz=time_zone)]
     # Quit if no data left
-    if data.shape[0] == 0:
+    if epoch_data.shape[0] == 0:
         print("No rows remaining after start/end time removal")
-        print("Previously there were %d rows, now shape: %s" % (rows, str(data.shape)))
+        print("Previously there were %d rows, now shape: %s" % (rows, str(epoch_data.shape)))
         raise DataError(
             f"No data remaining after start/end time filtering. "
-            f"Original rows: {rows}, remaining: {data.shape[0]}"
+            f"Original rows: {rows}, remaining: {epoch_data.shape[0]}"
         )
 
     # Get start & end times
-    startTime = data.index[0]
-    endTime = data.index[-1]
-    summary['file-startTime'] = utils.date_strftime(startTime)
-    summary['file-endTime'] = utils.date_strftime(endTime)
-    summary['file-firstDay(0=mon,6=sun)'] = startTime.weekday()
+    start_time = epoch_data.index[0]
+    end_time = epoch_data.index[-1]
+    summary['file-startTime'] = utils.date_strftime(start_time)
+    summary['file-endTime'] = utils.date_strftime(end_time)
+    summary['file-firstDay(0=mon,6=sun)'] = start_time.weekday()
 
     # Quality checks
-    checkQuality(data, summary)
+    check_quality(epoch_data, summary)
 
     # enmo : Euclidean Norm Minus One
     # Trunc :  negative values truncated to zero (i.e never negative)
     # emmo = 1 - sqrt(x, y, z)
     # enmoTrunc = max(enmo, 0)
-    data['acc'] = data['enmoTrunc'] * 1000  # convert enmoTrunc to milli-G units
+    epoch_data['acc'] = epoch_data['enmoTrunc'] * 1000  # convert enmoTrunc to milli-G units
 
     # Resolve interrupts
-    data = resolveInterrupts(data, epochPeriod, summary)
+    epoch_data = resolve_interrupts(epoch_data, epoch_period, summary)
     # Resolve non-wear
-    data = resolveNonWear(data, stationaryStd, minNonWearDuration, summary)
+    epoch_data = resolve_non_wear(epoch_data, stationary_std, min_non_wear_duration, summary)
 
     # Predict activity from features, and add label column
     labels = []
-    if activityClassification:
-        data, labels = classification.activityClassification(
-            data,
-            activityModel,
-            mgCpLPA, mgCpMPA, mgCpVPA,
-            removeSpuriousSleep, removeSpuriousSleepTol
+    if activity_classification:
+        epoch_data, labels = classification.activity_classification(
+            epoch_data,
+            activity_model,
+            mg_cp_lpa, mg_cp_mpa, mg_cp_vpa,
+            remove_spurious_sleep, remove_spurious_sleep_tol
         )
 
     # Calculate empirical cumulative distribution function of vector magnitudes
-    if intensityDistribution:
-        calculateECDF(data['acc'], summary)
+    if intensity_distribution:
+        calculate_ecdf(epoch_data['acc'], summary)
 
     # Calculate circadian metrics
     if psd:
-        circadian.calculatePSD(imputeMissing(data[['acc'] + labels]), epochPeriod, fourierWithAcc, labels, summary)
-    if fourierFrequency:
-        circadian.calculateFourierFreq(imputeMissing(data[['acc'] + labels]), epochPeriod, fourierWithAcc, labels, summary)
+        circadian.calculate_psd(impute_missing(epoch_data[['acc'] + labels]), epoch_period, fourier_with_acc, labels, summary)
+    if fourier_frequency:
+        circadian.calculate_fourier_freq(impute_missing(epoch_data[['acc'] + labels]), epoch_period, fourier_with_acc, labels, summary)
     if m10l5:
-        circadian.calculateM10L5(imputeMissing(data[['acc'] + labels]), epochPeriod, summary)
+        circadian.calculate_m10l5(impute_missing(epoch_data[['acc'] + labels]), epoch_period, summary)
 
     # Main movement summaries
-    writeMovementSummaries(data, labels, summary, minWearPerDay)
+    write_movement_summaries(epoch_data, labels, summary, min_wear_per_day)
 
     # Return physical activity summary
-    return data, labels
+    return epoch_data, labels
 
 
-def checkQuality(data, summary):
+def check_quality(data, summary):
     summary['totalReads'] = data['rawSamples'].sum().item()
     # Check DST
     if data.index[0].dst() < data.index[-1].dst():
@@ -153,34 +154,34 @@ def checkQuality(data, summary):
     summary['clipsAfterCalibration'] = data['clipsAfterCalibr'].sum().item()
 
 
-def resolveInterrupts(data, epochPeriod, summary):
+def resolve_interrupts(data, epoch_period, summary):
     """Fix any interrupts in the recording by resampling
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
-    :param int epochPeriod: Size of epoch time window (in seconds)
+    :param int epoch_period: Size of epoch time window (in seconds)
     :param dict summary: Dictionary containing summary metrics
 
     :return: Write dict <summary> keys 'err-interrupts-num' & 'errs-interrupt-mins'
     :rtype: void
     """
-    epochPeriod = pd.Timedelta(epochPeriod, unit='S')
+    epoch_period = pd.Timedelta(epoch_period, unit='S')
     gaps = data.index.to_series().diff()
-    gaps = gaps[gaps > epochPeriod]
+    gaps = gaps[gaps > epoch_period]
     summary['errs-interrupts-num'] = len(gaps)
     summary['errs-interrupt-mins'] = gaps.sum().total_seconds() / 60
 
-    data = data.asfreq(epochPeriod, normalize=False, fill_value=None)
+    data = data.asfreq(epoch_period, normalize=False, fill_value=None)
     data['missing'] = data.isna().any(1)
 
     return data
 
 
-def resolveNonWear(data, stdTol, patience, summary):
+def resolve_non_wear(data, std_tol, patience, summary):
     """Calculate nonWear time, write episodes to file, and return wear statistics
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
-    :param int maxStd: Threshold (in mg units) for stationary vs not
-    :param int minDuration: Minimum duration of nonwear events (minutes)
+    :param int std_tol: Threshold (in mg units) for stationary vs not
+    :param int patience: Minimum duration of nonwear events (minutes)
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: Write dict <summary> keys 'wearTime-numNonWearEpisodes(>1hr)',
@@ -193,41 +194,41 @@ def resolveNonWear(data, stdTol, patience, summary):
     :rtype: void
     """
 
-    stdTol = stdTol / 1000.0  # mg to g
-    stationary = (data[['xStd', 'yStd', 'zStd']] < stdTol).all(1)
-    stationaryGroup = ((stationary != stationary.shift(1))
-                       .cumsum()
-                       .where(stationary))
-    stationaryLen = (stationaryGroup.groupby(stationaryGroup, dropna=True)
-                     .apply(lambda g: g.index[-1] - g.index[0]))
-    if len(stationaryLen) > 0:
-        nonWearLen = stationaryLen[stationaryLen > pd.Timedelta(patience, 'm')]
+    std_tol = std_tol / 1000.0  # mg to g
+    stationary = (data[['xStd', 'yStd', 'zStd']] < std_tol).all(1)
+    stationary_group = ((stationary != stationary.shift(1))
+                        .cumsum()
+                        .where(stationary))
+    stationary_len = (stationary_group.groupby(stationary_group, dropna=True)
+                      .apply(lambda g: g.index[-1] - g.index[0]))
+    if len(stationary_len) > 0:
+        non_wear_len = stationary_len[stationary_len > pd.Timedelta(patience, 'm')]
     else:
-        nonWearLen = pd.Series(dtype='timedelta64[ns]')  # empty series
-    nonWear = stationaryGroup.isin(nonWearLen.index)
-    missing = nonWear | data['missing']
+        non_wear_len = pd.Series(dtype='timedelta64[ns]')  # empty series
+    non_wear = stationary_group.isin(non_wear_len.index)
+    missing = non_wear | data['missing']
     data = data.mask(missing)  # set non wear rows to nan
     data['missing'] = missing
 
     freq = to_offset(pd.infer_freq(data.index))
-    epochInDays = pd.to_timedelta(freq).total_seconds() / (60 * 60 * 24)
-    numMissingRows = missing.sum()
-    nonWearTime = numMissingRows * epochInDays
-    wearTime = (len(data) - numMissingRows) * epochInDays
-    isGoodCoverage = not (missing  # check there's at least some data for each hour pocket
-                          .groupby(missing.index.hour)
-                          .all().any())
-    isGoodWearTime = wearTime >= 3  # check there's at least 3 days of wear time
+    epoch_in_days = pd.to_timedelta(freq).total_seconds() / (60 * 60 * 24)
+    num_missing_rows = missing.sum()
+    non_wear_time = num_missing_rows * epoch_in_days
+    wear_time = (len(data) - num_missing_rows) * epoch_in_days
+    is_good_coverage = not (missing  # check there's at least some data for each hour pocket
+                            .groupby(missing.index.hour)
+                            .all().any())
+    is_good_wear_time = wear_time >= 3  # check there's at least 3 days of wear time
 
-    summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(nonWearLen))
-    summary['wearTime-overall(days)'] = wearTime
-    summary['nonWearTime-overall(days)'] = nonWearTime
-    summary['quality-goodWearTime'] = int(isGoodCoverage and isGoodWearTime)
+    summary['wearTime-numNonWearEpisodes(>1hr)'] = int(len(non_wear_len))
+    summary['wearTime-overall(days)'] = wear_time
+    summary['nonWearTime-overall(days)'] = non_wear_time
+    summary['quality-goodWearTime'] = int(is_good_coverage and is_good_wear_time)
 
     return data
 
 
-def imputeMissing(data, extrapolate=True):
+def impute_missing(data, extrapolate=True):
     """Impute missing/nonwear segments
 
     Impute non-wear data segments using the average of similar time-of-day values
@@ -264,12 +265,12 @@ def imputeMissing(data, extrapolate=True):
         # After passing all columns, it will pass the entire subframe again as a DataFrame.
         # Processing the entire subframe is optional (return value can be omitted). See 'Notes' in transform doc.
         if isinstance(subframe, pd.Series):
-            x = subframe.to_numpy()
-            nan = np.isnan(x)
-            nanlen = len(x[nan])
-            if 0 < nanlen < len(x):  # check x contains a NaN and is not all NaN
-                x[nan] = np.nanmean(x)
-                return x  # will be cast back to a Series automatically
+            values = subframe.to_numpy()
+            missing_mask = np.isnan(values)
+            num_missing = len(values[missing_mask])
+            if 0 < num_missing < len(values):  # check values contains a NaN and is not all NaN
+                values[missing_mask] = np.nanmean(values)
+                return values  # will be cast back to a Series automatically
             else:
                 return subframe
 
@@ -289,7 +290,7 @@ def imputeMissing(data, extrapolate=True):
     return data
 
 
-def calculateECDF(x, summary):
+def calculate_ecdf(x, summary):
     """Calculate activity intensity empirical cumulative distribution
 
     The input data must not be imputed, as ECDF requires different imputation
@@ -332,13 +333,13 @@ def calculateECDF(x, summary):
         summary[f'{x.name}-ecdf-{level}mg'] = val
 
 
-def writeMovementSummaries(data, labels, summary, minWearPerDay=None):  # noqa: C901
+def write_movement_summaries(data, labels, summary, min_wear_per_day=None):  # noqa: C901
     """Write overall summary stats for each activity type to summary dict
 
     :param pandas.DataFrame e: Pandas dataframe of epoch data
     :param list(str) labels: Activity state labels
     :param dict summary: Output dictionary containing all summary metrics
-    :param float minWearPerDay: Minimum wear time (in hours) required for a day to be
+    :param float min_wear_per_day: Minimum wear time (in hours) required for a day to be
         included in summary statistics. Days with less wear time will be excluded.
         If None, all days are included.
 
@@ -353,133 +354,133 @@ def writeMovementSummaries(data, labels, summary, minWearPerDay=None):  # noqa: 
     freq = to_offset(pd.infer_freq(data.index))
 
     # Hours of activity for each recorded day
-    epochInHours = pd.Timedelta(freq).total_seconds() / 3600
+    epoch_in_hours = pd.Timedelta(freq).total_seconds() / 3600
     cols = ['wearTime'] + labels
-    dailyStats = (
+    daily_stats = (
         data[cols].astype('float')
         .groupby(data.index.date)
         .sum()
-        * epochInHours
+        * epoch_in_hours
     ).reset_index(drop=True)
 
     # Filter days based on minimum wear time threshold
-    validDays = pd.Series([True] * len(dailyStats))
-    if minWearPerDay is not None:
-        validDays = dailyStats['wearTime'] >= minWearPerDay
-        numExcludedDays = (~validDays).sum()
-        numIncludedDays = validDays.sum()
+    valid_days = pd.Series([True] * len(daily_stats))
+    if min_wear_per_day is not None:
+        valid_days = daily_stats['wearTime'] >= min_wear_per_day
+        num_excluded_days = (~valid_days).sum()
+        num_included_days = valid_days.sum()
 
-        summary['wearTime-numDaysExcluded'] = int(numExcludedDays)
-        summary['wearTime-numDaysIncluded'] = int(numIncludedDays)
-        summary['wearTime-minWearPerDayThreshold(hrs)'] = minWearPerDay
+        summary['wearTime-numDaysExcluded'] = int(num_excluded_days)
+        summary['wearTime-numDaysIncluded'] = int(num_included_days)
+        summary['wearTime-minWearPerDayThreshold(hrs)'] = min_wear_per_day
 
-        if numExcludedDays > 0:
-            utils.toScreen(f"Excluding {numExcludedDays} day(s) with wear time < {minWearPerDay}h")
-            utils.toScreen(f"Including {numIncludedDays} day(s) with wear time >= {minWearPerDay}h")
+        if num_excluded_days > 0:
+            utils.to_screen(f"Excluding {num_excluded_days} day(s) with wear time < {min_wear_per_day}h")
+            utils.to_screen(f"Including {num_included_days} day(s) with wear time >= {min_wear_per_day}h")
 
     # Write per-day statistics (including excluded days for transparency)
-    for i, row in dailyStats.iterrows():
-        included = validDays.iloc[i]
+    for i, row in daily_stats.iterrows():
+        included = valid_days.iloc[i]
         for col in cols:
             summary[f'day{i}-recorded-{col}(hrs)'] = row.loc[col]
         summary[f'day{i}-includedInSummary'] = int(included)
 
     # Mark epochs from excluded days in the data
     data['excludeDay'] = False
-    if minWearPerDay is not None and numExcludedDays > 0:
-        excludedDayIndices = dailyStats.index[~validDays].tolist()
-        for dayIdx in excludedDayIndices:
-            dayDate = dailyStats.index[dailyStats.index == dayIdx][0]
+    if min_wear_per_day is not None and num_excluded_days > 0:
+        excluded_day_indices = daily_stats.index[~valid_days].tolist()
+        for day_idx in excluded_day_indices:
+            day_date = daily_stats.index[daily_stats.index == day_idx][0]
             # Get the actual date from data corresponding to this day index
-            allDates = data.index.date
-            uniqueDates = pd.Series(allDates).unique()
-            if dayIdx < len(uniqueDates):
-                targetDate = uniqueDates[dayIdx]
-                data.loc[data.index.date == targetDate, 'excludeDay'] = True
+            all_dates = data.index.date
+            unique_dates = pd.Series(all_dates).unique()
+            if day_idx < len(unique_dates):
+                target_date = unique_dates[day_idx]
+                data.loc[data.index.date == target_date, 'excludeDay'] = True
 
     # In the following, we resample, pad and impute the data so that we have a
     # multiple of 24h for the stats calculations
-    tStart, tEnd = data.index[0], data.index[-1]
+    t_start, t_end = data.index[0], data.index[-1]
     cols = ['acc', 'wearTime'] + labels
     if 'MET' in data.columns:
         cols.append('MET')
 
     # Filter out excluded days before imputation and summary calculation
-    dataForSummary = data.copy()
-    if minWearPerDay is not None and numExcludedDays > 0:
+    data_for_summary = data.copy()
+    if min_wear_per_day is not None and num_excluded_days > 0:
         # Set excluded days to missing for imputation purposes
-        dataForSummary.loc[dataForSummary['excludeDay'], cols] = np.nan
-        dataForSummary.loc[dataForSummary['excludeDay'], 'missing'] = True
+        data_for_summary.loc[data_for_summary['excludeDay'], cols] = np.nan
+        data_for_summary.loc[data_for_summary['excludeDay'], 'missing'] = True
 
-    dataForSummary = imputeMissing(dataForSummary[cols].astype('float'))
+    data_for_summary = impute_missing(data_for_summary[cols].astype('float'))
 
     # Overall stats (no padding, i.e. only within recording period)
     # Only calculate on included days
-    overallStats = dataForSummary[tStart:tEnd].apply(['mean', 'std'])
-    for col in overallStats:
-        summary[f'{col}-overall-avg'] = overallStats[col].loc['mean']
-        summary[f'{col}-overall-sd'] = overallStats[col].loc['std']
+    overall_stats = data_for_summary[t_start:t_end].apply(['mean', 'std'])
+    for col in overall_stats:
+        summary[f'{col}-overall-avg'] = overall_stats[col].loc['mean']
+        summary[f'{col}-overall-sd'] = overall_stats[col].loc['std']
 
-    dayOfWeekStats = (
-        dataForSummary
-        .groupby([dataForSummary.index.weekday, dataForSummary.index.hour])
+    day_of_week_stats = (
+        data_for_summary
+        .groupby([data_for_summary.index.weekday, data_for_summary.index.hour])
         .mean()
     )
-    dayOfWeekStats.index = dayOfWeekStats.index.set_levels(
-        dayOfWeekStats
+    day_of_week_stats.index = day_of_week_stats.index.set_levels(
+        day_of_week_stats
         .index.levels[0].to_series()
         .replace({0: 'mon', 1: 'tue', 2: 'wed', 3: 'thu', 4: 'fri', 5: 'sat', 6: 'sun'})
         .to_list(),
         level=0
     )
-    dayOfWeekStats.index.set_names(['DayOfWeek', 'Hour'], inplace=True)
+    day_of_week_stats.index.set_names(['DayOfWeek', 'Hour'], inplace=True)
 
     # Week stats
-    for col, value in dayOfWeekStats.mean().items():
+    for col, value in day_of_week_stats.mean().items():
         summary[f'{col}-week-avg'] = value
 
     # Stats by day of week (Mon, Tue, ...)
-    for col, stats in dayOfWeekStats.groupby(level=0).mean().to_dict().items():
-        for dayOfWeek, value in stats.items():
-            summary[f'{col}-{dayOfWeek}-avg'] = value
+    for col, stats in day_of_week_stats.groupby(level=0).mean().to_dict().items():
+        for day_of_week, value in stats.items():
+            summary[f'{col}-{day_of_week}-avg'] = value
 
     # Stats by hour of day
-    for col, stats in dayOfWeekStats.groupby(level=1).mean().to_dict().items():
+    for col, stats in day_of_week_stats.groupby(level=1).mean().to_dict().items():
         for hour, value in stats.items():
             summary[f'{col}-hourOfDay-{hour}-avg'] = value
 
     # (not included but could be) Stats by hour of day AND day of week
-    # for col, stats in dayOfWeekStats.to_dict().items():
+    # for col, stats in day_of_week_stats.to_dict().items():
     #     for key, value in stats.items():
-    #         dayOfWeek, hour = key
-    #         summary[f'{col}-hourOf{dayOfWeek}-{hour}-avg'] = value
+    #         day_of_week, hour = key
+    #         summary[f'{col}-hourOf{day_of_week}-{hour}-avg'] = value
 
-    weekdayOrWeekendStats = (
-        dayOfWeekStats
+    weekday_or_weekend_stats = (
+        day_of_week_stats
         .groupby([
-            dayOfWeekStats.index.get_level_values('DayOfWeek').str.contains('sat|sun'),
-            dayOfWeekStats.index.get_level_values('Hour')
+            day_of_week_stats.index.get_level_values('DayOfWeek').str.contains('sat|sun'),
+            day_of_week_stats.index.get_level_values('Hour')
         ])
         .mean()
     )
-    weekdayOrWeekendStats.index = weekdayOrWeekendStats.index.set_levels(
-        weekdayOrWeekendStats
+    weekday_or_weekend_stats.index = weekday_or_weekend_stats.index.set_levels(
+        weekday_or_weekend_stats
         .index.levels[0].to_series()
         .replace({True: 'Weekend', False: 'Weekday'})
         .to_list(),
         level=0
     )
-    weekdayOrWeekendStats.index.set_names(['WeekdayOrWeekend', 'Hour'], inplace=True)
+    weekday_or_weekend_stats.index.set_names(['WeekdayOrWeekend', 'Hour'], inplace=True)
 
     # Weekday/weekend stats
-    for col, stats in weekdayOrWeekendStats.groupby(level=0).mean().to_dict().items():
-        for weekdayOrWeekend, value in stats.items():
-            summary[f'{col}-{weekdayOrWeekend.lower()}-avg'] = value
+    for col, stats in weekday_or_weekend_stats.groupby(level=0).mean().to_dict().items():
+        for weekday_or_weekend, value in stats.items():
+            summary[f'{col}-{weekday_or_weekend.lower()}-avg'] = value
 
     # Stats by hour of day AND by weekday/weekend
-    for col, stats in weekdayOrWeekendStats.to_dict().items():
+    for col, stats in weekday_or_weekend_stats.to_dict().items():
         for key, value in stats.items():
-            weekdayOrWeekend, hour = key
-            summary[f'{col}-hourOf{weekdayOrWeekend}-{hour}-avg'] = value
+            weekday_or_weekend, hour = key
+            summary[f'{col}-hourOf{weekday_or_weekend}-{hour}-avg'] = value
 
     return

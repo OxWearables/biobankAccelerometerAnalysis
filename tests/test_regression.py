@@ -41,7 +41,7 @@ class TestCalibrationRegression:
         results = []
         for _ in range(3):
             summary = {}
-            device.getCalibrationCoefs(stationary_df.copy(), summary)
+            device.get_calibration_coefs(stationary_df.copy(), summary)
             results.append(summary)
 
         # All runs should produce identical results
@@ -361,7 +361,7 @@ def create_reference_outputs(output_path: Path):
     })
 
     summary = {}
-    device.getCalibrationCoefs(stationary_df, summary)
+    device.get_calibration_coefs(stationary_df, summary)
 
     # Save reference outputs
     reference = {

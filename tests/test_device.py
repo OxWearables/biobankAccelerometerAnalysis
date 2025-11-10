@@ -27,7 +27,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Check that calibration is identity (or very close)
         assert 'calibration-xOffset(g)' in summary
@@ -74,7 +74,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should recover calibration parameters (within tolerance)
         # Note: won't be exact due to noise and iterative algorithm
@@ -102,7 +102,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(small_data, summary)
+        device.get_calibration_coefs(small_data, summary)
 
         # Should fail calibration
         assert summary['quality-goodCalibration'] == 0
@@ -123,7 +123,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(same_orientation, summary)
+        device.get_calibration_coefs(same_orientation, summary)
 
         # Should fail due to poor distribution (all points in cube side < 0.3)
         assert summary['quality-goodCalibration'] == 0
@@ -142,7 +142,7 @@ class TestCalibrationCoefficients:
         stationary_df.loc[::2, 'dataErrors'] = 1
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should still work with good points
         # Check that it used fewer samples
@@ -162,7 +162,7 @@ class TestCalibrationCoefficients:
         stationary_df.loc[::3, 'xMean'] = np.nan
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should filter out NaN rows
         assert summary['calibration-numStaticPoints'] < len(stationary_df)
@@ -178,7 +178,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(data, summary)
+        device.get_calibration_coefs(data, summary)
 
         # Should filter out zero vectors
         # Will fail due to insufficient samples after filtering
@@ -210,7 +210,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should converge and be marked as good
         assert summary['quality-goodCalibration'] == 1
@@ -238,7 +238,7 @@ class TestCalibrationCoefficients:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Error after calibration should be much less than before
         err_before = summary['calibration-errsBefore(mg)']
@@ -276,7 +276,7 @@ class TestCalibrationNumericalStability:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should handle different scales
         assert 'calibration-xOffset(g)' in summary
@@ -301,7 +301,7 @@ class TestCalibrationNumericalStability:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should handle extreme temperatures without crashing
         assert 'calibration-xOffset(g)' in summary
@@ -325,10 +325,10 @@ class TestCalibrationNumericalStability:
 
         # Run calibration twice
         summary1 = {}
-        device.getCalibrationCoefs(stationary_df.copy(), summary1)
+        device.get_calibration_coefs(stationary_df.copy(), summary1)
 
         summary2 = {}
-        device.getCalibrationCoefs(stationary_df.copy(), summary2)
+        device.get_calibration_coefs(stationary_df.copy(), summary2)
 
         # Should produce identical results
         np.testing.assert_almost_equal(
@@ -364,7 +364,7 @@ class TestCalibrationEdgeCases:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should fail due to poor distribution
         assert summary['quality-goodCalibration'] == 0
@@ -380,7 +380,7 @@ class TestCalibrationEdgeCases:
         # No 'temp' column
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should work with dummy temperature
         assert 'calibration-xOffset(g)' in summary
@@ -399,7 +399,7 @@ class TestCalibrationEdgeCases:
         })
 
         summary = {}
-        device.getCalibrationCoefs(stationary_df, summary)
+        device.get_calibration_coefs(stationary_df, summary)
 
         # Should work but temp coefficients should be ~zero
         assert 'calibration-xSlopeTemp' in summary

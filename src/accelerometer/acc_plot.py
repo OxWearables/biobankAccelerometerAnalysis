@@ -62,16 +62,16 @@ def main():  # noqa: C901
     if len(sys.argv) < 2:
         msg = "\nInvalid input, please enter at least 1 parameter, e.g."
         msg += "\npython accPlot.py timeSeries.csv.gz \n"
-        utils.toScreen(msg)
+        utils.to_screen(msg)
         parser.print_help()
         sys.exit(-1)
     args = parser.parse_args()
 
     # determine output file name
     if args.plotFile is None:
-        inputFileFolder, inputFileName = os.path.split(args.timeSeriesFile)
-        inputFileName = inputFileName.split('.')[0]  # remove any extension
-        args.plotFile = os.path.join(inputFileFolder, inputFileName + "-plot.png")
+        input_file_folder, input_file_name = os.path.split(args.timeSeriesFile)
+        input_file_name = input_file_name.split('.')[0]  # remove any extension
+        args.plotFile = os.path.join(input_file_folder, input_file_name + "-plot.png")
 
     # read time series file to pandas DataFrame
     data = pd.read_csv(
@@ -88,15 +88,15 @@ def main():  # noqa: C901
     title = args.timeSeriesFile if args.showFileName else None
 
     # call plot function and save figure
-    fig = plotTimeSeries(data, title=title, showFirstNDays=args.showFirstNDays)
+    fig = plot_time_series(data, title=title, show_first_n_days=args.showFirstNDays)
     fig.savefig(args.plotFile, dpi=200, bbox_inches='tight')
     print('Plot file written to:', args.plotFile)
 
 
-def plotTimeSeries(  # noqa: C901
+def plot_time_series(  # noqa: C901
     data,
     title=None,
-    showFirstNDays=None
+    show_first_n_days=None
 ):
     """
     Plot acceleration traces and classified activities.
@@ -110,8 +110,8 @@ def plotTimeSeries(  # noqa: C901
     :type data: pd.DataFrame
     :param title: Optional plot title
     :type title: str, optional
-    :param showFirstNDays: Only show first n days of time series (if specified)
-    :type showFirstNDays: int, optional
+    :param show_first_n_days: Only show first n days of time series (if specified)
+    :type show_first_n_days: int, optional
     :return: pyplot Figure
     :rtype: plt.Figure
 
@@ -119,9 +119,9 @@ def plotTimeSeries(  # noqa: C901
 
     .. code-block:: python
 
-        from accelerometer.accPlot import plotTimeSeries
+        from accelerometer.accPlot import plot_time_series
         df = pd.DataFrame(...)
-        fig = plotTimeSeries(df)
+        fig = plot_time_series(df)
         fig.show()
     """
 
@@ -146,8 +146,8 @@ def plotTimeSeries(  # noqa: C901
         new_index = pd.date_range(data.index[0], data.index[-1], freq=freq)
         data = data.reindex(new_index, method='nearest', tolerance=freq, fill_value=np.NaN)
 
-    if showFirstNDays is not None:
-        data = data.first(str(showFirstNDays) + 'D')
+    if show_first_n_days is not None:
+        data = data.first(str(show_first_n_days) + 'D')
 
     labels = [label for label in LABELS_AND_COLORS.keys() if label in data.columns]
     colors = [LABELS_AND_COLORS[label] for label in labels]
@@ -166,8 +166,8 @@ def plotTimeSeries(  # noqa: C901
     data[labels] = data[labels].astype('f4') * MAXRANGE
 
     # number of rows to display in figure (all days + legend)
-    groupedDays = data.groupby(data.index.date)
-    nrows = len(groupedDays) + 1
+    grouped_days = data.groupby(data.index.date)
+    nrows = len(grouped_days) + 1
 
     # create overall figure
     fig = plt.figure(None, figsize=(10, nrows), dpi=100)
@@ -177,7 +177,7 @@ def plotTimeSeries(  # noqa: C901
     # create individual plot for each day
     i = 0
     axs = []
-    for day, group in groupedDays:
+    for day, group in grouped_days:
 
         ax = fig.add_subplot(nrows, 1, i + 1)
 
@@ -244,8 +244,8 @@ def plotTimeSeries(  # noqa: C901
     # format x-axis to show hours
     fig.autofmt_xdate()
     # add hour labels to top of plot
-    hrLabels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00']
-    axs[0].set_xticklabels(hrLabels)
+    hr_labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00']
+    axs[0].set_xticklabels(hr_labels)
     axs[0].tick_params(labelbottom=False, labeltop=True, labelleft=False)
 
     # auto trim borders

@@ -1,4 +1,4 @@
-include src/accelerometer/activityModels/README.md
+include src/accelerometer/activity_models/README.md
 include src/accelerometer/java/README.md
 include src/accelerometer/java/*.java
 include src/accelerometer/java/*.class

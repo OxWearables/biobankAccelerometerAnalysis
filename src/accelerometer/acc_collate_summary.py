@@ -1,5 +1,5 @@
 import argparse
-from accelerometer.utils import collateSummary
+from accelerometer.utils import collate_summary
 
 
 def main():
@@ -8,8 +8,8 @@ def main():
     parser.add_argument('--outputCsvFile', '-o', default="all-summary.csv")
     args = parser.parse_args()
 
-    collateSummary(resultsDir=args.resultsDir,
-                   outputCsvFile=args.outputCsvFile)
+    collate_summary(results_dir=args.resultsDir,
+                    output_csv_file=args.outputCsvFile)
 
 
 if __name__ == '__main__':

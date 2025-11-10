@@ -15,58 +15,58 @@ import pathlib
 ROOT_DIR = pathlib.Path(__file__).parent
 
 
-def processInputFileToEpoch(  # noqa: C901
-    inputFile, timeZone, timeShift,
-    epochFile, stationaryFile, summary,
-    skipCalibration=False, stationaryStd=13, xyzIntercept=[0.0, 0.0, 0.0],
-    xyzSlope=[1.0, 1.0, 1.0], xyzSlopeT=[0.0, 0.0, 0.0],
-    rawDataParser="AccelerometerParser", javaHeapSpace=None,
-    useFilter=True, sampleRate=100, resampleMethod="linear", epochPeriod=30,
-    extractFeatures=True,
-    rawOutput=False, rawFile=None, npyOutput=False, npyFile=None,
-    startTime=None, endTime=None,
+def process_input_file_to_epoch(  # noqa: C901
+    input_file, time_zone, time_shift,
+    epoch_file, stationary_file, summary,
+    skip_calibration=False, stationary_std=13, xyz_intercept=[0.0, 0.0, 0.0],
+    xyz_slope=[1.0, 1.0, 1.0], xyz_slope_t=[0.0, 0.0, 0.0],
+    raw_data_parser="AccelerometerParser", java_heap_space=None,
+    use_filter=True, sample_rate=100, resample_method="linear", epoch_period=30,
+    extract_features=True,
+    raw_output=False, raw_file=None, npy_output=False, npy_file=None,
+    start_time=None, end_time=None,
     verbose=False,
-    csvStartTime=None, csvSampleRate=None,
-    csvTimeFormat="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
-    csvStartRow=1, csvTimeXYZTempColsIndex=None
+    csv_start_time=None, csv_sample_rate=None,
+    csv_time_format="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
+    csv_start_row=1, csv_time_xyz_temp_cols_index=None
 ):
     """
     Process raw accelerometer file, writing summary epoch stats to file. This is usually achieved by:
     1) identify 10sec stationary epochs
     2) record calibrated axes scale/offset/temp vals + static point stats
-    3) use calibration coefficients and then write filtered avgVm epochs to <epochFile> from <inputFile>
+    3) use calibration coefficients and then write filtered avgVm epochs to <epoch_file> from <input_file>
 
-    :param str inputFile: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
-    :param str epochFile: Output csv.gz file of processed epoch data
-    :param str stationaryFile: Output/temporary file for calibration
+    :param str input_file: Input <cwa/cwa.gz/bin/gt3x> raw accelerometer file
+    :param str epoch_file: Output csv.gz file of processed epoch data
+    :param str stationary_file: Output/temporary file for calibration
     :param dict summary: Output dictionary containing all summary metrics
-    :param bool skipCalibration: Perform software calibration (process data twice)
-    :param int stationaryStd: Gravity threshold (in mg units) for stationary vs not
-    :param list(float) xyzIntercept: Calibration offset [x, y, z]
-    :param list(float) xyzSlope: Calibration slope [x, y, z]
-    :param list(float) xyzTemp: Calibration temperature coefficient [x, y, z]
-    :param str rawDataParser: External helper process to read raw acc file. If a
+    :param bool skip_calibration: Perform software calibration (process data twice)
+    :param int stationary_std: Gravity threshold (in mg units) for stationary vs not
+    :param list(float) xyz_intercept: Calibration offset [x, y, z]
+    :param list(float) xyz_slope: Calibration slope [x, y, z]
+    :param list(float) xyz_temp: Calibration temperature coefficient [x, y, z]
+    :param str raw_data_parser: External helper process to read raw acc file. If a
         java class, it must omit .class ending.
-    :param str javaHeapSpace: Amount of heap space allocated to java subprocesses.
+    :param str java_heap_space: Amount of heap space allocated to java subprocesses.
         Useful for limiting RAM usage.
-    :param bool useFilter: Filter ENMOtrunc signal
-    :param int sampleRate: Resample data to n Hz
-    :param int epochPeriod: Size of epoch time window (in seconds)
-    :param bool activityClassification: Extract features for machine learning
-    :param bool rawOutput: Output calibrated and resampled raw data to a .csv.gz
+    :param bool use_filter: Filter ENMOtrunc signal
+    :param int sample_rate: Resample data to n Hz
+    :param int epoch_period: Size of epoch time window (in seconds)
+    :param bool activity_classification: Extract features for machine learning
+    :param bool raw_output: Output calibrated and resampled raw data to a .csv.gz
         file? requires ~50MB/day.
-    :param str rawFile: Output raw data ".csv.gz" filename
-    :param bool npyOutput: Output calibrated and resampled raw data to a .npy
+    :param str raw_file: Output raw data ".csv.gz" filename
+    :param bool npy_output: Output calibrated and resampled raw data to a .npy
         file? requires ~60MB/day.
-    :param str npyFile: Output raw data ".npy" filename
-    :param datetime startTime: Remove data before this time in analysis
-    :param datetime endTime: Remove data after this time in analysis
+    :param str npy_file: Output raw data ".npy" filename
+    :param datetime start_time: Remove data before this time in analysis
+    :param datetime end_time: Remove data after this time in analysis
     :param bool verbose: Print verbose output
-    :param datetime csvStartTime: start time for csv file when time column is not available
-    :param float csvSampleRate: sample rate for csv file when time column is not available
-    :param str csvTimeFormat: time format for csv file when time column is available
-    :param int csvStartRow: start row for accelerometer data in csv file
-    :param str csvTimeXYZTempColsIndex: index of column positions for XYZT columns, e.g. "1,2,3,0"
+    :param datetime csv_start_time: start time for csv file when time column is not available
+    :param float csv_sample_rate: sample rate for csv file when time column is not available
+    :param str csv_time_format: time format for csv file when time column is available
+    :param int csv_start_row: start row for accelerometer data in csv file
+    :param str csv_time_xyz_temp_cols_index: index of column positions for XYZT columns, e.g. "1,2,3,0"
 
     :return: None. Writes raw processing summary values to dict <summary>.
 
@@ -74,195 +74,195 @@ def processInputFileToEpoch(  # noqa: C901
 
         import device
         summary = {}
-        device.processInputFileToEpoch('inputFile.cwa', 'epochFile.csv.gz',
+        device.process_input_file_to_epoch('inputFile.cwa', 'epochFile.csv.gz',
                 'stationary.csv.gz', summary)
     """
 
-    summary['file-size'] = os.path.getsize(inputFile)
-    summary['file-deviceID'] = getDeviceId(inputFile)
-    useJava = True
-    pathSeparator = ';' if os.name == 'nt' else ':'
-    javaClassPath = f"{ROOT_DIR}/java/{pathSeparator}{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
-    staticStdG = stationaryStd / 1000.0  # java expects units of G (not mg)
+    summary['file-size'] = os.path.getsize(input_file)
+    summary['file-deviceID'] = get_device_id(input_file)
+    use_java = True
+    path_separator = ';' if os.name == 'nt' else ':'
+    java_class_path = f"{ROOT_DIR}/java/{path_separator}{ROOT_DIR}/java/JTransforms-3.1-with-dependencies.jar"
+    static_std_g = stationary_std / 1000.0  # java expects units of G (not mg)
 
-    if 'omconvert' in rawDataParser:
-        useJava = False
+    if 'omconvert' in raw_data_parser:
+        use_java = False
 
-    if useJava:
-        if not skipCalibration:
+    if use_java:
+        if not skip_calibration:
             # identify 10sec stationary epochs
-            utils.toScreen("=== Calibrating ===")
-            commandArgs = ["java", "-classpath", javaClassPath,
-                           "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
-                           "timeZone:" + timeZone,
-                           "timeShift:" + str(timeShift),
-                           "outputFile:" + stationaryFile,
-                           "verbose:" + str(verbose),
-                           "filter:" + str(useFilter),
-                           "getStationaryBouts:true", "epochPeriod:10",
-                           "stationaryStd:" + str(staticStdG),
-                           "sampleRate:" + str(sampleRate)]
-            if javaHeapSpace:
-                commandArgs.insert(1, javaHeapSpace)
-            if csvStartTime:
-                commandArgs.append("csvStartTime:" + to_iso_datetime(csvStartTime))
-            if csvSampleRate:
-                commandArgs.append("csvSampleRate:" + str(csvSampleRate))
-            if csvTimeFormat:
-                commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
-            if csvStartRow is not None:
-                commandArgs.append("csvStartRow:" + str(csvStartRow))
-            if csvTimeXYZTempColsIndex:
-                javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZTempColsIndex])
-                commandArgs.append("csvTimeXYZTempColsIndex:" + javaStrCsvTXYZ)
+            utils.to_screen("=== Calibrating ===")
+            command_args = ["java", "-classpath", java_class_path,
+                            "-XX:ParallelGCThreads=1", raw_data_parser, input_file,
+                            "timeZone:" + time_zone,
+                            "timeShift:" + str(time_shift),
+                            "outputFile:" + stationary_file,
+                            "verbose:" + str(verbose),
+                            "filter:" + str(use_filter),
+                            "getStationaryBouts:true", "epochPeriod:10",
+                            "stationaryStd:" + str(static_std_g),
+                            "sampleRate:" + str(sample_rate)]
+            if java_heap_space:
+                command_args.insert(1, java_heap_space)
+            if csv_start_time:
+                command_args.append("csvStartTime:" + to_iso_datetime(csv_start_time))
+            if csv_sample_rate:
+                command_args.append("csvSampleRate:" + str(csv_sample_rate))
+            if csv_time_format:
+                command_args.append("csvTimeFormat:" + str(csv_time_format))
+            if csv_start_row is not None:
+                command_args.append("csvStartRow:" + str(csv_start_row))
+            if csv_time_xyz_temp_cols_index:
+                java_str_csv_txyz = ','.join([str(i) for i in csv_time_xyz_temp_cols_index])
+                command_args.append("csvTimeXYZTempColsIndex:" + java_str_csv_txyz)
             # call process to identify stationary epochs
-            exitCode = call(commandArgs)
-            if exitCode != 0:
-                print(commandArgs)
-                print("Error: java calibration failed, exit ", exitCode)
+            exit_code = call(command_args)
+            if exit_code != 0:
+                print(command_args)
+                print("Error: java calibration failed, exit ", exit_code)
                 raise CalibrationError(
-                    f"Java calibration process failed with exit code {exitCode}. "
-                    f"Command: {' '.join(commandArgs)}"
+                    f"Java calibration process failed with exit code {exit_code}. "
+                    f"Command: {' '.join(command_args)}"
                 )
             # record calibrated axes scale/offset/temp vals + static point stats
-            getCalibrationCoefs(stationaryFile, summary)
-            xyzIntercept = [summary['calibration-xOffset(g)'],
-                            summary['calibration-yOffset(g)'],
-                            summary['calibration-zOffset(g)']]
-            xyzSlope = [summary['calibration-xSlope'],
-                        summary['calibration-ySlope'],
-                        summary['calibration-zSlope']]
-            xyzSlopeT = [summary['calibration-xSlopeTemp'],
-                         summary['calibration-ySlopeTemp'],
-                         summary['calibration-zSlopeTemp']]
+            get_calibration_coefs(stationary_file, summary)
+            xyz_intercept = [summary['calibration-xOffset(g)'],
+                             summary['calibration-yOffset(g)'],
+                             summary['calibration-zOffset(g)']]
+            xyz_slope = [summary['calibration-xSlope'],
+                         summary['calibration-ySlope'],
+                         summary['calibration-zSlope']]
+            xyz_slope_t = [summary['calibration-xSlopeTemp'],
+                           summary['calibration-ySlopeTemp'],
+                           summary['calibration-zSlopeTemp']]
         else:
-            storeCalibrationParams(summary, xyzIntercept, xyzSlope, xyzSlopeT)
+            store_calibration_params(summary, xyz_intercept, xyz_slope, xyz_slope_t)
             summary['quality-calibratedOnOwnData'] = 0
             summary['quality-goodCalibration'] = 1
 
-        utils.toScreen('=== Extracting features ===')
-        commandArgs = ["java", "-classpath", javaClassPath,
-                       "-XX:ParallelGCThreads=1", rawDataParser, inputFile,
-                       "timeZone:" + timeZone,
-                       "timeShift:" + str(timeShift),
-                       "outputFile:" + epochFile, "verbose:" + str(verbose),
-                       "filter:" + str(useFilter),
-                       "sampleRate:" + str(sampleRate),
-                       "resampleMethod:" + str(resampleMethod),
-                       "xIntercept:" + str(xyzIntercept[0]),
-                       "yIntercept:" + str(xyzIntercept[1]),
-                       "zIntercept:" + str(xyzIntercept[2]),
-                       "xSlope:" + str(xyzSlope[0]),
-                       "ySlope:" + str(xyzSlope[1]),
-                       "zSlope:" + str(xyzSlope[2]),
-                       "xSlopeT:" + str(xyzSlopeT[0]),
-                       "ySlopeT:" + str(xyzSlopeT[1]),
-                       "zSlopeT:" + str(xyzSlopeT[2]),
-                       "epochPeriod:" + str(epochPeriod),
-                       "rawOutput:" + str(rawOutput),
-                       "rawFile:" + str(rawFile),
-                       "npyOutput:" + str(npyOutput),
-                       "npyFile:" + str(npyFile),
-                       "getFeatures:" + str(extractFeatures)]
-        if javaHeapSpace:
-            commandArgs.insert(1, javaHeapSpace)
-        if startTime:
-            commandArgs.append("startTime:" + to_iso_datetime(startTime))
-        if endTime:
-            commandArgs.append("endTime:" + to_iso_datetime(endTime))
-        if csvStartTime:
-            commandArgs.append("csvStartTime:" + csvStartTime.strftime("%Y-%m-%dT%H:%M"))
-        if csvSampleRate:
-            commandArgs.append("csvSampleRate:" + str(csvSampleRate))
-        if csvTimeFormat:
-            commandArgs.append("csvTimeFormat:" + str(csvTimeFormat))
-        if csvStartRow:
-            commandArgs.append("csvStartRow:" + str(csvStartRow))
-        if csvTimeXYZTempColsIndex:
-            javaStrCsvTXYZ = ','.join([str(i) for i in csvTimeXYZTempColsIndex])
-            commandArgs.append("csvTimeXYZTempColsIndex:" + javaStrCsvTXYZ)
-        exitCode = call(commandArgs)
-        if exitCode != 0:
-            print(commandArgs)
-            print("Error: Java epoch generation failed, exit ", exitCode)
+        utils.to_screen('=== Extracting features ===')
+        command_args = ["java", "-classpath", java_class_path,
+                        "-XX:ParallelGCThreads=1", raw_data_parser, input_file,
+                        "timeZone:" + time_zone,
+                        "timeShift:" + str(time_shift),
+                        "outputFile:" + epoch_file, "verbose:" + str(verbose),
+                        "filter:" + str(use_filter),
+                        "sampleRate:" + str(sample_rate),
+                        "resampleMethod:" + str(resample_method),
+                        "xIntercept:" + str(xyz_intercept[0]),
+                        "yIntercept:" + str(xyz_intercept[1]),
+                        "zIntercept:" + str(xyz_intercept[2]),
+                        "xSlope:" + str(xyz_slope[0]),
+                        "ySlope:" + str(xyz_slope[1]),
+                        "zSlope:" + str(xyz_slope[2]),
+                        "xSlopeT:" + str(xyz_slope_t[0]),
+                        "ySlopeT:" + str(xyz_slope_t[1]),
+                        "zSlopeT:" + str(xyz_slope_t[2]),
+                        "epochPeriod:" + str(epoch_period),
+                        "rawOutput:" + str(raw_output),
+                        "rawFile:" + str(raw_file),
+                        "npyOutput:" + str(npy_output),
+                        "npyFile:" + str(npy_file),
+                        "getFeatures:" + str(extract_features)]
+        if java_heap_space:
+            command_args.insert(1, java_heap_space)
+        if start_time:
+            command_args.append("startTime:" + to_iso_datetime(start_time))
+        if end_time:
+            command_args.append("endTime:" + to_iso_datetime(end_time))
+        if csv_start_time:
+            command_args.append("csvStartTime:" + csv_start_time.strftime("%Y-%m-%dT%H:%M"))
+        if csv_sample_rate:
+            command_args.append("csvSampleRate:" + str(csv_sample_rate))
+        if csv_time_format:
+            command_args.append("csvTimeFormat:" + str(csv_time_format))
+        if csv_start_row:
+            command_args.append("csvStartRow:" + str(csv_start_row))
+        if csv_time_xyz_temp_cols_index:
+            java_str_csv_txyz = ','.join([str(i) for i in csv_time_xyz_temp_cols_index])
+            command_args.append("csvTimeXYZTempColsIndex:" + java_str_csv_txyz)
+        exit_code = call(command_args)
+        if exit_code != 0:
+            print(command_args)
+            print("Error: Java epoch generation failed, exit ", exit_code)
             raise ProcessingError(
-                f"Java epoch generation process failed with exit code {exitCode}. "
-                f"Command: {' '.join(commandArgs)}"
+                f"Java epoch generation process failed with exit code {exit_code}. "
+                f"Command: {' '.join(command_args)}"
             )
 
     else:
-        if not skipCalibration:
-            commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
-                           "-svm-file", epochFile, "-info", stationaryFile,
-                           "-svm-extended", "3", "-calibrate", "1",
-                           "-interpolate-mode", "2",
-                           "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
-                           "-svm-filter", "2"]
+        if not skip_calibration:
+            command_args = [raw_data_parser, input_file, time_zone, time_shift,
+                            "-svm-file", epoch_file, "-info", stationary_file,
+                            "-svm-extended", "3", "-calibrate", "1",
+                            "-interpolate-mode", "2",
+                            "-svm-mode", "1", "-svm-epoch", str(epoch_period),
+                            "-svm-filter", "2"]
         else:
-            calArgs = str(xyzSlope[0]) + ','
-            calArgs += str(xyzSlope[1]) + ','
-            calArgs += str(xyzSlope[2]) + ','
-            calArgs += str(xyzIntercept[0]) + ','
-            calArgs += str(xyzIntercept[1]) + ','
-            calArgs += str(xyzIntercept[2]) + ','
-            calArgs += str(xyzSlopeT[0]) + ','
-            calArgs += str(xyzSlopeT[1]) + ','
-            calArgs += str(xyzSlopeT[2]) + ','
-            commandArgs = [rawDataParser, inputFile, timeZone, timeShift,
-                           "-svm-file", epochFile, "-info", stationaryFile,
-                           "-svm-extended", "3", "-calibrate", "0",
-                           "-calibration", calArgs, "-interpolate-mode", "2",
-                           "-svm-mode", "1", "-svm-epoch", str(epochPeriod),
-                           "-svm-filter", "2"]
-        call(commandArgs)
-        getOmconvertInfo(stationaryFile, summary)
+            cal_args = str(xyz_slope[0]) + ','
+            cal_args += str(xyz_slope[1]) + ','
+            cal_args += str(xyz_slope[2]) + ','
+            cal_args += str(xyz_intercept[0]) + ','
+            cal_args += str(xyz_intercept[1]) + ','
+            cal_args += str(xyz_intercept[2]) + ','
+            cal_args += str(xyz_slope_t[0]) + ','
+            cal_args += str(xyz_slope_t[1]) + ','
+            cal_args += str(xyz_slope_t[2]) + ','
+            command_args = [raw_data_parser, input_file, time_zone, time_shift,
+                            "-svm-file", epoch_file, "-info", stationary_file,
+                            "-svm-extended", "3", "-calibrate", "0",
+                            "-calibration", cal_args, "-interpolate-mode", "2",
+                            "-svm-mode", "1", "-svm-epoch", str(epoch_period),
+                            "-svm-filter", "2"]
+        call(command_args)
+        get_omconvert_info(stationary_file, summary)
 
 
-def getCalibrationCoefs(staticBoutsFile, summary):
+def get_calibration_coefs(static_bouts_file, summary):
     """
     Identify calibration coefficients from java processed file. Get axes
     offset/gain/temp calibration coefficients through linear regression of
     stationary episodes.
 
-    :param str stationaryFile: Output/temporary file for calibration
+    :param str static_bouts_file: Output/temporary file for calibration
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: None. Calibration summary values written to dict <summary>
     """
 
-    if isinstance(staticBoutsFile, pd.DataFrame):
-        data = staticBoutsFile
+    if isinstance(static_bouts_file, pd.DataFrame):
+        calibration_data = static_bouts_file
 
     else:
-        data = pd.read_csv(staticBoutsFile)
+        calibration_data = pd.read_csv(static_bouts_file)
 
-    data = data[data['dataErrors'] == 0].dropna()  # drop segments with errors
-    xyz = data[['xMean', 'yMean', 'zMean']].to_numpy()
-    if 'temp' in data:
-        T = data['temp'].to_numpy()
+    calibration_data = calibration_data[calibration_data['dataErrors'] == 0].dropna()  # drop segments with errors
+    xyz = calibration_data[['xMean', 'yMean', 'zMean']].to_numpy()
+    if 'temp' in calibration_data:
+        temperature = calibration_data['temp'].to_numpy()
     else:  # use a dummy
-        T = np.zeros(len(xyz), dtype=xyz.dtype)
+        temperature = np.zeros(len(xyz), dtype=xyz.dtype)
 
     # Remove any zero vectors as they cause nan issues
     nonzero = np.linalg.norm(xyz, axis=1) > 1e-8
     xyz = xyz[nonzero]
-    T = T[nonzero]
+    temperature = temperature[nonzero]
 
     intercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
     slope = np.array([1.0, 1.0, 1.0], dtype=xyz.dtype)
-    slopeT = np.array([0.0, 0.0, 0.0], dtype=T.dtype)
-    bestIntercept = np.copy(intercept)
-    bestSlope = np.copy(slope)
-    bestSlopeT = np.copy(slopeT)
+    slope_t = np.array([0.0, 0.0, 0.0], dtype=temperature.dtype)
+    best_intercept = np.copy(intercept)
+    best_slope = np.copy(slope)
+    best_slope_t = np.copy(slope_t)
 
     curr = xyz
     target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
 
     errors = np.linalg.norm(curr - target, axis=1)
     err = np.mean(errors)  # MAE more robust than RMSE. This is different from the paper
-    initErr = err
-    bestErr = 1e16
-    nStatic = len(xyz)
+    init_err = err
+    best_err = 1e16
+    n_static = len(xyz)
 
     MAXITER = 1000
     IMPROV_TOL = 0.0001  # 0.01%
@@ -273,7 +273,7 @@ def getCalibrationCoefs(staticBoutsFile, summary):
     # Check that we have enough uniformly distributed points:
     # need at least one point outside each face of the cube
     if len(xyz) < CALIB_MIN_SAMPLES or (np.max(xyz, axis=0) < CALIB_CUBE).any() or (np.min(xyz, axis=0) > -CALIB_CUBE).any():
-        goodCalibration = 0
+        good_calibration = 0
 
     else:  # we do have enough uniformly distributed points
 
@@ -289,237 +289,237 @@ def getCalibrationCoefs(staticBoutsFile, summary):
 
                 inp = curr[:, k]
                 out = target[:, k]
-                inp = np.column_stack((inp, T))
+                inp = np.column_stack((inp, temperature))
                 inp = sm.add_constant(inp, prepend=True, has_constant='add')
                 params = sm.WLS(out, inp, weights=weights).fit().params
                 # In the following,
                 # intercept == params[0]
                 # slope == params[1]
-                # slopeT == params[2]
+                # slope_t == params[2]
                 intercept[k] = params[0] + (intercept[k] * params[1])
                 slope[k] = params[1] * slope[k]
-                slopeT[k] = params[2] + (slopeT[k] * params[1])
+                slope_t[k] = params[2] + (slope_t[k] * params[1])
 
             # Update current solution and target
             curr = intercept + (xyz * slope)
-            curr = curr + (T[:, None] * slopeT)
+            curr = curr + (temperature[:, None] * slope_t)
             target = curr / np.linalg.norm(curr, axis=1, keepdims=True)
 
             # Update errors
             errors = np.linalg.norm(curr - target, axis=1)
             err = np.mean(errors)
-            errImprov = (bestErr - err) / bestErr
+            err_improv = (best_err - err) / best_err
 
-            if err < bestErr:
-                bestIntercept = np.copy(intercept)
-                bestSlope = np.copy(slope)
-                bestSlopeT = np.copy(slopeT)
-                bestErr = err
+            if err < best_err:
+                best_intercept = np.copy(intercept)
+                best_slope = np.copy(slope)
+                best_slope_t = np.copy(slope_t)
+                best_err = err
 
-            if errImprov < IMPROV_TOL:
+            if err_improv < IMPROV_TOL:
                 break
 
-        goodCalibration = int(not ((bestErr > ERR_TOL) or (it + 1 == MAXITER)))
+        good_calibration = int(not ((best_err > ERR_TOL) or (it + 1 == MAXITER)))
 
-    if goodCalibration == 0:  # restore calibr params
-        bestIntercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
-        bestSlope = np.array([1.0, 1.0, 1.0], dtype=xyz.dtype)
-        bestSlopeT = np.array([0.0, 0.0, 0.0], dtype=T.dtype)
-        bestErr = initErr
+    if good_calibration == 0:  # restore calibr params
+        best_intercept = np.array([0.0, 0.0, 0.0], dtype=xyz.dtype)
+        best_slope = np.array([1.0, 1.0, 1.0], dtype=xyz.dtype)
+        best_slope_t = np.array([0.0, 0.0, 0.0], dtype=temperature.dtype)
+        best_err = init_err
 
-    storeCalibrationInformation(
+    store_calibration_information(
         summary,
-        bestIntercept=bestIntercept,
-        bestSlope=bestSlope,
-        bestSlopeT=bestSlopeT,
-        initErr=initErr,
-        bestErr=bestErr,
-        nStatic=nStatic,
-        calibratedOnOwnData=1,
-        goodCalibration=goodCalibration
+        best_intercept=best_intercept,
+        best_slope=best_slope,
+        best_slope_t=best_slope_t,
+        init_err=init_err,
+        best_err=best_err,
+        n_static=n_static,
+        calibrated_on_own_data=1,
+        good_calibration=good_calibration
     )
 
     return
 
 
-def getOmconvertInfo(omconvertInfoFile, summary):
+def get_omconvert_info(omconvert_info_file, summary):
     """
     Identify calibration coefficients for omconvert processed file. Get axes
     offset/gain/temp calibration coeffs from omconvert info file.
 
-    :param str omconvertInfoFile: Output information file from omconvert
+    :param str omconvert_info_file: Output information file from omconvert
     :param dict summary: Output dictionary containing all summary metrics
 
     :return: None. Calibration summary values written to dict <summary>
     """
 
-    file = open(omconvertInfoFile, 'r')
-    for line in file:
+    info_file = open(omconvert_info_file, 'r')
+    for line in info_file:
         elements = line.split(':')
         name, value = elements[0], elements[1]
         if name == 'Calibration':
             vals = value.split(',')
-            bestIntercept = float(vals[3]), float(vals[4]), float(vals[5])
-            bestSlope = float(vals[0]), float(vals[1]), float(vals[2])
-            bestSlopeT = float(vals[6]), float(vals[7]), float(vals[8])
+            best_intercept = float(vals[3]), float(vals[4]), float(vals[5])
+            best_slope = float(vals[0]), float(vals[1]), float(vals[2])
+            best_slope_t = float(vals[6]), float(vals[7]), float(vals[8])
         elif name == 'Calibration-Stationary-Error-Pre':
-            initError = float(value)
+            init_error = float(value)
         elif name == 'Calibration-Stationary-Error-Post':
-            bestError = float(value)
+            best_error = float(value)
         elif name == 'Calibration-Stationary-Min':
             vals = value.split(',')
-            xMin, yMin, zMin = float(vals[0]), float(vals[1]), float(vals[2])
+            x_min, y_min, z_min = float(vals[0]), float(vals[1]), float(vals[2])
         elif name == 'Calibration-Stationary-Max':
             vals = value.split(',')
-            xMax, yMax, zMax = float(vals[0]), float(vals[1]), float(vals[2])
+            x_max, y_max, z_max = float(vals[0]), float(vals[1]), float(vals[2])
         elif name == 'Calibration-Stationary-Count':
-            nStatic = int(value)
-    file.close()
+            n_static = int(value)
+    info_file.close()
     # store output to summary dictionary
-    storeCalibrationInformation(summary, bestIntercept, bestSlope, bestSlopeT,
-                                initError, bestError, nStatic, None, None)
+    store_calibration_information(summary, best_intercept, best_slope, best_slope_t,
+                                  init_error, best_error, n_static, None, None)
 
 
-def storeCalibrationInformation(
-        summary, bestIntercept, bestSlope, bestSlopeT,
-        initErr, bestErr, nStatic, calibratedOnOwnData, goodCalibration
+def store_calibration_information(
+        summary, best_intercept, best_slope, best_slope_t,
+        init_err, best_err, n_static, calibrated_on_own_data, good_calibration
 ):
     """
     Store calibration information to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
-    :param list(float) bestIntercept: Best x/y/z intercept values
-    :param list(float) bestSlope: Best x/y/z slope values
-    :param list(float) bestSlopeT: Best x/y/z temperature slope values
-    :param float initErr: Error (in mg) before calibration
-    :param float bestErr: Error (in mg) after calibration
-    :param int nStatic: number of stationary points used for calibration
-    :param calibratedOnOwnData: Whether params were self-derived
-    :param goodCalibration: Whether calibration succeded
+    :param list(float) best_intercept: Best x/y/z intercept values
+    :param list(float) best_slope: Best x/y/z slope values
+    :param list(float) best_slope_t: Best x/y/z temperature slope values
+    :param float init_err: Error (in mg) before calibration
+    :param float best_err: Error (in mg) after calibration
+    :param int n_static: number of stationary points used for calibration
+    :param calibrated_on_own_data: Whether params were self-derived
+    :param good_calibration: Whether calibration succeded
 
     :return: None. Calibration summary values written to dict <summary>
     """
 
     # store output to summary dictionary
-    storeCalibrationParams(summary, bestIntercept, bestSlope, bestSlopeT)
-    summary['calibration-errsBefore(mg)'] = initErr * 1000
-    summary['calibration-errsAfter(mg)'] = bestErr * 1000
-    summary['calibration-numStaticPoints'] = nStatic
-    summary['quality-calibratedOnOwnData'] = calibratedOnOwnData
-    summary['quality-goodCalibration'] = goodCalibration
+    store_calibration_params(summary, best_intercept, best_slope, best_slope_t)
+    summary['calibration-errsBefore(mg)'] = init_err * 1000
+    summary['calibration-errsAfter(mg)'] = best_err * 1000
+    summary['calibration-numStaticPoints'] = n_static
+    summary['quality-calibratedOnOwnData'] = calibrated_on_own_data
+    summary['quality-goodCalibration'] = good_calibration
 
 
-def storeCalibrationParams(summary, xyzOff, xyzSlope, xyzSlopeT):
+def store_calibration_params(summary, xyz_off, xyz_slope, xyz_slope_t):
     """
     Store calibration parameters to output summary dictionary
 
     :param dict summary: Output dictionary containing all summary metrics
-    :param list(float) xyzOff: intercept [x, y, z]
-    :param list(float) xyzSlope: slope [x, y, z]
-    :param list(float) xyzSlopeT: temperature slope [x, y, z]
+    :param list(float) xyz_off: intercept [x, y, z]
+    :param list(float) xyz_slope: slope [x, y, z]
+    :param list(float) xyz_slope_t: temperature slope [x, y, z]
 
     :return: None. Calibration summary values written to dict <summary>
     """
 
     # store output to summary dictionary
-    summary['calibration-xOffset(g)'] = xyzOff[0]
-    summary['calibration-yOffset(g)'] = xyzOff[1]
-    summary['calibration-zOffset(g)'] = xyzOff[2]
-    summary['calibration-xSlope'] = xyzSlope[0]
-    summary['calibration-ySlope'] = xyzSlope[1]
-    summary['calibration-zSlope'] = xyzSlope[2]
-    summary['calibration-xSlopeTemp'] = xyzSlopeT[0]
-    summary['calibration-ySlopeTemp'] = xyzSlopeT[1]
-    summary['calibration-zSlopeTemp'] = xyzSlopeT[2]
+    summary['calibration-xOffset(g)'] = xyz_off[0]
+    summary['calibration-yOffset(g)'] = xyz_off[1]
+    summary['calibration-zOffset(g)'] = xyz_off[2]
+    summary['calibration-xSlope'] = xyz_slope[0]
+    summary['calibration-ySlope'] = xyz_slope[1]
+    summary['calibration-zSlope'] = xyz_slope[2]
+    summary['calibration-xSlopeTemp'] = xyz_slope_t[0]
+    summary['calibration-ySlopeTemp'] = xyz_slope_t[1]
+    summary['calibration-zSlopeTemp'] = xyz_slope_t[2]
 
 
-def getDeviceId(inputFile):
+def get_device_id(input_file):
     """
-    Get serial number of device. First decides which DeviceId parsing method to use for <inputFile>.
+    Get serial number of device. First decides which DeviceId parsing method to use for <input_file>.
 
-    :param str inputFile: Input raw accelerometer file
+    :param str input_file: Input raw accelerometer file
 
     :return: Device ID
     :rtype: int
     """
 
-    if inputFile.lower().endswith('.bin'):
-        return getGeneaDeviceId(inputFile)
-    elif inputFile.lower().endswith('.cwa') or inputFile.lower().endswith('.cwa.gz'):
-        return getAxivityDeviceId(inputFile)
-    elif inputFile.lower().endswith('.gt3x'):
-        return getGT3XDeviceId(inputFile)
-    elif inputFile.lower().endswith('.csv') or inputFile.lower().endswith('.csv.gz'):
+    if input_file.lower().endswith('.bin'):
+        return get_genea_device_id(input_file)
+    elif input_file.lower().endswith('.cwa') or input_file.lower().endswith('.cwa.gz'):
+        return get_axivity_device_id(input_file)
+    elif input_file.lower().endswith('.gt3x'):
+        return get_gt3x_device_id(input_file)
+    elif input_file.lower().endswith('.csv') or input_file.lower().endswith('.csv.gz'):
         return "unknown (.csv)"
     else:
-        print("ERROR: Cannot get deviceId for file: " + inputFile)
+        print("ERROR: Cannot get deviceId for file: " + input_file)
 
 
-def getAxivityDeviceId(cwaFile):
+def get_axivity_device_id(cwa_file):
     """
     Get serial number of Axivity device. Parses the unique serial code from the
     header of an Axivity accelerometer file.
 
-    :param str cwaFile: Input raw .cwa accelerometer file
+    :param str cwa_file: Input raw .cwa accelerometer file
 
     :return: Device ID
     :rtype: int
     """
-    if cwaFile.lower().endswith('.cwa'):
-        f = open(cwaFile, 'rb')
-    elif cwaFile.lower().endswith('.cwa.gz'):
-        f = gzip.open(cwaFile, 'rb')
-    header = f.read(2)
+    if cwa_file.lower().endswith('.cwa'):
+        device_file = open(cwa_file, 'rb')
+    elif cwa_file.lower().endswith('.cwa.gz'):
+        device_file = gzip.open(cwa_file, 'rb')
+    header = device_file.read(2)
     if header == b'MD':
-        blockSize = struct.unpack('H', f.read(2))[0]
-        performClear = struct.unpack('B', f.read(1))[0]
-        deviceId = struct.unpack('H', f.read(2))[0]
+        block_size = struct.unpack('H', device_file.read(2))[0]
+        perform_clear = struct.unpack('B', device_file.read(1))[0]
+        device_id = struct.unpack('H', device_file.read(2))[0]
     else:
-        f.close()
-        print("ERROR: in getDeviceId(\"" + cwaFile + "\")")
+        device_file.close()
+        print("ERROR: in get_device_id(\"" + cwa_file + "\")")
         print("""A deviceId value could not be found in input file header,
          this usually occurs when the file is not an Axivity .cwa accelerometer
          file.""")
         raise DeviceError(
-            f"Device ID not found in file header for '{cwaFile}'. "
+            f"Device ID not found in file header for '{cwa_file}'. "
             "This usually occurs when the file is not an Axivity .cwa accelerometer file."
         )
-    f.close()
-    return deviceId
+    device_file.close()
+    return device_id
 
 
-def getGeneaDeviceId(binFile):
+def get_genea_device_id(bin_file):
     """
     Get serial number of GENEActiv device. Parses the unique serial code from
     the header of a GENEActiv accelerometer file
 
-    :param str binFile: Input raw .bin accelerometer file
+    :param str bin_file: Input raw .bin accelerometer file
 
     :return: Device ID
     :rtype: int
     """
 
-    f = open(binFile, 'r')  # 'Universal' newline mode
-    next(f)  # Device Identity
-    deviceId = next(f).split(':')[1].rstrip()  # Device Unique Serial Code:011710
-    f.close()
-    return deviceId
+    genea_file = open(bin_file, 'r')  # 'Universal' newline mode
+    next(genea_file)  # Device Identity
+    device_id = next(genea_file).split(':')[1].rstrip()  # Device Unique Serial Code:011710
+    genea_file.close()
+    return device_id
 
 
-def getGT3XDeviceId(gt3xFile):
+def get_gt3x_device_id(gt3x_file):
     """
     Get serial number of Actigraph device. Parses the unique serial code from
     the header of a GT3X accelerometer file
 
-    :param str gt3xFile: Input raw .gt3x accelerometer file
+    :param str gt3x_file: Input raw .gt3x accelerometer file
 
     :return: Device ID
     :rtype: int
     """
 
     import zipfile
-    if zipfile.is_zipfile(gt3xFile):
-        with zipfile.ZipFile(gt3xFile, 'r') as z:
+    if zipfile.is_zipfile(gt3x_file):
+        with zipfile.ZipFile(gt3x_file, 'r') as z:
             contents = z.infolist()
             print("\n".join(map(lambda x: str(x.filename).rjust(20, " ") + ", "
                                 + str(x.file_size), contents)))
@@ -537,12 +537,12 @@ def getGT3XDeviceId(gt3xFile):
             else:
                 print("Could not find info.txt file")
 
-    print("ERROR: in getDeviceId(\"" + gt3xFile + "\")")
+    print("ERROR: in get_device_id(\"" + gt3x_file + "\")")
     print("""A deviceId value could not be found in input file header,
      this usually occurs when the file is not an Actigraph .gt3x accelerometer
      file.""")
     raise DeviceError(
-        f"Device ID not found in file header for '{gt3xFile}'. "
+        f"Device ID not found in file header for '{gt3x_file}'. "
         "This usually occurs when the file is not an Actigraph .gt3x accelerometer file."
     )
 

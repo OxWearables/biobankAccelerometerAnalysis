@@ -17,7 +17,7 @@ import traceback
 from accelerometer.exceptions import AccelerometerException
 
 
-def matchesExtension(file_path, extensions, compression_exts=None):
+def matches_extension(file_path, extensions, compression_exts=None):
     """
     Check if file matches one of the specified extensions.
 
@@ -55,7 +55,7 @@ def matchesExtension(file_path, extensions, compression_exts=None):
     return False
 
 
-def discoverFiles(input_path, extensions, recursive=False):
+def discover_files(input_path, extensions, recursive=False):
     """
     Discover accelerometer files in a directory.
 
@@ -81,12 +81,12 @@ def discoverFiles(input_path, extensions, recursive=False):
     if recursive:
         # Search recursively
         for file_path in input_path.rglob('*'):
-            if file_path.is_file() and matchesExtension(file_path, extensions):
+            if file_path.is_file() and matches_extension(file_path, extensions):
                 files.append(file_path.resolve())
     else:
         # Search only in the specified directory
         for file_path in input_path.glob('*'):
-            if file_path.is_file() and matchesExtension(file_path, extensions):
+            if file_path.is_file() and matches_extension(file_path, extensions):
                 files.append(file_path.resolve())
 
     # Sort files by name for consistent ordering
@@ -95,7 +95,7 @@ def discoverFiles(input_path, extensions, recursive=False):
     return files
 
 
-def processSingleFile(input_file, args):
+def process_single_file(input_file, args):  # noqa: C901
     """
     Process a single accelerometer file.
 
@@ -120,27 +120,27 @@ def processSingleFile(input_file, args):
     args.inputFile = input_file
 
     # Parent folder and basename of input file
-    inputFileName = os.path.basename(input_file).split(".")[0]
+    input_file_name = os.path.basename(input_file).split(".")[0]
 
     # Create subdirectory within output folder based on input file name
-    outputFolder = os.path.join(args.outputFolder, inputFileName)
-    outputFolder = os.path.abspath(outputFolder)
+    output_folder = os.path.join(args.outputFolder, input_file_name)
+    output_folder = os.path.abspath(output_folder)
 
-    os.makedirs(outputFolder, exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
 
-    if not os.access(outputFolder, os.W_OK):
+    if not os.access(output_folder, os.W_OK):
         raise PermissionError(
-            f"Either folder '{outputFolder}' does not exist "
+            f"Either folder '{output_folder}' does not exist "
             "or you do not have write permission"
         )
 
     # Set default output filenames
-    summaryFile = os.path.join(outputFolder, inputFileName + "-summary.json")
-    epochFile = os.path.join(outputFolder, inputFileName + "-epoch.csv.gz")
-    stationaryFile = os.path.join(outputFolder, inputFileName + "-stationaryPoints.csv.gz")
-    tsFile = os.path.join(outputFolder, inputFileName + "-timeSeries.csv.gz")
-    rawFile = os.path.join(outputFolder, inputFileName + ".csv.gz")
-    npyFile = os.path.join(outputFolder, inputFileName + ".npy")
+    summary_file = os.path.join(output_folder, input_file_name + "-summary.json")
+    epoch_file = os.path.join(output_folder, input_file_name + "-epoch.csv.gz")
+    stationary_file = os.path.join(output_folder, input_file_name + "-stationaryPoints.csv.gz")
+    ts_file = os.path.join(output_folder, input_file_name + "-timeSeries.csv.gz")
+    raw_file = os.path.join(output_folder, input_file_name + ".csv.gz")
+    npy_file = os.path.join(output_folder, input_file_name + ".npy")
 
     try:
         # Print processing options to screen
@@ -156,63 +156,63 @@ def processSingleFile(input_file, args):
         # Now process the .CWA file
         if args.processInputFile:
             summary['file-name'] = input_file
-            accelerometer.device.processInputFileToEpoch(
+            accelerometer.device.process_input_file_to_epoch(
                 input_file, args.timeZone,
-                args.timeShift, epochFile, stationaryFile, summary,
-                skipCalibration=args.skipCalibration,
-                stationaryStd=args.stationaryStd, xyzIntercept=args.calOffset,
-                xyzSlope=args.calSlope, xyzSlopeT=args.calTemp,
-                rawDataParser=args.rawDataParser, javaHeapSpace=args.javaHeapSpace,
-                useFilter=args.useFilter, sampleRate=args.sampleRate, resampleMethod=args.resampleMethod,
-                epochPeriod=args.epochPeriod,
-                extractFeatures=args.extractFeatures,
-                rawOutput=args.rawOutput, rawFile=rawFile,
-                npyOutput=args.npyOutput, npyFile=npyFile,
-                startTime=args.startTime, endTime=args.endTime, verbose=args.verbose,
-                csvStartTime=args.csvStartTime, csvSampleRate=args.csvSampleRate,
-                csvTimeFormat=args.csvTimeFormat, csvStartRow=args.csvStartRow,
-                csvTimeXYZTempColsIndex=list(map(int, args.csvTimeXYZTempColsIndex.split(',')))
+                args.timeShift, epoch_file, stationary_file, summary,
+                skip_calibration=args.skipCalibration,
+                stationary_std=args.stationaryStd, xyz_intercept=args.calOffset,
+                xyz_slope=args.calSlope, xyz_slope_t=args.calTemp,
+                raw_data_parser=args.rawDataParser, java_heap_space=args.javaHeapSpace,
+                use_filter=args.useFilter, sample_rate=args.sampleRate, resample_method=args.resampleMethod,
+                epoch_period=args.epochPeriod,
+                extract_features=args.extractFeatures,
+                raw_output=args.rawOutput, raw_file=raw_file,
+                npy_output=args.npyOutput, npy_file=npy_file,
+                start_time=args.startTime, end_time=args.endTime, verbose=args.verbose,
+                csv_start_time=args.csvStartTime, csv_sample_rate=args.csvSampleRate,
+                csv_time_format=args.csvTimeFormat, csv_start_row=args.csvStartRow,
+                csv_time_xyz_temp_cols_index=list(map(int, args.csvTimeXYZTempColsIndex.split(',')))
             )
         else:
-            summary['file-name'] = epochFile
+            summary['file-name'] = epoch_file
 
         # Summarise epoch
-        epochData, labels = accelerometer.summarisation.getActivitySummary(
-            epochFile, summary,
-            activityClassification=args.activityClassification,
-            timeZone=args.timeZone, startTime=args.startTime,
-            endTime=args.endTime, epochPeriod=args.epochPeriod,
-            stationaryStd=args.stationaryStd, minNonWearDuration=args.minNonWearDuration,
-            mgCpLPA=args.mgCpLPA, mgCpMPA=args.mgCpMPA, mgCpVPA=args.mgCpVPA,
-            removeSpuriousSleep=args.removeSpuriousSleep, removeSpuriousSleepTol=args.removeSpuriousSleepTol,
-            activityModel=args.activityModel,
-            intensityDistribution=args.intensityDistribution,
-            psd=args.psd, fourierFrequency=args.fourierFrequency,
-            fourierWithAcc=args.fourierWithAcc, m10l5=args.m10l5,
-            minWearPerDay=args.minWearPerDay)
+        epoch_data, labels = accelerometer.summarisation.get_activity_summary(
+            epoch_file, summary,
+            activity_classification=args.activityClassification,
+            time_zone=args.timeZone, start_time=args.startTime,
+            end_time=args.endTime, epoch_period=args.epochPeriod,
+            stationary_std=args.stationaryStd, min_non_wear_duration=args.minNonWearDuration,
+            mg_cp_lpa=args.mgCpLPA, mg_cp_mpa=args.mgCpMPA, mg_cp_vpa=args.mgCpVPA,
+            remove_spurious_sleep=args.removeSpuriousSleep, remove_spurious_sleep_tol=args.removeSpuriousSleepTol,
+            activity_model=args.activityModel,
+            intensity_distribution=args.intensityDistribution,
+            psd=args.psd, fourier_frequency=args.fourierFrequency,
+            fourier_with_acc=args.fourierWithAcc, m10l5=args.m10l5,
+            min_wear_per_day=args.minWearPerDay)
 
         # Generate time series file
-        accelerometer.utils.writeTimeSeries(epochData, labels, tsFile)
+        accelerometer.utils.write_time_series(epoch_data, labels, ts_file)
 
         # Print short summary
-        accelerometer.utils.toScreen("=== Short summary ===")
-        summaryVals = ['file-name', 'file-startTime', 'file-endTime',
-                       'acc-overall-avg', 'wearTime-overall(days)',
-                       'nonWearTime-overall(days)', 'quality-goodWearTime']
-        summaryDict = collections.OrderedDict([(i, summary[i]) for i in summaryVals])
-        print(json.dumps(summaryDict, indent=4))
+        accelerometer.utils.to_screen("=== Short summary ===")
+        summary_vals = ['file-name', 'file-startTime', 'file-endTime',
+                        'acc-overall-avg', 'wearTime-overall(days)',
+                        'nonWearTime-overall(days)', 'quality-goodWearTime']
+        summary_dict = collections.OrderedDict([(i, summary[i]) for i in summary_vals])
+        print(json.dumps(summary_dict, indent=4))
 
         # Write summary to file
-        with open(summaryFile, 'w') as f:
+        with open(summary_file, 'w') as f:
             json.dump(summary, f, indent=4)
-        print('Full summary written to: ' + summaryFile)
+        print('Full summary written to: ' + summary_file)
 
         ##########################
         # Closing
         ##########################
         processing_end_time = datetime.datetime.now()
         processing_time = (processing_end_time - processing_start_time).total_seconds()
-        accelerometer.utils.toScreen(
+        accelerometer.utils.to_screen(
             "In total, processing took " + str(processing_time) + " seconds"
         )
 
@@ -254,15 +254,15 @@ def processSingleFile(input_file, args):
         # Clean up intermediate files (always runs, even on exception)
         if args.deleteIntermediateFiles:
             try:
-                if os.path.exists(stationaryFile):
-                    os.remove(stationaryFile)
-                if os.path.exists(epochFile):
-                    os.remove(epochFile)
+                if os.path.exists(stationary_file):
+                    os.remove(stationary_file)
+                if os.path.exists(epoch_file):
+                    os.remove(epoch_file)
             except OSError:
-                accelerometer.utils.toScreen('Could not delete intermediate files')
+                accelerometer.utils.to_screen('Could not delete intermediate files')
 
 
-def processBatch(input_folder, args):
+def process_batch(input_folder, args):  # noqa: C901
     """
     Process multiple accelerometer files in a folder.
 
@@ -302,7 +302,7 @@ def processBatch(input_folder, args):
     print(f"Input folder: {os.path.abspath(input_folder)}")
     print()
 
-    files = discoverFiles(input_folder, extensions, args.recursive)
+    files = discover_files(input_folder, extensions, args.recursive)
 
     if not files:
         print("No files found matching the criteria.")
@@ -357,7 +357,7 @@ def processBatch(input_folder, args):
         print("=" * 80)
         print()
 
-        success, error_msg, proc_time = processSingleFile(file_path, args)
+        success, error_msg, proc_time = process_single_file(file_path, args)
 
         results.append({
             'file': file_path.name,
@@ -665,7 +665,7 @@ def main():  # noqa: C901
     # Parse minWearPerDay time string to hours
     if args.minWearPerDay is not None:
         try:
-            args.minWearPerDay = accelerometer.utils.parseTimeString(args.minWearPerDay)
+            args.minWearPerDay = accelerometer.utils.parse_time_string(args.minWearPerDay)
         except ValueError as e:
             print(f"Error parsing --minWearPerDay: {e}")
             sys.exit(-1)
@@ -709,11 +709,11 @@ def main():  # noqa: C901
             print("Error: --fileExtensions must be specified when processing a folder")
             print("Example: accProcess /path/to/folder --fileExtensions cwa,bin,csv")
             sys.exit(-1)
-        processBatch(args.inputFile, args)
+        process_batch(args.inputFile, args)
     elif os.path.isfile(args.inputFile):
         # Single file processing mode
-        # Note: outputFolder will be set inside processSingleFile to include subdirectory
-        success, error_msg, processing_time = processSingleFile(args.inputFile, args)
+        # Note: outputFolder will be set inside process_single_file to include subdirectory
+        success, error_msg, processing_time = process_single_file(args.inputFile, args)
 
         if not success:
             print(f"\n✗ Processing failed: {error_msg}")

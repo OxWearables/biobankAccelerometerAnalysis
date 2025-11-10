@@ -87,10 +87,10 @@ setuptools.setup(
     },
     entry_points={
         "console_scripts": [
-            "accProcess=accelerometer.accProcess:main",
-            "accPlot=accelerometer.accPlot:main",
-            "accWriteCmds=accelerometer.accWriteCmds:main",
-            "accCollateSummary=accelerometer.accCollateSummary:main"
+            "accProcess=accelerometer.acc_process:main",
+            "accPlot=accelerometer.acc_plot:main",
+            "accWriteCmds=accelerometer.acc_write_cmds:main",
+            "accCollateSummary=accelerometer.acc_collate_summary:main"
         ]
     },
 )

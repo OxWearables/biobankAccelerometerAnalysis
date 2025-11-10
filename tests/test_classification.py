@@ -156,7 +156,7 @@ class TestSpuriousSleepRemoval:
                   ['sedentary'] * 100)
 
         Y = self.create_time_series(labels)
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # Short sleep should be replaced with sedentary
         assert 'sleep' not in Y_clean[100:150].values
@@ -170,7 +170,7 @@ class TestSpuriousSleepRemoval:
                   ['sedentary'] * 50)
 
         Y = self.create_time_series(labels)
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # Long sleep should be preserved
         assert all(Y_clean[50:290] == 'sleep')
@@ -182,11 +182,11 @@ class TestSpuriousSleepRemoval:
         Y = self.create_time_series(labels)
 
         # With tolerance=60, should be kept (>=)
-        Y_clean_60 = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean_60 = classification.remove_spurious_sleep(Y, sleep_tol=60)
         assert all(Y_clean_60[50:170] == 'sleep')
 
         # With tolerance=61, should be removed (<)
-        Y_clean_61 = classification.removeSpuriousSleep(Y, sleepTol=61)
+        Y_clean_61 = classification.remove_spurious_sleep(Y, sleep_tol=61)
         assert all(Y_clean_61[50:170] == 'sedentary')
 
     def test_multiple_sleep_episodes(self):
@@ -198,7 +198,7 @@ class TestSpuriousSleepRemoval:
                   ['sedentary'] * 50)
 
         Y = self.create_time_series(labels)
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # First sleep kept, second removed
         assert all(Y_clean[50:290] == 'sleep')
@@ -210,7 +210,7 @@ class TestSpuriousSleepRemoval:
         Y = self.create_time_series(labels)
         Y_original = Y.copy()
 
-        classification.removeSpuriousSleep(Y, sleepTol=60)
+        classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # Original should be unchanged
         pd.testing.assert_series_equal(Y, Y_original)
@@ -221,11 +221,11 @@ class TestSpuriousSleepRemoval:
         Y = self.create_time_series(labels)
 
         # Walmsley model uses 'sedentary'
-        Y_walmsley = classification.removeSpuriousSleep(Y, activityModel='walmsley', sleepTol=60)
+        Y_walmsley = classification.remove_spurious_sleep(Y, activity_model='walmsley', sleep_tol=60)
         assert all(Y_walmsley[50:80] == 'sedentary')
 
         # Willetts model uses 'sit-stand'
-        Y_willetts = classification.removeSpuriousSleep(Y, activityModel='willetts', sleepTol=60)
+        Y_willetts = classification.remove_spurious_sleep(Y, activity_model='willetts', sleep_tol=60)
         assert all(Y_willetts[50:80] == 'sit-stand')
 
     def test_no_sleep_labels(self):
@@ -233,7 +233,7 @@ class TestSpuriousSleepRemoval:
         labels = ['sedentary', 'light', 'moderate'] * 50
         Y = self.create_time_series(labels)
 
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # Should be unchanged
         pd.testing.assert_series_equal(Y, Y_clean)
@@ -243,7 +243,7 @@ class TestSpuriousSleepRemoval:
         labels = ['sleep'] * 300  # 150 minutes
         Y = self.create_time_series(labels)
 
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # All should be preserved (long enough)
         assert all(Y_clean == 'sleep')
@@ -255,7 +255,7 @@ class TestSpuriousSleepRemoval:
                   ['sleep'] * 100)  # 50 min
 
         Y = self.create_time_series(labels)
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         # Both sleep episodes should be removed (each < 60 min)
         assert all(Y_clean[:100] == 'sedentary')
@@ -276,7 +276,7 @@ class TestCutPointModel:
             0.500,  # > 400mg -> VPA
         ])
 
-        result = classification.cutPointModel(enmo)
+        result = classification.cut_point_model(enmo)
 
         assert result['CpSB'].iloc[0] == 1.0  # Sedentary behavior
         assert result['CpLPA'].iloc[1] == 1.0
@@ -288,7 +288,7 @@ class TestCutPointModel:
         enmo = pd.Series([0.020, 0.060, 0.150])
 
         custom_cuts = {'LPA': 0.050, 'MPA': 0.120, 'VPA': 0.300}
-        result = classification.cutPointModel(enmo, cuts=custom_cuts)
+        result = classification.cut_point_model(enmo, cuts=custom_cuts)
 
         assert result['CpSB'].iloc[0] == 1.0  # < 50mg
         assert result['CpLPA'].iloc[1] == 1.0  # 50-120mg
@@ -299,7 +299,7 @@ class TestCutPointModel:
         enmo = pd.Series([0.020, 0.060, 0.150, 0.020])
         whr = pd.Series([True, True, True, False])  # Last one is sleep
 
-        result = classification.cutPointModel(enmo, whr=whr)
+        result = classification.cut_point_model(enmo, whr=whr)
 
         # First 3 should be classified
         assert result['CpSB'].iloc[0] == 1.0
@@ -312,7 +312,7 @@ class TestCutPointModel:
         # Test at exact cut-points
         enmo = pd.Series([0.045, 0.100, 0.400])
 
-        result = classification.cutPointModel(enmo)
+        result = classification.cut_point_model(enmo)
 
         # Should use >= for lower bound, < for upper bound
         # (implementation-specific, verify actual behavior)
@@ -322,7 +322,7 @@ class TestCutPointModel:
         """Test that result is one-hot encoded."""
         enmo = pd.Series([0.020, 0.060, 0.150, 0.500])
 
-        result = classification.cutPointModel(enmo)
+        result = classification.cut_point_model(enmo)
 
         # Note: CpMVPA overlaps with CpMPA and CpVPA, so sum can be > 1
         # Check that primary categories (CpSB, CpLPA, CpMPA, CpVPA) are valid
@@ -338,7 +338,7 @@ class TestActivityClassificationHelpers:
         """Test model path resolution."""
         # Test with known model name
         try:
-            path = classification.resolveModelPath('walmsley')
+            path = classification.resolve_model_path('walmsley')
             assert path is not None
         except FileNotFoundError:
             # Model not downloaded yet - expected
@@ -347,7 +347,7 @@ class TestActivityClassificationHelpers:
     def test_invalid_model_name(self):
         """Test with invalid model name."""
         with pytest.raises((FileNotFoundError, KeyError)):
-            classification.resolveModelPath('invalid_model_name')
+            classification.resolve_model_path('invalid_model_name')
 
 
 @pytest.mark.slow
@@ -416,7 +416,7 @@ class TestNumericalStability:
         Y = pd.Series([], dtype=str)
         Y.index = pd.DatetimeIndex([])
 
-        Y_clean = classification.removeSpuriousSleep(Y, sleepTol=60)
+        Y_clean = classification.remove_spurious_sleep(Y, sleep_tol=60)
 
         assert len(Y_clean) == 0
 
@@ -424,7 +424,7 @@ class TestNumericalStability:
         """Test cut-point classification with NaN values."""
         enmo = pd.Series([0.020, np.nan, 0.150, np.nan])
 
-        result = classification.cutPointModel(enmo)
+        result = classification.cut_point_model(enmo)
 
         # NaN inputs should produce NaN outputs
         assert pd.isna(result['CpSB'].iloc[1])

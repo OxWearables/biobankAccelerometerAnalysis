@@ -1,5 +1,5 @@
 import argparse
-from accelerometer.utils import writeCmds
+from accelerometer.utils import write_cmds
 
 
 def main():
@@ -12,11 +12,11 @@ def main():
                         help='String of processing options e.g. --epochPeriod 10')
     args = parser.parse_args()
 
-    writeCmds(accDir=args.accDir,
-              outDir=args.outDir,
-              cmdsFile=args.cmdsFile,
-              accExt=args.accExt,
-              cmdOptions=args.cmdOptions)
+    write_cmds(acc_dir=args.accDir,
+               out_dir=args.outDir,
+               cmds_file=args.cmdsFile,
+               acc_ext=args.accExt,
+               cmd_options=args.cmdOptions)
 
 
 if __name__ == '__main__':
