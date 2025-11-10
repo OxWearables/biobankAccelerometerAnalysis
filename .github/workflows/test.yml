@@ -45,7 +45,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest tests/ -v -m "unit and not slow" --tb=short
+          pytest tests/ -v -m "unit" --tb=short
 
       - name: Display test summary
         if: always()
