@@ -6,8 +6,13 @@ name: test
 on:
   push:
     branches:
-      - '**'
+      - master
+      - main
   pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
   # Fast unit tests - run on every push
@@ -172,7 +177,7 @@ jobs:
   # Test summary - all jobs must pass
   test-summary:
     runs-on: ubuntu-latest
-    needs: [unit-tests, regression-tests, integration-tests]
+    needs: [unit-tests, regression-tests, integration-tests, full-tests-with-coverage]
     if: always() && !cancelled()
 
     steps:
@@ -188,6 +193,10 @@ jobs:
           fi
           if [ "${{ needs.integration-tests.result }}" != "success" ]; then
             echo "❌ Integration tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.full-tests-with-coverage.result }}" != "success" ] && [ "${{ needs.full-tests-with-coverage.result }}" != "skipped" ]; then
+            echo "❌ Full tests with coverage failed"
             exit 1
           fi
           echo "✅ All required tests passed!"
