@@ -7,12 +7,13 @@ import os
 import pandas as pd
 import re
 from tqdm.auto import tqdm
+from typing import Union
 
 DAYS = ['mon', 'tue', 'wed', 'thur', 'fri', 'sat', 'sun']
 TIME_SERIES_COL = 'time'
 
 
-def str2bool(v):
+def str2bool(v: str) -> bool:
     """Convert string to boolean for command-line argument parsing.
 
     Used to parse true/false values from the command line.
@@ -33,7 +34,7 @@ def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
 
-def format_num(num, num_decimal_places):
+def format_num(num: Union[int, float], num_decimal_places: int) -> float:
     """Format a number to a specified number of decimal places."""
     return round(num, num_decimal_places)
 
@@ -88,7 +89,7 @@ def mean_ci_str(mean, std, n, num_decimal_places):
     return out_str
 
 
-def to_screen(msg):
+def to_screen(msg: str) -> None:
     """
     Print msg str prepended with current time
 

@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 from pandas.tseries.frequencies import to_offset
+from typing import Dict, Optional
 
 from accelerometer import utils
 from accelerometer import classification
@@ -10,17 +11,29 @@ from accelerometer.exceptions import DataError
 
 
 def get_activity_summary(  # noqa: C901
-    epoch_file, summary,
-    activity_classification=True, time_zone='Europe/London',
-    start_time=None, end_time=None,
-    epoch_period=30, stationary_std=13, min_non_wear_duration=60,
-    mg_cp_lpa=45, mg_cp_mpa=100, mg_cp_vpa=400,
-    remove_spurious_sleep=True, remove_spurious_sleep_tol=60,
-    activity_model="walmsley",
-    intensity_distribution=False, imputation=True,
-    psd=False, fourier_frequency=False, fourier_with_acc=False, m10l5=False,
-    min_wear_per_day=None
-):
+    epoch_file: str,
+    summary: Dict,
+    activity_classification: bool = True,
+    time_zone: str = 'Europe/London',
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    epoch_period: int = 30,
+    stationary_std: int = 13,
+    min_non_wear_duration: int = 60,
+    mg_cp_lpa: int = 45,
+    mg_cp_mpa: int = 100,
+    mg_cp_vpa: int = 400,
+    remove_spurious_sleep: bool = True,
+    remove_spurious_sleep_tol: int = 60,
+    activity_model: str = "walmsley",
+    intensity_distribution: bool = False,
+    imputation: bool = True,
+    psd: bool = False,
+    fourier_frequency: bool = False,
+    fourier_with_acc: bool = False,
+    m10l5: bool = False,
+    min_wear_per_day: Optional[int] = None
+) -> pd.DataFrame:
     """
     Calculate overall activity summary from <epoch_file> data. Get overall
     activity summary from input <epoch_file>. This is achieved by:

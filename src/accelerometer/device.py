@@ -11,7 +11,7 @@ import statsmodels.api as sm
 import struct
 from subprocess import call
 import pathlib
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 ROOT_DIR = pathlib.Path(__file__).parent
 
@@ -47,20 +47,37 @@ CALIBRATION_MIN_SAMPLES = 50
 
 
 def process_input_file_to_epoch(  # noqa: C901
-    input_file, time_zone, time_shift,
-    epoch_file, stationary_file, summary,
-    skip_calibration=False, stationary_std=13, xyz_intercept=None,
-    xyz_slope=None, xyz_slope_t=None,
-    raw_data_parser="AccelerometerParser", java_heap_space=None,
-    use_filter=True, sample_rate=100, resample_method="linear", epoch_period=30,
-    extract_features=True,
-    raw_output=False, raw_file=None, npy_output=False, npy_file=None,
-    start_time=None, end_time=None,
-    verbose=False,
-    csv_start_time=None, csv_sample_rate=None,
-    csv_time_format="yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
-    csv_start_row=1, csv_time_xyz_temp_cols_index=None
-):
+    input_file: str,
+    time_zone: str,
+    time_shift: int,
+    epoch_file: str,
+    stationary_file: str,
+    summary: Dict,
+    skip_calibration: bool = False,
+    stationary_std: int = 13,
+    xyz_intercept: Optional[List[float]] = None,
+    xyz_slope: Optional[List[float]] = None,
+    xyz_slope_t: Optional[List[float]] = None,
+    raw_data_parser: str = "AccelerometerParser",
+    java_heap_space: Optional[int] = None,
+    use_filter: bool = True,
+    sample_rate: int = 100,
+    resample_method: str = "linear",
+    epoch_period: int = 30,
+    extract_features: bool = True,
+    raw_output: bool = False,
+    raw_file: Optional[str] = None,
+    npy_output: bool = False,
+    npy_file: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    verbose: bool = False,
+    csv_start_time: Optional[str] = None,
+    csv_sample_rate: Optional[float] = None,
+    csv_time_format: str = "yyyy-MM-dd HH:mm:ss.SSSxxxx '['VV']'",
+    csv_start_row: int = 1,
+    csv_time_xyz_temp_cols_index: Optional[str] = None
+) -> None:
     """
     Process raw accelerometer file, writing summary epoch stats to file. This is usually achieved by:
     1) identify 10sec stationary epochs
@@ -376,7 +393,7 @@ def get_calibration_coefs(static_bouts_file: Union[str, pd.DataFrame], summary: 
     return
 
 
-def get_omconvert_info(omconvert_info_file, summary):
+def get_omconvert_info(omconvert_info_file: str, summary: Dict) -> None:
     """
     Identify calibration coefficients for omconvert processed file. Get axes
     offset/gain/temp calibration coeffs from omconvert info file.
@@ -414,9 +431,16 @@ def get_omconvert_info(omconvert_info_file, summary):
 
 
 def store_calibration_information(
-        summary, best_intercept, best_slope, best_slope_t,
-        init_err, best_err, n_static, calibrated_on_own_data, good_calibration
-):
+        summary: Dict,
+        best_intercept: Union[List[float], np.ndarray],
+        best_slope: Union[List[float], np.ndarray],
+        best_slope_t: Union[List[float], np.ndarray],
+        init_err: float,
+        best_err: float,
+        n_static: int,
+        calibrated_on_own_data: int,
+        good_calibration: int
+) -> None:
     """
     Store calibration information to output summary dictionary
 
@@ -442,7 +466,12 @@ def store_calibration_information(
     summary['quality-goodCalibration'] = good_calibration
 
 
-def store_calibration_params(summary, xyz_off, xyz_slope, xyz_slope_t):
+def store_calibration_params(
+        summary: Dict,
+        xyz_off: Union[List[float], np.ndarray],
+        xyz_slope: Union[List[float], np.ndarray],
+        xyz_slope_t: Union[List[float], np.ndarray]
+) -> None:
     """
     Store calibration parameters to output summary dictionary
 
@@ -579,7 +608,7 @@ def get_gt3x_device_id(gt3x_file: str) -> Optional[str]:
     )
 
 
-def to_iso_datetime(dt):
+def to_iso_datetime(dt: str) -> str:
     """ Given input string representing a datetime, return its ISO formatted
     datetime string. """
     return dateutil.parser.parse(dt).isoformat()
