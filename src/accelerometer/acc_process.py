@@ -229,6 +229,28 @@ def process_single_file(input_file, args):  # noqa: C901
 
         return (False, error_msg, processing_time)
 
+    except (IOError, OSError, PermissionError) as e:
+        # Catch file system errors (permissions, disk space, etc.)
+        processing_end_time = datetime.datetime.now()
+        processing_time = (processing_end_time - processing_start_time).total_seconds()
+
+        error_msg = f"File system error: {e}"
+        if args.verbose:
+            error_msg = traceback.format_exc()
+
+        return (False, error_msg, processing_time)
+
+    except (ValueError, KeyError, TypeError) as e:
+        # Catch data parsing/validation errors
+        processing_end_time = datetime.datetime.now()
+        processing_time = (processing_end_time - processing_start_time).total_seconds()
+
+        error_msg = f"Data error: {e}"
+        if args.verbose:
+            error_msg = traceback.format_exc()
+
+        return (False, error_msg, processing_time)
+
     except SystemExit as e:
         # Catch any remaining sys.exit() calls (should be rare now)
         processing_end_time = datetime.datetime.now()
@@ -241,10 +263,12 @@ def process_single_file(input_file, args):  # noqa: C901
         return (False, error_msg, processing_time)
 
     except Exception as e:
+        # Catch-all for unexpected errors (last resort)
+        # This ensures we always return gracefully rather than crashing
         processing_end_time = datetime.datetime.now()
         processing_time = (processing_end_time - processing_start_time).total_seconds()
 
-        error_msg = str(e)
+        error_msg = f"Unexpected error: {e}"
         if args.verbose:
             error_msg = traceback.format_exc()
 

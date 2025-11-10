@@ -293,7 +293,8 @@ def update_calibration_coefs(input_csv_file, output_csv_file):
             try:
                 of_x, of_y, of_z, slp_x, slp_y, slp_z, tmp_x, tmp_y, tmp_z, cal_temp_avg = prev_use.iloc[0]
                 previous_uses += 1
-            except Exception:
+            except (IndexError, KeyError):
+                # No previous use found, try next use
                 next_use = good_cal[cal_cols][(good_cal['file-deviceID'] == device) &
                                               (good_cal['file-startTime'] > start_time)].head(1)
                 if len(next_use) < 1:
